@@ -16,7 +16,6 @@ import { deepPurple } from '@mui/material/colors';
 import { FormControl, Select, MenuItem } from '@mui/material';
 
 
-import axios from 'axios';
 
 import {
   DataGrid,
@@ -41,18 +40,9 @@ const Partno = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]); // ✅ Initial empty rows
   const [originalRows, setOriginalRows] = useState([]);
-  const [rowId, setRowId] = useState(1);
+  
   const [openAddModal, setOpenAddModal] = useState(false);
-  // const [selectedRow, setSelectedRow] = useState(null);
-  const [newRowData, setNewRowData] = useState({
-    PlantCode: "",
-    DocID: "",
-    Date: "",
-    FromMatCode: "",
-    ToMatCode: "",
-    NetDifferentPrice: "",
-    ApprovalStatus: "",
-  });
+  
   const [openExcelDownloadModal, setOpenExcelDownloadModal] = useState(false);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -63,19 +53,11 @@ const Partno = () => {
   const [uploadStatus, setUploadStatus] = useState(""); // Track upload status
   const [uploadedFileData, setUploadedFileData] = useState(null);
   const [data, setData] = useState([]);
-  const [ViewData, setViewData] = useState([]);
+ 
   const [PlantTable, setPlantTable] = useState([])
   const [MaterialTable, setMaterialTable] = useState([])
 
-
-
-  const [newRecord, setNewRecord] = useState([]);
-  const [updateRecord, setUpdateRecord] = useState([]);
-  const [errRecord, setErrRecord] = useState([]);
-
   const [openViewModal, setOpenViewModal] = useState(false);
-  const [errors, setErrors] = useState({});
-
 
   const [Trn309ID, setTrn309ID] = useState("");
   const [DocID, setDocID] = useState("");
@@ -197,56 +179,6 @@ const Partno = () => {
     setUploadedFile(event.target.files[0]);
   };
 
-  // const handleFileUpload = (event) => {
-  //   const file = event.target.files[0];
-  //   if (file) {
-  //     setUploadedFile(file); // Store file to upload later
-  //     setUploadStatus("File ready to upload.");
-  //     setUploadProgress(0); // Reset progress bar
-  //   } else {
-  //     setUploadStatus("No file selected.");
-  //   }
-  // };
-  // const handleUploadData = () => {
-  //   if (!uploadedFile) {
-  //     alert("Please select a file first.");
-  //     return;
-  //   }
-
-  //   setIsUploading(true);
-  //   setUploadProgress(20); // Initial progress
-
-  //   const reader = new FileReader();
-  //   reader.onload = (e) => {
-  //     const data = new Uint8Array(e.target.result);
-  //     const workbook = XLSX.read(data, { type: "array" });
-  //     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-  //     const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-  //     setUploadProgress(60); // Intermediate progress
-
-  //     setTimeout(() => {
-  //       const updatedRows = jsonData.map((item, index) => ({
-  //         id: rowId + index,
-  //         ...item,
-  //       }));
-
-  //       setRows([...rows, ...updatedRows]);
-  //       setOriginalRows([...originalRows, ...updatedRows]);
-  //       setRowId(rowId + updatedRows.length);
-  //       setUploadStatus("Data uploaded successfully!");
-  //       setUploadProgress(100);
-  //       setIsUploading(false);
-
-  //       // ✅ Save uploaded file data for download
-  //       setUploadedFileData(workbook);
-
-  //       setUploadedFile(null); // Clear uploaded file
-  //     }, 1500);
-  //   };
-
-  //   reader.readAsArrayBuffer(uploadedFile);
-  // };
 
   const handleUploadData = async () => {
     if (!uploadedFile) {
@@ -540,13 +472,15 @@ const Partno = () => {
       setRows(originalRows);
     } else {
       const filteredRows = originalRows.filter((row) =>
-        Object.values(row).some(value =>
-          String(value).toLowerCase().includes(text)
-        )
+        ['Plant_Code', 'Doc_ID', 'Date', 'From_Material_Code', 'To_Material_Code ','Net_Difference_Price','Approval_Status'].some((key) => {
+          const value = row[key];
+          return value && String(value).toLowerCase().includes(text);
+        })
       );
       setRows(filteredRows);
     }
   };
+
 
   const handleOpenModal = () => {
     setOpenExcelDownloadModal(true);
@@ -991,6 +925,8 @@ const Partno = () => {
           </Box>
         </Box>
       </Modal>
+
+      
       {/* upload modal */}
       <Modal open={openUploadModal} onClose={handleCloseUploadModal}>
         <Box
@@ -1008,17 +944,6 @@ const Partno = () => {
           <h3 style={{ textAlign: "center", marginBottom: "20px", color: "#2e59d9", textDecoration: "underline", textDecorationColor: "#88c57a", textDecorationThickness: "3px" }}>
             Upload Excel File
           </h3>
-
-          {/* <Button
-            variant="outlined"
-            onClick={handleDownloadTemplate}
-            style={{ marginBottom: "5px", width: "255px" }}
-          >
-            <IoMdDownload
-              style={{ marginRight: "5px", fontSize: "18px" }} // ✅ Add margin to separate the icon
-            />
-            Download Template
-          </Button> */}
 
           <Button
             variant="contained"

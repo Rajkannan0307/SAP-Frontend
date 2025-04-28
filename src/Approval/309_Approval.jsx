@@ -51,16 +51,6 @@ const Approval = () => {
   const [rows, setRows] = useState([]);
 
 
-  // // Calculate the total Net Difference Price whenever rows change
-  // const totalNetDiffPrice = rows.reduce(
-  //   (sum, row) => sum + row.Net_Diff_Price,
-  //   0
-  // ).toFixed(2); // Calculate the sum and format to 2 decimal places
-
-
-  
-
-
   // Function to open the view modal
 
   const [Trn309ID, setTrn309ID] = useState("");
@@ -103,31 +93,6 @@ const Approval = () => {
   };
 
 
-
-  // const handleOpenViewModal = (item) => {
-  //   setOpenViewModal(true);
-  //   console.log(item);
-  //   getViewButton(item.Doc_ID);
-  //   // getViewData();
-  //   // handleView();
-  //   // setPlantCode(item.Plant_Code);
-  //   // setDocID(item.Doc_ID);
-  //   // setDate(item.Date);
-  //   // setFromMatCode(item.From_Mat_ID);
-  //   // setFromQty(item.Qty);
-  //   // setFromSLocID(item.From_SLoc_Code);
-  //   // setFromPrice(item.From_Rate_Per_Unit);
-  //   // setNetDifferentPrice(item.Net_Difference_Price);
-  //   // setToMatCode(item.To_Mat_ID);
-  //   // setToQty(item.To_Qty);
-  //   // setToSLocID(item.To_SLoc_Code);
-  //   // setToPrice(item.To_Rate_Per_Unit);
-  //   // setApprovalStatus(item.Approval_Status);
-
-  //   // setMovementID(item.Movement_ID);
-  //   // setEmployeeID(item.Employee_ID);
-
-  // }
   const handleOpenViewModal = async (item) => {
     setOpenViewModal(true);
     console.log(item); // Log to check if item is being passed correctly
@@ -141,9 +106,6 @@ const Approval = () => {
     // TODO: Add logic to filter your data based on searchText
   };
 
-
-  
-
   // Table columns for DataGrid
   const columns = [
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
@@ -151,7 +113,7 @@ const Approval = () => {
     { field: "Date", headerName: "Date", flex: 1 },
     { field: "Movement_Type", headerName: "Movement Type", flex: 1 },
     { field: "Request_By", headerName: "Requset By", flex: 1 },
-    { field: "Approval_Status", headerName: "Status", flex: 1 },
+    { field: "Status", headerName: "Approval Status", flex: 1 },
 
     // View Column
     {
@@ -446,30 +408,9 @@ const Approval = () => {
                 <TableCell sx={{ backgroundColor: "blue", color: "white" }}>To Material </TableCell>
                 <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Qty</TableCell>
                 <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Net Difference Price</TableCell>
+                
               </TableRow>
             </TableHead>
-            {/* <TableBody>
-  {(selectedRow || []).map((item, index) => (
-    <TableRow key={index}>
-      <TableCell>{item.Plant_Code}</TableCell>
-      <TableCell>{item.Date}</TableCell>
-      <TableCell>{item.From_Mat_ID}</TableCell>
-      <TableCell>{item.To_Mat_ID}</TableCell>
-      <TableCell>{item.Qty}</TableCell>
-      <TableCell>{item.Net_Difference_Price}</TableCell>
-    </TableRow>
-  ))}
-   {(selectedRow || []).map((item, index) => (
-  <TableRow sx={{ backgroundColor: "#f9f9f9" }}>
-    <TableCell colSpan={5} sx={{ textAlign: "right", fontWeight: "bold" }}>
-      Total
-    </TableCell>
-    <TableCell sx={{ fontWeight: "bold" }}>
-     {item.Total_Net_Difference}
-    </TableCell>
-  </TableRow>
-   ))}
-</TableBody> */}
 
 <TableBody>
   {selectedRow && selectedRow.length > 0 && (
@@ -490,7 +431,8 @@ const Approval = () => {
               <TableCell>{item.From_Material}</TableCell>
               <TableCell>{item.To_Material}</TableCell>
               <TableCell>{item.Qty}</TableCell>
-              <TableCell>{item.Net_Difference}</TableCell>
+              <TableCell sx={{ textAlign: "right" }}>{item.Net_Difference}</TableCell>
+            
             </TableRow>
 
             {/* Total row, displayed after the last item */}
@@ -511,11 +453,7 @@ const Approval = () => {
   )}
 </TableBody>
 
-
-
           </Table>
-
-
 
           <Button
             onClick={() => setOpenViewModal(false)}
@@ -534,8 +472,6 @@ const Approval = () => {
           >
             Close
           </Button>
-
-
         </Box>
       </Modal>
 

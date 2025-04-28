@@ -157,7 +157,7 @@ const Sidebar = ({ setSidebarOpen }) => {
           icon={<FcApproval style={{ fontSize: "24px" }} />}
           label="Approval"
           links={[
-            { name: "309 Approval", path: "/home/Approval_309" ,icon:<MdOutlineApproval  style={{ fontSize: "20px",marginRight: "3px" }}/>},
+            { name: "309 Approval", path: "/home/Approval_309" ,icon:<MdOutlineApproval  style={{ fontSize: "20px",marginRight: "3px" , color:"rgb(228, 46, 182)"}}/>},
 
           ]}
         />
