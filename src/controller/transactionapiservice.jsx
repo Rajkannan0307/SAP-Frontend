@@ -31,10 +31,10 @@ export const getView=async ()=>{
     const response = await axios.get(`${api}/transaction/get_View`);
     return response.data;
 };
-export const getExcelDownload = async (data)=>{
-    const response = await axios.post(`${api}/transaction/download-excel`, data);
-    return response;
-};
+// export const getExcelDownload = async (data)=>{
+//     const response = await axios.post(`${api}/transaction/download-excel`, data);
+//     return response;
+// };
 
 export const getTransactionData = async (from, to)=>{
     const response = await axios.get(`${api}/transaction/download_data?From=${from}&to=${to}`, );
