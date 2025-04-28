@@ -32,8 +32,18 @@ const Login = () => {
     console.log('response', response.data.message);
 
     if (response.data.message === 'success') {
+      const data = response.data.resultLocalStorage[0];
+
+      console.log('data', data);
+      if(data) {
+        localStorage.setItem('Active', data.Active_Status);
+        localStorage.setItem('DeptId', data.Dept_Id);
+        localStorage.setItem('UserName',data.User_Name);
+
+        navigate("/home/Home");
+      }
       console.log("Login successful", response.data);
-      navigate("/home/Home");
+      
     } else {
       alert(response.data.message); // should never hit this, but just in case
     }

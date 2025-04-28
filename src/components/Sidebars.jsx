@@ -7,7 +7,7 @@ import { PiNuclearPlantFill } from "react-icons/pi";
 import { MdDashboard } from "react-icons/md";
 import ReportIcon from "@mui/icons-material/Report";
 import BusinessIcon from "@mui/icons-material/Business";
-
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
 
 import { FcApproval } from "react-icons/fc";
@@ -16,7 +16,7 @@ import { FcFactory } from "react-icons/fc";
 
 
 import AcUnitIcon from '@mui/icons-material/AcUnit'; // ✅ Correct
-import PersonIcon from '@mui/icons-material/Person';
+
 const Sidebar = ({ setSidebarOpen }) => {
   const [open, setOpen] = useState(false);
   const [Masters, setMasterOpen] = useState(false);
@@ -135,9 +135,9 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "Company", path: "/home/company" ,icon:<BusinessIcon style={{ marginRight: "2px" ,color:"yellow"}}/>},
             { name: "Plant", path: "/home/Plant" },
             { name: "Department", path: "/home/Department" },
-            { name: "Login User", path: "/home/UserMaster" ,icon:<PersonIcon style={{ marginRight: "2px", color:"blue"}}/>},
+            { name: "Login User", path: "/home/UserMaster" ,icon:< AccountCircleIcon style={{ marginRight: "2px", color:"violet"}}/>},
             { name: "Role", path: "/home/Role" ,icon:< MdOutlineAdminPanelSettings style={{ marginRight: "2px",width:"25px",fontSize:"24px" ,color:"goldenrod"}}/>},
-            { name: "Material", path: "/home/Material" , icon:<AcUnitIcon style={{ marginRight: "2px", color:"violet"}}/>},
+            { name: "Material", path: "/home/Material" , icon:<AcUnitIcon style={{ marginRight: "2px", color:"greenyellow"}}/>},
             { name: "Vendor", path: "/home/Vendor" ,icon:<FcFactory style={{ marginRight: "2px",fontSize:"24px" ,width:"25px"}}/>},
             { name: "Customer", path: "/home/Customer" },
             { name: "Storage Location", path: "/home/StorageLocation" },

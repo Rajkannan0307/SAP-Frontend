@@ -48,6 +48,7 @@ const Vendor = () => {
   const [ActiveStatus, setActiveStatus] = useState(false);
   const [PlantCode, setPlantCode] = useState([]);
   const [PlantTable, setPlantTable] = useState([]);
+  const Username = localStorage.getItem('UserName');
   // const [newRecord] = useState([]);
   // const [updateRecord] = useState([]);
   // const [errRecord] = useState([]);
@@ -115,6 +116,7 @@ const Vendor = () => {
 
   useEffect(() => {
     getData();
+     console.log('username', Username)
   }, []);
   const get_Plant = async () => {
     try {
@@ -214,7 +216,7 @@ const Vendor = () => {
       
       "ActiveStatus",
       "PlantCode_Validation",
-      // "VendorCode_Validation",
+       
     ];
 
     const filteredNewData = newRecord.map((item) => ({
@@ -242,7 +244,7 @@ const Vendor = () => {
       Vendor_Address: item.Vendor_Address,
       ActiveStatus: item.Active_Status,
       PlantCode_Validation: item.Plant_Val,
-      // VendorCode_Validation: item.Vendor_Val,
+      
     }));
 
     // 🔹 Helper to style header cells
@@ -262,7 +264,7 @@ const Vendor = () => {
     // 🔴 Style red text for validation columns only
     const styleValidationColumns = (worksheet, columns, dataLength) => {
       const validationCols = [
-        "PlantCode_Validation"
+        "PlantCode_Validation",
         
       ];
 
