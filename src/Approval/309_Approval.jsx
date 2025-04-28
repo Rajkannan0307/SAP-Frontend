@@ -51,16 +51,6 @@ const Approval = () => {
   const [rows, setRows] = useState([]);
 
 
-  // // Calculate the total Net Difference Price whenever rows change
-  // const totalNetDiffPrice = rows.reduce(
-  //   (sum, row) => sum + row.Net_Diff_Price,
-  //   0
-  // ).toFixed(2); // Calculate the sum and format to 2 decimal places
-
-
-  
-
-
   // Function to open the view modal
 
   const [Trn309ID, setTrn309ID] = useState("");
@@ -103,31 +93,6 @@ const Approval = () => {
   };
 
 
-
-  // const handleOpenViewModal = (item) => {
-  //   setOpenViewModal(true);
-  //   console.log(item);
-  //   getViewButton(item.Doc_ID);
-  //   // getViewData();
-  //   // handleView();
-  //   // setPlantCode(item.Plant_Code);
-  //   // setDocID(item.Doc_ID);
-  //   // setDate(item.Date);
-  //   // setFromMatCode(item.From_Mat_ID);
-  //   // setFromQty(item.Qty);
-  //   // setFromSLocID(item.From_SLoc_Code);
-  //   // setFromPrice(item.From_Rate_Per_Unit);
-  //   // setNetDifferentPrice(item.Net_Difference_Price);
-  //   // setToMatCode(item.To_Mat_ID);
-  //   // setToQty(item.To_Qty);
-  //   // setToSLocID(item.To_SLoc_Code);
-  //   // setToPrice(item.To_Rate_Per_Unit);
-  //   // setApprovalStatus(item.Approval_Status);
-
-  //   // setMovementID(item.Movement_ID);
-  //   // setEmployeeID(item.Employee_ID);
-
-  // }
   const handleOpenViewModal = async (item) => {
     setOpenViewModal(true);
     console.log(item); // Log to check if item is being passed correctly
@@ -140,9 +105,6 @@ const Approval = () => {
     console.log("Searching for:", searchText);
     // TODO: Add logic to filter your data based on searchText
   };
-
-
-  
 
   // Table columns for DataGrid
   const columns = [
