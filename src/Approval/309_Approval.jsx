@@ -151,7 +151,7 @@ const Approval = () => {
     { field: "Date", headerName: "Date", flex: 1 },
     { field: "Movement_Type", headerName: "Movement Type", flex: 1 },
     { field: "Request_By", headerName: "Requset By", flex: 1 },
-    { field: "Approval_Status", headerName: "Status", flex: 1 },
+    { field: "Status", headerName: "Approval Status", flex: 1 },
 
     // View Column
     {
@@ -446,30 +446,9 @@ const Approval = () => {
                 <TableCell sx={{ backgroundColor: "blue", color: "white" }}>To Material </TableCell>
                 <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Qty</TableCell>
                 <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Net Difference Price</TableCell>
+                
               </TableRow>
             </TableHead>
-            {/* <TableBody>
-  {(selectedRow || []).map((item, index) => (
-    <TableRow key={index}>
-      <TableCell>{item.Plant_Code}</TableCell>
-      <TableCell>{item.Date}</TableCell>
-      <TableCell>{item.From_Mat_ID}</TableCell>
-      <TableCell>{item.To_Mat_ID}</TableCell>
-      <TableCell>{item.Qty}</TableCell>
-      <TableCell>{item.Net_Difference_Price}</TableCell>
-    </TableRow>
-  ))}
-   {(selectedRow || []).map((item, index) => (
-  <TableRow sx={{ backgroundColor: "#f9f9f9" }}>
-    <TableCell colSpan={5} sx={{ textAlign: "right", fontWeight: "bold" }}>
-      Total
-    </TableCell>
-    <TableCell sx={{ fontWeight: "bold" }}>
-     {item.Total_Net_Difference}
-    </TableCell>
-  </TableRow>
-   ))}
-</TableBody> */}
 
 <TableBody>
   {selectedRow && selectedRow.length > 0 && (
@@ -490,7 +469,8 @@ const Approval = () => {
               <TableCell>{item.From_Material}</TableCell>
               <TableCell>{item.To_Material}</TableCell>
               <TableCell>{item.Qty}</TableCell>
-              <TableCell>{item.Net_Difference}</TableCell>
+              <TableCell sx={{ textAlign: "right" }}>{item.Net_Difference}</TableCell>
+            
             </TableRow>
 
             {/* Total row, displayed after the last item */}
@@ -511,11 +491,7 @@ const Approval = () => {
   )}
 </TableBody>
 
-
-
           </Table>
-
-
 
           <Button
             onClick={() => setOpenViewModal(false)}
@@ -534,8 +510,6 @@ const Approval = () => {
           >
             Close
           </Button>
-
-
         </Box>
       </Modal>
 
