@@ -34,7 +34,9 @@ const MVT_LIST_ITEM = () => {
    const [MovementType, setMovementType] = useState([]);
    const[MovementListCode,setMovementListCode]=useState("");
    const[MovementListName,setMovementListName]=useState("");
+   const [MovementCode, setMovementCode] = useState("");
  const columns = [
+  { field: "Movement_Code", headerName: "Movement Code", flex: 1 },
      { field: "Movement_Name", headerName: "Movement Name", flex: 1 },
      { field: "Movement_List_Code", headerName: "Movement List Code", flex: 1 },
      { field: "Movement_List_Name", headerName: "Movement List Name", flex: 1 },
@@ -120,7 +122,9 @@ const MVT_LIST_ITEM = () => {
   };
   // ✅ Handle Add Modal
   const handleOpenAddModal = (item) => {
-   
+    setMovementCode("");
+    setMovementListCode("");
+    setMovementListName("");
     setActiveStatus(true);
     setOpenAddModal(true);
     Get_ActiveMovementType();
@@ -467,16 +471,16 @@ const MVT_LIST_ITEM = () => {
                 </h3>
                 
                 <FormControl fullWidth>
-            <InputLabel>Movement Type</InputLabel>
+            <InputLabel>Movement Code</InputLabel>
             <Select
-              label="Movement Type"
-              name="MovementType"
-              value={MovementType}
-              onChange={(e) => setMovementType(e.target.value)}
+              label="Movement Code"
+              name="MovementCode"
+              value={MovementCode}
+              onChange={(e) => setMovementCode(e.target.value)}
               required
             >
               {MovementTypeTable.map((item, index) => (
-                <MenuItem key={index} value={item.Movement_ID}>{item.Movement_Name}</MenuItem>
+                <MenuItem key={index} value={item.Movement_ID}>{item.Movement_Code}</MenuItem>
               ))}
             </Select>
           </FormControl>
