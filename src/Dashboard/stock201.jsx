@@ -180,6 +180,62 @@ const Stock = () => {
     XLSX.writeFile(workbook, "Material_Data.xlsx");
   };
   
+  //View icon Download row data
+  const handleDownloadExcelRowView = (selectedRow) => {
+    if (!selectedRow) {
+      alert("No row selected.");
+      return;
+    }
+  
+    const DataColumns = [
+      "Doc_ID", "Plant_ID", "Material_ID", "Quantity", "SLoc_ID", "CostCenter_ID",
+      "Movement_ID", "Valuation_Type", "Batch", "Rate_Unit", "Remark", "User_ID",
+      "Approval_Status", "SAP_Transaction_Status", "Created_By", "Created_On"
+    ];
+  
+    const filteredData = [{
+      Doc_ID: selectedRow.Doc_ID || '',
+      Plant_ID: selectedRow.Plant_ID || '',
+      Material_ID: selectedRow.Material_ID || '',
+      Quantity: selectedRow.Quantity || '',
+      SLoc_ID: selectedRow.SLoc_ID || '',
+      CostCenter_ID: selectedRow.CostCenter_ID || '',
+      Movement_ID: selectedRow.Movement_ID || '',
+      Valuation_Type: selectedRow.Valuation_Type || '',
+      Batch: selectedRow.Batch || '',
+      Rate_Unit: selectedRow.Rate_Unit || '',
+      Remark: selectedRow.Remark || '',
+      User_ID: selectedRow.User_ID || '',
+      Approval_Status: selectedRow.Approval_Status || '',
+      SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
+      Created_By: selectedRow.Created_By || '',
+      Created_On: selectedRow.Created_On || ''
+    }];
+  
+    const worksheet = XLSX.utils.json_to_sheet(filteredData, { header: DataColumns });
+  
+    // Apply styling to header
+    DataColumns.forEach((_, index) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+      if (worksheet[cellAddress]) {
+        worksheet[cellAddress].s = {
+          font: { bold: true, color: { rgb: "000000" } },
+          fill: { fgColor: { rgb: "FFFF00" } },
+          alignment: { horizontal: "center" },
+        };
+      }
+    });
+  
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Trn201201Movt_Doc_Row_Data");
+
+    // Use Material_ID or Doc_ID for filename
+    XLSX.writeFile(workbook, `Trn201201Movt_${selectedRow.Doc_ID || 'Row'}.xlsx`);
+
+  };
+  
+  
+  
   // In your component where the rows are displayed:
   const renderRows = () => {
     return data.map((row) => (
@@ -208,6 +264,24 @@ const Stock = () => {
     { field: "Movement_Type", headerName: "Movement Type ", flex: 1 },
     { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
     
+    // {
+    //   field: "actions",
+    //   headerName: "Actions",
+    //   flex: 1,
+    //   sortable: false,
+    //   renderCell: (params) => (
+    //     <div style={{ display: "flex", gap: "10px" }}>
+    //       <IconButton
+    //         size="large"
+    //         color="primary"
+    //         onClick={() => handleOpenViewModal(params.row)} // Pass the row data to the modal handler
+    //       >
+    //         <VisibilityIcon fontSize="small" />
+    //       </IconButton>
+    //     </div>
+    //   ),
+    // },
+
     {
       field: "actions",
       headerName: "Actions",
@@ -216,16 +290,24 @@ const Stock = () => {
       renderCell: (params) => (
         <div style={{ display: "flex", gap: "10px" }}>
           <IconButton
-            size="large"
+            size="small"
             color="primary"
-            onClick={() => handleOpenViewModal(params.row)} // Pass the row data to the modal handler
+            onClick={() => handleOpenViewModal(params.row)}
           >
             <VisibilityIcon fontSize="small" />
+          </IconButton>
+    
+          <IconButton
+            size="small"
+            color="success"
+            onClick={() => handleDownloadExcelRowView(params.row)}
+          >
+            <FaDownload fontSize="small" />
           </IconButton>
         </div>
       ),
     },
-
+    
 
   ];
     
@@ -258,7 +340,7 @@ const Stock = () => {
       setRows(originalRows);
     } else {
       const filteredRows = originalRows.filter((row) =>
-        ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate '].some((key) => {
+        ['Plant_Code', 'Doc_ID', 'Date', 'Qty', 'Movement_Type ','Approval_Status'].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
         })
@@ -266,7 +348,7 @@ const Stock = () => {
       setRows(filteredRows);
     }
   };
-  
+ 
   
     // ✅ Custom Toolbar
       const CustomToolbar = () => (
@@ -557,10 +639,7 @@ const Stock = () => {
         </Box>
       </Modal>
 
-      
-      
-            { /*View modal*/}
-           
+    
     </div>
     
   
