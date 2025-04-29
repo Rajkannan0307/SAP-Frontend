@@ -702,12 +702,25 @@ const Vendor = () => {
           </FormControl>
 
           <TextField
-            label="VendorCode"
-            name="VendorCode"
-            value={VendorCode}
-            onChange={(e) => setVendorCode(e.target.value)}
-            required
-          />
+  label="VendorCode"
+  name="VendorCode"
+  value={VendorCode}
+  type="text"
+  onChange={(e) => {
+    const value = e.target.value;
+    // Remove any non-digit character
+    if (/^\d*$/.test(value)) {
+      setVendorCode(value);
+    }
+  }}
+  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
+    // maxLength: 4,
+
+  }}
+  required
+/>
+
+
           <TextField
             label="VendorName"
             name="VendorName"

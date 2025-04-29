@@ -9,14 +9,14 @@ import ReportIcon from "@mui/icons-material/Report";
 import BusinessIcon from "@mui/icons-material/Business";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
-
+import { FaTableList } from "react-icons/fa6";
 import { FcApproval } from "react-icons/fc";
 import { MdOutlineApproval } from "react-icons/md";
 import { FcFactory } from "react-icons/fc";
-
-
+import { GrStorage } from "react-icons/gr";
+import CardTravelIcon from '@mui/icons-material/CardTravel';
 import AcUnitIcon from '@mui/icons-material/AcUnit'; // ✅ Correct
-
+import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
 const Sidebar = ({ setSidebarOpen }) => {
   const [open, setOpen] = useState(false);
   const [Masters, setMasterOpen] = useState(false);
@@ -140,10 +140,10 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "Material", path: "/home/Material" , icon:<AcUnitIcon style={{ marginRight: "2px", color:"greenyellow"}}/>},
             { name: "Vendor", path: "/home/Vendor" ,icon:<FcFactory style={{ marginRight: "2px",fontSize:"24px" ,width:"25px"}}/>},
             { name: "Customer", path: "/home/Customer" },
-            { name: "Storage Location", path: "/home/StorageLocation" },
-            { name: "Movement Type", path: "/home/Movement_Type" },
-            { name: "MVT List Item", path: "/home/MVT_LIST_ITEM" },
-            { name: "Cost Center", path: "/home/CostCenter" },
+            { name: "Storage Location", path: "/home/StorageLocation" ,icon:<GrStorage style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"bisque"}}/>},
+            { name: "Movement Type", path: "/home/Movement_Type",icon:<DriveFileMoveIcon  style={{ marginRight: "2px",fontSize:"22px" ,width:"25px",color:"turquoise"}}/>},
+            { name: "MVT List Item", path: "/home/MVT_LIST_ITEM",icon:<FaTableList style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"cornflowerblue"}}/> },
+            { name: "Cost Center", path: "/home/CostCenter",icon:<CardTravelIcon style={{ marginRight: "2px",fontSize:"24px" ,width:"25px",color:"darkorange"}}/>},
           ]}
         />
 
