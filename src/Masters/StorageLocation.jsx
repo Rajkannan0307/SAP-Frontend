@@ -38,7 +38,7 @@ const StorageLocation = () => {
  const columns = [
      { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
      { field: "Storage_Code", headerName: "Storage Code", flex: 1 },
-     { field: "SLoc_Name", headerName: "SLoc Name", flex: 1 },
+     { field: "SLoc_Name", headerName: "Storage Location Name", flex: 1 },
     
      {
        field: "ActiveStatus",
@@ -159,7 +159,11 @@ const StorageLocation = () => {
         alert("Please fill in all required fields");
         return;
       }
-    
+     // Step 2: Validate StorageCode (must be exactly 4 digits)
+  if (StorageCode.toString().length !== 4) {
+    alert("Storage Code must be exactly 4 digits");
+    return;
+  }
      
       try {
         // Prepare data to be sent

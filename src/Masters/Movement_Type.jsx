@@ -147,7 +147,11 @@ const Movement_Type = () => {
       alert("Please fill in all required fields");
       return;
     }
-
+   // Step 2: Validate StorageCode (must be exactly 4 digits)
+   if (MovementCode.toString().length !== 3) {
+    alert("Movement Code must be exactly 3 digits");
+    return;
+  }
     try {
       // Prepare data to be sent
       const data = {
