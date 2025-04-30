@@ -292,18 +292,18 @@ const Stock = () => {
           <IconButton
             size="small"
             color="primary"
-            onClick={() => handleOpenViewModal(params.row)}
+            onClick={() => handleDownloadExcelRowView(params.row)}
           >
             <VisibilityIcon fontSize="small" />
           </IconButton>
     
-          <IconButton
+          {/* <IconButton
             size="small"
             color="success"
             onClick={() => handleDownloadExcelRowView(params.row)}
           >
             <FaDownload fontSize="small" />
-          </IconButton>
+          </IconButton> */}
         </div>
       ),
     },
@@ -491,7 +491,7 @@ const Stock = () => {
         rows={rows}
         columns={columns}
         pageSize={5}
-        getRowId={(row) => row.Trn_309_ID} // Ensure Trn_309_ID is unique and exists
+        getRowId={(row) => row.Trn_201_202_ID} // Ensure Trn_309_ID is unique and exists
         rowsPerPageOptions={[5]}
         disableSelectionOnClick
         slots={{ toolbar: CustomToolbar }}
@@ -548,7 +548,7 @@ const Stock = () => {
           >
             <a
               style={{ textDecoration: "none", color: "white" }}
-              href={`${api}/transaction/Template/Trn201,202Movt.xlsx`}
+              href={`${api}/transaction/Template/Template For 202_201.xlsx`}
             >
               {" "}
               <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
