@@ -39,7 +39,7 @@ const Login = () => {
         localStorage.setItem('Active', data.Active_Status);
         localStorage.setItem('DeptId', data.Dept_Id);
         localStorage.setItem('UserName',data.User_Name);
-        
+        localStorage.setItem('UserID',data.User_ID);
         navigate("/home/Home");
       }
       console.log("Login successful", response.data);

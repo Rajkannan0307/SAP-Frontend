@@ -20,8 +20,13 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
-import { getdetails,getAdd,getUpdates,getActiveMovementType } from "../controller/MovementListItem";
-import { MenuItem, InputLabel, FormControl } from '@mui/material';
+import {
+  getdetails,
+  getAdd,
+  getUpdates,
+  getActiveMovementType,
+} from "../controller/MovementListItem";
+import { MenuItem, InputLabel, FormControl } from "@mui/material";
 const MVT_LIST_ITEM = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
@@ -31,70 +36,71 @@ const MVT_LIST_ITEM = () => {
   const [openEditModal, setOpenEditModal] = useState(false);
   const [ActiveStatus, setActiveStatus] = useState(false);
   const [MovementTypeTable, setMovementTypeTable] = useState([]);
-   const [MovementType, setMovementType] = useState([]);
-   const[MovementListCode,setMovementListCode]=useState("");
-   const[MovementListName,setMovementListName]=useState("");
-   const [MovementCode, setMovementCode] = useState("");
- const columns = [
-  { field: "Movement_Code", headerName: "Movement Code", flex: 1 },
-     { field: "Movement_Name", headerName: "Movement Name", flex: 1 },
-     { field: "Movement_List_Code", headerName: "Movement List Code", flex: 1 },
-     { field: "Movement_List_Name", headerName: "Movement List Name", flex: 1 },
-    
-     {
-       field: "ActiveStatus",
-       headerName: "Active Status",
-       flex: 1,
-       renderCell: (params) => {
-         const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
-         return (
-           <FormControlLabel
-             control={
-               <Switch
-                 checked={isActive} // Use the boolean value directly
-                 color="default" // Neutral color for default theme
-                 sx={{
-                   "& .MuiSwitch-track": {
-                     backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                   },
-                   "& .MuiSwitch-thumb": {
-                     backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                   },
-                 }}
-               />
-             }
-           />
-         );
-       },
-     },
-   ];
+const[MovementListID,setMovementListID]=useState("");
+  const [MovementListCode, setMovementListCode] = useState("");
+  const [MovementListName, setMovementListName] = useState("");
+  const [MovementCode, setMovementCode] = useState(""); // ✅ Empty string = controlled and valid
+  const UserID = localStorage.getItem('UserID');
+  const columns = [
+    { field: "Movement_Code", headerName: "Movement Code", flex: 1 },
+    { field: "Movement_Name", headerName: "Movement Name", flex: 1 },
+    { field: "Movement_List_Code", headerName: "Movement List Code", flex: 1 },
+    { field: "Movement_List_Name", headerName: "Movement List Name", flex: 1 },
+
+    {
+      field: "ActiveStatus",
+      headerName: "Active Status",
+      flex: 1,
+      renderCell: (params) => {
+        const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
+        return (
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isActive} // Use the boolean value directly
+                color="default" // Neutral color for default theme
+                sx={{
+                  "& .MuiSwitch-track": {
+                    backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
+                  },
+                  "& .MuiSwitch-thumb": {
+                    backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
+                  },
+                }}
+              />
+            }
+          />
+        );
+      },
+    },
+  ];
   const getData = async () => {
-     try {
-       const response = await getdetails();
-       console.log(response); // Check the structure of response
-       setData(response); // Ensure that this is correctly setting the data
-       setOriginalRows(response); // for reference during search
-       setRows(response);
-     } catch (error) {
-       console.error(error);
-       setData([]); // Handle error by setting empty data
-       setOriginalRows([]); // handle error case
-       setRows([]);
-     }
-   };
+    try {
+      const response = await getdetails();
+      console.log(response); // Check the structure of response
+      setData(response); // Ensure that this is correctly setting the data
+      setOriginalRows(response); // for reference during search
+      setRows(response);
+    } catch (error) {
+      console.error(error);
+      setData([]); // Handle error by setting empty data
+      setOriginalRows([]); // handle error case
+      setRows([]);
+    }
+  };
   useEffect(() => {
     getData();
   }, []);
 
-
   const Get_ActiveMovementType = async () => {
-      try {
-        const response = await getActiveMovementType();
-        setMovementTypeTable(response.data);
-      } catch (error) {
-        console.error("Error updating user:", error);
-      }
-    };
+    try {
+      const response = await getActiveMovementType();
+      setMovementTypeTable(response.data);
+      console.log('response', response.data);
+    } catch (error) {
+      console.error("Error updating user:", error);
+    }
+  };
 
   // ✅ Custom Toolbar
   const CustomToolbar = () => (
@@ -112,7 +118,7 @@ const MVT_LIST_ITEM = () => {
       setRows(originalRows);
     } else {
       const filteredRows = originalRows.filter((row) =>
-        [""].some((key) => {
+        ["Movement_Code","Movement_Name","Movement_List_Code","Movement_List_Name"].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
         })
@@ -133,152 +139,162 @@ const MVT_LIST_ITEM = () => {
   const handleCloseEditModal = () => setOpenEditModal(false);
 
   const handleRowClick = (params) => {
-   
+    setMovementCode(params.row.Movement_Code);
+    setMovementListCode(params.row.Movement_List_Code);
+    setMovementListName(params.row.Movement_List_Name);
+    setMovementListID(params.row.Movt_List_ID);
     setActiveStatus(params.row.Active_Status);
     setOpenEditModal(true); // Open the modal
   };
 
   // ✅ Handle Add User
-    const handleAdd = async () => {
-      console.log("Data being sent to the server:", {
-        // Plant_Id,
-        // Employee_ID,
-        // User_Name,
-        // Dept_Name,
-        // Role_Name,
-        // User_Level,
-        // User_Email,
-        // Password,
-      });
-      console.log("Add button clicked");
-    
-      // Step 1: Validate required fields
-      // if (
-      //   Plant_Id === "" ||
-      //   Employee_ID === "" ||
-      //   User_Name === "" ||
-      //   Dept_Name === "" ||
-      //   Role_Name === "" ||
-      //   User_Level === "" ||
-      //   User_Email === "" ||
-      //   Password === ""
-      // ) {
-      //   alert("Please fill in all required fields");
-      //   return;
-      // }
-    
-     
-      try {
-        // Prepare data to be sent
-        const data = {
-         
-          Active_Status:ActiveStatus, // Make sure this is defined somewhere
-        };
-    
-        // Step 3: Call the API to add the user
-        const response = await getAdd(data); // Ensure getAdd uses a POST request
-    
-        if (response.data.success) {
-          alert("User added successfully!");
-          getData(); // refresh UI (e.g. user list)
-          handleCloseAddModal(); // close the modal
-        } else {
-          alert(response.data.message || "Failed to add user.");
-        }
-      } catch (error) {
-        console.error("Error in adding user:", error);
-    
-        // Step 4: Show error from server (like Employee_ID already exists)
-        if (error.response && error.response.data && error.response.data.message) {
-          alert(error.response.data.message);
-        } else {
-          alert("An error occurred while adding the user.");
-        }
-      }
-    };
+  const handleAdd = async () => {
+    console.log("Data being sent to the server:", {
+      MovementCode,
+      MovementListCode,
+      MovementListName,
+      UserID
+    });
+    console.log("Add button clicked");
 
- const handleUpdate = async () => {
-     const data = {
-       
-       Active_Status: ActiveStatus,
-     };
-     console.log("Data being sent:", data); // Log data to verify it before sending
- 
-     try {
-       const response = await getUpdates(data);
- 
+    // Step 1: Validate required fields
+    if (
+      MovementCode === "" ||
+      MovementListCode === "" ||
+      MovementListName === ""
+    ) {
+      alert("Please fill in all required fields");
+      return;
+    }
+     // Step 2: Validate StorageCode (must be exactly 4 digits)
+  if (MovementListCode.toString().length !== 4) {
+    alert("MovementList Code must be exactly 4 digits");
+    return;
+  }
+
+    try {
+      // Prepare data to be sent
+      const data = {
+        UserID:UserID,
+        Movement_Code: MovementCode,
+        Movement_List_Code: MovementListCode,
+        Movement_List_Name: MovementListName,
+        Active_Status: ActiveStatus, // Make sure this is defined somewhere
+      };
+
+      // Step 3: Call the API to add the user
+      const response = await getAdd(data); // Ensure getAdd uses a POST request
+
+      if (response.data.success) {
+        alert("MovementListItem  added successfully!");
+        getData(); // refresh UI (e.g. user list)
+        handleCloseAddModal(); // close the modal
+      } else {
+        alert(response.data.message || "Failed to add MovementListItem.");
+      }
+    } catch (error) {
+      console.error("Error in adding MovementListItem:", error);
+
+      // Step 4: Show error from server (like Employee_ID already exists)
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        alert(error.response.data.message);
+      } else {
+        alert("An error occurred while adding the MovementListItem.");
+      }
+    }
+  };
+
+  const handleUpdate = async () => {
+    const data = {
+      UserID:UserID,
+      Movt_List_ID:MovementListID,
+      Movement_List_Name:MovementListName,
+      Active_Status: ActiveStatus,
+    };
+    console.log("Data being sent:", data); // Log data to verify it before sending
+
+    try {
+      const response = await getUpdates(data);
+
       // If success
       if (response.data.success) {
-       alert(response.data.message);
-       getData(); // Refresh data
-       handleCloseEditModal(); // Close modal
-     } else {
-       // If success is false, show the backend message
-       alert(response.data.message);
-     }
-   } catch (error) {
-     console.error("Error details:", error.response?.data);
- 
-     if (error.response && error.response.data && error.response.data.message) {
-       alert(error.response.data.message); // Specific error from backend
-     } else {
-       alert("An error occurred while updating the Vendor. Please try again.");
-     }
-   }
- };
+        alert(response.data.message);
+        getData(); // Refresh data
+        handleCloseEditModal(); // Close modal
+      } else {
+        // If success is false, show the backend message
+        alert(response.data.message);
+      }
+    } catch (error) {
+      console.error("Error details:", error.response?.data);
 
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        alert(error.response.data.message); // Specific error from backend
+      } else {
+        alert("An error occurred while updating the Movement Type. Please try again.");
+      }
+    }
+  };
 
   const handleDownloadExcel = () => {
-      if (data.length === 0) {
-        alert("No Data Found");
-        return;
-      }
-  
-      const DataColumns = [
-        "Plant_Code",
-        "EmployeeID",
-        "UserName",
-        "Department",
-        "Role",
-        "UserLevel",
-        "Email",
-        "ActiveStatus",
-      ];
-  
-      const filteredData = data.map((item) => ({
-        Plant_Code: item.Plant_Code,
-       
-  
-        ActiveStatus: item.Active_Status ? "Active" : "Inactive"
-  
-      }));
-  
-      const worksheet = XLSX.utils.json_to_sheet(filteredData, {
-        header: DataColumns,
-      });
-  
-      // Style header row
-      DataColumns.forEach((_, index) => {
-        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-        if (!worksheet[cellAddress]) return;
-        worksheet[cellAddress].s = {
-          font: {
-            bold: true,
-            color: { rgb: "000000" },
-          },
-          fill: {
-            fgColor: { rgb: "FFFF00" },
-          },
-          alignment: {
-            horizontal: "center",
-          },
-        };
-      });
-  
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "User");
-      XLSX.writeFile(workbook, "User_Data.xlsx");
-    };
+    if (data.length === 0) {
+      alert("No Data Found");
+      return;
+    }
+
+    const DataColumns = [
+      "Movement_Code",
+      "Movement_Name",
+      "Movement_List_Code",
+      "Movement_List_Name",
+
+      "ActiveStatus",
+    ];
+
+    const filteredData = data.map((item) => ({
+    
+      Movement_Code: item.Movement_Code,
+      Movement_Name: item.Movement_Name,
+      Movement_List_Code: item.Movement_List_Code,
+      Movement_List_Name: item.Movement_List_Name,
+
+      ActiveStatus: item.Active_Status ? "Active" : "Inactive",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(filteredData, {
+      header: DataColumns,
+    });
+
+    // Style header row
+    DataColumns.forEach((_, index) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+      if (!worksheet[cellAddress]) return;
+      worksheet[cellAddress].s = {
+        font: {
+          bold: true,
+          color: { rgb: "000000" },
+        },
+        fill: {
+          fgColor: { rgb: "FFFF00" },
+        },
+        alignment: {
+          horizontal: "center",
+        },
+      };
+    });
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "MovementListItem");
+    XLSX.writeFile(workbook, "Movement Type Data.xlsx");
+  };
   return (
     <div
       style={{
@@ -441,243 +457,239 @@ const MVT_LIST_ITEM = () => {
           }}
         />
       </div>
-       {/* {Add Model} */}
-            <Modal open={openAddModal} onClose={() => setOpenAddModal(false)}>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  width: 400,
-                  bgcolor: "background.paper",
-                  borderRadius: 2,
-                  boxShadow: 24,
-                  p: 4,
-                  margin: "auto",
-                  marginTop: "10%",
-                  gap: "15px",
-                }}
-              >
-                <h3
-                  style={{
-                    gridColumn: "span 2",
-                    textAlign: "center",
-                    color: "#2e59d9",
-                    textDecoration: "underline",
-                    textDecorationColor: "#88c57a",
-                    textDecorationThickness: "3px",
-                  }}
-                >
-                  Add Movement List Item
-                </h3>
-                
-                <FormControl fullWidth>
+      {/* {Add Model} */}
+      <Modal open={openAddModal} onClose={() => setOpenAddModal(false)}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
+            width: 400,
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            margin: "auto",
+            marginTop: "10%",
+            gap: "15px",
+          }}
+        >
+          <h3
+            style={{
+              gridColumn: "span 2",
+              textAlign: "center",
+              color: "#2e59d9",
+              textDecoration: "underline",
+              textDecorationColor: "#88c57a",
+              textDecorationThickness: "3px",
+            }}
+          >
+            Add Movement List Item
+          </h3>
+          <FormControl fullWidth>
             <InputLabel>Movement Code</InputLabel>
             <Select
               label="Movement Code"
               name="MovementCode"
-              value={MovementCode}
+              value={MovementCode} // fallback to ''
               onChange={(e) => setMovementCode(e.target.value)}
               required
             >
               {MovementTypeTable.map((item, index) => (
-                <MenuItem key={index} value={item.Movement_ID}>{item.Movement_Code}</MenuItem>
+                <MenuItem key={index} value={item.Movement_ID}>
+                  {item.Movement_Code}
+                </MenuItem>
               ))}
             </Select>
           </FormControl>
-           <TextField
-                            label="MovementList Code"
-                            name="MovementList Code"
-                            value={MovementListCode} 
-                           
-                            type="text"
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              // Remove any non-digit character
-                              if (/^\d*$/.test(value)) {
-                                setMovementListCode(value);
-                              }
-                            }}
-                            inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
-                              // maxLength: 4,
-                          
-                            }}
-                            required
-                           
-                          />
-                           <TextField
-                                            label="MovementList Name"
-                                            name="MovementListName"
-                                            value={MovementListName} 
-                                            onChange={(e) => setMovementListName(e.target.value)}
-                                            fullWidth
-                                            
-                                            required
-                                          />
-      
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={ActiveStatus}
-                      onChange={(e) => setActiveStatus(e.target.checked)}
-                      color="success" // Always use 'success' to keep the thumb green when active
-                      sx={{
-                        "& .MuiSwitch-track": {
-                          backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                          backgroundImage: "none !important", // Disable background image
-                        },
-                        "& .MuiSwitch-thumb": {
-                          backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                          borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                        },
-                      }}
-                    />
-                  }
-                  label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-                  labelPlacement="end"
-                  style={{
-                    color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-                    fontWeight: "bold",
-                  }}
-                />
-                <Box
-                  sx={{
-                    gridColumn: "span 2",
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "10px",
-                    marginTop: "15px",
-                  }}
-                >
-                  <Button
-                    variant="contained"
-                    color="error"
-                    onClick={() => handleCloseAddModal(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    style={{ width: "90px" }}
-                    variant="contained"
-                    color="primary"
-                    onClick={handleAdd}
-                  >
-                    Add
-                  </Button>
-                </Box>
-              </Box>
-            </Modal>
-      
-            {/* ✅ Edit Modal */}
-            <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
-              <Box
+          <TextField
+  label="MovementList Code"
+  name="movementListCode"
+  value={MovementListCode}
+  type="text"
+  onChange={(e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) {
+      setMovementListCode(value);
+    }
+  }}
+  inputProps={{
+    inputMode: "numeric",
+    pattern: "[0-9]*",
+    // maxLength: 4, // optional
+  }}
+  required
+/>
+
+          <TextField
+            label="MovementList Name"
+            name="MovementListName"
+            value={MovementListName}
+            onChange={(e) => setMovementListName(e.target.value)}
+            fullWidth
+            required
+          />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={ActiveStatus}
+                onChange={(e) => setActiveStatus(e.target.checked)}
+                color="success" // Always use 'success' to keep the thumb green when active
                 sx={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  width: 400,
-                  bgcolor: "background.paper",
-                  borderRadius: 2,
-                  boxShadow: 24,
-                  p: 4,
-                  margin: "auto",
-                  marginTop: "10%",
-                  gap: "15px",
+                  "& .MuiSwitch-track": {
+                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
+                    backgroundImage: "none !important", // Disable background image
+                  },
+                  "& .MuiSwitch-thumb": {
+                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
+                    borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
+                  },
                 }}
-              >
-                <h3
-                  style={{
-                    gridColumn: "span 2",
-                    textAlign: "center",
-                    color: "#2e59d9",
-                    textDecoration: "underline",
-                    textDecorationColor: "#88c57a",
-                    textDecorationThickness: "3px",
-                  }}
-                >
-                  Edit Movement List Item
-                </h3>
-                <TextField
-                  label="Movement Type"
-                  name="MovementType"
-                  value={MovementType} // Use the current value of PlantCode
-                  fullWidth
-                  InputProps={{
-                    readOnly: true, // Make it read-only
-                  }}
-                  required
-                />
-      
-        <TextField
-                        label="MovementList Code"
-                        name="MovementList Code"
-                        value={MovementListCode} // Use the current value of PlantCode
-                        fullWidth
-                        InputProps={{
-                          readOnly: true, // Make it read-only
-                        }}
-                        required
-                      />
-                      <TextField
-                        label="MovementList Name"
-                        name="MovementListName"
-                        value={MovementListName} 
-                        onChange={(e) => setMovementListName(e.target.value)}
-                        fullWidth
-                        
-                        required
-                      />
-            
-      
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={ActiveStatus}
-                      onChange={(e) => setActiveStatus(e.target.checked)}
-                      color="success" // Always use 'success' to keep the thumb green when active
-                      sx={{
-                        "& .MuiSwitch-track": {
-                          backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                          backgroundImage: "none !important", // Disable background image
-                        },
-                        "& .MuiSwitch-thumb": {
-                          backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                          borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                        },
-                      }}
-                    />
-                  }
-                  label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-                  labelPlacement="end"
-                  style={{
-                    color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-                    fontWeight: "bold",
-                  }}
-                />
-      
-                <Box
-                  sx={{
-                    gridColumn: "span 2",
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "10px",
-                    marginTop: "15px",
-                  }}
-                >
-                  <Button
-                    variant="contained"
-                    color="error"
-                    onClick={handleCloseEditModal}
-                  >
-                    Cancel
-                  </Button>
-                  <Button variant="contained" color="primary" onClick={handleUpdate}>
-                    Update
-                  </Button>
-                </Box>
-              </Box>
-            </Modal>
+              />
+            }
+            label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
+            labelPlacement="end"
+            style={{
+              color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
+              fontWeight: "bold",
+            }}
+          />
+          <Box
+            sx={{
+              gridColumn: "span 2",
+              display: "flex",
+              justifyContent: "center",
+              gap: "10px",
+              marginTop: "15px",
+            }}
+          >
+            <Button
+              variant="contained"
+              color="error"
+              onClick={() => handleCloseAddModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              style={{ width: "90px" }}
+              variant="contained"
+              color="primary"
+              onClick={handleAdd}
+            >
+              Add
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
+
+      {/* ✅ Edit Modal */}
+      <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
+            width: 400,
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            margin: "auto",
+            marginTop: "10%",
+            gap: "15px",
+          }}
+        >
+          <h3
+            style={{
+              gridColumn: "span 2",
+              textAlign: "center",
+              color: "#2e59d9",
+              textDecoration: "underline",
+              textDecorationColor: "#88c57a",
+              textDecorationThickness: "3px",
+            }}
+          >
+            Edit Movement List Item
+          </h3>
+          <TextField
+            label="Movement Code"
+            name="MovementCode"
+            value={MovementCode} // Use the current value of PlantCode
+            fullWidth
+            InputProps={{
+              readOnly: true, // Make it read-only
+            }}
+            required
+          />
+
+          <TextField
+            label="MovementList Code"
+            name="MovementList Code"
+            value={MovementListCode} // Use the current value of PlantCode
+            fullWidth
+            InputProps={{
+              readOnly: true, // Make it read-only
+            }}
+            required
+          />
+          <TextField
+            label="MovementList Name"
+            name="MovementListName"
+            value={MovementListName}
+            onChange={(e) => setMovementListName(e.target.value)}
+            fullWidth
+            required
+          />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={ActiveStatus}
+                onChange={(e) => setActiveStatus(e.target.checked)}
+                color="success" // Always use 'success' to keep the thumb green when active
+                sx={{
+                  "& .MuiSwitch-track": {
+                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
+                    backgroundImage: "none !important", // Disable background image
+                  },
+                  "& .MuiSwitch-thumb": {
+                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
+                    borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
+                  },
+                }}
+              />
+            }
+            label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
+            labelPlacement="end"
+            style={{
+              color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
+              fontWeight: "bold",
+            }}
+          />
+
+          <Box
+            sx={{
+              gridColumn: "span 2",
+              display: "flex",
+              justifyContent: "center",
+              gap: "10px",
+              marginTop: "15px",
+            }}
+          >
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleCloseEditModal}
+            >
+              Cancel
+            </Button>
+            <Button variant="contained" color="primary" onClick={handleUpdate}>
+              Update
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
     </div>
   );
 };
-
 
 export default MVT_LIST_ITEM;

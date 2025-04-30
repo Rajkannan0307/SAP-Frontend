@@ -38,7 +38,7 @@ const Material = () => {
   const [data, setData] = useState([]);
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
-  
+  const UserID = localStorage.getItem('UserID');
 
  
   // const [newRecord] = useState([]);
@@ -202,7 +202,7 @@ const Material = () => {
         getData();
       } catch (error) {
         if (error.response && error.response.status === 400) {
-          alert(error.response.data.message)
+          alert(error.response.data.message);
         }
       }
     }
@@ -356,7 +356,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
   // ✅ Handle Add Material
   const handleAdd = async () => {
     console.log("Data being sent to the server:", {
-      PlantCode, MaterialType, MaterialCode, Description, Rate, ActiveStatus
+      PlantCode, MaterialType, MaterialCode, Description, Rate, ActiveStatus,UserID
     });
     console.log("Add button clicked")
     if (PlantCode === '' || MaterialType === '' || MaterialCode === '' || Description === '' || Rate === '') {
@@ -366,6 +366,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
 
     try {
       const data = {
+        UserID:UserID,
         Plant_Code: PlantCode,
         Material_Type: MaterialType,
         Material_Code: MaterialCode,
@@ -395,6 +396,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
   const handleUpdate = async () => {
     try {
       const data = {
+        UserID:UserID,
         Material_ID: MaterialID,
         Description: Description,
         Rate: Rate,

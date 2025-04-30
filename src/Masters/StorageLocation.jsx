@@ -22,6 +22,7 @@ import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
 import { getdetails,getAdd,getUpdates,getPlants } from "../controller/StorageLocationapiservice";
 import { MenuItem, InputLabel, FormControl } from '@mui/material';
+const UserID = localStorage.getItem('UserID');
 const StorageLocation = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
@@ -144,7 +145,7 @@ const StorageLocation = () => {
     const handleAdd = async () => {
       console.log("Data being sent to the server:", {
         PlantCode,
-         StorageCode,StorageName
+         StorageCode,StorageName,UserID
        
       });
       console.log("Add button clicked");
@@ -168,6 +169,7 @@ const StorageLocation = () => {
       try {
         // Prepare data to be sent
         const data = {
+          UserID:UserID,
           Plant_Code: PlantCode,
           Storage_Code:StorageCode,
           SLoc_Name:StorageName,
@@ -198,6 +200,7 @@ const StorageLocation = () => {
 
  const handleUpdate = async () => {
      const data = {
+      UserID:UserID,
      SLoc_ID: SLoc_ID,
      SLoc_Name: StorageName,
        Active_Status: ActiveStatus,
@@ -273,7 +276,7 @@ const StorageLocation = () => {
       });
   
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "User");
+      XLSX.utils.book_append_sheet(workbook, worksheet, "StorageLocation");
       XLSX.writeFile(workbook, "StorageLocation_Data.xlsx");
     };
   return (

@@ -32,8 +32,11 @@ const CostCenter = () => {
   const [ActiveStatus, setActiveStatus] = useState(false);
   const [PlantTable, setPlantTable] = useState([]);
    const [PlantCode, setPlantCode] = useState([]);
+   const[CostCenterID,setCostCenterID]=useState("");
    const[CostCenterCode,setCostCenterCode]=useState("");
    const[CostCenterName,setCostCenterName]=useState("");
+   const Username = localStorage.getItem('UserName');
+   const UserID = localStorage.getItem('UserID');
  const columns = [
      { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
      { field: "CostCenter_Code", headerName: "CostCenter Code", flex: 1 },
@@ -82,6 +85,7 @@ const CostCenter = () => {
    };
   useEffect(() => {
     getData();
+    
   }, []);
 
 
@@ -110,7 +114,7 @@ const CostCenter = () => {
       setRows(originalRows);
     } else {
       const filteredRows = originalRows.filter((row) =>
-        [""].some((key) => {
+        ["Plant_Code","CostCenter_Code","CostCenter_Name",].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
         })
@@ -120,7 +124,9 @@ const CostCenter = () => {
   };
   // ✅ Handle Add Modal
   const handleOpenAddModal = (item) => {
-   
+     setCostCenterCode("");
+     setCostCenterName("");
+     setPlantCode("");
     setActiveStatus(true);
     setOpenAddModal(true);
     get_Plant();
@@ -129,7 +135,10 @@ const CostCenter = () => {
   const handleCloseEditModal = () => setOpenEditModal(false);
 
   const handleRowClick = (params) => {
-   
+    setPlantCode(params.row.Plant_Code);
+    setCostCenterCode(params.row.CostCenter_Code);
+    setCostCenterName(params.row.CostCenter_Name);
+   setCostCenterID(params.row.CostCenter_ID)
     setActiveStatus(params.row.Active_Status);
     setOpenEditModal(true); // Open the modal
   };
@@ -137,37 +146,36 @@ const CostCenter = () => {
   // ✅ Handle Add User
     const handleAdd = async () => {
       console.log("Data being sent to the server:", {
-        // Plant_Id,
-        // Employee_ID,
-        // User_Name,
-        // Dept_Name,
-        // Role_Name,
-        // User_Level,
-        // User_Email,
-        // Password,
+        PlantCode,
+        CostCenterCode,
+        CostCenterName,
+        UserID,
       });
       console.log("Add button clicked");
     
-      // Step 1: Validate required fields
-      // if (
-      //   Plant_Id === "" ||
-      //   Employee_ID === "" ||
-      //   User_Name === "" ||
-      //   Dept_Name === "" ||
-      //   Role_Name === "" ||
-      //   User_Level === "" ||
-      //   User_Email === "" ||
-      //   Password === ""
-      // ) {
-      //   alert("Please fill in all required fields");
-      //   return;
-      // }
-    
+     // Step 1: Validate required fields
+      if (
+        PlantCode === "" ||
+        CostCenterCode === "" ||
+        CostCenterName === "" 
+      
+      ) {
+        alert("Please fill in all required fields");
+        return;
+      }
+    // Step 2: Validate StorageCode (must be exactly 4 digits)
+  if (CostCenterCode.toString().length !== 7) {
+    alert("CostCenter Code must be exactly 7 digits");
+    return;
+  }
      
       try {
         // Prepare data to be sent
         const data = {
-         
+          UserID:UserID,
+          Plant_Code:PlantCode,
+          CostCenter_Code:CostCenterCode,
+          CostCenter_Name:CostCenterName,
           Active_Status:ActiveStatus, // Make sure this is defined somewhere
         };
     
@@ -175,27 +183,29 @@ const CostCenter = () => {
         const response = await getAdd(data); // Ensure getAdd uses a POST request
     
         if (response.data.success) {
-          alert("User added successfully!");
+          alert("CostCenter added successfully!");
           getData(); // refresh UI (e.g. user list)
           handleCloseAddModal(); // close the modal
         } else {
-          alert(response.data.message || "Failed to add user.");
+          alert(response.data.message || "Failed to add CostCenter.");
         }
       } catch (error) {
-        console.error("Error in adding user:", error);
+        console.error("Error in adding CostCenter:", error);
     
         // Step 4: Show error from server (like Employee_ID already exists)
         if (error.response && error.response.data && error.response.data.message) {
           alert(error.response.data.message);
         } else {
-          alert("An error occurred while adding the user.");
+          alert("An error occurred while adding the CostCenter.");
         }
       }
     };
 
  const handleUpdate = async () => {
      const data = {
-       
+      UserID:UserID,
+      CostCenter_ID:CostCenterID,
+       CostCenter_Name:CostCenterName,
        Active_Status: ActiveStatus,
      };
      console.log("Data being sent:", data); // Log data to verify it before sending
@@ -218,7 +228,7 @@ const CostCenter = () => {
      if (error.response && error.response.data && error.response.data.message) {
        alert(error.response.data.message); // Specific error from backend
      } else {
-       alert("An error occurred while updating the Vendor. Please try again.");
+       alert("An error occurred while updating the CostCenter. Please try again.");
      }
    }
  };
@@ -232,18 +242,16 @@ const CostCenter = () => {
   
       const DataColumns = [
         "Plant_Code",
-        "EmployeeID",
-        "UserName",
-        "Department",
-        "Role",
-        "UserLevel",
-        "Email",
+        "CostCenter_Code",
+        "CostCenter_Name",
+       
         "ActiveStatus",
       ];
   
       const filteredData = data.map((item) => ({
         Plant_Code: item.Plant_Code,
-       
+        CostCenter_Code:item.CostCenter_Code,
+        CostCenter_Name:item.CostCenter_Name,
   
         ActiveStatus: item.Active_Status ? "Active" : "Inactive"
   
@@ -272,8 +280,8 @@ const CostCenter = () => {
       });
   
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "User");
-      XLSX.writeFile(workbook, "User_Data.xlsx");
+      XLSX.utils.book_append_sheet(workbook, worksheet, "CostCenter");
+      XLSX.writeFile(workbook, "CostCenterData.xlsx");
     };
   return (
     <div

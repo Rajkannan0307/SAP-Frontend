@@ -32,6 +32,7 @@ const Role = () => {
       const [ActiveStatus, setActiveStatus] = useState(false);
       const [Role_Name, setRoleName] = useState("");
       const [Role_ID, setRoleID] = useState("");
+      const UserID = localStorage.getItem('UserID');
        const columns = [
           
           { field: "Role_Name", headerName: "Role", flex: 1,width:"40%" },
@@ -126,7 +127,7 @@ const Role = () => {
     console.log("Data being sent to the server:", {
      
       Role_Name,
-     
+      UserID,
     });
     console.log("Add button clicked");
   
@@ -144,7 +145,7 @@ const Role = () => {
     try {
       // Prepare data to be sent
       const data = {
-        
+        UserID:UserID,
         Role_Name:Role_Name,
         
         Active_Status:ActiveStatus, // Make sure this is defined somewhere
@@ -177,7 +178,7 @@ const Role = () => {
        const data = {
         Role_ID:Role_ID,
          Role_Name: Role_Name,
-        
+         UserID:UserID,
          Active_Status: ActiveStatus,
        };
        console.log("Data being sent:", data); // Log data to verify it before sending

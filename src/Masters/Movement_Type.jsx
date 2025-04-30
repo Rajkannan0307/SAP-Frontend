@@ -38,6 +38,8 @@ const Movement_Type = () => {
   const [MovementID, setMovementID] = useState("");
   const [MovementName, setMovementName] = useState("");
   const [MovementCode, setMovementCode] = useState("");
+  const Username = localStorage.getItem('UserName');
+  const UserID = localStorage.getItem('UserID');
   const columns = [
     { field: "Movement_Code", headerName: "Movement Code", flex: 1 },
     { field: "Movement_Name", headerName: "Movement Name", flex: 1 },
@@ -134,7 +136,7 @@ const Movement_Type = () => {
   // ✅ Handle Add User
   const handleAdd = async () => {
     console.log("Data being sent to the server:", {
-      MovementName,MovementCode
+      MovementName,MovementCode,UserID
     });
     console.log("Add button clicked");
 
@@ -155,6 +157,7 @@ const Movement_Type = () => {
     try {
       // Prepare data to be sent
       const data = {
+        UserID:UserID,
         Movement_Code:MovementCode,
         Movement_Name:MovementName,
         Active_Status: ActiveStatus, // Make sure this is defined somewhere
@@ -188,6 +191,7 @@ const Movement_Type = () => {
 
   const handleUpdate = async () => {
     const data = {
+      UserID:UserID,
       Movement_ID:MovementID,
       Movement_Name:MovementName,
       Active_Status: ActiveStatus,
@@ -260,7 +264,7 @@ const Movement_Type = () => {
     });
 
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "User");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "MovementType");
     XLSX.writeFile(workbook, "Movement Type_Data.xlsx");
   };
   return (

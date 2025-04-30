@@ -51,7 +51,7 @@ const UserMaster = () => {
   const [Dept_Name, setDeptName] = useState([]);
   const [Role_Name, setRoleName] = useState("");
   const [Password, setPassword] = useState("");
-
+  const UserID = localStorage.getItem('UserID');
   const columns = [
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
     { field: "Employee_ID", headerName: "Employee ID", flex: 1 },
@@ -185,6 +185,7 @@ const UserMaster = () => {
       User_Level,
       User_Email,
       Password,
+      UserID,
     });
     console.log("Add button clicked");
   
@@ -217,6 +218,7 @@ const UserMaster = () => {
     try {
       // Prepare data to be sent
       const data = {
+        UserID:UserID,
         Plant_ID: Plant_Id,
         Employee_ID:Employee_ID,
         User_Name:User_Name,
@@ -262,6 +264,7 @@ const UserMaster = () => {
       User_Email: User_Email,
       Password: Password,
       Active_Status: ActiveStatus,
+      UserID:UserID,
     };
     console.log("Data being sent:", data); // Log data to verify it before sending
 

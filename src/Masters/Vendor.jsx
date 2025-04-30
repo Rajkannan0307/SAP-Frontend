@@ -49,6 +49,7 @@ const Vendor = () => {
   const [PlantCode, setPlantCode] = useState([]);
   const [PlantTable, setPlantTable] = useState([]);
   const Username = localStorage.getItem('UserName');
+  const UserID = localStorage.getItem('UserID');
   // const [newRecord] = useState([]);
   // const [updateRecord] = useState([]);
   // const [errRecord] = useState([]);
@@ -117,6 +118,7 @@ const Vendor = () => {
   useEffect(() => {
     getData();
      console.log('username', Username)
+     console.log('UserID', UserID)
   }, []);
   const get_Plant = async () => {
     try {
@@ -164,9 +166,10 @@ const Vendor = () => {
         const formData = new FormData();
         console.log("file", uploadedFile);
         formData.append("User_Add", uploadedFile);
+        formData.append("UserID", UserID); 
         const response = await VendorMaster(formData);
         console.log("response", response.data);
-        alert(response.data.message);
+       alert(response.data.message);
         // console.log('response', response.data)
         if (
           response.data.NewRecord.length > 0 ||
@@ -359,7 +362,7 @@ const Vendor = () => {
   // ✅ Handle Add Material
   const handleAdd = async () => {
     console.log("Data being sent to the server:", {
-      ActiveStatus,
+      ActiveStatus,UserID,PlantCode,VendorCode,VendorName,VendorAddress
     });
     console.log("Add button clicked");
     if (PlantCode === '' || VendorCode === '' || VendorName === '' || VendorAddress === '' ) {
@@ -369,6 +372,7 @@ const Vendor = () => {
 
     try {
       const data = {
+        UserID:UserID,
         Plant_Code:PlantCode,
         Vendor_Code:VendorCode,
         Vendor_Name:VendorName,
@@ -398,6 +402,7 @@ const Vendor = () => {
   const handleUpdate = async () => {
     try {
       const data = {
+        UserID:UserID,
         Vendor_ID: VendorID,
         Plant_Code: PlantCode,
         Vendor_Code: VendorCode,
