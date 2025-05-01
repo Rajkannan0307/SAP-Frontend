@@ -192,6 +192,7 @@ const Material = () => {
         const formData = new FormData();
         console.log('file', uploadedFile)
         formData.append("User_Add", uploadedFile);
+        formData.append("UserID", UserID); 
         const response = await MaterialMaster(formData)
         console.log('response', response.data)
         alert(response.data.message)
