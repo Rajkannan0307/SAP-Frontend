@@ -21,18 +21,16 @@ import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
 import { MenuItem, InputLabel, FormControl } from "@mui/material";
-import { FaDownload } from "react-icons/fa";
-import { deepPurple } from "@mui/material/colors";
-import { api } from "../controller/constants";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+
+
 import {
   getAdd,
   getUpdates,
   getdetails,
-  getPlants,
-} from "../controller/CustomerMasterapiservice";
-import { CustomerMaster } from "../controller/CustomerMasterapiservice";
-const Customer = () => {
+  getCompany,
+} from "../controller/BusinessDivisionMasterapiservice";
+
+const BusinessDivision = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
   const [originalRows, setOriginalRows] = useState([]);
@@ -46,22 +44,22 @@ const Customer = () => {
   const [uploadStatus, setUploadStatus] = useState(""); // Track upload status
   const [uploadedFileData, setUploadedFileData] = useState(null);
   const [ActiveStatus, setActiveStatus] = useState(false);
-  const [PlantCode, setPlantCode] = useState([]);
-  const [PlantTable, setPlantTable] = useState([]);
+  const [CompanyCode, setCompanyCode] = useState([]);
+  const [CompanyTable, setCompanyTable] = useState([]);
   const Username = localStorage.getItem('UserName');
   const UserID = localStorage.getItem('UserID');
   // const [newRecord] = useState([]);
   // const [updateRecord] = useState([]);
   // const [errRecord] = useState([]);
-  const [CustomerCode, setCustomerCode] = useState("");
-  const [CustomerID, setCustomerID] = useState("");
-  const [CustomerName, setCustomerName] = useState("");
-  const [CustomerAddress, setCustomerAddress] = useState("");
+  const [ Business_DivisionCode, setBusiness_DivisionCode] = useState("");
+  const [ Business_DivisionID, setBusiness_DivisionID] = useState("");
+  const [ Business_DivisionName, setBusiness_DivisionName] = useState("");
+  const [ Business_DivisionAddress, setBusiness_DivisionAddress] = useState("");
   const columns = [
-    { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
-    { field: "Customer_Code", headerName: "Customer Code ", flex: 1 },
-    { field: "Customer_Name", headerName: "Customer Name ", flex: 1 },
-    { field: "Customer_Address", headerName: "Customer Address", flex: 2 },
+    { field: "Company_Code", headerName: "Company Code", flex: 1 },
+    { field: " Business_Division_Code", headerName: " Business Division Code ", flex: 1 },
+    { field: " Business_Division_Name", headerName: " Business Division Name ", flex: 1 },
+    { field: " Business_Division_Address", headerName: " Business Division Address", flex: 2 },
 
     {
       field: "ActiveStatus",
@@ -120,10 +118,10 @@ const Customer = () => {
      console.log('username', Username)
      console.log('UserID', UserID)
   }, []);
-  const get_Plant = async () => {
+  const get_Company = async () => {
     try {
-      const response = await getPlants();
-      setPlantTable(response.data);
+      const response = await getCompany();
+      setCompanyTable(response.data);
     } catch (error) {
       console.error("Error updating user:", error);
     }
@@ -131,11 +129,11 @@ const Customer = () => {
 
   // ✅ Handle Add Modal
   const handleOpenAddModal = (item) => {
-    get_Plant();
-    setPlantCode("");
-    setCustomerCode("");
-    setCustomerName("");
-    setCustomerAddress("");
+    get_Company();
+    setCompanyCode("");
+    setBusiness_DivisionCode("");
+    setBusiness_DivisionName("");
+    setBusiness_DivisionAddress("");
     setActiveStatus(true);
     setOpenAddModal(true);
   };
@@ -153,187 +151,20 @@ const Customer = () => {
     setIsUploading(false);
   };
 
-  const handleFileUpload = (event) => {
-    setUploadedFile(event.target.files[0]);
-  };
+ 
 
-  const handleUploadData = async () => {
-    if (!uploadedFile) {
-      alert("Please select a file first.");
-      return;
-    } else {
-      try {
-        const formData = new FormData();
-        console.log("file", uploadedFile);
-        formData.append("User_Add", uploadedFile);
-        formData.append("UserID", UserID); 
-        const response = await CustomerMaster(formData);
-        console.log("response", response.data);
-       alert(response.data.message);
-        // console.log('response', response.data)
-        if (
-          response.data.NewRecord.length > 0 ||
-          response.data.UpdatedData.length > 0 ||
-          response.data.ErrorRecords.length > 0
-        ) {
-          downloadExcel(
-            response.data.NewRecord,
-            response.data.UpdatedData,
-            response.data.ErrorRecords
-          );
-        }
-        getData();
-      } catch (error) {
-        if (error.response && error.response.status === 400) {
-          alert(error.response.data.message);
-        }
-      }
-    }
-    handleCloseUploadModal();
-  };
-
-  const downloadExcel = (newRecord, updateRecord, errRecord) => {
-    const wb = XLSX.utils.book_new();
-
-    const newRecordsColumns = [
-      "Plant_Code",
-      "Customer_Code",
-      "Customer_Name",
-      "Customer_Address",
-      "ActiveStatus",
-      "Status",
-    ];
-    const UpdatedColumns = [
-      "Plant_Code",
-      "Customer_Code",
-      "Customer_Name",
-      "Customer_Address",
-      "ActiveStatus",
-      "Status",
-    ];
-    const ErrorColumns = [
-      "Plant_Code",
-      "Customer_Code",
-      "Customer_Name",
-      "Customer_Address",
-      
-      "ActiveStatus",
-      "PlantCode_Validation",
-       
-    ];
-
-    const filteredNewData = newRecord.map((item) => ({
-      Plant_Code: item.Plant_Code,
-      Customer_Code: item.Customer_Code,
-      Customer_Name: item.Customer_Name,
-      Customer_Address: item.Customer_Address,
-      ActiveStatus: item.Active_Status,
-      Status: item.Status,
-    }));
-
-    const filteredUpdate = updateRecord.map((item) => ({
-      Plant_Code: item.Plant_Code,
-      Customer_Code: item.Customer_Code,
-      Customer_Name: item.Customer_Name,
-      Customer_Address: item.Customer_Address,
-      ActiveStatus: item.Active_Status,
-      Status: item.Status,
-    }));
-
-    const filteredError = errRecord.map((item) => ({
-      Plant_Code: item.Plant_Code,
-      Customer_Code: item.Customer_Code,
-      Customer_Name: item.Customer_Name,
-      Customer_Address: item.Customer_Address,
-      ActiveStatus: item.Active_Status,
-      PlantCode_Validation: item.Plant_Val,
-      
-    }));
-
-    // 🔹 Helper to style header cells
-    const styleHeaders = (worksheet, columns) => {
-      columns.forEach((_, index) => {
-        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-        if (worksheet[cellAddress]) {
-          worksheet[cellAddress].s = {
-            font: { bold: true, color: { rgb: "000000" } },
-            fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
-            alignment: { horizontal: "center" },
-          };
-        }
-      });
-    };
-
-    // 🔴 Style red text for validation columns only
-    const styleValidationColumns = (worksheet, columns, dataLength) => {
-      const validationCols = [
-        "PlantCode_Validation",
-        
-      ];
-
-      for (let row = 1; row <= dataLength; row++) {
-        validationCols.forEach((colName) => {
-          const colIdx = columns.indexOf(colName);
-          if (colIdx === -1) return;
-
-          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-          const cell = worksheet[cellAddress];
-
-          if (cell && typeof cell.v === "string") {
-            const value = cell.v.trim().toLowerCase();
-
-            // Apply green if value is "valid", otherwise red
-            cell.s = {
-              font: {
-                color: { rgb: value === "valid" ? "2e7d32" : "FF0000" }, // green or red
-              },
-            };
-          }
-        });
-      }
-    };
-
-    // 📄 New Records Sheet
-    if (filteredNewData.length === 0) filteredNewData.push({});
-    const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, {
-      header: newRecordsColumns,
-    });
-    styleHeaders(wsNewRecords, newRecordsColumns);
-    XLSX.utils.book_append_sheet(wb, wsNewRecords, "New Records");
-
-    // 📄 Updated Records Sheet
-    if (filteredUpdate.length === 0) filteredUpdate.push({});
-    const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, {
-      header: UpdatedColumns,
-    });
-    styleHeaders(wsUpdated, UpdatedColumns);
-    XLSX.utils.book_append_sheet(wb, wsUpdated, "Updated Records");
-
-    // 📄 Error Records Sheet
-    if (filteredError.length === 0) filteredError.push({});
-    const wsError = XLSX.utils.json_to_sheet(filteredError, {
-      header: ErrorColumns,
-    });
-    styleHeaders(wsError, ErrorColumns);
-    styleValidationColumns(wsError, ErrorColumns, filteredError.length);
-    XLSX.utils.book_append_sheet(wb, wsError, "Error Records");
-
-    // 📦 Export the Excel file
-    const fileName = "Customer Data Upload Log.xlsx";
-    XLSX.writeFile(wb, fileName);
-  };
 
   // ✅ Handle Row Click for Edit
 
   const handleRowClick = (params) => {
-    setCustomerID(params.row.Customer_ID);
-    setCustomerCode(params.row.Customer_Code);
-    setPlantCode(params.row.Plant_Code);
-    setCustomerName(params.row.Customer_Name);
-    setCustomerAddress(params.row.Customer_Address);
+    setBusiness_DivisionID(params.row.Business_Division_ID);
+    setBusiness_DivisionCode(params.row.Business_Division_Code);
+    setCompanyCode(params.row.Com_Code);
+    setBusiness_DivisionName(params.row.Business_Division_Name);
+    setBusiness_DivisionAddress(params.row.Business_Division_Address);
     setActiveStatus(params.row.Active_Status);
     setOpenEditModal(true); // Open the modal
-    // get_Plant();
+    // get_Company();
   };
 
   // ✅ Search Functionality
@@ -345,10 +176,10 @@ const Customer = () => {
     } else {
       const filteredRows = originalRows.filter((row) =>
         [
-          "Plant_Code",
-          "Customer_Code",
-          "Customer_Name",
-          "Customer_Address",
+          "Company_Code",
+          " Business_Division_Code",
+          " Business_Division_Name",
+          " Business_Division_Address",
           
         ].some((key) => {
           const value = row[key];
@@ -362,10 +193,10 @@ const Customer = () => {
   // ✅ Handle Add Material
   const handleAdd = async () => {
     console.log("Data being sent to the server:", {
-      ActiveStatus,UserID,PlantCode,CustomerCode,CustomerName,CustomerAddress
+      ActiveStatus,UserID,CompanyCode, Business_DivisionCode, Business_DivisionName, Business_DivisionAddress
     });
     console.log("Add button clicked");
-    if (PlantCode === '' || CustomerCode === '' || CustomerName === '' || CustomerAddress === '' ) {
+    if (CompanyCode === '' ||  Business_DivisionCode === '' ||  Business_DivisionName === '' ||  Business_DivisionAddress === '' ) {
       alert("Please fill in all required fields");
       return;  // Exit the function if validation fails
     }
@@ -373,28 +204,28 @@ const Customer = () => {
     try {
       const data = {
         UserID:UserID,
-        Plant_Code:PlantCode,
-        Customer_Code:CustomerCode,
-        Customer_Name:CustomerName,
-        Customer_Address:CustomerAddress,
+        Company_Code:CompanyCode,
+         Business_Division_Code: Business_DivisionCode,
+         Business_Division_Name: Business_DivisionName,
+         Business_Division_Address: Business_DivisionAddress,
         Active_Status: ActiveStatus,
       };
       const response = await getAdd(data);
       if (response.data.success) {
-        alert(" Customer added successfully!");
+        alert("  Business_Division added successfully!");
         getData(); // refresh UI (e.g. user list)
         handleCloseAddModal(); // close the modal
       } else {
-        alert(response.data.message || "Failed to Customer user.");
+        alert(response.data.message || "Failed to  Business_Division user.");
       }
     } catch (error) {
-      console.error("Error in adding Customer:", error);
+      console.error("Error in adding  Business_Division:", error);
   
       // Step 4: Show error from server (like Employee_ID already exists)
       if (error.response && error.response.data && error.response.data.message) {
         alert(error.response.data.message);
       } else {
-        alert("An error occurred while adding the Customer.");
+        alert("An error occurred while adding the  Business_Division.");
       }
     }
   };
@@ -403,11 +234,11 @@ const Customer = () => {
     try {
       const data = {
         UserID:UserID,
-        Customer_ID: CustomerID,
-        Plant_Code: PlantCode,
-        Customer_Code: CustomerCode,
-        Customer_Name: CustomerName,
-        Customer_Address: CustomerAddress,
+         Business_Division_ID:  Business_DivisionID,
+        Company_Code: CompanyCode,
+         Business_Division_Code:  Business_DivisionCode,
+         Business_Division_Name:  Business_DivisionName,
+         Business_Division_Address:  Business_DivisionAddress,
         Active_Status: ActiveStatus,
       };
   
@@ -430,7 +261,7 @@ const Customer = () => {
       if (error.response && error.response.data && error.response.data.message) {
         alert(error.response.data.message); // Specific error from backend
       } else {
-        alert("An error occurred while updating the Customer. Please try again.");
+        alert("An error occurred while updating the  Business_Division. Please try again.");
       }
     }
   };
@@ -443,19 +274,19 @@ const Customer = () => {
     }
 
     const DataColumns = [
-      "Plant_Code",
-      "Customer_Code",
-      "Customer_Name",
-      "Customer_Address",
+      "Company_Code",
+      " Business_Division_Code",
+      " Business_Division_Name",
+      " Business_Division_Address",
       
       "ActiveStatus",
     ];
 
     const filteredData = data.map((item) => ({
-      Plant_Code: item.Plant_Code,
-      Customer_Code: item.Customer_Code,
-      Customer_Name: item.Customer_Name,
-      Customer_Address: item.Customer_Address,
+      Company_Code: item.Company_Code,
+       Business_Division_Code: item. Business_Division_Code,
+       Business_Division_Name: item. Business_Division_Name,
+       Business_Division_Address: item. Business_Division_Address,
       ActiveStatus: item.Active_Status ? "Active" : "Inactive"
     }));
 
@@ -482,8 +313,8 @@ const Customer = () => {
     });
 
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Customer");
-    XLSX.writeFile(workbook, "Customer_Data.xlsx");
+    XLSX.utils.book_append_sheet(workbook, worksheet, " Business_Division");
+    XLSX.writeFile(workbook, " Business_Division_Data.xlsx");
   };
 
   return (
@@ -516,7 +347,7 @@ const Customer = () => {
             marginBottom: -7,
           }}
         >
-          Customer Master
+           Business Division Master
         </h2>
       </div>
 
@@ -569,19 +400,8 @@ const Customer = () => {
 
         {/* Icons */}
         <div style={{ display: "flex", gap: "10px" }}>
-          {/* Upload Button */}
-          <IconButton
-            onClick={handleOpenUploadModal}
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#FF6699",
-              color: "white",
-              width: "40px",
-              height: "40px",
-            }}
-          >
-            <CloudUploadIcon />
-          </IconButton>
+          
+          
 
           {/* Download Button */}
           <IconButton
@@ -628,7 +448,7 @@ const Customer = () => {
           columns={columns}
           pageSize={5} // Set the number of rows per page to 8
           rowsPerPageOptions={[5]}
-          getRowId={(row) => row.Customer_ID} // Specify a custom id field
+          getRowId={(row) => row. Business_Division_ID} // Specify a custom id field
           onRowClick={handleRowClick}
           disableSelectionOnClick
           slots={{ toolbar: CustomToolbar }}
@@ -687,35 +507,35 @@ const Customer = () => {
               textDecorationThickness: "3px",
             }}
           >
-            Add Customers
+            Add  Business_Divisions
           </h3>
           <FormControl fullWidth>
-            <InputLabel>Plant Code</InputLabel>
+            <InputLabel>Company Code</InputLabel>
             <Select
-              label="Plant Code"
-              name="PlantCode"
-              value={PlantCode}
-              onChange={(e) => setPlantCode(e.target.value)}
+              label="Company Code"
+              name="CompanyCode"
+              value={CompanyCode}
+              onChange={(e) => setCompanyCode(e.target.value)}
               required
             >
-              {PlantTable.map((item, index) => (
-                <MenuItem key={index} value={item.Plant_Id}>
-                  {item.Plant_Code}
+              {CompanyTable.map((item, index) => (
+                <MenuItem key={index} value={item.Com_Id}>
+                  {item.Com_Code}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
           <TextField
-  label="CustomerCode"
-  name="CustomerCode"
-  value={CustomerCode}
+  label=" Business_DivisionCode"
+  name=" Business_DivisionCode"
+  value={ Business_DivisionCode}
   type="text"
   onChange={(e) => {
     const value = e.target.value;
     // Remove any non-digit character
     if (/^\d*$/.test(value)) {
-      setCustomerCode(value);
+      setBusiness_DivisionCode(value);
     }
   }}
   inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
@@ -727,17 +547,17 @@ const Customer = () => {
 
 
           <TextField
-            label="CustomerName"
-            name="CustomerName"
-            value={CustomerName}
-            onChange={(e) => setCustomerName(e.target.value)}
+            label=" Business_DivisionName"
+            name=" Business_DivisionName"
+            value={ Business_DivisionName}
+            onChange={(e) => setBusiness_DivisionName(e.target.value)}
             required
           />
           <TextField
-            label="CustomerAddress"
-            name="CustomerAddress"
-            value={CustomerAddress}
-            onChange={(e) => setCustomerAddress(e.target.value)}
+            label=" Business_DivisionAddress"
+            name=" Business_DivisionAddress"
+            value={ Business_DivisionAddress}
+            onChange={(e) => setBusiness_DivisionAddress(e.target.value)}
             required
           />
 
@@ -820,39 +640,39 @@ const Customer = () => {
               textDecorationThickness: "3px",
             }}
           >
-            Edit Customer
+            Edit  Business Division
           </h3>
          <TextField
-                     label="Plant Code"
-                     name="Plant_Code"
-                     value={PlantCode}
-                     onChange={(e) => setPlantCode(e.target.value)}
+                     label="Company Code"
+                     name="Company_Code"
+                     value={CompanyCode}
+                     onChange={(e) => setCompanyCode(e.target.value)}
                      InputProps={{
                        readOnly: true,  // This makes the TextField read-only
                      }}
                    />
 
           <TextField
-            label="CustomerCode"
-            name="CustomerCode"
-            value={CustomerCode}
-            onChange={(e) => setCustomerCode(e.target.value)}
+            label=" Business_DivisionCode"
+            name=" Business_DivisionCode"
+            value={ Business_DivisionCode}
+            onChange={(e) => setBusiness_DivisionCode(e.target.value)}
             InputProps={{
               readOnly: true,  // This makes the TextField read-only
             }}
           />
           <TextField
-            label="CustomerName"
-            name="CustomerName"
-            value={CustomerName}
-            onChange={(e) => setCustomerName(e.target.value)}
+            label=" Business_DivisionName"
+            name=" Business_DivisionName"
+            value={ Business_DivisionName}
+            onChange={(e) => setBusiness_DivisionName(e.target.value)}
             required
           />
           <TextField
-            label="CustomerAddress"
-            name="CustomerAddress"
-            value={CustomerAddress}
-            onChange={(e) => setCustomerAddress(e.target.value)}
+            label=" Business_DivisionAddress"
+            name=" Business_DivisionAddress"
+            value={ Business_DivisionAddress}
+            onChange={(e) => setBusiness_DivisionAddress(e.target.value)}
             required
           />
 
@@ -904,106 +724,9 @@ const Customer = () => {
           </Box>
         </Box>
       </Modal>
-      {/* upload modal */}
-
-      <Modal open={openUploadModal} onClose={handleCloseUploadModal}>
-        <Box
-          sx={{
-            width: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            textAlign: "center",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "22px",
-              textAlign: "center",
-              marginBottom: "20px",
-              color: "#2e59d9",
-              textDecoration: "underline",
-              textDecorationColor: "#88c57a",
-              textDecorationThickness: "3px",
-            }}
-          >
-             Customer Master  Excel File Upload
-          </h3>
-
-          <Button
-            variant="contained"
-            style={{
-              marginBottom: "10px",
-              backgroundColor: deepPurple[500],
-              color: "white",
-            }}
-          >
-            <a
-              style={{ textDecoration: "none", color: "white" }}
-              href={`${api}/Master/Template/CustomerMaster.xlsx`}
-            >
-              {" "}
-              <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
-            </a>{" "}
-          </Button>
-          <input
-            type="file"
-            accept=".xlsx, .xls"
-            onChange={handleFileUpload}
-            style={{
-              padding: "8px",
-              backgroundColor: "white", // ✅ Blue background
-              color: "black",
-              border: "1px solid black",
-              borderRadius: "5px",
-              cursor: "pointer",
-              width: "240px",
-              marginTop: "10px",
-            }}
-          />
-
-        
-
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            {/* ✅ Close Button */}
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleCloseUploadModal}
-              style={{ marginTop: "10px", width: "25%" }}
-            >
-              Close
-            </Button>
-            {/* ✅ Upload Button */}
-            <Button
-              variant="contained"
-              onClick={handleUploadData}
-              disabled={isUploading}
-              style={{
-                marginTop: "10px",
-                width: "25%",
-                color: "white",
-                backgroundColor: "blue",
-              }}
-            >
-              Upload
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+     
     </div>
   );
 };
 
-export default Customer;
+export default BusinessDivision;

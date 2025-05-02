@@ -33,6 +33,7 @@ import Location from "./Dashboard/Location";
 import UserMaster from "./Masters/UserMaster";
 import Approval309 from "./Approval/309_Approval";
 import Role from "./Masters/Role";
+import BusinessDivision from "./Masters/BusinessDivision"
 const App = () => {
   return (
     <Router>
@@ -42,6 +43,7 @@ const App = () => {
               <Route path="/home" element={<Main/>}>
                 
                 <Route path="company" element={<Company />} />
+                <Route path="BusinessDivision" element={<BusinessDivision />} />
                 <Route path="plant" element={<Plant />} />
                 <Route path="material" element={<Material />} />
                 <Route path="storagelocation" element={<StorageLocation />} />

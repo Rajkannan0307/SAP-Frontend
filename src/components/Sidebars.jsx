@@ -14,9 +14,13 @@ import { FcApproval } from "react-icons/fc";
 import { MdOutlineApproval } from "react-icons/md";
 import { FcFactory } from "react-icons/fc";
 import { GrStorage } from "react-icons/gr";
-import CardTravelIcon from '@mui/icons-material/CardTravel';
+import { GiPlantsAndAnimals } from "react-icons/gi";
+import Diversity2Icon from '@mui/icons-material/Diversity2';
 import AcUnitIcon from '@mui/icons-material/AcUnit'; // ✅ Correct
 import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
+import { FaDollarSign } from "react-icons/fa6";
+import { RiCustomerService2Fill } from "react-icons/ri";
+import { MdBusinessCenter } from "react-icons/md";
 const Sidebar = ({ setSidebarOpen }) => {
   const [open, setOpen] = useState(false);
   const [Masters, setMasterOpen] = useState(false);
@@ -120,7 +124,7 @@ const Sidebar = ({ setSidebarOpen }) => {
           open={open}
           isOpen={Dashboard}
           toggleSection={toggleDashboard}
-          icon={<MdDashboard />}
+          icon={<MdDashboard style={{color:"hotpink"}} />}
           label="Dashboard"
           links={[{ name: "Dashboard", path: "/home/dashboard" }]}
         />
@@ -129,21 +133,28 @@ const Sidebar = ({ setSidebarOpen }) => {
           open={open}
           isOpen={Masters}
           toggleSection={toggleMasters}
-          icon={<PiNuclearPlantFill />}
+          icon={<PiNuclearPlantFill style={{ color: "lightcoral" }}/>}
+          
           label="Masters"
           links={[
-            { name: "Company", path: "/home/company" ,icon:<BusinessIcon style={{ marginRight: "2px" ,color:"yellow"}}/>},
-            { name: "Plant", path: "/home/Plant" },
-            { name: "Department", path: "/home/Department" },
-            { name: "Login User", path: "/home/UserMaster" ,icon:< AccountCircleIcon style={{ marginRight: "2px", color:"violet"}}/>},
-            { name: "Role", path: "/home/Role" ,icon:< MdOutlineAdminPanelSettings style={{ marginRight: "2px",width:"25px",fontSize:"24px" ,color:"goldenrod"}}/>},
-            { name: "Material", path: "/home/Material" , icon:<AcUnitIcon style={{ marginRight: "2px", color:"greenyellow"}}/>},
-            { name: "Vendor", path: "/home/Vendor" ,icon:<FcFactory style={{ marginRight: "2px",fontSize:"24px" ,width:"25px"}}/>},
-            { name: "Customer", path: "/home/Customer" },
-            { name: "Storage Location", path: "/home/StorageLocation" ,icon:<GrStorage style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"bisque"}}/>},
-            { name: "Movement Type", path: "/home/Movement_Type",icon:<DriveFileMoveIcon  style={{ marginRight: "2px",fontSize:"22px" ,width:"25px",color:"turquoise"}}/>},
-            { name: "MVT List Item", path: "/home/MVT_LIST_ITEM",icon:<FaTableList style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"cornflowerblue"}}/> },
-            { name: "Cost Center", path: "/home/CostCenter",icon:<CardTravelIcon style={{ marginRight: "2px",fontSize:"24px" ,width:"25px",color:"darkorange"}}/>},
+            { name: "Company", path: "/home/company" ,icon:<BusinessIcon style={{ marginRight: "2px" ,color:"yellow",code:'company'}}/>},
+            { name: "Business Division", path: "/home/BusinessDivision" ,icon:<MdBusinessCenter style={{ marginRight: "2px",fontSize:"22px" ,color:"ButtonFace",code:'BusinessDivision'}}/>},
+            { name: "Plant", path: "/home/Plant" ,icon: <GiPlantsAndAnimals style={{ marginRight: "2px",fontSize:"22px",color: "hotpink" ,code:'Plant' }} />  },
+            { name: "Department", path: "/home/Department",icon: <Diversity2Icon style={{ marginRight: "2px",fontSize:"22px",color: "bisque" ,code:'Department' }} /> },
+            { name: "Login User", path: "/home/UserMaster" ,icon:< AccountCircleIcon style={{ marginRight: "2px", color:"aqua",code:'UserMaster' }}/>},
+            { name: "Role", path: "/home/Role" ,icon:< MdOutlineAdminPanelSettings style={{ marginRight: "2px",width:"25px",fontSize:"24px" ,color:"goldenrod" ,code:'Role' }}/>},
+            { name: "Material", path: "/home/Material" , icon:<AcUnitIcon style={{ marginRight: "2px", color:"greenyellow" ,code:'Material' }}/>},
+            { name: "Vendor", path: "/home/Vendor" ,icon:<FcFactory style={{ marginRight: "2px",fontSize:"24px" ,width:"25px" ,code:'Vendor' }}/>},
+            { name: "Customer", path: "/home/Customer",icon:<RiCustomerService2Fill style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"deepskyblue",code:'Customer' }}/> },
+            { name: "Storage Location", path: "/home/StorageLocation" ,icon:<GrStorage style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"gold",code:'StorageLocation' }}/>},
+            { name: "Movement Type", path: "/home/Movement_Type",icon:<DriveFileMoveIcon  style={{ marginRight: "2px",fontSize:"22px" ,width:"25px",color:"turquoise",code:'Movement_Type' }}/>},
+            { name: "MVT List Item", path: "/home/MVT_LIST_ITEM",icon:<FaTableList style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"crimson",code:'MVT_LIST_ITEM' }}/> },
+            { name: "Cost Center", path: "/home/CostCenter",icon:<FaDollarSign style={{ marginRight: "2px",fontSize:"22px" ,width:"25px",color:"darkorange",code:'CostCenter' }}/>},
+          ]}
+          codeList={[
+            'company', 'BusinessDivision', 'Plant', 'Department',
+            'UserMaster', 'Role', 'Material', 'Vendor',
+            'Customer', 'StorageLocation', 'Movement_Type','MVT_LIST_ITEM','CostCenter'
           ]}
         />
 
@@ -157,8 +168,11 @@ const Sidebar = ({ setSidebarOpen }) => {
           icon={<FcApproval style={{ fontSize: "24px" }} />}
           label="Approval"
           links={[
-            { name: "309 Approval", path: "/home/Approval_309" ,icon:<MdOutlineApproval  style={{ fontSize: "20px",marginRight: "3px" , color:"rgb(228, 46, 182)"}}/>},
+            { name: "309 Approval", path: "/home/Approval_309" ,icon:<MdOutlineApproval  style={{ fontSize: "20px",marginRight: "3px" , color:"rgb(228, 46, 182)",code:'Approval_309'}}/>},
 
+          ]}
+          codeList={[
+            'Approval_309'
           ]}
         />
 
@@ -180,6 +194,9 @@ const Sidebar = ({ setSidebarOpen }) => {
               path: "/home/Report2",
               icon: <ReportIcon style={{ marginRight: "8px", color: "#ffcc00" }} />,
             },
+          ]}
+          codeList={[
+            'Report1','Report2'
           ]}
         />
       </div>
