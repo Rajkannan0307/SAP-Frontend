@@ -17,6 +17,7 @@ import { FormControl, Select, MenuItem } from '@mui/material';
 
 
 
+
 import {
   DataGrid,
   GridToolbarContainer,
@@ -40,7 +41,7 @@ const Partno = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]); // ✅ Initial empty rows
   const [originalRows, setOriginalRows] = useState([]);
-  
+  const UserID = localStorage.getItem('UserID');
   const [openAddModal, setOpenAddModal] = useState(false);
   
   const [openExcelDownloadModal, setOpenExcelDownloadModal] = useState(false);
@@ -144,6 +145,7 @@ const Partno = () => {
     }
     try {
       const data = {
+        UserID:UserID,
         Plant_Code: PlantCode,
         Date: Date,
         From_Mat_Code: FromMatCode,
@@ -191,6 +193,7 @@ const Partno = () => {
         const formData = new FormData();
         console.log('file', uploadedFile)
         formData.append("User_Add", uploadedFile);
+        formData.append("UserID", UserID); 
         const response = await Movement309(formData)
         console.log('response', response.data)
         alert(response.data.message)
@@ -578,6 +581,8 @@ const Partno = () => {
     { field: "To_Material_Code", headerName: "To Mat Code", flex: 1 },
     { field: "Net_Difference_Price", headerName: "Net Different Price", flex: 1 },
     { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
+
+    
     // {
     //   field: "actions",
     //   headerName: "Actions",
@@ -754,7 +759,7 @@ const Partno = () => {
           rows={rows}
           columns={columns}
           pageSize={5}
-          getRowId={(row) => row.Trn_309_ID} // Ensure Trn_309_ID is unique and exists
+          getRowId={(row) => row.Trn_Sap_ID} // Ensure Trn_309_ID is unique and exists
           rowsPerPageOptions={[5]}
           disableSelectionOnClick
           slots={{ toolbar: CustomToolbar }}
