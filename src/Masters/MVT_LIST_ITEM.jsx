@@ -515,7 +515,7 @@ const[MovementListID,setMovementListID]=useState("");
   inputProps={{
     inputMode: "numeric",
     pattern: "[0-9]*",
-    // maxLength: 4, // optional
+     maxLength: 4, // optional
   }}
   required
 />

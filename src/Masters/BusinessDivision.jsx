@@ -56,10 +56,10 @@ const BusinessDivision = () => {
   const [ Business_DivisionName, setBusiness_DivisionName] = useState("");
   const [ Business_DivisionAddress, setBusiness_DivisionAddress] = useState("");
   const columns = [
-    { field: "Company_Code", headerName: "Company Code", flex: 1 },
-    { field: " Business_Division_Code", headerName: " Business Division Code ", flex: 1 },
-    { field: " Business_Division_Name", headerName: " Business Division Name ", flex: 1 },
-    { field: " Business_Division_Address", headerName: " Business Division Address", flex: 2 },
+    { field: "Com_Code", headerName: "Company Code", flex: 1 },
+    { field: "Business_Division_Code", headerName: " Business Division Code ", flex: 1 },
+    { field: "Business_Division_Name", headerName: " Business Division Name ", flex: 1 },
+    { field: "Business_Division_Address", headerName: " Business Division Address", flex: 2 },
 
     {
       field: "ActiveStatus",
@@ -176,10 +176,10 @@ const BusinessDivision = () => {
     } else {
       const filteredRows = originalRows.filter((row) =>
         [
-          "Company_Code",
-          " Business_Division_Code",
-          " Business_Division_Name",
-          " Business_Division_Address",
+          "Com_Code",
+          "Business_Division_Code",
+          "Business_Division_Name",
+          "Business_Division_Address",
           
         ].some((key) => {
           const value = row[key];
@@ -204,7 +204,7 @@ const BusinessDivision = () => {
     try {
       const data = {
         UserID:UserID,
-        Company_Code:CompanyCode,
+        Com_Code:CompanyCode,
          Business_Division_Code: Business_DivisionCode,
          Business_Division_Name: Business_DivisionName,
          Business_Division_Address: Business_DivisionAddress,
@@ -235,7 +235,7 @@ const BusinessDivision = () => {
       const data = {
         UserID:UserID,
          Business_Division_ID:  Business_DivisionID,
-        Company_Code: CompanyCode,
+        Com_Code: CompanyCode,
          Business_Division_Code:  Business_DivisionCode,
          Business_Division_Name:  Business_DivisionName,
          Business_Division_Address:  Business_DivisionAddress,
@@ -275,18 +275,18 @@ const BusinessDivision = () => {
 
     const DataColumns = [
       "Company_Code",
-      " Business_Division_Code",
-      " Business_Division_Name",
-      " Business_Division_Address",
+      "Business_Division_Code",
+      "Business_Division_Name",
+      "Business_Division_Address",
       
       "ActiveStatus",
     ];
 
     const filteredData = data.map((item) => ({
-      Company_Code: item.Company_Code,
-       Business_Division_Code: item. Business_Division_Code,
-       Business_Division_Name: item. Business_Division_Name,
-       Business_Division_Address: item. Business_Division_Address,
+      CompanyCode: item.Company_Code,
+       Business_Division_Code: item.Business_Division_Code,
+       Business_Division_Name: item.Business_Division_Name,
+       Business_Division_Address: item.Business_Division_Address,
       ActiveStatus: item.Active_Status ? "Active" : "Inactive"
     }));
 
@@ -313,8 +313,8 @@ const BusinessDivision = () => {
     });
 
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, " Business_Division");
-    XLSX.writeFile(workbook, " Business_Division_Data.xlsx");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Business_Division");
+    XLSX.writeFile(workbook, "Business_Division_Data.xlsx");
   };
 
   return (
@@ -448,7 +448,7 @@ const BusinessDivision = () => {
           columns={columns}
           pageSize={5} // Set the number of rows per page to 8
           rowsPerPageOptions={[5]}
-          getRowId={(row) => row. Business_Division_ID} // Specify a custom id field
+          getRowId={(row) => row.Business_Division_ID} // Specify a custom id field
           onRowClick={handleRowClick}
           disableSelectionOnClick
           slots={{ toolbar: CustomToolbar }}
@@ -519,7 +519,7 @@ const BusinessDivision = () => {
               required
             >
               {CompanyTable.map((item, index) => (
-                <MenuItem key={index} value={item.Com_Id}>
+                <MenuItem key={index} value={item.Company_ID}>
                   {item.Com_Code}
                 </MenuItem>
               ))}
@@ -527,9 +527,9 @@ const BusinessDivision = () => {
           </FormControl>
 
           <TextField
-  label=" Business_DivisionCode"
-  name=" Business_DivisionCode"
-  value={ Business_DivisionCode}
+  label=" Business Division Code"
+  name=" Business Division Code"
+  value={Business_DivisionCode}
   type="text"
   onChange={(e) => {
     const value = e.target.value;
@@ -539,7 +539,7 @@ const BusinessDivision = () => {
     }
   }}
   inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
-    // maxLength: 4,
+    maxLength: 4,
 
   }}
   required
@@ -547,15 +547,15 @@ const BusinessDivision = () => {
 
 
           <TextField
-            label=" Business_DivisionName"
-            name=" Business_DivisionName"
+            label="Business Division Name"
+            name=" Business Division Name"
             value={ Business_DivisionName}
             onChange={(e) => setBusiness_DivisionName(e.target.value)}
             required
           />
           <TextField
-            label=" Business_DivisionAddress"
-            name=" Business_DivisionAddress"
+            label=" Business Division Address"
+            name=" Business Division Address"
             value={ Business_DivisionAddress}
             onChange={(e) => setBusiness_DivisionAddress(e.target.value)}
             required
@@ -653,8 +653,8 @@ const BusinessDivision = () => {
                    />
 
           <TextField
-            label=" Business_DivisionCode"
-            name=" Business_DivisionCode"
+            label=" Business Division Code"
+            name=" Business Divisio Code"
             value={ Business_DivisionCode}
             onChange={(e) => setBusiness_DivisionCode(e.target.value)}
             InputProps={{
@@ -662,15 +662,15 @@ const BusinessDivision = () => {
             }}
           />
           <TextField
-            label=" Business_DivisionName"
-            name=" Business_DivisionName"
+            label=" Business Division Name"
+            name=" Business Division Name"
             value={ Business_DivisionName}
             onChange={(e) => setBusiness_DivisionName(e.target.value)}
             required
           />
           <TextField
-            label=" Business_DivisionAddress"
-            name=" Business_DivisionAddress"
+            label=" Business Division Address"
+            name=" Business Division Address"
             value={ Business_DivisionAddress}
             onChange={(e) => setBusiness_DivisionAddress(e.target.value)}
             required

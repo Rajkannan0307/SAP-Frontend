@@ -461,8 +461,18 @@ const Movement_Type = () => {
             label="Movement Code"
             name="MovementCode"
             value={MovementCode}
-            onChange={(e) => setMovementCode(e.target.value)}
-            fullWidth
+            type="text"
+            onChange={(e) => {
+              const value = e.target.value;
+              // Remove any non-digit character
+              if (/^\d*$/.test(value)) {
+                setMovementCode(value);
+              }
+            }}
+            inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
+               maxLength: 3,
+          
+            }}
             required
           />
           <TextField

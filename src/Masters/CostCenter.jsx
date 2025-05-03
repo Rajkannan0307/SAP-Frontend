@@ -501,7 +501,7 @@ const CostCenter = () => {
                     }
                   }}
                   inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
-                    // maxLength: 4,
+                    maxLength: 7,
                 
                   }}
                   required

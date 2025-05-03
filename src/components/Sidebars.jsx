@@ -124,9 +124,12 @@ const Sidebar = ({ setSidebarOpen }) => {
           open={open}
           isOpen={Dashboard}
           toggleSection={toggleDashboard}
-          icon={<MdDashboard style={{color:"hotpink"}} />}
+          icon={<MdDashboard style={{color:"#FFF5EE"}} />}
           label="Dashboard"
-          links={[{ name: "Dashboard", path: "/home/dashboard" }]}
+          links={[{ name: "Dashboard", path: "/home/dashboard",code:'dashboard' }]}
+          codeList={[
+            'dashboard'
+          ]}
         />
         {/* Masters Section */}
         <SidebarSection
