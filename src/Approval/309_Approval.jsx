@@ -383,22 +383,24 @@ const Approval = () => {
             display: "flex",
             flexDirection: "column",
             alignItems: "flex-start",
-      
+            overflowY: "auto",
+            cursor: "scroll",  
           }}
         >
-          
-          <h3
-            style={{
-              textAlign: "center",
-              marginBottom: "15px",
-              color: "blue",
-              textDecoration: "underline",
-              textDecorationColor: "limegreen",
-              textDecorationThickness: "3px",
-            }}
-          >
-            Document Details
-          </h3>
+     <div style={{ width: "100%", textAlign: "center" }}>
+  <h3
+    style={{
+      marginBottom: "15px",
+      color: "blue",
+      textDecoration: "underline",
+      textDecorationColor: "limegreen",
+      textDecorationThickness: "3px",
+    }}
+  >
+    Document Details
+  </h3>
+</div>
+
           <Table>
             <TableHead>
               <TableRow>

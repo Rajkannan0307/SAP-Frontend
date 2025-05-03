@@ -1,12 +1,72 @@
+
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import HomeIcon from "@mui/icons-material/Home";
 import { FaSignOutAlt } from "react-icons/fa";
 import { Button } from "@mui/material";
 import logo from './images/ranelogo.png';
-
-
+import { useNavigate } from 'react-router-dom';
+import { Box, IconButton,Typography,Table, TableBody, TableCell, TableRow, TableContainer  } from "@mui/material";
+import Popover from '@mui/material/Popover';
 const Topbar = () => {
+  const [logoutbtn, setlogoutbtn] = useState(false);
+  const [Plant, setPlant] = useState('');
+  const [PlantCode, setPlantCode] = useState('');
+  const [EmpId, setEmpId] = useState('');
+  const [Email, setEmail] = useState('');
+  
+  const [EmployeeName,setemployeename]=useState('');
+  const [Role,setRole]=useState('');
+ const navigate = useNavigate();
+  const handleLogout = () => {
+    sessionStorage.removeItem('UserName');
+   
+    navigate('/'); 
+  };
+
+  const handlePopoverOpen = () => {
+    setlogoutbtn(true);
+  };
+  const handlePopoverClose = () => {
+    setlogoutbtn(false);
+  };
+const open = Boolean(logoutbtn);
+  const id = open ? 'simple-popover' : undefined;
+
+  const popoverContent = (
+    // <Typography sx={{ p: 2 }}>User Details Here</Typography>
+    <TableContainer sx={{ p: 2 }}>
+    <Table>
+      <TableBody>
+        <TableRow>
+          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>GenId :</TableCell>
+          <TableCell>{EmpId}</TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Name :</TableCell>
+          <TableCell>{EmployeeName}</TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Role :</TableCell>
+          <TableCell>{Role}</TableCell>
+        </TableRow>
+        
+       
+        
+        <TableRow>
+          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Email:</TableCell>
+          <TableCell>{Email}</TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Plant:</TableCell>
+          <TableCell>{PlantCode}/{Plant}</TableCell>
+        </TableRow>
+       
+      </TableBody>
+    </Table>
+  </TableContainer>
+  );
   return (
     <div
       style={{
@@ -61,7 +121,7 @@ const Topbar = () => {
   }}
 >
   {/* Account Icon Button */}
-  <Button style={{ padding: 0, minWidth: "40px" }}>
+  <Button style={{ padding: 0, minWidth: "40px" }} onClick={handlePopoverOpen}>
     <AccountCircleIcon
       style={{
         textDecoration: "none",
@@ -70,6 +130,23 @@ const Topbar = () => {
       }}
     />
   </Button>
+  <Popover
+          id={id}
+          open={open}
+          anchorEl={logoutbtn}
+          onClose={handlePopoverClose}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+          transformOrigin={{
+            vertical: 'right',
+            horizontal: 'center',
+          }}
+          style={{ zIndex:10000 }}
+        >
+          {popoverContent}
+        </Popover>
 
   {/* Home Icon */}
   <Link
@@ -85,22 +162,27 @@ const Topbar = () => {
   </Link>
 
   {/* Sign Out Icon */}
-  <Link
+  {/* <Link
     to="/"
     style={{
       color: "white",
       display: "flex",
       alignItems: "center",
     }}
-  >
+   
+  > */}
     <FaSignOutAlt
       style={{
+        color: "white",
+        display: "flex",
+        alignItems: "center",
         padding: "5px",
         marginRight: "10px",
         fontSize:"22px"
       }}
+      onClick={handleLogout}
     />
-  </Link>
+  {/* </Link> */}
 </div>
 
       </div>
