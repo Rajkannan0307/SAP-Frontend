@@ -8,8 +8,8 @@ export const Movement309 = async (data) => {
     return response;
 };
 
-export const getdetails=async ()=>{
-    const response = await axios.get(`${api}/transaction/get_details`);
+export const getdetails=async (user)=>{
+    const response = await axios.get(`${api}/transaction/get_details?userid=${user}`);
     return response.data;
 };
 export const getAdd = async (data)=>{

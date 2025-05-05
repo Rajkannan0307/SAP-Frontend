@@ -40,7 +40,13 @@ const Login = () => {
         localStorage.setItem('DeptId', data.Dept_Id);
         localStorage.setItem('UserName',data.User_Name);
         localStorage.setItem('UserID',data.User_ID);
-        navigate("/home/Home");
+        localStorage.setItem('Deptname', data.Dept_Name);
+        localStorage.setItem('PlantName', data.Plant_Name);
+        localStorage.setItem('Email', data.User_Email);
+        localStorage.setItem('Plantcode', data.Plant_Code);
+        localStorage.setItem('EmpId', data.Employee_ID);
+        
+   navigate("/home/Home");
       }
       console.log("Login successful", response.data);
       

@@ -95,11 +95,11 @@ const Partno = () => {
 
   const getData = async () => {
     try {
-      const response = await getdetails();
+      const response = await getdetails(UserID);
       console.log(response);  // Check the structure of response
-      setData(response);  // Ensure that this is correctly setting the data
-      setOriginalRows(response); // for reference during search
-      setRows(response);
+      setData(response);  // main data set
+      setOriginalRows(response); // for reference Backup of the original fetched data
+      setRows(response);   //Filtered/sorted data shown in the UI
     } catch (error) {
       console.error(error);
       setData([]);  // Handle error by setting empty data
@@ -273,11 +273,12 @@ const Partno = () => {
       To_Rate_Per_Unit: item.To_Rate_Per_Unit,
       Net_Different_Price: item.Net_Difference_Price,
       Remark: item.Remark,
-      Plant_Code_Validation: item.Plant_val,
-      From_Material_Code_Validation: item.From_Mat,
-      To_Material_Code_Validation: item.To_Mat,
-      From_SLoc_Code_Validation: item.From_SLoc,
-      To_SLoc_Code_Validation: item.To_SLoc,
+
+      Plant_Code_Validation: item.Plant_Val,
+      From_Material_Code_Validation: item.From_Mat_Val,
+      To_Material_Code_Validation: item.To_Mat_Val,
+      From_SLoc_Code_Validation: item.From_SLoc_Val,
+      To_SLoc_Code_Validation: item.To_SLoc_Val,
 
     }));
     // Filter and map the data for New Records
@@ -388,6 +389,29 @@ const Partno = () => {
       };
 
 
+      
+// ✅ Style only specific duplicate columns in gray
+const styleDuplicateRecords = (worksheet, columns, dataLength) => {
+  const duplicateCols = ['Plant_Code', 'From_Material_Code', 'To_Material_Code', 'From_SLoc_Code', 'To_SLoc_Code']; // 👈 update with actual duplicate column names
+
+  for (let row = 1; row <= dataLength; row++) {
+    duplicateCols.forEach(colName => {
+      const colIdx = columns.indexOf(colName);
+      if (colIdx === -1) return; // skip if not found
+
+      const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+      const cell = worksheet[cellAddress];
+
+      if (cell) {
+        cell.s = {
+          font: { color: { rgb: '808080' } }, // Gray text
+          // fill: { fgColor: { rgb: 'E0E0E0' } } // optional background
+        };
+      }
+    });
+  }
+};
+
 
       // Add New Records sheet even if empty data is available
       if(filteredNewData.length === 0) filteredNewData.push({});
@@ -406,7 +430,7 @@ const Partno = () => {
     // Add     Duplicate Records sheet even if empty data is available
     if (filteredUpdate.length === 0) filteredUpdate.push({});
     const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, { header:  DuplicateColumns });
-    styleHeaders(wsUpdated, DuplicateColumns);
+    styleDuplicateRecords(wsUpdated, DuplicateColumns, filteredUpdate.length); 
     XLSX.utils.book_append_sheet(wb, wsUpdated, 'DuplicateRecords');
 
     // // Add Updated Records sheet even if empty data is available
@@ -464,8 +488,6 @@ const Partno = () => {
     setApprovalStatus(item.Approval_Status);
 
   }
-
-
 
   /// ✅ Search Functionality
   const handleSearch = () => {
@@ -1063,18 +1085,17 @@ const Partno = () => {
       
       { /*View modal*/}
 
-
-
          {/* Modal Component */}
-         <Modal open={openViewModal} onClose={handleCloseViewModal}>
+
+  <Modal open={openViewModal} onClose={handleCloseViewModal}>
         <Box
           sx={{
             width: 600,  
-            height: 350,
+            height: 350, 
             bgcolor: "background.paper",
             borderRadius: 2,
             boxShadow: 24,
-            p: 2,       
+            p: 2,         
             margin: "auto",
             marginTop: "10%",
             display: "flex",
@@ -1103,21 +1124,14 @@ const Partno = () => {
           </Box>
 
           {/* Plant and Document Info Section */}
-         {/* Plant Code and Document in table format */}
-<Box sx={{ width: "100%", marginTop: "10px" }}>
-  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", border: "1px solid black" }}>
-    <tbody>
-      <tr>
-        <td style={{ padding: "5px", border: "1px solid black" }}>
-          <strong>Plant Code:</strong> {PlantCode}
-        </td>
-        <td style={{ padding: "5px", border: "1px solid black" }}>
-          <strong>Document:</strong> {DocID}
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</Box>
+          <Box sx={{ width: "100%", marginTop: "10px", marginBottom: "5px", display: 'flex', justifyContent: 'space-between' }}>
+            <div>
+              <strong>Plant Code:</strong> {PlantCode}
+            </div>
+            <div>
+              <strong>Document:</strong> {DocID}
+            </div>
+          </Box>
 
           {/* Content Table */}
           <Box sx={{ width: "100%", marginTop: "10px" }}>
@@ -1126,15 +1140,16 @@ const Partno = () => {
                 <tr>
                   {/* Table Header with Blue Background */}
                   <th style={{
-                    textAlign: "left", padding: "5px", backgroundColor: "blue", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
+                    textAlign: "left", padding: "5px", backgroundColor: "deepskyblue", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
                   }}>Content</th>
                   <th style={{
-                    textAlign: "left", padding: "5px", backgroundColor: "blue", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
+                    textAlign: "left", padding: "5px", backgroundColor: "deepskyblue", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
                   }}>From</th>
                   <th style={{
-                    textAlign: "left", padding: "5px", backgroundColor: "blue", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
+                    textAlign: "left", padding: "5px", backgroundColor: "deepskyblue", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
                   }}>To</th>
-                </tr>
+                </tr> 
+
               </thead>
               <tbody>
                 {[ 
@@ -1147,7 +1162,7 @@ const Partno = () => {
                   ["Batch", FromBatch, ToBatch],
                 ].map(([label, fromValue, toValue], index) => (
                   <tr key={label}>
-                    <td style={{ padding: "5px", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black" }}>{label}</td>
+                    <td style={{ padding: "5px", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black" ,fontWeight: "bold"}}>{label}</td>
                     <td style={{ padding: "5px", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black" }}>{fromValue || " "}</td>
                     <td style={{ padding: "5px", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black" }}>{toValue || " "}</td>
                   </tr>
@@ -1157,25 +1172,18 @@ const Partno = () => {
           </Box>
 
           {/* Net Different Price and Approval Status Section */}
-      
-   <Box sx={{ width: "100%", marginTop: "10px" }}>
-  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
-    <tbody>
-      <tr>
-        <td style={{ padding: "5px", borderRight: "1px solid black", width: "50%" }}>
-          <strong>Net Different Price:</strong> {NetDifferentPrice}
-        </td>
-        <td style={{ padding: "5px", width: "50%" }}>
-          <strong>Approval Status:</strong> {ApprovalStatus}
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</Box>
-
-
+          <Box sx={{ width: "100%", marginTop: "10px", display: 'flex', justifyContent: 'space-between' }}>
+            <div>
+              <strong>Net Different Price:</strong> {NetDifferentPrice}
+            </div>
+            <div>
+              <strong>Approval Status:</strong> {ApprovalStatus}
+            </div>
+          </Box>
         </Box>
       </Modal>
+
+
 
 
       

@@ -225,10 +225,16 @@ const Approval = () => {
   };
 
   const handleActionOpen = (row) => {
-    console.log('Query', row);
-
-    setOpenActionModal(true); // Simply close the modal without doing anything
+    console.log('Row selected for action:', row);
+    setSelectedRow(row);  // Store selected row to pass to the modal
+    setOpenActionModal(true);  // Open the action modal
   };
+  
+  // const handleActionOpen = (row) => {
+  //   console.log('Query', row);
+
+  //   setOpenActionModal(true); // Simply close the modal without doing anything
+  // };
 
   const handleCancel = () => {
     setOpenActionModal(false); // Simply close the modal without doing anything
@@ -246,6 +252,7 @@ const Approval = () => {
     borderBottom: "1px solid #eee",
   };
 
+  
   return (
     <div
       style={{
@@ -521,7 +528,35 @@ const Approval = () => {
             onChange={(e) => setComment(e.target.value)} // Update the comment state
           />
 
-          {/* Action Buttons */}
+
+<Button
+  variant="contained"
+  color="success"
+  onClick={handleApprove} // Directly pass the handler for approve
+  startIcon={<CheckCircleIcon />}
+>
+  Approve
+</Button>
+
+<Button
+  variant="contained"
+  color="error"
+  onClick={handleReject} // Directly pass the handler for reject
+  startIcon={<CloseIcon />}
+>
+  Reject
+</Button>
+
+<Button
+  variant="contained"
+  color="primary"
+  onClick={handleQuery} // Directly pass the handler for query
+  startIcon={<QueryBuilderIcon />}
+>
+  Query
+</Button>
+{/* 
+          Action Buttons
           <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
             <Button
               variant="contained"
@@ -548,7 +583,7 @@ const Approval = () => {
             >
               Query
             </Button>
-          </div>
+          </div> */}
 
 
           {/* Cancel Button */}

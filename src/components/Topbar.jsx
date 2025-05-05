@@ -11,10 +11,14 @@ import { Box, IconButton,Typography,Table, TableBody, TableCell, TableRow, Table
 import Popover from '@mui/material/Popover';
 const Topbar = () => {
   const [logoutbtn, setlogoutbtn] = useState(false);
-  const [Plant, setPlant] = useState('');
-  const [PlantCode, setPlantCode] = useState('');
-  const [EmpId, setEmpId] = useState('');
-  const [Email, setEmail] = useState('');
+
+
+  const GenId = localStorage.getItem('EmpId');
+  const Username = localStorage.getItem('UserName');
+  const Dept = localStorage.getItem('Deptname');
+  const Plant = localStorage.getItem('PlantName');
+  const Email = localStorage.getItem('Email');
+  const Plantcode = localStorage.getItem('Plantcode');
   
   const [EmployeeName,setemployeename]=useState('');
   const [Role,setRole]=useState('');
@@ -41,26 +45,27 @@ const open = Boolean(logoutbtn);
       <TableBody>
         <TableRow>
           <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>GenId :</TableCell>
-          <TableCell>{EmpId}</TableCell>
+          <TableCell>{GenId}</TableCell>
         </TableRow>
         <TableRow>
           <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Name :</TableCell>
-          <TableCell>{EmployeeName}</TableCell>
+          <TableCell>{Username}</TableCell>
         </TableRow>
         <TableRow>
           <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Role :</TableCell>
           <TableCell>{Role}</TableCell>
         </TableRow>
-        
-       
-        
+        <TableRow>
+          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Department :</TableCell>
+          <TableCell>{Dept}</TableCell>
+        </TableRow>
         <TableRow>
           <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Email:</TableCell>
           <TableCell>{Email}</TableCell>
         </TableRow>
         <TableRow>
           <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Plant:</TableCell>
-          <TableCell>{PlantCode}/{Plant}</TableCell>
+          <TableCell>{Plantcode} / {Plant}</TableCell>
         </TableRow>
        
       </TableBody>
@@ -130,6 +135,8 @@ const open = Boolean(logoutbtn);
       }}
     />
   </Button>
+
+
   <Popover
           id={id}
           open={open}
@@ -137,13 +144,18 @@ const open = Boolean(logoutbtn);
           onClose={handlePopoverClose}
           anchorOrigin={{
             vertical: 'top',
-            horizontal: 'left',
+            horizontal: 'right',
           }}
-          transformOrigin={{
-            vertical: 'right',
-            horizontal: 'center',
-          }}
-          style={{ zIndex:10000 }}
+
+           transformOrigin={{
+    vertical: 'top', // ⚠️ This line is the issue
+    horizontal: 'right',
+  }}
+          // transformOrigin={{
+          //   vertical: 'right',
+          //   horizontal: 'center',
+          // }}
+          style={{ zIndex:10000, marginTop: '3%' }}
         >
           {popoverContent}
         </Popover>
