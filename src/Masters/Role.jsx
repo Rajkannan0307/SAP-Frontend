@@ -17,11 +17,14 @@ import {
   GridToolbarExport,
 } from "@mui/x-data-grid";
 import SearchIcon from "@mui/icons-material/Search";
+import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
 import { MenuItem, InputLabel, FormControl } from "@mui/material";
 import { getdetails,getAdd,getUpdates } from "../controller/Roleapiservices";
+import SubjectRoundedIcon from "@mui/icons-material/SubjectRounded";
+
 const Role = () => {
     const [searchText, setSearchText] = useState("");
       const [rows, setRows] = useState([]);
@@ -33,36 +36,61 @@ const Role = () => {
       const [Role_Name, setRoleName] = useState("");
       const [Role_ID, setRoleID] = useState("");
       const UserID = localStorage.getItem('UserID');
+       const navigate = useNavigate();
+      
        const columns = [
           
           { field: "Role_Name", headerName: "Role", flex: 1,width:"40%" },
           {
-            field: "ActiveStatus",
-            headerName: "Active Status",
-            width:"40%",
-            flex: 1,
-            renderCell: (params) => {
-              const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
-              return (
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={isActive} // Use the boolean value directly
-                      color="default" // Neutral color for default theme
-                      sx={{
-                        "& .MuiSwitch-track": {
-                          backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                        },
-                        "& .MuiSwitch-thumb": {
-                          backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                        },
-                      }}
-                    />
-                  }
-                />
-              );
-            },
-          },
+            field: 'Menus',
+            headerName: 'Menus',
+            width: 150,
+            // renderCell: (params) => (
+            //   <IconButton
+            //     sx={{ height: 40, width: 40, color: "#000" }}
+            //     onClick={(event) => {
+            //       event.stopPropagation(); // This prevents the row click
+                 
+            //     }}
+            //   >
+            //     <SubjectRoundedIcon />
+            //   </IconButton>
+            // ),
+            renderCell: () => (
+              <IconButton sx={{ height: 40, width: 40, color: "#000" }}>
+                  <SubjectRoundedIcon />
+              </IconButton>
+          ),
+            renderHeader: () => <div style={{ fontSize: '16px' }}>Menus</div>
+        },
+    
+          // {
+          //   field: "ActiveStatus",
+          //   headerName: "Active Status",
+          //   width:"40%",
+          //   flex: 1,
+          //   renderCell: (params) => {
+          //     const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
+          //     return (
+          //       <FormControlLabel
+          //         control={
+          //           <Switch
+          //             checked={isActive} // Use the boolean value directly
+          //             color="default" // Neutral color for default theme
+          //             sx={{
+          //               "& .MuiSwitch-track": {
+          //                 backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
+          //               },
+          //               "& .MuiSwitch-thumb": {
+          //                 backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
+          //               },
+          //             }}
+          //           />
+          //         }
+          //       />
+          //     );
+          //   },
+          // },
         ];
        const getData = async () => {
           try {
@@ -335,6 +363,26 @@ justifyContent: "center",
         onRowClick={handleRowClick}
         disableSelectionOnClick
         slots={{ toolbar: CustomToolbar }}
+        onCellClick={(params) => {
+          console.log("Clicked cell:", params); // ✅ debug
+
+          if (params.field === "Menus" && params.row) {
+            const { Role_ID, Role_Name } = params.row;
+        
+            if (Role_ID && Role_Name) {
+              console.log("Navigating to:", `/home/Role/${Role_ID}`);
+              navigate(`/home/Role/${Role_ID}`, {
+                state: {
+                  role: Role_Name,
+                  Role_No: Role_ID,
+                },
+              });
+            } else {
+              alert("Role data is incomplete.");
+            }
+          }
+        }}
+        
         sx={{
           // Header Style
           "& .MuiDataGrid-columnHeader": {

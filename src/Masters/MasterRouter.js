@@ -12,6 +12,8 @@ import Department from './Department'
 import Movement_Type from './Movement_Type'
 import Vendor from './Vendor'
 import Role from './Role'
+import Admin from "./Admin";
+import SubMenu from"./Submenu";
 const MasterRouter  = {
   Path: 'Masters',
   Children: [
@@ -21,7 +23,12 @@ const MasterRouter  = {
  
     {path: 'MVT_LIST_ITEM', element: <MVT_LIST_ITEM/>},
     {path: 'Plant', element: <Plant/>},
-    {path: 'Role', element: <Role/>},
+    {path: 'Role', children: [
+      { path: '', element: <Role /> },
+      { path: ':roleId', element: <Admin /> },
+      { path: ":roleId/:menuId", element: <SubMenu /> },
+  ],
+},
     {path: 'Users_details', element: <Users_details/>},
     {path: 'StorageLocation', element: <StorageLocation/>},
     {path: 'Customer', element: <Customer/>}, 

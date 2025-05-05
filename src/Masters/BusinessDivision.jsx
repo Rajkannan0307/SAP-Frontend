@@ -269,10 +269,10 @@ const BusinessDivision = () => {
   
   // excel download
   const handleDownloadExcel = () => {
-    if (data.length === 0) {
-      alert("No Data Found");
-      return;
-    }
+    // if (data.length === 0) {
+    //   alert("No Data Found");
+    //   return;
+    // }
 
     const DataColumns = [
       "Company_Code",
