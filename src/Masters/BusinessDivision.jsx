@@ -57,9 +57,9 @@ const BusinessDivision = () => {
   const [ Business_DivisionAddress, setBusiness_DivisionAddress] = useState("");
   const columns = [
     { field: "Com_Code", headerName: "Company Code", flex: 1 },
-    { field: "Business_Division_Code", headerName: " Business Division Code ", flex: 1 },
-    { field: "Business_Division_Name", headerName: " Business Division Name ", flex: 1 },
-    { field: "Business_Division_Address", headerName: " Business Division Address", flex: 2 },
+    { field: "Business_Division_Code", headerName: "Business Division Code ", flex: 1 },
+    { field: "Business_Division_Name", headerName: "Business Division Name ", flex: 1 },
+    { field: "Business_Division_Address", headerName: "Business Division Address", flex: 2 },
 
     {
       field: "ActiveStatus",
@@ -102,9 +102,9 @@ const BusinessDivision = () => {
     try {
       const response = await getdetails();
       console.log(response); // Check the structure of response
-      setData(response); // Ensure that this is correctly setting the data
+      //  setData(response); // Ensure that this is correctly setting the data
       setOriginalRows(response); // for reference during search
-      setRows(response);
+       setRows(response);//Sets the displayed data, possibly filtered or modified
     } catch (error) {
       console.error(error);
       setData([]); // Handle error by setting empty data
@@ -189,6 +189,7 @@ const BusinessDivision = () => {
       setRows(filteredRows);
     }
   };
+
 
   // ✅ Handle Add Material
   const handleAdd = async () => {
@@ -283,7 +284,7 @@ const BusinessDivision = () => {
     ];
 
     const filteredData = data.map((item) => ({
-      CompanyCode: item.Company_Code,
+      Company_Code: item.Com_Code,
        Business_Division_Code: item.Business_Division_Code,
        Business_Division_Name: item.Business_Division_Name,
        Business_Division_Address: item.Business_Division_Address,
@@ -519,7 +520,7 @@ const BusinessDivision = () => {
               required
             >
               {CompanyTable.map((item, index) => (
-                <MenuItem key={index} value={item.Company_ID}>
+                <MenuItem key={index} value={item.Com_Id}>
                   {item.Com_Code}
                 </MenuItem>
               ))}

@@ -37,15 +37,10 @@ const Department = () => {
   const [data, setData] = useState([]);
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
-  const [openUploadModal, setOpenUploadModal] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState(""); // Track upload status
-  const [uploadedFileData, setUploadedFileData] = useState(null);
+ 
   const [ActiveStatus, setActiveStatus] = useState(false);
  
-  const [DepartmentTable, setCompanyTable] = useState([]);
+  
   const Username = localStorage.getItem('UserName');
   const UserID = localStorage.getItem('UserID');
   // const [newRecord] = useState([]);
@@ -54,7 +49,7 @@ const Department = () => {
   const [ DepartmentCode, setDepartmentCode] = useState("");
   const [ DepartmentID, setDepartmentID] = useState("");
   const [ DepartmentName, setDepartmentName] = useState("");
-  const [ DepartmentAddress, setDepartmentAddress] = useState("");
+  
   const columns = [
     { field: "Dept_Code", headerName: "Department Code", flex: 1 },
     
@@ -133,17 +128,7 @@ const Department = () => {
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
 
-  // ✅ Handle Upload Modal
-  const handleOpenUploadModal = () => setOpenUploadModal(true);
-  const handleCloseUploadModal = () => {
-    setOpenUploadModal(false);
-    setUploadStatus("");
-    setUploadedFile(null);
-    setUploadProgress(0);
-    setUploadedFileData(null);
-    setIsUploading(false);
-  };
-
+  
  
 
 
@@ -193,10 +178,10 @@ const Department = () => {
       alert("Please fill in all required fields");
       return;  // Exit the function if validation fails
     }
-    // if (DepartmentCode.toString().length !== 4) {
-    //   alert("Department Code must be exactly 4 digits");
-    //   return;
-    // }
+    if (DepartmentCode.toString().length !== 3) {
+      alert("Department Code must be exactly 3 digits");
+      return;
+    }
     try {
       const data = {
         UserID:UserID,
@@ -271,17 +256,17 @@ const Department = () => {
 
     const DataColumns = [
       
-      "Department_Code",
-      "Department_Name",
+      "DepartmentCode",
+      "DepartmentName",
     
       
       "ActiveStatus",
     ];
 
     const filteredData = data.map((item) => ({
-      DepartmentCode: item.Com_Code,
+      DepartmentCode: item.Dept_Code,
        
-       Department_Name: item.Com_Name,
+       DepartmentName: item.Dept_Name,
     
       ActiveStatus: item.Active_Status ? "Active" : "Inactive"
     }));
@@ -522,7 +507,7 @@ const Department = () => {
     }
   }}
   inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
-    // maxLength: 4,
+     maxLength: 3,
 
   }}
   required
