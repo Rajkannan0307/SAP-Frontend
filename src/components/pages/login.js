@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LoginImage from "../images/login.png";
 import { getLogin } from "../../controller/Masterapiservice";
-
+import { encryptSessionData } from "../../controller/StorageUtils";
 const Login = () => {
   const [username, setUserName] = useState("");
   const [password, setPassword] = useState("");
@@ -35,7 +35,7 @@ const Login = () => {
       const data = response.data.resultLocalStorage[0];
 
       console.log('data', data);
-      if(data) {
+       if(data) {
         localStorage.setItem('Active', data.Active_Status);
         localStorage.setItem('DeptId', data.Dept_Id);
         localStorage.setItem('UserName',data.User_Name);
@@ -45,6 +45,23 @@ const Login = () => {
         localStorage.setItem('Email', data.User_Email);
         localStorage.setItem('Plantcode', data.Plant_Code);
         localStorage.setItem('EmpId', data.Employee_ID);
+        localStorage.setItem('RoleID', data.Role_ID);
+      const selectedData = {
+        Active: data.Active_Status,
+        DeptId: data.Dept_Id,
+        UserName: data.User_Name,
+        UserID: data.User_ID,
+        DeptName: data.Dept_Name,
+        PlantName: data.Plant_Name,
+        Email: data.User_Email,
+        PlantCode: data.Plant_Code,
+        EmpId: data.Employee_ID,
+        RoleId: data.Role_ID,
+        Permissions:data.Screen_Code,
+      };
+      const encryptedData = encryptSessionData(selectedData);
+          sessionStorage.setItem('userData', encryptedData);
+         
         
    navigate("/home/Home");
       }

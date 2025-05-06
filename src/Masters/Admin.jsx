@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Stack, IconButton, Typography, Button, Modal, FormControl, InputLabel, OutlinedInput } from '@mui/material';
+import { Box, Stack, IconButton, Typography, Button, Modal, FormControl, InputLabel, OutlinedInput,MenuItem } from '@mui/material';
  import { AddMenuAccess, get_Menus, get_Menus_Not, get_Sub_Menu } from '../controller/AdminMasterapiservice';
 import { useNavigate, useParams, useLocation, useSearchParams } from "react-router-dom";
 import{
@@ -12,7 +12,7 @@ import { IoArrowBack } from "react-icons/io5";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import SubjectRoundedIcon from "@mui/icons-material/SubjectRounded";
 
-
+import { decryptSessionData } from "../controller/StorageUtils";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { toast } from "react-toastify";
 import {
@@ -27,10 +27,11 @@ import { ToastContainer } from 'react-toastify';
 
 const Admin = () => {
     const navigate = useNavigate();
-    const { roleID } = useParams();
+    const { roleId } = useParams();
     const location = useLocation();
     const role = location.state?.role || '';
     const roleIdNo = location.state?.Role_No;
+
 
     const [menuData, setMenuData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -45,7 +46,11 @@ const Admin = () => {
     const [main, setMain] = useState([]);
     const [sub, setSub] = useState([]);
 
-
+    const Username = localStorage.getItem('UserName');
+    const UserID = localStorage.getItem('UserID');
+  
+  const RoleID = localStorage.getItem('RoleID');
+  console.log(RoleID)
     // ✅ Custom Toolbar
       const CustomToolbar = () => (
         <GridToolbarContainer>
@@ -58,7 +63,11 @@ const Admin = () => {
     const getData = async () => {
         try {
             const response = await get_Menus(role, roleIdNo);
+            console.log('roleIdNo:', roleIdNo); // should be a number
+            console.log('role:', role);         // string like 'REQUESTER'
+
             setMenuData(response.data || []);
+            
             setIsLoading(false);
         } catch (error) {
             console.error("Error fetching menu data", error);
@@ -80,6 +89,7 @@ const Admin = () => {
     const getMenuNames = async () => {
         try {
             const response = await get_Menus_Not(role, roleIdNo);
+            console.log(roleIdNo)
             setMain(response.data);
             setIsLoading(false);
         } catch (error) {
@@ -89,21 +99,21 @@ const Admin = () => {
     };
 
     useEffect(() => {
-        // if (roleId) {
-        //     setRoleno(roleId);
-        //     console.log('roleId from URL:', roleId);
-        // } else {
-        //     console.error('roleId is undefined!');
-        // }
-        // const encryptedData = sessionStorage.getItem("userData");
-        // if (encryptedData) {
-        //     const decryptedData = decryptSessionData(encryptedData);
-        //     setEmployeeId(decryptedData.EmployeeId);
-        //     setToken(decryptedData.token);
-        // }
+        if (roleId) {
+            setRoleno(roleId);
+            console.log('roleId from URL:', roleId);
+        } else {
+            console.error('roleId is undefined!');
+        }
+        const encryptedData = sessionStorage.getItem("userData");
+        if (encryptedData) {
+            const decryptedData = decryptSessionData(encryptedData);
+            setEmployeeId(decryptedData.EmployeeId);
+            
+        }
         getData();
         getMenuNames();
-    }, [roleID]);
+    }, [roleId]);
 
     const columns = [
         {
@@ -223,7 +233,7 @@ const Admin = () => {
     return (
         <>
             <ToastContainer />
-            <Box>
+            <Box style={{ marginTop: "120px"}}>
                 <Typography variant="h3" color="blue" align="center">
                     {`${role} Permission`}
                 </Typography>
@@ -235,7 +245,7 @@ const Admin = () => {
                         } />
                     </Button>
 
-                    <Box sx={{ position: 'absolute', top: '10px', right: '10px' }}>
+                    <Box sx={{ position: 'absolute', top: '10px', right: '10px',marginTop:"120px" }}>
                         <button
                             style={{
                                 fontSize: "20px",
@@ -254,42 +264,50 @@ const Admin = () => {
 
                 {/* Add Modal */}
                 <Modal open={openModal} onClose={handleCloseModal}>
-                    <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '20px', borderRadius: '10px', boxShadow: 24, width: 400 }}>
+                    <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' ,backgroundColor: 'white', padding: '20px', borderRadius: '10px', boxShadow: 24, width: 400 }}>
                         <Typography mb={2} style={{ fontWeight: 'bold', fontSize: '28px', textDecoration: 'underline' }}>
                             Add Access
                         </Typography>
 
                         {/* Menu Selection using react-select */}
                         <FormControl fullWidth sx={{ mb: 2 }}>
-                            <Select
-                                id="menu-select"
-                                options={main.map(item => ({
-                                    label: item.Screen_Type,
-                                    value: item.Screen_Type
-                                }))}
-                                value={main.find(item => item.Screen_Type === addmenu) ? { label: addmenu, value: addmenu } : null}
-                                onChange={handleMenuChange}
-                                placeholder="Select Menu"
-                            />
-                        </FormControl>
+    <InputLabel id="menu-select-label">Select Menu</InputLabel>
+    <Select
+        labelId="menu-select-label"
+        id="menu-select"
+        value={addmenu}
+        label="Select Menu"
+        onChange={handleMenuChange}
+    >
+        {main.map((item) => (
+            <MenuItem key={item.Screen_Type} value={item.Screen_Type}>
+                {item.Screen_Type}
+            </MenuItem>
+        ))}
+    </Select>
+</FormControl>
 
-                        <FormControl fullWidth>
-                            <Select
-                                id="submenu-select"
-                                isMulti
-                                options={submenu.map(item => ({
-                                    label: item.Screen_Name,
-                                    value: item.Screen_ID
-                                }))}
-                                value={submenu.filter(item => sub.includes(item.Screen_id)).map(item => ({
-                                    label: item.Screen_Name,
-                                    value: item.Screen_ID
-                                }))}
-                                onChange={handleSubMenuChange}
-                                placeholder="Select Sub Menu"
-                            />
-                        </FormControl>
+                        
 
+
+<FormControl fullWidth sx={{ mb: 2 }}>
+    <InputLabel id="submenu-select-label">Select Sub Menu</InputLabel>
+    <Select
+        labelId="submenu-select-label"
+        id="submenu-select"
+        multiple
+        value={sub} // `sub` should be an array of selected values
+        onChange={handleSubMenuChange}
+        label="Select Sub Menu"
+        renderValue={(selected) => selected.length > 0 ? `${selected.length} item(s) selected` : 'Select Sub Menu'}
+    >
+        {submenu.map((item) => (
+            <MenuItem key={item.Screen_ID} value={item.Screen_ID}>
+                {item.Screen_Name}
+            </MenuItem>
+        ))}
+    </Select>
+</FormControl>
 
                         <Box mt={2} display="flex" justifyContent="center" gap={2}>
                             <Button onClick={handleCloseModal} style={{ backgroundColor: deepOrange[500], color: 'white', fontSize: '12px' }}>
@@ -319,8 +337,8 @@ const Admin = () => {
                                     console.log('Screen Type:', screenType);
 
                                     navigate({
-                                        pathname: `${roleID}`,
-                                        search: `?menu_name=${screenType}&role=${role}&roleNo=${roleID}`,
+                                        pathname: `${roleId}`,
+                                        search: `?menu_name=${screenType}&role=${role}&roleNo=${roleId}`,
                                     });
                                 }
                             }}
