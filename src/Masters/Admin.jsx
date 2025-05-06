@@ -34,17 +34,15 @@ const Admin = () => {
 
 
     const [menuData, setMenuData] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+   
     const [roleno, setRoleno] = useState('');
     const [openModal, setOpenModal] = useState(false);
-    const [addmenu, setAddmenu] = useState('');
+    const [Menu, setMenu] = useState([]);
     const [submenu, setSubmenu] = useState([]);
-    let [searchParams] = useSearchParams();
-    const [employeeId, setEmployeeId] = useState("");
-    const [token, setToken] = useState("");
-    const [isButton, setIsButton] = useState(false);
-    const [main, setMain] = useState([]);
-    const [sub, setSub] = useState([]);
+    const [openAddModal, setOpenAddModal] = useState(false);
+    const [MenuTable, setMenuTable] = useState([]);
+    
+    
 
     const Username = localStorage.getItem('UserName');
     const UserID = localStorage.getItem('UserID');
@@ -115,14 +113,60 @@ const Admin = () => {
     
     ];
     
-    const handleOpenModal = () => {
-        setOpenModal(true);
+    const handleOpenAddModal = () => {
+        setOpenAddModal(true);
     };
 
     
-
+// ✅ Handle Add User
+    const handleAdd = async () => {
+      console.log("Data being sent to the server:", {
+        UserID
+       
+      });
+      console.log("Add button clicked");
+    
+    //   // Step 1: Validate required fields
+    //   if (
+       
+        
+    //   ) {
+    //     alert("Please fill in all required fields");
+    //     return;
+    //   }
+     // Step 2: Validate StorageCode (must be exactly 4 digits)
+ 
+     
+      try {
+        // Prepare data to be sent
+        const data = {
+          UserID:UserID,
+           // Make sure this is defined somewhere
+        };
+    
+        // Step 3: Call the API to add the user
+        const response = await AddMenuAccess(data); // Ensure getAdd uses a POST request
+    
+        if (response.data.success) {
+          alert("Menu added successfully!");
+          getData(); // refresh UI (e.g. user list)
+          handleCloseAddModal(); // close the modal
+        } else {
+          alert(response.data.message || "Failed to add Menu.");
+        }
+      } catch (error) {
+        console.error("Error in adding Menu:", error);
+    
+        // Step 4: Show error from server (like Employee_ID already exists)
+        if (error.response && error.response.data && error.response.data.message) {
+          alert(error.response.data.message);
+        } else {
+          alert("An error occurred while adding the Storage Location.");
+        }
+      }
+    };
    
-
+    const handleCloseAddModal = () => setOpenAddModal(false);
 
 
     return (
@@ -142,7 +186,7 @@ const Admin = () => {
 
                     <Box sx={{ position: 'absolute', top: '10px', right: '10px',marginTop:"120px" }}>
                     <IconButton
-                  onClick={handleOpenModal}
+                  onClick={handleOpenAddModal}
                   style={{
                     borderRadius: "50%",
                     backgroundColor: "#0066FF",
@@ -210,7 +254,80 @@ const Admin = () => {
               }}
             />
                     </Box>
-               
+                {/* Add Modal */}
+          <Modal open={openAddModal} onClose={() => setOpenAddModal(false)}>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                width: 400,
+                bgcolor: "background.paper",
+                borderRadius: 2,
+                boxShadow: 24,
+                p: 4,
+                margin: "auto",
+                marginTop: "10%",
+                gap: "15px",
+              }}
+            >
+              <h3
+                style={{
+                  gridColumn: "span 2",
+                  textAlign: "center",
+                  color: "#2e59d9",
+                  textDecoration: "underline",
+                  textDecorationColor: "#88c57a",
+                  textDecorationThickness: "3px",
+                }}
+              >
+                Add permission
+              </h3>
+      
+              <FormControl fullWidth>
+                <InputLabel>Menu</InputLabel>
+                <Select
+                  label="Menu"
+                  name="Menu"
+                  value={Menu}
+                  onChange={(e) => setMenu(e.target.value)}
+                  required
+                >
+                  {MenuTable.map((item, index) => (
+                    <MenuItem key={index} value={item.Screen_Type}>{item.Screen_id}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+      
+              
+      
+              <Box
+                sx={{
+                  gridColumn: "span 2",
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: "10px",
+                  marginTop: "15px",
+                }}
+              >
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={() => handleCloseAddModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  style={{ width: "90px" }}
+                  variant="contained"
+                  color="primary"
+                  onClick={handleAdd}
+                >
+                  Add
+                </Button>
+              </Box>
+            </Box>
+          </Modal>
+
             </Box>
         </>
     );
