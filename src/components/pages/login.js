@@ -46,6 +46,7 @@ const Login = () => {
         localStorage.setItem('Plantcode', data.Plant_Code);
         localStorage.setItem('EmpId', data.Employee_ID);
         localStorage.setItem('RoleID', data.Role_ID);
+        localStorage.setItem('RoleId', data.Role_ID);
       const selectedData = {
         Active: data.Active_Status,
         DeptId: data.Dept_Id,

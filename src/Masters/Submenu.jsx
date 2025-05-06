@@ -140,7 +140,7 @@ const Submenu = () => {
             const menu = menuName;
             console.log("Role ID: ", roleId);
             console.log("Menu Name: ", menu);
-            const token = 'yourTokenHere';
+            
             const response = await get_Drop_Down_Menu( roleId, menu);
             setMenuData(response.data || []);
             setIsLoading(false);
@@ -156,33 +156,29 @@ const Submenu = () => {
     }, [role, menuName]);
 
     const columns = [
-        {
-            field: "Access_Id",
-            headerName: "Access_Id",
-            Width: 250
-        },
-        {
-            field: "Screen_Name",
-            headerName: "Menu Name",
-            width: 250,
-        },
-        {
-            field: "delete",
-            headerName: "Remove Access",
-            width: 250,
-            renderCell: () => (
-                <IconButton sx={{ height: 40, width: 40, color: "#000" }}>
-                    <DeleteSweepIcon />
-                </IconButton>
-            ),
-        },
-    ];
+      {
+          field: "Screen_Name",
+          headerName: "Menu Name",
+          flex: 1
+      },
+      {
+          field: "menu",
+          headerName: "Sub Menu details",
+          flex: 1,
+          renderCell: () => (
+              <IconButton sx={{ height: 40, width: 40, color: "#000" }}>
+                  <SubjectRoundedIcon />
+              </IconButton>
+          ),
+      },
+  ];
+  
 
     return (
 
         <>
             <ToastContainer />
-            <Box>
+            <Box style={{ marginTop: "100px"}}>
                 <Typography variant="h3" color="blue" align="center">
                     {`${searchParams.get("role")}-${searchParams.get("menu_name")} Permission`}
                 </Typography>
@@ -194,119 +190,103 @@ const Submenu = () => {
                         } />
                     </Button>
 
-                    <Box sx={{ position: 'absolute', top: '10px', right: '10px' }}>
-                        <button
-                            style={{
-                                fontSize: "20px",
-                                color: "blue",
-                                border: "none",
-                                borderRadius: "10px",
-                                cursor: "pointer",
-                                fontWeight: "600",
-                            }}
-                            onClick={handleOpenModal}
-                        >
-                            <AddCircleIcon sx={{ color: "#4bb95d", fontSize: "50px" }} />
-                        </button>
+                    <Box sx={{ position: 'absolute', top: '10px', right: '10px',marginTop:"120px" }}>
+                    <IconButton
+                  onClick={handleOpenModal}
+                  style={{
+                    borderRadius: "50%",
+                    backgroundColor: "#0066FF",
+                    color: "white",
+                    width: "40px",
+                    height: "40px",
+                    marginRight: "30px",
+                    marginBottom:"10px"
+                  }}
+                >
+                  <AddCircleIcon/>
+                </IconButton>
+
                     </Box>
                 </Box>
 
-                {/* Add Modal */}
-                <Modal open={openModal} onClose={handleCloseModal}>
-                    <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '20px', borderRadius: '10px', boxShadow: 24, width: 400 }}>
-                        <Typography mb={2} style={{ fontWeight: 'bold', fontSize: '28px', textDecoration: 'underline' }}>
-                            Add Access
-                        </Typography>
+                
 
-                        <FormControl fullWidth>
-                            <Select
-                                id="submenu-select"
-                                isMulti
-                                options={drop.map(item => ({
-                                    label: item.Screen_Name,
-                                    value: item.Screen_id
-                                }))}
-                                value={drop.filter(item => submenu.includes(item.Screen_id)).map(item => ({
-                                    label: item.Screen_Name,
-                                    value: item.Screen_id
-                                }))}
-                                onChange={handleSubMenuChange}
-                                placeholder="Select Sub Menu"
-                            />
-                        </FormControl>
-
-
-                        <Box mt={2} display="flex" justifyContent="center" gap={2}>
-                            <Button onClick={handleCloseModal} style={{ backgroundColor: deepOrange[500], color: 'white', fontSize: '12px' }}>
-                                Cancel
-                            </Button>
-                            <Button onClick={handleAdd} style={{ backgroundColor: '#4bb95d', color: 'white', fontSize: '12px' }}>
-                                Add
-                            </Button>
-                        </Box>
-                    </Box>
-                </Modal>
-
-                <Stack spacing={0} direction="column">
+                
                     <Box style={{ height: 'calc(100vh - 287px)', width: '100%', position: 'relative' }}>
-                        <DataGrid
-                            rows={menuData}
-                            columns={columns}
-                            pageSize={20}
-                            rowsPerPageOptions={[7]}
-                            disableSelectionOnClick
-                            components={{ Toolbar: CustomToolbar }}
-                            getRowId={(row) => row.Access_Id}
-                            onCellClick={async (params) => {
-                                if (params.field === "delete") {
-                                    console.log('sub_menu_id', params.row.Access_Id);
-                                    const Access_Id = params.row.Access_Id;
-                                    console.log('Access_Id', Access_Id);
-                                    try {
-                                        const response = await Delete_Menu( Access_Id, employeeId);
-                                        toast.success(response.data.message, {
-                                            position: "top-center",
-                                            autoClose: 1900,
-                                            theme: "light",
-                                            zIndex: "1500",
-                                        });
-                                        getData();
-                                    } catch (error) {
-                                        if (error.response.status === 500) {
-                                            toast.error(error.response.data.message, {
-                                                position: "top-center",
-                                                autoClose: 1900,
-                                                hideProgressBar: false,
-                                                closeOnClick: true,
-                                                pauseOnHover: true,
-                                                draggable: true,
-                                                progress: undefined,
-                                                theme: "light",
-                                                zIndex: "1500",
-                                            });
-                                        } else {
-                                            toast.error('Error in Connection', {
-                                                position: "top-center",
-                                                theme: "light",
-                                                zIndex: "1500",
-                                            });
-                                        }
-                                    }
-                                }
-                            }}
-                            sx={{
-                                '& .MuiDataGrid-columnHeaders': {
-                                    backgroundColor: '#1A5EAB',
-                                    color: 'white',
-                                },
-                                '& .MuiDataGrid-cell': {
-                                    fontWeight: 'bold',
-                                },
-                            }}
-                            density="compact"
-                        />
+                    <DataGrid
+              rows={menuData}
+              columns={columns}
+              pageSize={5}
+              rowsPerPageOptions={[5]}
+              getRowId={(row) => row.Access_Id}
+              
+              onCellClick={async (params) => {
+                if (params.field === "delete") {
+                    console.log('sub_menu_id', params.row.Access_Id);
+                    const Access_Id = params.row.Access_Id;
+                    console.log('Access_Id', Access_Id);
+                    try {
+                        const response = await Delete_Menu( Access_Id, employeeId);
+                        toast.success(response.data.message, {
+                            position: "top-center",
+                            autoClose: 1900,
+                            theme: "light",
+                            zIndex: "1500",
+                        });
+                        getData();
+                    } catch (error) {
+                        if (error.response.status === 500) {
+                            toast.error(error.response.data.message, {
+                                position: "top-center",
+                                autoClose: 1900,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                theme: "light",
+                                zIndex: "1500",
+                            });
+                        } else {
+                            toast.error('Error in Connection', {
+                                position: "top-center",
+                                theme: "light",
+                                zIndex: "1500",
+                            });
+                        }
+                    }
+                }
+            }}
+
+              slots={{ toolbar: CustomToolbar }}
+              sx={{
+                "& .MuiDataGrid-columnHeader": {
+                  backgroundColor: "#2e59d9",
+                  color: "white",
+                  fontWeight: "bold",
+                },
+                "& .MuiDataGrid-columnHeaderTitle": {
+                  fontSize: "16px",
+                  fontWeight: "bold",
+                },
+                "& .MuiDataGrid-row": {
+                  backgroundColor: "#f5f5f5",
+                  "&:hover": {
+                    backgroundColor: "#f5f5f5",
+                  },
+                },
+                "& .MuiDataGrid-row.Mui-selected": {
+                  backgroundColor: "inherit",
+                },
+                "& .MuiDataGrid-cell": {
+                  color: "#333",
+                  fontSize: "14px",
+                },
+              }}
+            />
+
                     </Box>
-                </Stack>
+               
             </Box>
         </>
     );

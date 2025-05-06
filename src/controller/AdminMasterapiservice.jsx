@@ -2,9 +2,10 @@ import { api } from "./constants";
 import axios from "axios";
 
 
-export const get_Menus = async ( roleIdNo) => {
-    console.log('roleId', roleIdNo);
-    const response = await axios.get(`${api}/AdminMaster/menu_permission?Role_id=${roleIdNo}`, {
+export const get_Menus = async (roleIdNo, role) => {
+    console.log('roleId', role);
+    console.log('rolename', roleIdNo);
+    const response = await axios.get(`${api}/AdminMaster/menu_permission?Role_id=${role}`, {
        
     });
 
