@@ -25,10 +25,11 @@ import {
 
 import CloseIcon from '@mui/icons-material/Close'; // For CloseIcon
 import QueryBuilderIcon from '@mui/icons-material/QueryBuilder'; // For QueryBuilderIcon
+import axios from 'axios';
 
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { getdetails, getApprovalView, } from '../controller/Approvalapiservice';
+import { getdetails, getApprovalView, HandleApprovalAction, } from '../controller/Approvalapiservice';
 
 
 
@@ -81,16 +82,16 @@ const Approval = () => {
   const [ToMatCode, setToMatCode] = useState("");
   const [NetDifferentPrice, setNetDifferentPrice] = useState("");
   const [ApprovalStatus, setApprovalStatus] = useState([]);
-  const [EmployeeID, setEmployeeID] = useState("");
-
-
-
+  // const [Approval_Level, setApproval_Level] = useState("");
+const UserID = localStorage.getItem('UserID');
+const RoleID=localStorage.getItem('RoleID');
+const Approval_Level=localStorage.getItem('Approval_Level');
   // Handle approve action
-  const handleApprove = (rowData) => {
-    console.log("Approved row:", rowData);
-    alert(`Approved Doc ID: ${rowData.Doc_ID}`);
-    // Add your backend update logic or API call here
-  };
+  // const handleApprove = (rowData) => {
+  //   console.log("Approved row:", rowData);
+  //   alert(`Approved Doc ID: ${rowData.Doc_ID}`);
+  //   // Add your backend update logic or API call here
+  // };
 
 
   const handleOpenViewModal = async (item) => {
@@ -210,19 +211,127 @@ const Approval = () => {
 
   // Handle action buttons
 
-
-  const handleReject = (rowData) => {
-    console.log('reject', rowData);
-
-    // console.log("Rejected", selectedRow.Doc_ID);
-    // alert(`Approved Doc ID: ${rowData.Doc_ID}`);
-    setOpenActionModal(false); // Close modal after action
+  const handleApprove = async () => {
+    if (!selectedRow) {
+      alert("No document selected for approval.");
+      return;
+    }
+  
+    try {
+      const data = {
+        Doc_ID: selectedRow.Doc_ID,
+        comment: comment,
+        Action: "Approve",
+        UserID: UserID,
+        ApprovalLevel : Approval_Level,
+      };
+  
+      console.log("Sending approval data:", data);
+      const response = await HandleApprovalAction(data);
+  
+      if (response.data.success) {
+        alert("Document Approved !");
+        setOpenActionModal(false);
+        getData(); // Refresh the grid
+      } else {
+        alert(response.data.message || "Approval Failed.");
+      }
+    } catch (error) {
+      console.error("Approval error:", error);
+      if (error.response?.data?.message) {
+        alert(error.response.data.message);
+      } else {
+        alert("An error occurred while approving the document.");
+      }
+    }
   };
-
-  const handleQuery = (rowData) => {
-    console.log("Query for", selectedRow.Doc_ID);
-    setOpenActionModal(false); // Close modal after action
+  
+  const handleReject = async () => {
+    if (!selectedRow) {
+      alert("No document selected for rejection.");
+      return;
+    }
+  
+    if (!comment.trim()) {
+      alert("Please provide a comment for rejection.");
+      return;
+    }
+  
+    try {
+      const data = {
+        docID: selectedRow.Doc_ID,
+        comment: comment,
+        action: "Reject",
+      };
+  
+      console.log("Sending rejection data:", data);
+      const response = await HandleApprovalAction(data);
+  
+      if (response.data.success) {
+        alert("Document Rejected !");
+        setOpenActionModal(false);
+        getData();
+      } else {
+        alert(response.data.message || "Rejection failed.");
+      }
+    } catch (error) {
+      console.error("Rejection error:", error);
+      if (error.response?.data?.message) {
+        alert(error.response.data.message);
+      } else {
+        alert("An error occurred while rejecting the document.");
+      }
+    }
   };
+  
+  const handleQuery = async () => {
+    if (!selectedRow) {
+      alert("No document selected for query.");
+      return;
+    }
+  
+    if (!comment.trim()) {
+      alert("Please provide a comment for query.");
+      return;
+    }
+  
+    try {
+      const data = {
+        docID: selectedRow.Doc_ID,
+        comment: comment,
+        action: "Query",
+      };
+  
+      console.log("Sending query data:", data);
+      const response = await HandleApprovalAction(data);
+  
+      if (response.data.success) {
+        alert("Document sent for query successfully!");
+        setOpenActionModal(false);
+        getData();
+      } else {
+        alert(response.data.message || "Query failed.");
+      }
+    } catch (error) {
+      console.error("Query error:", error);
+      if (error.response?.data?.message) {
+        alert(error.response.data.message);
+      } else {
+        alert("An error occurred while sending query on the document.");
+      }
+    }
+  };
+  
+
+  // const handleReject = (rowData) => {
+  //   console.log('reject', rowData);
+  //   setOpenActionModal(false); // Close modal after action
+  // };
+
+  // const handleQuery = (rowData) => {
+  //   console.log("Query for", selectedRow.Doc_ID);
+  //   setOpenActionModal(false); // Close modal after action
+  // };
 
   const handleActionOpen = (row) => {
     console.log('Row selected for action:', row);
@@ -230,11 +339,6 @@ const Approval = () => {
     setOpenActionModal(true);  // Open the action modal
   };
   
-  // const handleActionOpen = (row) => {
-  //   console.log('Query', row);
-
-  //   setOpenActionModal(true); // Simply close the modal without doing anything
-  // };
 
   const handleCancel = () => {
     setOpenActionModal(false); // Simply close the modal without doing anything
@@ -529,34 +633,8 @@ const Approval = () => {
           />
 
 
-<Button
-  variant="contained"
-  color="success"
-  onClick={handleApprove} // Directly pass the handler for approve
-  startIcon={<CheckCircleIcon />}
->
-  Approve
-</Button>
+{/* Action Buttons */}
 
-<Button
-  variant="contained"
-  color="error"
-  onClick={handleReject} // Directly pass the handler for reject
-  startIcon={<CloseIcon />}
->
-  Reject
-</Button>
-
-<Button
-  variant="contained"
-  color="primary"
-  onClick={handleQuery} // Directly pass the handler for query
-  startIcon={<QueryBuilderIcon />}
->
-  Query
-</Button>
-{/* 
-          Action Buttons
           <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
             <Button
               variant="contained"
@@ -583,7 +661,7 @@ const Approval = () => {
             >
               Query
             </Button>
-          </div> */}
+          </div> 
 
 
           {/* Cancel Button */}

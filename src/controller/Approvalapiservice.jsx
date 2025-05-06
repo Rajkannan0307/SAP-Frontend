@@ -6,6 +6,8 @@ export const getdetails=async ()=>{
     const response = await axios.get(`${api}/Approval/get_details`);
     return response.data;
 };
+
+
 export const getApprovalView = async (docId) => {
     
       // Send docId as a query parameter
@@ -19,4 +21,19 @@ export const getApprovalView = async (docId) => {
     
   };
   
+ // Handle approval action (approve/reject/query) for a specific document
+export const HandleApprovalAction = async (data) => {
+  try {
+    // Send docId, action (approve/reject/query), and comment as request payload
+    const response = await axios.post(`${api}/Approval/HandleApprovalAction`, {
+     data
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error handling approval action:', error.message);
+    throw error;
+  }
+};
+
   
