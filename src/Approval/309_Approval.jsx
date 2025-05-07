@@ -210,34 +210,42 @@ const Approval_Level=localStorage.getItem('Approval_Level');
 
 
   // Handle action buttons
-
   const handleApprove = async () => {
+    // Ensure there's a selected row to approve
     if (!selectedRow) {
       alert("No document selected for approval.");
       return;
     }
-  
+
+    // Prepare the data object to send for approval
+    const data = {
+      Doc_ID: selectedRow.Doc_ID,  // Get Doc_ID from the selected row
+      comment: comment,  // Ensure comment is not empty or undefined
+      Action: "Approve",  // Action type, in this case "Approve"
+      UserID: UserID,  // UserID of the person performing the approval
+      ApprovalLevel: Approval_Level,  // Current approval level
+    };
+
+    console.log("Sending approval data:", data);
+
     try {
-      const data = {
-        Doc_ID: selectedRow.Doc_ID,
-        comment: comment,
-        Action: "Approve",
-        UserID: UserID,
-        ApprovalLevel : Approval_Level,
-      };
-  
-      console.log("Sending approval data:", data);
+      // Call the HandleApprovalAction API to process the approval
       const response = await HandleApprovalAction(data);
-  
-      if (response.data.success) {
-        alert("Document Approved !");
-        setOpenActionModal(false);
-        getData(); // Refresh the grid
+
+      console.log('sdfg', response);
+
+      // Check for success in the response
+      if (response && response.success && response.success) {
+        alert("Document Approved!");
+        setOpenActionModal(false);  // Close the modal after successful approval
+        getData();  // Refresh the data/grid after approval
       } else {
-        alert(response.data.message || "Approval Failed.");
+        alert(response.message || "Approval Failed.");
       }
     } catch (error) {
       console.error("Approval error:", error);
+
+      // Provide specific error message if available
       if (error.response?.data?.message) {
         alert(error.response.data.message);
       } else {
@@ -245,7 +253,7 @@ const Approval_Level=localStorage.getItem('Approval_Level');
       }
     }
   };
-  
+
   const handleReject = async () => {
     if (!selectedRow) {
       alert("No document selected for rejection.");
@@ -259,9 +267,9 @@ const Approval_Level=localStorage.getItem('Approval_Level');
   
     try {
       const data = {
-        docID: selectedRow.Doc_ID,
+        DocID: selectedRow.Doc_ID,
         comment: comment,
-        action: "Reject",
+        Action: "Reject",
       };
   
       console.log("Sending rejection data:", data);
@@ -297,9 +305,9 @@ const Approval_Level=localStorage.getItem('Approval_Level');
   
     try {
       const data = {
-        docID: selectedRow.Doc_ID,
+        DocID: selectedRow.Doc_ID,
         comment: comment,
-        action: "Query",
+        Action: "Query",
       };
   
       console.log("Sending query data:", data);
@@ -321,6 +329,8 @@ const Approval_Level=localStorage.getItem('Approval_Level');
       }
     }
   };
+  
+
   
 
   // const handleReject = (rowData) => {
@@ -642,7 +652,7 @@ const Approval_Level=localStorage.getItem('Approval_Level');
               onClick={handleApprove}
               startIcon={<CheckCircleIcon />}
             >
-              Approve
+              Approved
             </Button>
 
             <Button

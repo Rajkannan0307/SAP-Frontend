@@ -25,9 +25,9 @@ export const getApprovalView = async (docId) => {
 export const HandleApprovalAction = async (data) => {
   try {
     // Send docId, action (approve/reject/query), and comment as request payload
-    const response = await axios.post(`${api}/Approval/HandleApprovalAction`, {
+    const response = await axios.post(`${api}/Approval/HandleApprovalAction`, 
      data
-    });
+    );
 
     return response.data;
   } catch (error) {
@@ -35,5 +35,7 @@ export const HandleApprovalAction = async (data) => {
     throw error;
   }
 };
+
+
 
   
