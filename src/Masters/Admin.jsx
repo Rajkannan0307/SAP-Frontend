@@ -152,29 +152,67 @@ getScreenNames();
 
 
 const handleAdd = async () => {
-  if (!roleId || !ScreenType) {
-    setError('Please select Role ID and Screen Type');
+  if (!role) {
+    toast.warn('Please Provide a Role Name', {
+      position: "top-center",
+      autoClose: 1900,
+      theme: "light",
+    });
+    return;
+  }
+
+  if (!ScreenType) {
+    toast.warn('Please Select Screen Type', {
+      position: "top-center",
+      autoClose: 1900,
+      theme: "light",
+    });
+    return;
+  }
+
+  if (!ScreenName) {
+    toast.warn('Please Select Screen Name', {
+      position: "top-center",
+      autoClose: 1900,
+      theme: "light",
+    });
     return;
   }
 
   try {
-    const response = await AddMenuAccess(
-       roleId,ScreenType
-  );
+    const data = {
+      EmployeeId: UserID, // or employeeId if you track it separately
+      role: roleIdNo,
+      screen: [ScreenName] // assuming ScreenName holds Screen_Id
+    };
 
-    if (response.data && response.data.length > 0) {
-      getData();
-      console.log('Screen Names:', response.data);
-      setError('');
+    const response = await AddMenuAccess(data);
+
+    handleCloseAddModal();
+    toast.success(response.data.message, {
+      position: "top-center",
+      autoClose: 1900,
+      theme: "light",
+    });
+
+    getData(); // refresh the table
+
+  } catch (error) {
+    if (error.response?.status === 500) {
+      toast.error(error.response.data.message, {
+        position: "top-center",
+        autoClose: 1900,
+        theme: "light",
+      });
     } else {
-      
-      setError('No Screen Names Found');
+      toast.error('Error in Connection', {
+        position: "top-center",
+        theme: "light",
+      });
     }
-  } catch (err) {
-    console.error('Error fetching Screen Names:', err);
-    setError('Failed to fetch Screen Names');
   }
 };
+
 
 const handleCloseAddModal = () => setOpenAddModal(false);
 
