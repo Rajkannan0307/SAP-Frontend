@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Stack, IconButton, Typography, Button, Modal, FormControl,Select, InputLabel, OutlinedInput } from '@mui/material';
-import { AddMenuAccess, Delete_Menu, get_Drop_Down_Menu, get_Menus, get_Menus_Not, get_Sub_Menu, get_Sub_Menu_List } from '../controller/AdminMasterapiservice';
+import { Box, Stack, IconButton, Typography, Button, Modal, FormControl,Select, MenuItem,InputLabel, OutlinedInput } from '@mui/material';
+import { AddMenuAccess, Delete_Menu, getdetailssub, get_Menus, get_Menus_Not, get_Sub_Menu, get_Sub_Menu_List } from '../controller/AdminMasterapiservice';
 import { useNavigate, useParams, useLocation, useSearchParams } from "react-router-dom";
 import { deepOrange } from '@mui/material/colors';
 import { IoArrowBack } from "react-icons/io5";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import SubjectRoundedIcon from "@mui/icons-material/SubjectRounded";
-
+import { decryptSessionData } from "../controller/StorageUtils";
 
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { toast } from "react-toastify";
@@ -28,14 +28,17 @@ const Submenu = () => {
     const [openModal, setOpenModal] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     let [searchParams] = useSearchParams();
+    const [ScreenName, setScreenName] = useState(''); // ✅ Initialize as a string, not an array or object
+    const UserID = localStorage.getItem('UserID');
+
     const menuName = searchParams.get('menu_name');
     const role = searchParams.get('roleNo');
     console.log('role', role);
     console.log('menu', menuName);
     const [drop, setDrop] = useState([]);
-    const [submenu, setSubmenu] = useState([]);
+    
     const [employeeId, setEmployeeId] = useState("");
-   
+   const [MenusNameTable, setMenusNameTable] = useState([])
 
     // ✅ Custom Toolbar
     const CustomToolbar = () => (
@@ -45,15 +48,7 @@ const Submenu = () => {
         <GridToolbarExport />
       </GridToolbarContainer>
     );
-    const handleSubMenuChange = (selectedOptions) => {
-        if (Array.isArray(selectedOptions)) {
-            setSubmenu(selectedOptions.map(option => option.value));
-        } else if (selectedOptions) {
-            setSubmenu([selectedOptions.value]);
-        } else {
-            setSubmenu([]);
-        }
-    };
+    
 
     const getDrop = async () => {
         try {
@@ -61,7 +56,7 @@ const Submenu = () => {
             const menu = menuName;
             
             const response = await get_Sub_Menu_List( roleId, menu);
-            setDrop(response.data);
+            setMenusNameTable(response.data);
             console.log(response.data);
             setIsLoading(false);
         } catch (error) {
@@ -76,62 +71,56 @@ const Submenu = () => {
     };
 
     const handleCloseModal = () => {
-        setSubmenu([]);
+        setScreenName([]);
         setOpenModal(false);
     };
 
     const handleAdd = async () => {
-        if (submenu.length === 0) {
-            toast.warn('Please Select a Access Menu', {
-                position: "top-center",
-                autoClose: 1900,
-                theme: "light",
-                zIndex: "1500",
-            });
-            return;
-        } else {
-            const roleId = role;
-            const data = {
-                EmployeeId: employeeId,
-                role: roleId,
-                screen: submenu
-            };
-
-            console.log('Data being sent:', data);
-            try {
-                const response = await AddMenuAccess(data);
-                handleCloseModal();
-                toast.success(response.data.message, {
-                    position: "top-center",
-                    autoClose: 1900,
-                    theme: "light",
-                    zIndex: "1500",
-                });
-                getData();
-            } catch (error) {
-                if (error.response.status === 500) {
-                    toast.error(error.response.data.message
-                        , {
-                            position: "top-center",
-                            autoClose: 1900,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                            theme: "light",
-                            zIndex: "1500",
-                        });
-                } else {
-                    toast.error('Error in Connection', {
-                        position: "top-center",
-                        theme: "light",
-                        zIndex: "1500",
-                    });
-                }
-            }
+        if (!ScreenName) {
+          toast.warn("Please select a Screen Name", {
+            position: "top-center",
+            autoClose: 1900,
+            theme: "light",
+            zIndex: "1500",
+          });
+          return;
         }
-    }
+      
+        const data = {
+          EmployeeId:UserID ,
+          role: role,
+          screen: [ScreenName], // ⬅️ make sure it's wrapped in an array if backend expects an array
+        };
+      
+        console.log("Data being sent:", data);
+      
+        try {
+          const response = await AddMenuAccess(data);
+       handleCloseModal();
+          toast.success(response.data.message, {
+            position: "top-center",
+            autoClose: 1900,
+            theme: "light",
+          });
+      
+          getData(); // refresh the table
+      
+        } catch (error) {
+          if (error.response?.status === 500) {
+            toast.error(error.response.data.message, {
+              position: "top-center",
+              autoClose: 1900,
+              theme: "light",
+            });
+          } else {
+            toast.error('Error in Connection', {
+              position: "top-center",
+              theme: "light",
+            });
+          }
+        }
+      };
+      
 
     // Fetching submenu data
     const getData = async () => {
@@ -141,7 +130,7 @@ const Submenu = () => {
             console.log("Role ID: ", roleId);
             console.log("Menu Name: ", menu);
             
-            const response = await get_Drop_Down_Menu( roleId, menu);
+            const response = await getdetailssub( roleId, menu);
             setMenuData(response.data || []);
             setIsLoading(false);
         } catch (error) {
@@ -151,28 +140,40 @@ const Submenu = () => {
     };
 
     useEffect(() => {
-        
         getData();
+       
+        
     }, [role, menuName]);
+    useEffect(() => {
+        const empId = localStorage.getItem("EmpId");
+        if (empId) {
+          setEmployeeId(empId);
+        }
+      }, []);
+      
 
-    const columns = [
-      {
-          field: "Screen_Name",
-          headerName: "Menu Name",
-          flex: 1
-      },
-      {
-          field: "menu",
-          headerName: "Sub Menu details",
-          flex: 1,
-          renderCell: () => (
-              <IconButton sx={{ height: 40, width: 40, color: "#000" }}>
-                  <SubjectRoundedIcon />
-              </IconButton>
-          ),
-      },
-  ];
-  
+      const columns = [
+        {
+            field: "Access_Id",
+            headerName: "Access_Id",
+            flex:1,
+        },
+        {
+            field: "Screen_Name",
+            headerName: "Menu Name",
+            flex:1,
+        },
+        {
+            field: "delete",
+            headerName: "Remove Access",
+          flex:1,
+            renderCell: () => (
+                <IconButton sx={{ height: 40, width: 40, color: "#000" }}>
+                    <DeleteSweepIcon />
+                </IconButton>
+            ),
+        },
+    ];
 
     return (
 
@@ -209,8 +210,80 @@ const Submenu = () => {
                     </Box>
                 </Box>
 
-                
+                {/* Add Modal */}
+               <Modal open={openModal} onClose={() => setOpenModal(false)}>
+               <Box
+               sx={{
+               display: "grid",
+               gridTemplateColumns: "repeat(2, 1fr)",
+               width: 400,
+               bgcolor: "background.paper",
+               borderRadius: 2,
+               boxShadow: 24,
+               p: 4,
+               margin: "auto",
+               marginTop: "10%",
+               gap: "15px",
+               }}
+               >
+               <h3
+               style={{
+               gridColumn: "span 2",
+               textAlign: "center",
+               color: "#2e59d9",
+               textDecoration: "underline",
+               textDecorationColor: "#88c57a",
+               textDecorationThickness: "3px",
+               }}
+               >
+               Add Access
+               </h3>
 
+                        
+                        <FormControl fullWidth>
+                        <InputLabel>Screen Name</InputLabel>
+                        <Select
+                        label="Screen Name"
+                        name="ScreenName"
+                        value={ScreenName}
+                        onChange={(e) => setScreenName(e.target.value)}
+                        required
+                        >
+                        {MenusNameTable.map((item, index) => (
+                        <MenuItem key={index} value={item.Screen_Id}>{item.Screen_Name}</MenuItem>
+                        ))}
+                        </Select>
+                        </FormControl>
+
+
+                       <Box
+                       sx={{
+                       gridColumn: "span 2",
+                       display: "flex",
+                       justifyContent: "center",
+                       gap: "10px",
+                       marginTop: "15px",
+                       }}
+                       >
+                       <Button
+                       variant="contained"
+                       color="error"
+                       onClick={() => handleCloseModal(false)}
+                       >
+                       Cancel
+                       </Button>
+                       <Button
+                       style={{ width: "90px" }}
+                       variant="contained"
+                       color="primary"
+                       onClick={handleAdd}
+                       >
+                       Add
+                       </Button>
+                       </Box>
+                       </Box>
+                       </Modal>
+                       
                 
                     <Box style={{ height: 'calc(100vh - 287px)', width: '100%', position: 'relative' }}>
                     <DataGrid

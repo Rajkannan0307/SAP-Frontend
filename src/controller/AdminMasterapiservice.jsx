@@ -41,7 +41,7 @@ export const get_Sub_Menu_List = async ( role, menu) => {
     return response;
 };
 
-export const get_Drop_Down_Menu = async ( roleId, menu) => {
+export const getdetailssub = async ( roleId, menu) => {
     console.log('roleId', roleId); 
     console.log('Screen', menu); 
     
