@@ -2,7 +2,7 @@ import { api } from "./constants";
 import axios from "axios";
 
 
-export const get_Menus = async (roleIdNo, role) => {
+export const getdetails = async (roleIdNo, role) => {
     console.log('roleId', role);
     console.log('rolename', roleIdNo);
     const response = await axios.get(`${api}/AdminMaster/menu_permission?Role_id=${role}`, {
@@ -17,24 +17,25 @@ export const AddMenuAccess = async (data) => {
     return response;
 };
 
-export const get_Menus_Not = async ( roleIdNo) => {
-    console.log('roleId', roleIdNo);
-    const response = await axios.get(`${api}/AdminMaster/AccessNotMenu?Role_id=${roleIdNo}`, );
+export const get_ScreenType = async ( roleIdNo) => {
+    console.log('ScreenType', roleIdNo);
+    const response = await axios.get(`${api}/AdminMaster/ScreenType?Role_id=${roleIdNo}`, );
 
     return response;
 };
 
-export const get_Sub_Menu = async ( roleIdNo, Screen_Type) => {
-    console.log('roleId', roleIdNo);
-    const response = await axios.get(`${api}/AdminMaster/sub_menu_permission?Role_id=${roleIdNo}&Screen_Type=${Screen_Type}`,);
+export const get_ScreenName = async ( roleIdNo, Screen_Type) => {
+    console.log('ScreenName', roleIdNo);
+    console.log('screennnnnn',Screen_Type)
+    const response = await axios.get(`${api}/AdminMaster/ScreenName?Role_id=${roleIdNo}&Screen_Type=${Screen_Type}`,);
 
     return response;
 };
-export const get_Sub_Menu_List = async ( roleId, menu) => {
-    console.log('roleId', roleId); 
+export const get_Sub_Menu_List = async ( role, menu) => {
+    console.log('s', role); 
     console.log('Screen', menu); 
     
-    const response = await axios.get(`${api}/AdminMaster/SubMenuList?Role_id=${roleId}&menuName=${menu}`,
+    const response = await axios.get(`${api}/AdminMaster/SubMenuList?Role_id=${role}&menuName=${menu}`,
     );
 
     return response;
