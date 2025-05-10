@@ -148,6 +148,8 @@ const handleOpenAddModal = () => {
 setOpenAddModal(true);
 getScreenType();
 getScreenNames();
+setScreenName('');
+setScreenType('');
 };
 
 
@@ -214,7 +216,12 @@ const handleAdd = async () => {
 };
 
 
-const handleCloseAddModal = () => setOpenAddModal(false);
+const handleCloseAddModal = () => 
+  {
+    setOpenAddModal(false);
+    // getScreenNames('');
+    // getScreenType('')
+  }
 
 
 return (
