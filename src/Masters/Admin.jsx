@@ -30,9 +30,9 @@ const navigate = useNavigate();
 const { roleId } = useParams();
 const location = useLocation();
 const role = location.state?.role || '';
-console.log('testing:',role)
+
 const roleIdNo = location.state?.Role_No;
-console.log('pro testing:',roleIdNo)
+
 const [screenNames, setScreenNames] = useState([]);
 const [error, setError] = useState('');
 const [menuData, setMenuData] = useState([]);
@@ -66,7 +66,7 @@ const getData = async () => {
 try {
 const response = await getdetails(role, roleIdNo);
 console.log(response);
-console.log('viiiii:', roleIdNo); // should be a number
+
 
 setMenuData(response.data);
 
@@ -80,7 +80,7 @@ console.error("Error fetching menu data", error);
 const getScreenType = async () => {
 try {
 const response = await get_ScreenType(roleIdNo, role); // Correct order
-console.log('vissiiii:', roleIdNo);
+
 setMenuTable(response.data);
 } catch (error) {
 console.error("Error updating user:", error);
@@ -113,12 +113,12 @@ getData();
 } else {
 console.error('roleId is undefined!');
 }
-const encryptedData = sessionStorage.getItem("userData");
-if (encryptedData) {
-const decryptedData = decryptSessionData(encryptedData);
+// const encryptedData = sessionStorage.getItem("userData");
+// if (encryptedData) {
+// const decryptedData = decryptSessionData(encryptedData);
 
 
-}
+// }
 
 
 }, [roleId]);
