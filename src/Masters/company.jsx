@@ -22,7 +22,7 @@ import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
 import { MenuItem, InputLabel, FormControl } from "@mui/material";
 
-
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import {
   getAdd,
   getUpdates,
@@ -59,7 +59,20 @@ const Company = () => {
     { field: "Com_Code", headerName: "Company Code", flex: 1 },
     
     { field: "Com_Name", headerName: " Company Name ", flex: 1 },
-    { field: "Com_Address", headerName: " Company Logo", flex: 2 },
+    { field: "Com_Address", headerName: " Company Logo", flex: 2 ,
+      renderCell: (params) => (
+              <div style={{ display: "flex", gap: "10px" }}>
+                <IconButton
+                  size="large"
+                  color="primary"
+                  // Pass the row data to the modal handler
+                >
+                  <VisibilityIcon fontSize="small" />
+                </IconButton>
+              </div>
+            ),
+          
+    },
 
     {
       field: "ActiveStatus",
