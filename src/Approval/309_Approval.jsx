@@ -42,7 +42,8 @@ const Approval = () => {
   const [originalRows, setOriginalRows] = useState([]);
   const [data, setData] = useState([]);
 
-  const [comment, setComment] = useState(""); // To manage the comment state
+  const [Comment, setComment] = useState('');
+  // To manage the comment state
 
   const [openActionModal, setOpenActionModal] = useState(false); // For action modal visibility
 
@@ -86,21 +87,19 @@ const Approval = () => {
 const UserID = localStorage.getItem('UserID');
 const RoleID=localStorage.getItem('RoleID');
 const Approval_Level=localStorage.getItem('Approval_Level');
-  // Handle approve action
-  // const handleApprove = (rowData) => {
-  //   console.log("Approved row:", rowData);
-  //   alert(`Approved Doc ID: ${rowData.Doc_ID}`);
-  //   // Add your backend update logic or API call here
-  // };
 
 
   const handleOpenViewModal = async (item) => {
-    setOpenViewModal(true);
+    setOpenViewModal(true); // Opens the modal
     console.log(item); // Log to check if item is being passed correctly
     await getViewButton(item.Doc_ID); // Pass Doc_ID to fetch data
   };
   
 
+  const handleCloseViewModal = () => {
+    setOpenViewModal(false);  // Closes the modal
+  };
+  
   // Function to handle search input (you can implement filtering here)
   const handleSearch = () => {
     console.log("Searching for:", searchText);
@@ -137,7 +136,7 @@ const Approval_Level=localStorage.getItem('Approval_Level');
 
     // Approve Column
     {
-      field: "approve",
+      field: "approved",
       headerName: "Action",
       flex: 1,
       sortable: false,
@@ -199,8 +198,7 @@ const Approval_Level=localStorage.getItem('Approval_Level');
   };
   
 
-
-
+  
 
   useEffect(() => {
     getData();
@@ -217,16 +215,18 @@ const Approval_Level=localStorage.getItem('Approval_Level');
       return;
     }
 
+    
     // Prepare the data object to send for approval
     const data = {
       Doc_ID: selectedRow.Doc_ID,  // Get Doc_ID from the selected row
-      comment: comment,  // Ensure comment is not empty or undefined
-      Action: "Approve",  // Action type, in this case "Approve"
+      Approver_Comment: Comment,  // Ensure comment is not empty or undefined
+      Action: "Approved",  // Action type, in this case "Approve"
       UserID: UserID,  // UserID of the person performing the approval
-      ApprovalLevel: Approval_Level,  // Current approval level
+      Approval_Level: Approval_Level,  // Current approval level
     };
 
-    console.log("Sending approval data:", data);
+   
+    console.log('Sending approval data:', data);
 
     try {
       // Call the HandleApprovalAction API to process the approval
@@ -260,7 +260,7 @@ const Approval_Level=localStorage.getItem('Approval_Level');
       return;
     }
   
-    if (!comment.trim()) {
+    if (!Comment.trim()) {
       alert("Please provide a comment for rejection.");
       return;
     }
@@ -268,7 +268,7 @@ const Approval_Level=localStorage.getItem('Approval_Level');
     try {
       const data = {
         DocID: selectedRow.Doc_ID,
-        comment: comment,
+        Approver_Comment: Comment,
         Action: "Reject",
       };
   
@@ -298,7 +298,7 @@ const Approval_Level=localStorage.getItem('Approval_Level');
       return;
     }
   
-    if (!comment.trim()) {
+    if (!Comment.trim()) {
       alert("Please provide a comment for query.");
       return;
     }
@@ -306,7 +306,7 @@ const Approval_Level=localStorage.getItem('Approval_Level');
     try {
       const data = {
         DocID: selectedRow.Doc_ID,
-        comment: comment,
+        Approver_Comment: Comment,
         Action: "Query",
       };
   
@@ -330,19 +330,6 @@ const Approval_Level=localStorage.getItem('Approval_Level');
     }
   };
   
-
-  
-
-  // const handleReject = (rowData) => {
-  //   console.log('reject', rowData);
-  //   setOpenActionModal(false); // Close modal after action
-  // };
-
-  // const handleQuery = (rowData) => {
-  //   console.log("Query for", selectedRow.Doc_ID);
-  //   setOpenActionModal(false); // Close modal after action
-  // };
-
   const handleActionOpen = (row) => {
     console.log('Row selected for action:', row);
     setSelectedRow(row);  // Store selected row to pass to the modal
@@ -639,7 +626,7 @@ const Approval_Level=localStorage.getItem('Approval_Level');
             variant="outlined"
             fullWidth
             margin="normal"
-            onChange={(e) => setComment(e.target.value)} // Update the comment state
+            onChange={(e) =>  setComment(e.target.value)} // Update the comment state
           />
 
 

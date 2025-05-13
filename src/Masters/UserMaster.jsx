@@ -610,6 +610,8 @@ const UserMaster = () => {
               <MenuItem value={2}>Level 2</MenuItem>
               <MenuItem value={3}>Level 3</MenuItem>
               <MenuItem value={4}>Level 4</MenuItem>
+              <MenuItem value={5}>Level 5</MenuItem>
+
             </Select>
           </FormControl>
           <TextField
@@ -800,6 +802,8 @@ const UserMaster = () => {
               <MenuItem value={2}>Level 2</MenuItem>
               <MenuItem value={3}>Level 3</MenuItem>
               <MenuItem value={4}>Level 4</MenuItem>
+              <MenuItem value={5}>Level 5</MenuItem>
+
             </Select>
           </FormControl>
           <TextField
