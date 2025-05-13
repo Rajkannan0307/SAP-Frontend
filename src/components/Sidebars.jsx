@@ -207,17 +207,20 @@ useEffect(() => {
           isOpen={Report}
           toggleSection={toggleReport}
           icon={<ReportIcon />}
+          Permissions={Permissions}
           label="Report"
           links={[
             {
               name: "Report 1",
               path: "/home/Report1",
               icon: <ReportIcon style={{ marginRight: "8px", color: "#ffcc00" }}/>,
+              code:'Report1'
             },
             {
               name: "Report 2",
               path: "/home/Report2",
               icon: <ReportIcon style={{ marginRight: "8px", color: "#ffcc00" }} />,
+              code:'Report2'
             },
           ]}
           codeList={[

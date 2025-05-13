@@ -176,7 +176,7 @@ const handleAdd = async () => {
 
   try {
     const data = {
-      EmployeeId: UserID, // or employeeId if you track it separately
+      UserID: UserID, // or employeeId if you track it separately
       role: roleIdNo,
       screen: [ScreenName] // assuming ScreenName holds Screen_Id
     };
