@@ -25,14 +25,13 @@ export const get_ScreenType = async ( roleIdNo) => {
 };
 
 export const get_ScreenName = async ( roleIdNo, Screen_Type) => {
-    console.log('ScreenName', roleIdNo);
-    console.log('screennnnnn',Screen_Type)
+    
     const response = await axios.get(`${api}/AdminMaster/ScreenName?Role_id=${roleIdNo}&Screen_Type=${Screen_Type}`,);
 
     return response;
 };
 export const get_Sub_Menu_List = async ( role, menu) => {
-    console.log('s', role); 
+  
     console.log('Screen', menu); 
     
     const response = await axios.get(`${api}/AdminMaster/SubMenuList?Role_id=${role}&menuName=${menu}`,

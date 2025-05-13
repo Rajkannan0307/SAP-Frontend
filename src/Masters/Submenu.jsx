@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Stack, IconButton, Typography, Button, Modal, FormControl,Select, MenuItem,InputLabel, OutlinedInput } from '@mui/material';
+import { Box, IconButton, Typography, Button, Modal, FormControl,Select, MenuItem,InputLabel, OutlinedInput } from '@mui/material';
 import { AddMenuAccess, Delete_Menu, getdetailssub, get_Menus, get_Menus_Not, get_Sub_Menu, get_Sub_Menu_List } from '../controller/AdminMasterapiservice';
 import { useNavigate, useParams, useLocation, useSearchParams } from "react-router-dom";
-import { deepOrange } from '@mui/material/colors';
+
 import { IoArrowBack } from "react-icons/io5";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
-import SubjectRoundedIcon from "@mui/icons-material/SubjectRounded";
-import { decryptSessionData } from "../controller/StorageUtils";
+
 
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { toast } from "react-toastify";
@@ -26,7 +25,7 @@ const Submenu = () => {
     const { roleId } = useParams();
     const location = useLocation();
     const [openModal, setOpenModal] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+   
     let [searchParams] = useSearchParams();
     const [ScreenName, setScreenName] = useState(''); // ✅ Initialize as a string, not an array or object
     const UserID = localStorage.getItem('UserID');
@@ -35,7 +34,7 @@ const Submenu = () => {
     const role = searchParams.get('roleNo');
     console.log('role', role);
     console.log('menu', menuName);
-    const [drop, setDrop] = useState([]);
+   
     
     const [employeeId, setEmployeeId] = useState("");
    const [MenusNameTable, setMenusNameTable] = useState([])
@@ -58,10 +57,10 @@ const Submenu = () => {
             const response = await get_Sub_Menu_List( roleId, menu);
             setMenusNameTable(response.data);
             console.log(response.data);
-            setIsLoading(false);
+            
         } catch (error) {
             console.error("Error fetching menu data", error);
-            setIsLoading(false);
+           
         }
     };
 
@@ -132,24 +131,20 @@ const Submenu = () => {
             
             const response = await getdetailssub( roleId, menu);
             setMenuData(response.data || []);
-            setIsLoading(false);
+          
         } catch (error) {
             console.error("Error fetching menu data", error);
-            setIsLoading(false);
+           
         }
     };
 
     useEffect(() => {
+      
         getData();
        
         
     }, [role, menuName]);
-    useEffect(() => {
-        const empId = localStorage.getItem("EmpId");
-        if (empId) {
-          setEmployeeId(empId);
-        }
-      }, []);
+   
       
 
       const columns = [

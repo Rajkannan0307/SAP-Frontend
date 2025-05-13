@@ -12,7 +12,7 @@ import { IoArrowBack } from "react-icons/io5";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import SubjectRoundedIcon from "@mui/icons-material/SubjectRounded";
 
-import { decryptSessionData } from "../controller/StorageUtils";
+
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { toast } from "react-toastify";
 import {
@@ -92,9 +92,7 @@ const getScreenNames = async () => {
     const response = await get_ScreenName( roleId,ScreenType); 
     if (response.data && response.data.length > 0) {
       setMenusNameTable(response.data); // Set the menus fetched from the API
-    } else {
-      console.log("No Screen Names Found");
-    }
+    } 
   } catch (error) {
     console.error('Error fetching Screen Names:', error);
   }
@@ -113,12 +111,7 @@ getData();
 } else {
 console.error('roleId is undefined!');
 }
-// const encryptedData = sessionStorage.getItem("userData");
-// if (encryptedData) {
-// const decryptedData = decryptSessionData(encryptedData);
 
-
-// }
 
 
 }, [roleId]);
@@ -216,12 +209,9 @@ const handleAdd = async () => {
 };
 
 
-const handleCloseAddModal = () => 
-  {
-    setOpenAddModal(false);
-    // getScreenNames('');
-    // getScreenType('')
-  }
+const handleCloseAddModal = () => setOpenAddModal(false);
+ 
+  
 
 
 return (

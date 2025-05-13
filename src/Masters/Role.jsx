@@ -46,17 +46,7 @@ const Role = () => {
             field: 'Menus',
             headerName: 'Menus',
             width: 150,
-            // renderCell: (params) => (
-            //   <IconButton
-            //     sx={{ height: 40, width: 40, color: "#000" }}
-            //     onClick={(event) => {
-            //       event.stopPropagation(); // This prevents the row click
-                 
-            //     }}
-            //   >
-            //     <SubjectRoundedIcon />
-            //   </IconButton>
-            // ),
+           
             renderCell: () => (
               <IconButton sx={{ height: 40, width: 40, color: "#000" }}>
                   <SubjectRoundedIcon />

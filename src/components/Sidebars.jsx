@@ -21,12 +21,16 @@ import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
 import { FaDollarSign } from "react-icons/fa6";
 import { RiCustomerService2Fill } from "react-icons/ri";
 import { MdBusinessCenter } from "react-icons/md";
+import usePermissions from "../controller/usePermission";
+import { decryptSessionData } from "../controller/StorageUtils";
 const Sidebar = ({ setSidebarOpen }) => {
   const [open, setOpen] = useState(false);
   const [Masters, setMasterOpen] = useState(false);
   const [Approval, setApprovalOpen] = useState(false);
   const [Dashboard, setDashboardOpen] = useState(false);
   const [Report, setReportOpen] = useState(false);
+  const [employeeName, setEmployeeName] = useState('');
+  const [Role, setRole] = useState('');
   // Pass sidebar open state to parent
   useEffect(() => {
     setSidebarOpen(open);
@@ -36,6 +40,22 @@ const Sidebar = ({ setSidebarOpen }) => {
     setOpen(!open);
     if (open) closeAllDropdowns();
   };
+  
+  const Permissions= usePermissions();
+
+  useEffect(() => {
+    console.log("Permissions from hook:", Permissions);
+  }, [Permissions]);
+  
+useEffect(() => {
+  const encryptedData = sessionStorage.getItem('userData');
+  if (encryptedData) {
+    const decryptedData = decryptSessionData(encryptedData);
+    console.log('decryptSessionData',decryptedData); // Check the decrypted data
+    setEmployeeName(decryptedData.UserName);
+    setRole(decryptedData.Role);
+  }
+}, []);
 
   const toggleMasters = () => {
     setMasterOpen(!Masters);
@@ -124,6 +144,7 @@ const Sidebar = ({ setSidebarOpen }) => {
           open={open}
           isOpen={Dashboard}
           toggleSection={toggleDashboard}
+          Permissions={Permissions}
           icon={<MdDashboard style={{color:"#FFF5EE"}} />}
           label="Dashboard"
           links={[{ name: "Dashboard", path: "/home/dashboard",code:'dashboard' }]}
@@ -137,22 +158,22 @@ const Sidebar = ({ setSidebarOpen }) => {
           isOpen={Masters}
           toggleSection={toggleMasters}
           icon={<PiNuclearPlantFill style={{ color: "lightcoral" }}/>}
-          
+          Permissions={Permissions}
           label="Masters"
           links={[
-            { name: "Company", path: "/home/company" ,icon:<BusinessIcon style={{ marginRight: "2px" ,color:"yellow",code:'company'}}/>},
-            { name: "Business Division", path: "/home/BusinessDivision" ,icon:<MdBusinessCenter style={{ marginRight: "2px",fontSize:"22px" ,color:"ButtonFace",code:'BusinessDivision'}}/>},
-            { name: "Plant", path: "/home/Plant" ,icon: <GiPlantsAndAnimals style={{ marginRight: "2px",fontSize:"22px",color: "hotpink" ,code:'Plant' }} />  },
-            { name: "Department", path: "/home/Department",icon: <Diversity2Icon style={{ marginRight: "2px",fontSize:"22px",color: "bisque" ,code:'Department' }} /> },
-            { name: "Login User", path: "/home/UserMaster" ,icon:< AccountCircleIcon style={{ marginRight: "2px", color:"aqua",code:'UserMaster' }}/>},
-            { name: "Role", path: "/home/Role" ,icon:< MdOutlineAdminPanelSettings style={{ marginRight: "2px",width:"25px",fontSize:"24px" ,color:"goldenrod" ,code:'Role' }}/>},
-            { name: "Material", path: "/home/Material" , icon:<AcUnitIcon style={{ marginRight: "2px", color:"greenyellow" ,code:'Material' }}/>},
-            { name: "Vendor", path: "/home/Vendor" ,icon:<FcFactory style={{ marginRight: "2px",fontSize:"24px" ,width:"25px" ,code:'Vendor' }}/>},
-            { name: "Customer", path: "/home/Customer",icon:<RiCustomerService2Fill style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"deepskyblue",code:'Customer' }}/> },
-            { name: "Storage Location", path: "/home/StorageLocation" ,icon:<GrStorage style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"gold",code:'StorageLocation' }}/>},
-            { name: "Movement Type", path: "/home/Movement_Type",icon:<DriveFileMoveIcon  style={{ marginRight: "2px",fontSize:"22px" ,width:"25px",color:"turquoise",code:'Movement_Type' }}/>},
-            { name: "MVT List Item", path: "/home/MVT_LIST_ITEM",icon:<FaTableList style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"crimson",code:'MVT_LIST_ITEM' }}/> },
-            { name: "Cost Center", path: "/home/CostCenter",icon:<FaDollarSign style={{ marginRight: "2px",fontSize:"22px" ,width:"25px",color:"darkorange",code:'CostCenter' }}/>},
+            { name: "Company", path: "/home/company" ,icon:<BusinessIcon style={{ marginRight: "2px" ,color:"yellow",}}/>,code:'company',},
+            { name: "Business Division", path: "/home/BusinessDivision" ,icon:<MdBusinessCenter style={{ marginRight: "2px",fontSize:"22px" ,color:"ButtonFace",}}/>,code:'BusinessDivision'},
+            { name: "Plant", path: "/home/Plant" ,icon: <GiPlantsAndAnimals style={{ marginRight: "2px",fontSize:"22px",color: "hotpink"  }} /> ,code:'Plant' },
+            { name: "Department", path: "/home/Department",icon: <Diversity2Icon style={{ marginRight: "2px",fontSize:"22px",color: "bisque" }} />,code:'Department'  },
+            { name: "Login User", path: "/home/UserMaster" ,icon:< AccountCircleIcon style={{ marginRight: "2px", color:"aqua" }}/>,code:'UserMaster'},
+            { name: "Role", path: "/home/Role" ,icon:< MdOutlineAdminPanelSettings style={{ marginRight: "2px",width:"25px",fontSize:"24px" ,color:"goldenrod" ,}}/>,code:'Role' },
+            { name: "Material", path: "/home/Material" , icon:<AcUnitIcon style={{ marginRight: "2px", color:"greenyellow" ,code:'Material' }}/>,code:'Material'},
+            { name: "Vendor", path: "/home/Vendor" ,icon:<FcFactory style={{ marginRight: "2px",fontSize:"24px" ,width:"25px" ,code:'Vendor' }}/>,code:'Vendor'},
+            { name: "Customer", path: "/home/Customer",icon:<RiCustomerService2Fill style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"deepskyblue" }}/>,code:'Customer' },
+            { name: "Storage Location", path: "/home/StorageLocation" ,icon:<GrStorage style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"gold" }}/>,code:'StorageLocation'},
+            { name: "Movement Type", path: "/home/Movement_Type",icon:<DriveFileMoveIcon  style={{ marginRight: "2px",fontSize:"22px" ,width:"25px",color:"turquoise" }}/>,code:'Movement_Type'},
+            { name: "MVT List Item", path: "/home/MVT_LIST_ITEM",icon:<FaTableList style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"crimson" }}/>,code:'MVT_LIST_ITEM' },
+            { name: "Cost Center", path: "/home/CostCenter",icon:<FaDollarSign style={{ marginRight: "2px",fontSize:"22px" ,width:"25px",color:"darkorange" }}/>,code:'CostCenter'},
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
@@ -169,9 +190,10 @@ const Sidebar = ({ setSidebarOpen }) => {
           isOpen={Approval}
           toggleSection={toggleApproval}
           icon={<FcApproval style={{ fontSize: "24px" }} />}
+          Permissions={Permissions}
           label="Approval"
           links={[
-            { name: "309 Approval", path: "/home/Approval_309" ,icon:<MdOutlineApproval  style={{ fontSize: "20px",marginRight: "3px" , color:"rgb(228, 46, 182)",code:'Approval_309'}}/>},
+            { name: "309 Approval", path: "/home/Approval_309" ,icon:<MdOutlineApproval  style={{ fontSize: "20px",marginRight: "3px" , color:"rgb(228, 46, 182)"}}/>,code:'Approval_309'},
 
           ]}
           codeList={[
@@ -207,59 +229,72 @@ const Sidebar = ({ setSidebarOpen }) => {
   );
 };
 
-const SidebarSection = ({ open, isOpen, toggleSection, icon, label, links }) => (
-  <div style={{ marginBottom: "10px" }}>
-    <button
-      onClick={toggleSection}
-      style={{
-        background: "none",
-        border: "none",
-        cursor: "pointer",
-        width: "100%",
-        textAlign: "left",
-        padding: "5px",
-        color: "white",
-        display: "flex",
-        alignItems: "center",
-        fontWeight: "bold",
-        fontSize: "18px",
-        justifyContent: "space-between",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        {icon}
-        {open && label}
-      </div>
-      {open && (isOpen ? <ArrowDropDownIcon /> : <ArrowRightIcon />)}
-    </button>
-    {open && isOpen && (
-      <div style={{ paddingLeft: "20px" }}>
-        {links.map((link, index) => (
-          <Link
-            key={index}
-            to={link.path}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              textDecoration: "none",
-              padding: "5px",
-              fontSize: "15px",
-              color: "white",
-              fontFamily: "Arial",
-            }}
-          >
-            {/* Render link icon if available */}
-            {link.icon && (
-              <span style={{ marginRight: "8px", display: "flex", alignItems: "center" }}>
-                {link.icon}
-              </span>
-            )}
-            {link.name}
-          </Link>
-        ))}
-      </div>
-    )}
-  </div>
-);
+const SidebarSection = ({ open, isOpen, toggleSection, icon, label, links, codeList = [], Permissions = [] }) => {
+  // Check if the user has any permissions from this section
+  const hasPermission = codeList.some(code => Permissions.includes(code));
+  if (!hasPermission) return null;
+
+  const filteredLinks = links.filter(link => {
+    // If link.code exists, filter using that, else use link.path as fallback
+    return Permissions.includes(link.code || link.path);
+  });
+
+  if (filteredLinks.length === 0) return null;
+
+  return (
+    <div style={{ marginBottom: "10px" }}>
+      <button
+        onClick={toggleSection}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          width: "100%",
+          textAlign: "left",
+          padding: "5px",
+          color: "white",
+          display: "flex",
+          alignItems: "center",
+          fontWeight: "bold",
+          fontSize: "18px",
+          justifyContent: "space-between",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {icon}
+          {open && label}
+        </div>
+        {open && (isOpen ? <ArrowDropDownIcon /> : <ArrowRightIcon />)}
+      </button>
+      {open && isOpen && (
+        <div style={{ paddingLeft: "20px" }}>
+          {filteredLinks.map((link, index) => (
+            <Link
+              key={index}
+              to={link.path}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                textDecoration: "none",
+                padding: "5px",
+                fontSize: "15px",
+                color: "white",
+                fontFamily: "Arial",
+              }}
+            >
+              {link.icon && (
+                <span style={{ marginRight: "8px", display: "flex", alignItems: "center" }}>
+                  {link.icon}
+                </span>
+              )}
+              {link.name}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 
 export default Sidebar;
