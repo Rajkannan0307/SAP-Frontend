@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LoginImage from "../images/login.png";
 import { getLogin } from "../../controller/Masterapiservice";
-import { encryptSessionData } from "../../controller/StorageUtils";
+import { encryptSessionData, decryptSessionData } from "../../controller/StorageUtils";
+
 const Login = () => {
   const [username, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-
+  
+  
   // Handle login form submission
   const handleLogin = async (e) => {
   e.preventDefault();
@@ -36,36 +38,52 @@ const Login = () => {
 
       console.log('data', data);
        if(data) {
-        localStorage.setItem('Active', data.Active_Status);
-        localStorage.setItem('DeptId', data.Dept_Id);
-        localStorage.setItem('UserName',data.User_Name);
-        localStorage.setItem('UserID',data.User_ID);
-        localStorage.setItem('Deptname', data.Dept_Name);
-        localStorage.setItem('PlantName', data.Plant_Name);
-        localStorage.setItem('Email', data.User_Email);
-        localStorage.setItem('Plantcode', data.Plant_Code);
-        localStorage.setItem('EmpId', data.Employee_ID);
-        localStorage.setItem('RoleID', data.Role_ID);
-        localStorage.setItem('Approval_Level', data.User_Level);
+        // localStorage.setItem('Active', data.Active_Status);
+        // localStorage.setItem('DeptId', data.Dept_Id);
+        // localStorage.setItem('UserName',data.User_Name);
+        // localStorage.setItem('UserID',data.User_ID);
+        // localStorage.setItem('Deptname', data.Dept_Name);
+        // localStorage.setItem('PlantName', data.Plant_Name);
+        // localStorage.setItem('Email', data.User_Email);
+        // localStorage.setItem('Plantcode', data.Plant_Code);
+        // localStorage.setItem('EmpId', data.Employee_ID);
+        // localStorage.setItem('RoleID', data.Role_ID);
+        // localStorage.setItem('Approval_Level', data.User_Level);
+        // localStorage.setItem('Permission', data.Screen_Codes);
         
-      const selectedData = {
-        Active: data.Active_Status,
-        DeptId: data.Dept_Id,
-        UserName: data.User_Name,
-        UserID: data.User_ID,
-        DeptName: data.Dept_Name,
-        PlantName: data.Plant_Name,
-        Email: data.User_Email,
-        PlantCode: data.Plant_Code,
-        EmpId: data.Employee_ID,
-        RoleId: data.Role_ID,
-        Permissions:data.Screen_Code,
-      };
-      const encryptedData = encryptSessionData(selectedData);
-          sessionStorage.setItem('userData', encryptedData);
+        const selectedData = {
+          Active: data.Active_Status,
+          DeptId: data.Dept_Id,
+          UserName: data.User_Name,
+          UserID: data.User_ID,
+          DeptName: data.Dept_Name,
+          PlantName: data.Plant_Name,
+          Email: data.User_Email,
+          PlantCode: data.Plant_Code,
+          EmpId: data.Employee_ID,
+          RoleId: data.Role_ID,
          
+          CompanyCode: data.Company_code,
+          CompanyName: data.Company_name,
+          CompanyId:data.Com_ID,
+          
+          
+          Role: data.Role_Name,
+          Permissions:data.Screen_Codes,
+          login:true
+        };
+        const encryptedData = encryptSessionData(selectedData);
+        console.log('dec data', encryptedData);
         
-   navigate("/home/Home");
+            sessionStorage.setItem('userData', encryptedData);
+
+            const encryptedUserData = sessionStorage.getItem('userData');
+            const decryptedUserData = decryptSessionData(encryptedUserData);
+            console.log('decrypted userdata:', decryptedUserData);
+            
+          
+          
+      navigate("/home/Home");
       }
       console.log("Login successful", response.data);
       
