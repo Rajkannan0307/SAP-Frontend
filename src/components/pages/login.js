@@ -38,19 +38,19 @@ const Login = () => {
 
       console.log('data', data);
        if(data) {
-        localStorage.setItem('Active', data.Active_Status);
-        localStorage.setItem('DeptId', data.Dept_Id);
-        localStorage.setItem('UserName',data.User_Name);
-        localStorage.setItem('UserID',data.User_ID);
-        localStorage.setItem('Deptname', data.Dept_Name);
-        localStorage.setItem('PlantName', data.Plant_Name);
-        localStorage.setItem('Email', data.User_Email);
-        localStorage.setItem('Plantcode', data.Plant_Code);
-        localStorage.setItem('EmpId', data.Employee_ID);
-        localStorage.setItem('RoleID', data.Role_ID);
-        localStorage.setItem('Approval_Level', data.User_Level);
-        localStorage.setItem('Permission', data.Screen_Codes);
-        localStorage.setItem('Plant_ID', data.Plant_ID);
+        // localStorage.setItem('Active', data.Active_Status);
+        // localStorage.setItem('DeptId', data.Dept_Id);
+        // localStorage.setItem('UserName',data.User_Name);
+        // localStorage.setItem('UserID',data.User_ID);
+        // localStorage.setItem('Deptname', data.Dept_Name);
+        // localStorage.setItem('PlantName', data.Plant_Name);
+        // localStorage.setItem('Email', data.User_Email);
+        // localStorage.setItem('Plantcode', data.Plant_Code);
+        // localStorage.setItem('EmpId', data.Employee_ID);
+        // localStorage.setItem('RoleID', data.Role_ID);
+        // localStorage.setItem('Approval_Level', data.User_Level);
+        // localStorage.setItem('Permission', data.Screen_Codes);
+        
         const selectedData = {
           Active: data.Active_Status,
           DeptId: data.Dept_Id,
@@ -73,7 +73,7 @@ const Login = () => {
           login:true
         };
         const encryptedData = encryptSessionData(selectedData);
-        console.log('dec data', encryptedData);
+       
         
             sessionStorage.setItem('userData', encryptedData);
 
@@ -132,8 +132,9 @@ const Login = () => {
             padding: "40px",
             borderRadius: "12px",
             boxShadow: "0 10px 30px rgba(157, 236, 245, 0.2)",
-            width: "350px",
+            width: "450px",
             textAlign: "center",
+            height:"290px"
           }}
         >
           <h2
@@ -141,10 +142,10 @@ const Login = () => {
               marginBottom: "20px",
               color: "rgb(65, 171, 230)",
               fontSize: "28px",
-              fontWeight: "bold",
+              fontWeight:"bolder",
             }}
           >
-            Login
+            SAP APPROVAL WORKFLOW LOGIN
           </h2>
           <form
             className="submit"
@@ -160,7 +161,7 @@ const Login = () => {
               <input
                 placeholder="Login ID"
                 style={{
-                  width: "200px",
+                  width: "250px",
                   padding: "12px",
                   borderRadius: "20px",
                   border: "1px solid #ccc",
@@ -177,7 +178,7 @@ const Login = () => {
               <input
                 placeholder="password"
                 style={{
-                  width: "200px",
+                  width: "250px",
                   padding: "12px",
                   borderRadius: "20px",
                   border: "1px solid #ccc",
@@ -224,7 +225,7 @@ const Login = () => {
           width: "80%",
           height: "100vh",
           backgroundImage: `url(${LoginImage})`,
-          backgroundSize: "cover",
+          backgroundSize: "30%",
           backgroundPosition: "40% 70%",
         }}
       />

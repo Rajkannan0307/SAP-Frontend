@@ -15,3 +15,7 @@ export const getAdd = async (data) => {
     return response;
   };
  
+  export const User_Img = async (data, ) => {
+    const response = await axios.post(`${api}/CompanyMaster/Upload_Image`, data);
+    return response;
+};

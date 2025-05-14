@@ -6,7 +6,6 @@ import {
   Box,
   FormControlLabel,
   IconButton,
-  Select,
   Switch,
 } from "@mui/material";
 import {
@@ -20,16 +19,17 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
-import { MenuItem, InputLabel, FormControl } from "@mui/material";
 
+import { deepOrange } from "@mui/material/colors";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import {
+  User_Img,
   getAdd,
   getUpdates,
   getdetails,
-  
 } from "../controller/CompanyMasterapiservice";
-
+import { api } from "../controller/constants";
+import { decryptSessionData } from "../controller/StorageUtils"
 const Company = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
@@ -37,41 +37,42 @@ const Company = () => {
   const [data, setData] = useState([]);
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
-  const [openUploadModal, setOpenUploadModal] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
+
+  const [UserID, setUserID] = useState('');
   const [uploadedFile, setUploadedFile] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState(""); // Track upload status
-  const [uploadedFileData, setUploadedFileData] = useState(null);
+
   const [ActiveStatus, setActiveStatus] = useState(false);
+
+ // const UserID = localStorage.getItem("UserID");
  
-  const [CompanyTable, setCompanyTable] = useState([]);
-  const Username = localStorage.getItem('UserName');
-  const UserID = localStorage.getItem('UserID');
-  // const [newRecord] = useState([]);
-  // const [updateRecord] = useState([]);
-  // const [errRecord] = useState([]);
-  const [ CompanyCode, setCompanyCode] = useState("");
-  const [ CompanyID, setCompanyID] = useState("");
-  const [ CompanyName, setCompanyName] = useState("");
-  const [ CompanyAddress, setCompanyAddress] = useState("");
+
+  const [CompanyCode, setCompanyCode] = useState("");
+  const [CompanyID, setCompanyID] = useState("");
+  const [CompanyName, setCompanyName] = useState("");
+  const [imagePreview, setImagePreview] = useState("");
+  const [CompanyLogo, setCompanyLogo] = useState("");
   const columns = [
     { field: "Com_Code", headerName: "Company Code", flex: 1 },
-    
-    { field: "Com_Name", headerName: " Company Name ", flex: 1 },
-    { field: "Com_Address", headerName: " Company Logo", flex: 2 ,
+
+    { field: "Com_Name", headerName: "Company Name", flex: 1 },
+    {
+      field: "CompanyLogo",
+      headerName: "Company Logo",
+      flex: 1,
       renderCell: (params) => (
-              <div style={{ display: "flex", gap: "10px" }}>
-                <IconButton
-                  size="large"
-                  color="primary"
-                  // Pass the row data to the modal handler
-                >
-                  <VisibilityIcon fontSize="small" />
-                </IconButton>
-              </div>
-            ),
-          
+        <div style={{ display: "flex", gap: "10px" }}>
+          <Button
+            onClick={(event) => {
+              event.stopPropagation();
+              console.log(params.row); // ✅ prevent row click
+              handleViewImage(params.row);
+            }}
+            style={{ fontSize: "18px", color: "blue" }}
+          >
+            <VisibilityIcon fontSize="small" />
+          </Button>
+        </div>
+      ),
     },
 
     {
@@ -126,48 +127,38 @@ const Company = () => {
     }
   };
 
+    useEffect(() => {
+    const encryptedData = sessionStorage.getItem('userData');
+    if (encryptedData) {
+      const decryptedData = decryptSessionData(encryptedData);
+      setUserID(decryptedData.UserID);
+      console.log("us",decryptedData.UserID)
+    }
+  }, []);
+
   useEffect(() => {
     getData();
-     console.log('username', Username)
-     console.log('UserID', UserID)
   }, []);
- 
 
   // ✅ Handle Add Modal
   const handleOpenAddModal = (item) => {
-    
-    setCompanyCode("");
     setCompanyCode("");
     setCompanyName("");
-   
+
     setActiveStatus(true);
     setOpenAddModal(true);
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
 
-  // ✅ Handle Upload Modal
-  const handleOpenUploadModal = () => setOpenUploadModal(true);
-  const handleCloseUploadModal = () => {
-    setOpenUploadModal(false);
-    setUploadStatus("");
-    setUploadedFile(null);
-    setUploadProgress(0);
-    setUploadedFileData(null);
-    setIsUploading(false);
-  };
-
- 
-
-
   // ✅ Handle Row Click for Edit
 
   const handleRowClick = (params) => {
     setCompanyID(params.row.Com_ID);
-   
+
     setCompanyCode(params.row.Com_Code);
     setCompanyName(params.row.Com_Name);
-    // setCompanyAddress(params.row.Company_Address);
+    setCompanyLogo(params.row.CompanyLogo);
     setActiveStatus(params.row.Active_Status);
     setOpenEditModal(true); // Open the modal
     // get_Company();
@@ -181,13 +172,7 @@ const Company = () => {
       setRows(originalRows);
     } else {
       const filteredRows = originalRows.filter((row) =>
-        [
-         
-          "Com_Code",
-          "Com_Name",
-          "Com_Address",
-          
-        ].some((key) => {
+        ["Com_Code", "Com_Name", "Com_Address"].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
         })
@@ -196,42 +181,72 @@ const Company = () => {
     }
   };
 
-  // ✅ Handle Add Material
   const handleAdd = async () => {
     console.log("Data being sent to the server:", {
-      ActiveStatus,UserID,CompanyCode, CompanyName,
+      ActiveStatus,
+      UserID,
+      CompanyCode,
+      CompanyName,
     });
     console.log("Add button clicked");
-    if (CompanyCode === ''  ||  CompanyName === '' ) {
+
+    if (CompanyCode === "" || CompanyName === "") {
       alert("Please fill in all required fields");
-      return;  // Exit the function if validation fails
+      return;
     }
 
     try {
       const data = {
-        UserID:UserID,
-        Com_Code:CompanyCode,
-        
-         Com_Name: CompanyName,
-         
+        UserID: UserID,
+        Com_Code: CompanyCode,
+        Com_Name: CompanyName,
         Active_Status: ActiveStatus,
+        CompanyLogo: CompanyLogo,
       };
-      const response = await getAdd(data);
-      if (response.data.success) {
-        alert("  Company added successfully!");
-        getData(); // refresh UI (e.g. user list)
-        handleCloseAddModal(); // close the modal
+
+      // First API call - Adding Company
+      const response1 = await getAdd(data);
+      console.log("Company add response:", response1.data);
+
+      if (response1.data.success) {
+        const comId = response1.data.Com_ID;
+        console.log("New Company ID:", comId);
+
+        // Prepare formData for image upload
+        const formData = new FormData();
+        formData.append("Com_ID", comId);
+
+        // Check if uploadedFile exists
+        if (uploadedFile) {
+          console.log("File to be uploaded:", uploadedFile);
+          formData.append("User_Image", uploadedFile);
+          formData.append("UserID", UserID);
+
+          // Second API call - Uploading Image
+          const response2 = await User_Img(formData);
+          console.log("Image upload response:", response2.data); // Log the response
+
+          if (response2.data.message === "Image Uploaded Successfully") {
+            alert("Company and image added successfully!");
+            getData(); // Refresh UI
+            handleCloseAddModal(); // Close modal
+          } else {
+            console.log("Error in image upload response:", response2.data);
+            alert("Error while uploading image. Please try again.");
+          }
+        } else {
+          alert("Please select an image to upload.");
+        }
       } else {
-        alert(response.data.message || "Failed to  Company user.");
+        alert("Error while adding the company. Please try again.");
       }
     } catch (error) {
-      console.error("Error in adding  Company:", error);
-  
-      // Step 4: Show error from server (like Employee_ID already exists)
-      if (error.response && error.response.data && error.response.data.message) {
+      console.error("Error in adding Company:", error);
+
+      if (error.response?.data?.message) {
         alert(error.response.data.message);
       } else {
-        alert("An error occurred while adding the  Company.");
+        alert("An error occurred while adding the Company.");
       }
     }
   };
@@ -239,39 +254,73 @@ const Company = () => {
   const handleUpdate = async () => {
     try {
       const data = {
-        UserID:UserID,
-         Com_ID:  CompanyID,
+        UserID: UserID,
+        Com_ID: CompanyID,
         Com_Code: CompanyCode,
-         
-         Com_Name:  CompanyName,
-         
+        Com_Name: CompanyName,
         Active_Status: ActiveStatus,
+        CompanyLogo: CompanyLogo,
       };
-  
-      console.log("Data being sent:", data);
-  
+
+      console.log("Data being sent for update:", data);
+
+      // First API call - Updating the company data (without image)
       const response = await getUpdates(data);
-  
-      // If success
+
       if (response.data.success) {
-        alert(response.data.message);
-        getData(); // Refresh data
-        handleCloseEditModal(); // Close modal
+        // If a new company logo is selected, proceed with image upload
+        if (uploadedFile) {
+          console.log("File to be uploaded:", uploadedFile);
+
+          // Prepare FormData for image upload
+          const formData = new FormData();
+          formData.append("Com_ID", CompanyID);
+          formData.append("UserID", UserID);
+          formData.append("User_Image", uploadedFile); // Assuming uploadedFile is the selected file
+
+          // Second API call - Uploading the new CompanyLogo
+          const response2 = await User_Img(formData);
+          console.log("Image upload response:", response2.data); // Log the response
+
+          if (response2.data.message === "Image Uploaded Successfully") {
+            alert("Company and image updated successfully!");
+            getData(); // Refresh the UI
+            handleCloseEditModal(); // Close modal
+          } else {
+            console.log("Error in image upload response:", response2.data);
+            alert("Error while uploading image. Please try again.");
+          }
+        } else {
+          alert("No new image selected for upload.");
+        }
       } else {
-        // If success is false, show the backend message
+        // If updating the company fails, show backend message
         alert(response.data.message);
       }
     } catch (error) {
-      console.error("Error details:", error.response?.data);
-  
-      if (error.response && error.response.data && error.response.data.message) {
+      console.error("Error in updating Company:", error);
+
+      if (error.response?.data?.message) {
         alert(error.response.data.message); // Specific error from backend
       } else {
-        alert("An error occurred while updating the  Company. Please try again.");
+        alert(
+          "An error occurred while updating the Company. Please try again."
+        );
       }
     }
   };
-  
+
+  const handleFileUpload = (event) => {
+    setUploadedFile(event.target.files[0]);
+  };
+
+  const handleViewImage = (company) => {
+    console.log(company);
+    const imageUrl = `${api}/CompanyMaster/ViewImage/${company.CompanyLogo}`;
+
+    setImagePreview(imageUrl);
+  };
+
   // excel download
   const handleDownloadExcel = () => {
     if (data.length === 0) {
@@ -279,21 +328,14 @@ const Company = () => {
       return;
     }
 
-    const DataColumns = [
-     
-      "Company_Code",
-      "Company_Name",
-    
-      
-      "ActiveStatus",
-    ];
+    const DataColumns = ["Company_Code", "Company_Name", "ActiveStatus"];
 
     const filteredData = data.map((item) => ({
       Company_Code: item.Com_Code,
-       
-       Company_Name: item.Com_Name,
-    
-      ActiveStatus: item.Active_Status ? "Active" : "Inactive"
+
+      Company_Name: item.Com_Name,
+
+      ActiveStatus: item.Active_Status ? "Active" : "Inactive",
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(filteredData, {
@@ -353,7 +395,7 @@ const Company = () => {
             marginBottom: -7,
           }}
         >
-           Company Master
+          Company Master
         </h2>
       </div>
 
@@ -406,9 +448,6 @@ const Company = () => {
 
         {/* Icons */}
         <div style={{ display: "flex", gap: "10px" }}>
-          
-          
-
           {/* Download Button */}
           <IconButton
             onClick={handleDownloadExcel}
@@ -513,46 +552,52 @@ const Company = () => {
               textDecorationThickness: "3px",
             }}
           >
-            Add  Company
+            Add Company
           </h3>
-         
-           
-            
 
           <TextField
-  label="Company Code"
-  name="CompanyCode"
-  value={CompanyCode}
-  type="text"
-  onChange={(e) => {
-    const value = e.target.value;
-    // Remove any non-digit character
-    if (/^\d*$/.test(value)) {
-      setCompanyCode(value);
-    }
-  }}
-  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
-    maxLength: 4,
-
-  }}
-  required
-/>
-
+            label="Company Code"
+            name="CompanyCode"
+            value={CompanyCode}
+            type="text"
+            onChange={(e) => {
+              const value = e.target.value;
+              // Remove any non-digit character
+              if (/^\d*$/.test(value)) {
+                setCompanyCode(value);
+              }
+            }}
+            inputProps={{
+              inputMode: "numeric",
+              pattern: "[0-9]*",
+              maxLength: 4,
+            }}
+            required
+          />
 
           <TextField
             label="Company Name"
             name=" Company Name"
-            value={ CompanyName}
+            value={CompanyName}
             onChange={(e) => setCompanyName(e.target.value)}
             required
           />
-          {/* <TextField
-            label=" Company Address"
-            name=" Company Address"
-            value={ CompanyAddress}
-            onChange={(e) => setCompanyAddress(e.target.value)}
-            required
-          /> */}
+
+          <input
+            type="file"
+            accept=".jpg,.jpeg,.png"
+            onChange={handleFileUpload}
+            style={{
+              padding: "8px",
+              backgroundColor: "white", // ✅ Blue background
+              color: "black",
+              border: "1px solid black",
+              borderRadius: "5px",
+              cursor: "pointer",
+              width: "180px",
+              marginTop: "10px",
+            }}
+          />
 
           <FormControlLabel
             control={
@@ -633,34 +678,41 @@ const Company = () => {
               textDecorationThickness: "3px",
             }}
           >
-            Edit  Business Division
+            Edit Business Division
           </h3>
-         <TextField
-                     label="Company Code"
-                     name="Company_Code"
-                     value={CompanyCode}
-                     onChange={(e) => setCompanyCode(e.target.value)}
-                     InputProps={{
-                       readOnly: true,  // This makes the TextField read-only
-                     }}
-                   />
+          <TextField
+            label="Company Code"
+            name="Company_Code"
+            value={CompanyCode}
+            onChange={(e) => setCompanyCode(e.target.value)}
+            InputProps={{
+              readOnly: true, // This makes the TextField read-only
+            }}
+          />
 
-         
           <TextField
             label=" Company Name"
             name=" Company Name"
-            value={ CompanyName}
+            value={CompanyName}
             onChange={(e) => setCompanyName(e.target.value)}
             required
           />
-          {/* <TextField
-            label="Company Address"
-            name=" Company Address"
-            value={ CompanyAddress}
-            onChange={(e) => setCompanyAddress(e.target.value)}
-            required
-          /> */}
 
+          <input
+            type="file"
+            accept=".jpg,.jpeg,.png"
+            onChange={handleFileUpload}
+            style={{
+              padding: "8px",
+              backgroundColor: "white", // ✅ Blue background
+              color: "black",
+              border: "1px solid black",
+              borderRadius: "5px",
+              cursor: "pointer",
+              width: "180px",
+              marginTop: "10px",
+            }}
+          />
           <FormControlLabel
             control={
               <Switch
@@ -709,7 +761,48 @@ const Company = () => {
           </Box>
         </Box>
       </Modal>
-     
+
+      {/* Modal for Viewing Image */}
+      <Modal
+        open={imagePreview !== ""}
+        onClose={() => setImagePreview("")}
+        aria-labelledby="view-image-modal"
+        aria-describedby="modal-for-viewing-image"
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            backgroundColor: "white",
+            padding: "20px",
+            borderRadius: "10px",
+            boxShadow: 24,
+            width: 400,
+          }}
+        >
+          <Box display="flex" justifyContent="center">
+            <img
+              src={imagePreview}
+              alt="CompanyLogo"
+              style={{ width: "100%", maxHeight: "400px", objectFit: "cover" }}
+            />
+          </Box>
+          <Box display="flex" justifyContent="center" mt={2}>
+            <Button
+              onClick={() => setImagePreview("")}
+              style={{
+                backgroundColor: deepOrange[500],
+                color: "white",
+                fontSize: "12px",
+              }}
+            >
+              Close
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
     </div>
   );
 };
