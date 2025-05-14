@@ -29,14 +29,15 @@ import axios from 'axios';
 
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { getdetails, getApprovalView, HandleApprovalAction, } from '../controller/Approvalapiservice';
+import { getdetails, getApprovalView, HandleApprovalAction,getPlants,getRole } from '../controller/Approvalapiservice';
 
 
 
 const Approval = () => {
   // State to control the visibility of the modal
   const [openViewModal, setOpenViewModal] = useState(false);
-
+const [PlantTable, setPlantTable] = useState([]);
+  const [RoleTable, setRoleTable] = useState([]);
   const [selectedRow, setSelectedRow] = useState(null);
 
   const [originalRows, setOriginalRows] = useState([]);
@@ -83,11 +84,16 @@ const Approval = () => {
   const [ToMatCode, setToMatCode] = useState("");
   const [NetDifferentPrice, setNetDifferentPrice] = useState("");
   const [ApprovalStatus, setApprovalStatus] = useState([]);
-  // const [Approval_Level, setApproval_Level] = useState("");
+  
 const UserID = localStorage.getItem('UserID');
 const RoleID=localStorage.getItem('RoleID');
 const Approval_Level=localStorage.getItem('Approval_Level');
+console.log('Approval_Level',Approval_Level)
+const Plant_ID = localStorage.getItem('Plant_ID')
 
+console.log('pl',Plant_ID)
+
+//console.log('📤 Sending request to backend with params:', { Plant, Role });
 
   const handleOpenViewModal = async (item) => {
     setOpenViewModal(true); // Opens the modal
@@ -167,16 +173,34 @@ const Approval_Level=localStorage.getItem('Approval_Level');
   );
 
 
+const get_Plant = async () => {
+    try {
+      const response = await getPlants();
+      setPlantTable(response.data);
+    } catch (error) {
+      console.error("Error updating user:", error);
+    }
+  };
 
+  const GetRole = async () => {
+      try {
+        const response = await getRole();
+        setRoleTable(response.data);
+      } catch (error) {
+        console.error("Error updating user:", error);
+      }
+    };
+  
 
   const getData = async () => {
     try {
-      const response = await getdetails();
+      const response = await getdetails( Plant_ID, RoleID );
 
-      console.log(response);  // Check the structure of response
+      console.log('response 309',response);  // Check the structure of response
       setData(response);  // Ensure that this is correctly setting the data
       setOriginalRows(response); // for reference during search
       setRows(response);
+
     } catch (error) {
       console.error(error);
       setData([]);  // Handle error by setting empty data
@@ -202,8 +226,6 @@ const Approval_Level=localStorage.getItem('Approval_Level');
 
   useEffect(() => {
     getData();
-
-
   }, []);
 
 

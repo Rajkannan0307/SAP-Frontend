@@ -2,8 +2,8 @@ import { api } from "./constants";
 import axios from "axios";
 
 
-export const getdetails=async ()=>{
-    const response = await axios.get(`${api}/Approval/get_details`);
+export const getdetails=async (Plant, role)=>{
+    const response = await axios.get(`${api}/Approval/get_details?Plant=${Plant}&role=${role}`);
     return response.data;
 };
 
@@ -17,10 +17,23 @@ export const getApprovalView = async (docId) => {
   
     //   console.log("API Response", response.data); // Log successful response data
       return response.data;
-  
     
   };
   
+
+  export const getPlants = async ()=>{
+
+    const response = await axios.get(`${api}/Approval/Get_Plants`);
+    return response;
+};
+
+
+export const getRole=async ()=>{
+    const response = await axios.get(`${api}/Approval/Get_Role`);
+    return response.data;
+};
+
+
  // Handle approval action (approve/reject/query) for a specific document
 export const HandleApprovalAction = async (data) => {
   try {
