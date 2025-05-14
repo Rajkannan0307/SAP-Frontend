@@ -38,19 +38,20 @@ const Login = () => {
 
       console.log('data', data);
        if(data) {
-        // localStorage.setItem('Active', data.Active_Status);
-        // localStorage.setItem('DeptId', data.Dept_Id);
-        // localStorage.setItem('UserName',data.User_Name);
-        // localStorage.setItem('UserID',data.User_ID);
-        // localStorage.setItem('Deptname', data.Dept_Name);
-        // localStorage.setItem('PlantName', data.Plant_Name);
-        // localStorage.setItem('Email', data.User_Email);
-        // localStorage.setItem('Plantcode', data.Plant_Code);
-        // localStorage.setItem('EmpId', data.Employee_ID);
-        // localStorage.setItem('RoleID', data.Role_ID);
-        // localStorage.setItem('Approval_Level', data.User_Level);
-        // localStorage.setItem('Permission', data.Screen_Codes);
-        
+        localStorage.setItem('Active', data.Active_Status);
+        localStorage.setItem('DeptId', data.Dept_Id);
+        localStorage.setItem('UserName',data.User_Name);
+        localStorage.setItem('UserID',data.User_ID);
+        localStorage.setItem('Deptname', data.Dept_Name);
+        localStorage.setItem('PlantName', data.Plant_Name);
+        localStorage.setItem('Email', data.User_Email);
+        localStorage.setItem('Plantcode', data.Plant_Code);
+        localStorage.setItem('EmpId', data.Employee_ID);
+        localStorage.setItem('RoleID', data.Role_ID);
+        localStorage.setItem('Approval_Level', data.User_Level);
+        localStorage.setItem('Permission', data.Screen_Codes);
+         localStorage.setItem('CompanyId', data.Com_ID);
+         
         const selectedData = {
           Active: data.Active_Status,
           DeptId: data.Dept_Id,
@@ -73,7 +74,7 @@ const Login = () => {
           login:true
         };
         const encryptedData = encryptSessionData(selectedData);
-        console.log('dec data', encryptedData);
+       
         
             sessionStorage.setItem('userData', encryptedData);
 

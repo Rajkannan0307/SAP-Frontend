@@ -12,7 +12,7 @@ function usePermissions() {
     if (encryptedData) {
       const decryptedData = decryptSessionData(encryptedData);
       
-      console.log("Decrypted data in usePermissions:", decryptedData);
+     
       
     //   console.log(decryptedData.Permissions);
       setPermissions(decryptedData.Permissions);

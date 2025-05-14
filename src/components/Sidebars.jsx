@@ -43,15 +43,13 @@ const Sidebar = ({ setSidebarOpen }) => {
   
   const Permissions= usePermissions();
 
-  useEffect(() => {
-    console.log("Permissions from hook:", Permissions);
-  }, [Permissions]);
+  
   
 useEffect(() => {
   const encryptedData = sessionStorage.getItem('userData');
   if (encryptedData) {
     const decryptedData = decryptSessionData(encryptedData);
-    console.log('decryptSessionData',decryptedData); // Check the decrypted data
+  
     setEmployeeName(decryptedData.UserName);
     setRole(decryptedData.Role);
   }
