@@ -62,7 +62,7 @@ const[CompanyLogo, setCompanyLogo]=useState("");
    {
   field: "CompanyLogo",
   headerName: "Company Logo",
-  flex: 2,
+  flex: 1,
   renderCell: (params) => (
     <div style={{ display: "flex", gap: "10px" }}>
       <Button
