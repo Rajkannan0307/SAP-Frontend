@@ -133,8 +133,9 @@ const Login = () => {
             padding: "40px",
             borderRadius: "12px",
             boxShadow: "0 10px 30px rgba(157, 236, 245, 0.2)",
-            width: "350px",
+            width: "450px",
             textAlign: "center",
+            height:"290px"
           }}
         >
           <h2
@@ -142,10 +143,10 @@ const Login = () => {
               marginBottom: "20px",
               color: "rgb(65, 171, 230)",
               fontSize: "28px",
-              fontWeight: "bold",
+              fontWeight:"bolder",
             }}
           >
-            Login
+            SAP APPROVAL WORKFLOW LOGIN
           </h2>
           <form
             className="submit"
@@ -161,7 +162,7 @@ const Login = () => {
               <input
                 placeholder="Login ID"
                 style={{
-                  width: "200px",
+                  width: "250px",
                   padding: "12px",
                   borderRadius: "20px",
                   border: "1px solid #ccc",
@@ -178,7 +179,7 @@ const Login = () => {
               <input
                 placeholder="password"
                 style={{
-                  width: "200px",
+                  width: "250px",
                   padding: "12px",
                   borderRadius: "20px",
                   border: "1px solid #ccc",
@@ -225,7 +226,7 @@ const Login = () => {
           width: "80%",
           height: "100vh",
           backgroundImage: `url(${LoginImage})`,
-          backgroundSize: "cover",
+          backgroundSize: "30%",
           backgroundPosition: "40% 70%",
         }}
       />
