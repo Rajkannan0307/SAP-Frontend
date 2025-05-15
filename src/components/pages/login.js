@@ -1,115 +1,109 @@
+// src/components/pages/Login.js
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { TextField, Button, Container, Paper, Typography, Snackbar, Alert } from "@mui/material";
 import LoginImage from "../images/lp.jpeg";
 import { getLogin } from "../../controller/Masterapiservice";
 import { encryptSessionData, decryptSessionData } from "../../controller/StorageUtils";
+import { useAuth } from "../../Authentication/AuthContext";
 
 const Login = () => {
   const [username, setUserName] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [open, setOpen] = useState(false); // Snackbar visibility
   const navigate = useNavigate();
-  
-  
+  const { login } = useAuth();
+
+  // Handle Snackbar close
+  const handleClose = () => {
+    setOpen(false);
+  };
+
   // Handle login form submission
   const handleLogin = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
+    login();
+    console.log(`Sending login request for Employee_ID: ${username} and Password: ${password}`);
 
-  console.log(`Sending login request for Employee_ID: ${username} and Password: ${password}`);
+    if (username === "") {
+      setError("Enter Username");
+      setOpen(true);
+      return;
+    } else if (password === "") {
+      setError("Enter Password");
+      setOpen(true);
+      return;
+    }
 
-  if (username === "") {
-    alert("Enter USERName");
-    return;
-  } else if (password === "") {
-    alert("Enter password");
-    return;
-  }
+    try {
+      // Send login request
+      const response = await getLogin({
+        Employee_ID: username,
+        Password: password,
+      });
 
-  try {
-    // Send login request
-    const response = await getLogin({
-      Employee_ID: username,  // Pass the Employee_ID here
-      Password: password
-    });
+      console.log("response", response.data.message);
 
-    console.log('response', response.data.message);
+      if (response.data.message === "success") {
+        const data = response.data.resultLocalStorage[0];
 
-    if (response.data.message === 'success') {
-      const data = response.data.resultLocalStorage[0];
+        if (data) {
+          // Store user data in local storage
+          localStorage.setItem("Active", data.Active_Status);
+          localStorage.setItem("DeptId", data.Dept_Id);
+          localStorage.setItem("UserName", data.User_Name);
+          localStorage.setItem("UserID", data.User_ID);
+          localStorage.setItem("Deptname", data.Dept_Name);
+          localStorage.setItem("PlantName", data.Plant_Name);
+          localStorage.setItem("Email", data.User_Email);
+          localStorage.setItem("Plantcode", data.Plant_Code);
+          localStorage.setItem("EmpId", data.Employee_ID);
+          localStorage.setItem("RoleID", data.Role_ID);
+          localStorage.setItem("Approval_Level", data.User_Level);
+          localStorage.setItem("Permission", data.Screen_Codes);
+          localStorage.setItem("Plant_ID", data.Plant_ID);
+          localStorage.setItem("CompanyId", data.Com_ID);
 
-      console.log('data', data);
-       if(data) {
-        localStorage.setItem('Active', data.Active_Status);
-        localStorage.setItem('DeptId', data.Dept_Id);
-        localStorage.setItem('UserName',data.User_Name);
-        localStorage.setItem('UserID',data.User_ID);
-        localStorage.setItem('Deptname', data.Dept_Name);
-        localStorage.setItem('PlantName', data.Plant_Name);
-        localStorage.setItem('Email', data.User_Email);
-        localStorage.setItem('Plantcode', data.Plant_Code);
-        localStorage.setItem('EmpId', data.Employee_ID);
-        localStorage.setItem('RoleID', data.Role_ID);
-        localStorage.setItem('Approval_Level', data.User_Level);
-        localStorage.setItem('Permission', data.Screen_Codes);
+          // Encrypt and store session data
+          const selectedData = {
+            Active: data.Active_Status,
+            DeptId: data.Dept_Id,
+            UserName: data.User_Name,
+            UserID: data.User_ID,
+            DeptName: data.Dept_Name,
+            PlantName: data.Plant_Name,
+            Email: data.User_Email,
+            PlantCode: data.Plant_Code,
+            EmpId: data.Employee_ID,
+            RoleId: data.Role_ID,
+            CompanyCode: data.Company_code,
+            CompanyName: data.Company_name,
+            CompanyId: data.Com_ID,
+            Role: data.Role_Name,
+            Permissions: data.Screen_Codes,
+            login: true,
+          };
 
-        localStorage.setItem('Plant_ID', data.Plant_ID);
-         localStorage.setItem('CompanyId', data.Com_ID);
-         
+          const encryptedData = encryptSessionData(selectedData);
+          sessionStorage.setItem("userData", encryptedData);
 
-        const selectedData = {
-          Active: data.Active_Status,
-          DeptId: data.Dept_Id,
-          UserName: data.User_Name,
-          UserID: data.User_ID,
-          DeptName: data.Dept_Name,
-          PlantName: data.Plant_Name,
-          Email: data.User_Email,
-          PlantCode: data.Plant_Code,
-          EmpId: data.Employee_ID,
-          RoleId: data.Role_ID,
-         
-          CompanyCode: data.Company_code,
-          CompanyName: data.Company_name,
-          CompanyId:data.Com_ID,
-          
-          
-          Role: data.Role_Name,
-          Permissions:data.Screen_Codes,
-          login:true
-        };
-        const encryptedData = encryptSessionData(selectedData);
-       
-        
-            sessionStorage.setItem('userData', encryptedData);
-
-            const encryptedUserData = sessionStorage.getItem('userData');
-            const decryptedUserData = decryptSessionData(encryptedUserData);
-            console.log('decrypted userdata:', decryptedUserData);
-            
-          
-          
-      navigate("/home/Home");
+          navigate("/home/Home");
+        }
+        console.log("Login successful", response.data);
+      } else {
+        setError(response.data.message);
+        setOpen(true);
       }
-      console.log("Login successful", response.data);
-      
-    } else {
-      alert(response.data.message); // should never hit this, but just in case
+    } catch (error) {
+      console.log("Error Logging in:", error);
+      setError("Invalid username or password.");
+      setOpen(true);
     }
+  };
 
-  } catch (error) {
-    console.log("Error Logging in:", error);
-
-    // Handle 401 responses (Invalid user/password)
-    if (error.response && error.response.status === 401) {
-      alert(error.response.data.message);
-    } else {
-      alert("Something went wrong. Try again.");
-    }
-  }
-};
-
-  
-return (
-  <div
+  return (
+    <div
   style={{
     height: "100vh",
     width: "100vw",
@@ -251,11 +245,22 @@ return (
         </div>
       </div>
     </div>
-  </div>
-);
+ 
 
 
-
-}
+        {/* Snackbar for Error Messages */}
+        <Snackbar
+          open={open}
+          autoHideDuration={3000}
+          onClose={handleClose}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        >
+          <Alert onClose={handleClose} severity="error" sx={{ width: "100%" }}>
+            {error}
+          </Alert>
+        </Snackbar>
+      </div>
+  );
+};
 
 export default Login;
