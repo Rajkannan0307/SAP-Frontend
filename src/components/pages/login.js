@@ -104,16 +104,31 @@ const handleLogin = async (e) => {
 
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 8, position: "relative" }}>
+    
+    <>
+  <Box 
+    sx={{ 
+      position: "absolute", 
+      top: 0, 
+      left: 0, 
+      width: "100%", 
+      height: "100vh", 
+      background: "linear-gradient(to right, #33ccff 0%, #ff99cc 100%)",
+      zIndex: -1 
+    }} 
+  />
+
+ <Container maxWidth="sm" sx={{ mt:25 , position: "relative" ,}}>
       <Box 
         sx={{ 
-          backgroundImage: `url(${LoginImage})`,
+          //backgroundImage: url(${LoginImage}),
           backgroundSize: "cover",
           backgroundPosition: "center",
           borderRadius: 4,
           padding: 4,
           position: "relative",
-          zIndex: 1,
+          zIndex: 3,
+          background: "linear-gradient(to right, #33ccff 0%, #ff99cc 100%)", 
         }}
       >
         <Paper elevation={3} sx={{ padding: 4, backdropFilter: "blur(10px)", backgroundColor: "rgba(255, 255, 255, 0.8)" }}>
@@ -146,6 +161,8 @@ const handleLogin = async (e) => {
 </Snackbar>
 
     </Container>
+</>
+
   );
 };
 
