@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { TextField, Button, Container, Paper, Typography, Snackbar, Alert, Box } from "@mui/material";
-import LoginImage from "../images/lp.jpeg";
+import LoginImage from "../images/back.jpeg";
 import { getLogin } from "../../controller/Masterapiservice";
 import { encryptSessionData, decryptSessionData } from "../../controller/StorageUtils";
 import { AuthContext } from "../../Authentication/AuthContext";
@@ -43,10 +43,43 @@ const handleLogin = async (e) => {
     if (response.data.message === 'success') {
       const data = response.data.resultLocalStorage[0];
       if (data) {
-        const selectedData = {
+        localStorage.setItem('Active', data.Active_Status);
+        localStorage.setItem('DeptId', data.Dept_Id);
+        localStorage.setItem('UserName',data.User_Name);
+        localStorage.setItem('UserID',data.User_ID);
+        localStorage.setItem('Deptname', data.Dept_Name);
+        localStorage.setItem('PlantName', data.Plant_Name);
+        localStorage.setItem('Email', data.User_Email);
+        localStorage.setItem('Plantcode', data.Plant_Code);
+        localStorage.setItem('EmpId', data.Employee_ID);
+        localStorage.setItem('RoleID', data.Role_ID);
+        localStorage.setItem('Approval_Level', data.User_Level);
+        localStorage.setItem('Permission', data.Screen_Codes);
+
+        localStorage.setItem('Plant_ID', data.Plant_ID);
+         localStorage.setItem('CompanyId', data.Com_ID);
+         
+
+         const selectedData = {
+          Active: data.Active_Status,
+          DeptId: data.Dept_Id,
           UserName: data.User_Name,
           UserID: data.User_ID,
-          login: true
+          DeptName: data.Dept_Name,
+          PlantName: data.Plant_Name,
+          Email: data.User_Email,
+          PlantCode: data.Plant_Code,
+          EmpId: data.Employee_ID,
+          RoleId: data.Role_ID,
+         
+          CompanyCode: data.Company_code,
+          CompanyName: data.Company_name,
+          CompanyId:data.Com_ID,
+          
+          
+          Role: data.Role_Name,
+          Permissions:data.Screen_Codes,
+          login:true
         };
         const encryptedData = encryptSessionData(selectedData);
         sessionStorage.setItem('userData', encryptedData);
