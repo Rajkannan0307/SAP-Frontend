@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState,useContext } from "react";
 import { Link } from "react-router-dom";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import HomeIcon from "@mui/icons-material/Home";
@@ -9,9 +9,11 @@ import logo from './images/ranelogo.png';
 import { useNavigate } from 'react-router-dom';
 import { Box, IconButton,Typography,Table, TableBody, TableCell, TableRow, TableContainer  } from "@mui/material";
 import Popover from '@mui/material/Popover';
+import { AuthContext } from "../Authentication/AuthContext";
+
 const Topbar = () => {
   const [logoutbtn, setlogoutbtn] = useState(false);
-
+ const { logout } = useContext(AuthContext);
 
   const GenId = localStorage.getItem('EmpId');
   const Username = localStorage.getItem('UserName');
@@ -23,11 +25,12 @@ const Topbar = () => {
   const [EmployeeName,setemployeename]=useState('');
   const [Role,setRole]=useState('');
  const navigate = useNavigate();
-  const handleLogout = () => {
-    sessionStorage.removeItem('UserName');
-   
-    navigate('/'); 
+ 
+const handleLogout = () => {
+    logout(); // Use AuthContext's logout method
+    navigate('/');
   };
+
 
   const handlePopoverOpen = () => {
     setlogoutbtn(true);

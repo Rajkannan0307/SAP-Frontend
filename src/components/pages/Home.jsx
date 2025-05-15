@@ -1,30 +1,28 @@
 import React from "react";
-import welcomeImage from "../images/Landing image.png" 
+import welcomeImage from "../images/Landing image.png";
 
 const Home = () => {
   return (
     <div
       style={{
-        flex: 1, 
-        display: "flex", 
-        justifyContent: "center", 
-        alignItems: "center", 
-        height: "100%", 
-         overflow: "hidden", 
-       
-        
+        position: "relative",
+        width: "100%",
+        height: "calc(100vh - 80px)", // Adjust height without causing scroll
+        marginTop: "70px", // Adjust to your top bar height
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        overflow: "hidden",
+        backgroundColor: "#f0f0f0", // Optional background color for better visibility
       }}
     >
       <img
         src={welcomeImage}
         alt="Welcome"
         style={{
-          width: "100%", 
-          height: "100%", 
-          objectFit: "cover", 
-          zIndex:-1,
-        marginTop:'15%',
-        marginBottom:'1.5%'
+          maxWidth: "100%",
+          maxHeight: "100%",
+          objectFit: "contain", // Shows the full image without cutting
         }}
       />
     </div>

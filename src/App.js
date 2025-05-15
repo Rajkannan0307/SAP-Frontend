@@ -40,54 +40,58 @@ import Home from "./components/pages/Home";
 import { AuthProvider } from "./Authentication/AuthContext";
 import ProtectedRoute from "./Authentication/ProtectedRoute";
 const App = () => {
-  return (
-     <AuthProvider>
-    <Router>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/home" element={<ProtectedRoute><Main /></ProtectedRoute>}>
-        
-          <Route path="company" element={<Company />} />
-          <Route path="BusinessDivision" element={<BusinessDivision />} />
-          <Route path="plant" element={<Plant />} />
-          <Route path="material" element={<Material />} />
-          <Route path="storagelocation" element={<StorageLocation />} />
-          <Route path="costcenter" element={<CostCenter />} />
-          <Route path="UserMaster" element={<UserMaster />} />
-          <Route path="MVT_LIST_ITEM" element={<MVT_LIST_ITEM />} />
-          <Route path="Home" element={<Home/>} />
-          <Route path="dashboard" element={<DashBoard />} />
-          <Route path="Department" element={<Department />} />
-          <Route path="Vendor" element={<Vendor />} />
-          <Route path="Customer" element={<Customer />} />
-          <Route path="Movement_Type" element={<Movement_Type />} />
-          <Route path="Report1" element={<Report1 />} />
-          <Route path="Report2" element={<Report2 />} />
-          <Route path="phy" element={<Phy />} />
-          <Route path="Emergency" element={<Emergency />} />
-          <Route path="Rs" element={<Rs />} />
-          <Route path="RGP" element={<RGP />} />
-          <Route path="Stock" element={<Stock />} />
-          <Route path="Partno" element={<Partno />} />
-          <Route path="scrap Disposal" element={<ScrapDisposal />} />
-          <Route path="manual" element={<Manual />} />
-          <Route path="Production" element={<Production />} />
-          <Route path="scrap551" element={<Scrap />} />
-          <Route path="Material" element={<Material />} />
-          <Route path="SubContracting" element={<SubContracting />} />
-          <Route path="Inward" element={<Inward />} />
-          <Route path="Location" element={<Location />} />
-          <Route path="Role">
-            <Route index element={<Role/>} />
-            <Route path=":roleId" element={<Admin />} />
-            <Route path=":roleId/:menuId" element={<SubMenu />} />
+   return (
+    
+      <Router>
+        <AuthProvider>
+        <Routes>
+          {/* Public Route (Login) */}
+          <Route path="/" element={<Login />} />
+
+          {/* Protected Routes (Require Authentication) */}
+          <Route path="/home" element={<ProtectedRoute><Main /></ProtectedRoute>}>
+            <Route path="company" element={<Company />} />
+            <Route path="BusinessDivision" element={<BusinessDivision />} />
+            <Route path="plant" element={<Plant />} />
+            <Route path="material" element={<Material />} />
+            <Route path="storagelocation" element={<StorageLocation />} />
+            <Route path="costcenter" element={<CostCenter />} />
+            <Route path="UserMaster" element={<UserMaster />} />
+            <Route path="MVT_LIST_ITEM" element={<MVT_LIST_ITEM />} />
+            <Route path="Home" element={<Home />} />
+            <Route path="dashboard" element={<DashBoard />} />
+            <Route path="Department" element={<Department />} />
+            <Route path="Vendor" element={<Vendor />} />
+            <Route path="Customer" element={<Customer />} />
+            <Route path="Movement_Type" element={<Movement_Type />} />
+            <Route path="Report1" element={<Report1 />} />
+            <Route path="Report2" element={<Report2 />} />
+            <Route path="phy" element={<Phy />} />
+            <Route path="Emergency" element={<Emergency />} />
+            <Route path="Rs" element={<Rs />} />
+            <Route path="RGP" element={<RGP />} />
+            <Route path="Stock" element={<Stock />} />
+            <Route path="Partno" element={<Partno />} />
+            <Route path="scrap Disposal" element={<ScrapDisposal />} />
+            <Route path="manual" element={<Manual />} />
+            <Route path="Production" element={<Production />} />
+            <Route path="scrap551" element={<Scrap />} />
+            <Route path="SubContracting" element={<SubContracting />} />
+            <Route path="Inward" element={<Inward />} />
+            <Route path="Location" element={<Location />} />
+            <Route path="Role" element={<Role />} >
+              <Route index element={<Role />} />
+              <Route path=":roleId" element={<Admin />} />
+              <Route path=":roleId/:menuId" element={<SubMenu />} />
+            </Route>
+            <Route path="Approval_309" element={<Approval309 />} />
           </Route>
-          <Route path="Approval_309" element={<Approval309 />} />
-        </Route>
-      </Routes>
-    </Router>
-   </AuthProvider>
-   );
+        </Routes>
+        </AuthProvider>
+      </Router>
+    
+  );
+
 };
 
 export default App;

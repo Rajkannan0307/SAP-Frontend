@@ -1,43 +1,31 @@
-// src/AuthContext.js
-import React, { createContext, useState, useContext, useEffect } from "react";
-import { decryptSessionData } from "../controller/StorageUtils"; // Make sure this is correctly imported
+// src/Authentication/AuthContext.js
+import React, { createContext, useState, useEffect } from "react";
+import { decryptSessionData } from "../controller/StorageUtils";
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Load authentication status from sessionStorage
   useEffect(() => {
-    const encryptedUserData = sessionStorage.getItem("userData");
-    if (encryptedUserData) {
-      try {
-        const decryptedUserData = decryptSessionData(encryptedUserData);
-        console.log("Decrypted User Data:", decryptedUserData);
-        setIsAuthenticated(decryptedUserData?.login === true);
-      } catch (error) {
-        console.error("Failed to decrypt user data:", error);
-        setIsAuthenticated(false);
-      }
-    } else {
-      setIsAuthenticated(false);
+    const encryptedData = sessionStorage.getItem("userData");
+    if (encryptedData) {
+      const decryptedUser = decryptSessionData(encryptedData);
+      setUser(decryptedUser);
     }
+    setLoading(false); // Set loading to false after checking
   }, []);
-
-  const login = () => {
-    setIsAuthenticated(true);
-  };
 
   const logout = () => {
     sessionStorage.removeItem("userData");
-    setIsAuthenticated(false);
+    localStorage.removeItem("userData");
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ user, setUser, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
 };
-
-export const useAuth = () => useContext(AuthContext);
