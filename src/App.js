@@ -36,12 +36,17 @@ import Role from "./Masters/Role";
 import Admin from "./Masters/Admin";
 import SubMenu from"./Masters/Submenu";
 import BusinessDivision from "./Masters/BusinessDivision";
+import Home from "./components/pages/Home";
+import { AuthProvider } from "./Authentication/AuthContext";
+import ProtectedRoute from "./Authentication/ProtectedRoute";
 const App = () => {
   return (
+     <AuthProvider>
     <Router>
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/home" element={<Main />}>
+        <Route path="/home" element={<ProtectedRoute><Main /></ProtectedRoute>}>
+        
           <Route path="company" element={<Company />} />
           <Route path="BusinessDivision" element={<BusinessDivision />} />
           <Route path="plant" element={<Plant />} />
@@ -50,7 +55,7 @@ const App = () => {
           <Route path="costcenter" element={<CostCenter />} />
           <Route path="UserMaster" element={<UserMaster />} />
           <Route path="MVT_LIST_ITEM" element={<MVT_LIST_ITEM />} />
-          <Route path="Home" element={<DashBoard />} />
+          <Route path="Home" element={<Home/>} />
           <Route path="dashboard" element={<DashBoard />} />
           <Route path="Department" element={<Department />} />
           <Route path="Vendor" element={<Vendor />} />
@@ -81,7 +86,8 @@ const App = () => {
         </Route>
       </Routes>
     </Router>
-  );
+   </AuthProvider>
+   );
 };
 
 export default App;

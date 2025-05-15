@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import LoginImage from "../images/login.png";
+import LoginImage from "../images/lp.jpeg";
 import { getLogin } from "../../controller/Masterapiservice";
 import { encryptSessionData, decryptSessionData } from "../../controller/StorageUtils";
 
@@ -108,133 +108,154 @@ const Login = () => {
 };
 
   
-
-  return (
+return (
+  <div
+  style={{
+    height: "100vh",
+    width: "100vw",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    background: "linear-gradient(to right, #33ccff 10%, #ff99cc 100%)", // Gradient background
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundAttachment: "fixed", // Keeps the background fixed while scrolling
+  }}
+>
+    {/* Outer Centered Box */}
     <div
       style={{
-        height: "100vh",
+        width: "850px",
+        height: "500px",
+        backgroundColor: "#E9BFC1",
         display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "0",
+        borderRadius: "12px",
+        overflow: "hidden",
+        boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
       }}
     >
-      {/* Left Side - Login Form */}
+      
+      {/* Left Column with Image */}
+      <div
+  style={{
+    width: "50%",
+    backgroundColor: "#E9BFC1",
+    display: "flex",
+    flexDirection: "column",         // <--- Stack h2 above the image
+    justifyContent: "center",
+    alignItems: "center",
+    padding: "20px",                 // optional spacing
+  }}
+>
+  {/* optional spacing below the heading */}
+  <img
+    src={LoginImage}
+    alt="Login Visual"
+    style={{
+      width: "80%",
+      height: "165px",
+      objectFit: "contain",
+      borderRadius: "10px",
+    }}
+  />
+</div>
+
+
+      {/* Right Column with Inner Login Box */}
       <div
         style={{
           width: "50%",
-          height: "100vh",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: "rgb(134, 218, 250)",
+          padding: "30px",
+            flexDirection: "column",
         }}
       >
+         <h2 style={{ marginBottom: "20px" }}>SAP APPROVAL LOGIN</h2> 
+        {/* Inner Box for Login Details */}
         <div
           style={{
-            backgroundColor: "rgb(245, 236, 234)",
-            padding: "40px",
+            width: "100%",
+            maxWidth: "300px",
+            backgroundColor: "#E0E9F4",
+            padding: "30px",
             borderRadius: "12px",
-            boxShadow: "0 10px 30px rgba(157, 236, 245, 0.2)",
-            width: "450px",
-            textAlign: "center",
-            height:"290px"
+            boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
           }}
         >
-          <h2
-            style={{
-              marginBottom: "20px",
-              color: "rgb(65, 171, 230)",
-              fontSize: "28px",
-              fontWeight:"bolder",
-            }}
-          >
-            SAP APPROVAL WORKFLOW LOGIN
-          </h2>
-          <form
-            className="submit"
-            onSubmit={handleLogin}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            {/* username Input */}
-            <div className="form-group" style={{ marginBottom: "15px" }}>
-              <input
-                placeholder="Login ID"
-                style={{
-                  width: "250px",
-                  padding: "12px",
-                  borderRadius: "20px",
-                  border: "1px solid #ccc",
-                  outline: "none",
-                  textAlign: "center",
-                }}
-                type="text"
-                value={username}
-                onChange={(e) => setUserName(e.target.value)}
-              />
-            </div>
-            {/* password Input */}
-            <div className="form-group" style={{ marginBottom: "15px" }}>
-              <input
-                placeholder="password"
-                style={{
-                  width: "250px",
-                  padding: "12px",
-                  borderRadius: "20px",
-                  border: "1px solid #ccc",
-                  outline: "none",
-                  textAlign: "center",
-                }}
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            {/* Login Button */}
-            <button
-              type="submit"
+          <h3 style={{ textAlign: "center", marginBottom: "20px", color: "#2994d1" }}>
+            Login
+          </h3>
+          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column" }}>
+            <input
+              type="text"
+              placeholder="Login ID"
+              value={username}
+              onChange={(e) => setUserName(e.target.value)}
               style={{
-                width: "200px",
-                padding: "12px",
-                borderRadius: "20px",
-                backgroundColor: "rgb(65, 171, 230)",
-                color: "#fff",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "16px",
-                fontWeight: "bold",
-                marginTop: "10px",
-                transition: "background-color 0.3s",
+               padding: "10px",
+               // padding: "7px 38px",  
+               borderRadius: "20px",
+                border: "1px solid #ccc",
+                marginBottom: "15px",
+                 maxWidth: "180px", 
+                textAlign: "center",
+                 margin: "5px auto",
               }}
-              onMouseOver={(e) =>
-                (e.target.style.backgroundColor = "#00CCFF")
-              }
-              onMouseOut={(e) =>
-                (e.target.style.backgroundColor = "rgb(65, 171, 230)")
-              }
-            >
-              Login
-            </button>
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{
+                padding: "10px",
+                borderRadius: "20px",
+                border: "1px solid #ccc",
+                marginBottom: "20px",
+                textAlign: "center",
+                 maxWidth: "180px", 
+               
+                 margin: "5px auto",
+              }}
+            />
+            <button
+  type="submit"
+  style={{
+    padding: "7px 38px",           // smaller padding (vertical & horizontal)
+    fontSize: "14px",              // smaller text
+    borderRadius: "16px",          // tighter rounding if you prefer
+    textAlign: "center",
+    backgroundColor: "#2994d1",
+    color: "#fff",
+    fontWeight: "bold",
+    border: "none",
+    cursor: "pointer",
+    maxWidth: "120px",             // smaller width
+    display: "block",
+    margin: "10px auto",           // keeps it centered
+  }}
+  onMouseOver={(e) =>
+    (e.target.style.backgroundColor = "#00CCFF")
+  }
+  onMouseOut={(e) =>
+    (e.target.style.backgroundColor = "rgb(65, 171, 230)")
+  }
+>
+  Login
+</button>
+
+
           </form>
         </div>
       </div>
-
-      {/* Right Side - Background Image */}
-      <div
-        style={{
-          width: "80%",
-          height: "100vh",
-          backgroundImage: `url(${LoginImage})`,
-          backgroundSize: "30%",
-          backgroundPosition: "40% 70%",
-        }}
-      />
     </div>
-  );
-};
+  </div>
+);
+
+
+
+}
 
 export default Login;
