@@ -3,30 +3,40 @@ import React, { useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 import { CircularProgress, Box, Snackbar, Alert } from "@mui/material";
+import { canAccessScreen } from "./AccessControl"; // Import the access control function
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, screenId }) => {
   const { user, loading } = useContext(AuthContext);
   const [showAlert, setShowAlert] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !user) {
-      setShowAlert(true);
-      setTimeout(() => {
-        navigate("/");
-      }, 2000); // Redirect after 2 seconds
+    if (!loading) {
+      if (!user) {
+        setShowAlert(true);
+        setTimeout(() => {
+          navigate("/");
+        }, 2000); // Redirect after 2 seconds if not authenticated
+      } else if (screenId && !canAccessScreen(screenId)) {
+        setShowAlert(true);
+        setTimeout(() => {
+          navigate("/home/Home"); // Redirect to home if user has no access
+        }, 2000);
+      }
     }
-  }, [loading, user, navigate]);
+  }, [loading, user, navigate, screenId]);
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+      <Box
+        sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}
+      >
         <CircularProgress />
       </Box>
     );
   }
 
-  if (!user) {
+  if (!user || (screenId && !canAccessScreen(screenId))) {
     return (
       <>
         <Snackbar
@@ -35,7 +45,9 @@ const ProtectedRoute = ({ children }) => {
           onClose={() => setShowAlert(false)}
           anchorOrigin={{ vertical: "top", horizontal: "center" }}
         >
-          <Alert severity="error">Please login .</Alert>
+          <Alert severity="error">
+            {user ? "Access Denied." : "Please login."}
+          </Alert>
         </Snackbar>
       </>
     );
