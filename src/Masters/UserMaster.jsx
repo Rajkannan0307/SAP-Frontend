@@ -159,7 +159,7 @@ const UserMaster = () => {
   // ✅ Search Functionality
   const handleSearch = () => {
     const text = searchText.trim().toLowerCase();
-  
+
     if (!text) {
       setRows(originalRows);
     } else {
@@ -172,7 +172,7 @@ const UserMaster = () => {
       setRows(filteredRows);
     }
   };
-  
+
 
   // ✅ Handle Add User
   const handleAdd = async () => {
@@ -188,7 +188,7 @@ const UserMaster = () => {
       UserID,
     });
     console.log("Add button clicked");
-  
+
     // Step 1: Validate required fields
     if (
       Plant_Id === "" ||
@@ -203,36 +203,36 @@ const UserMaster = () => {
       alert("Please fill in all required fields");
       return;
     }
-  
+
     // Step 2: Validate Email Format
     const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
     if (!emailPattern.test(User_Email)) {
       alert("Please enter a valid email address");
       return;
     }
-  //   // Step 3: Validate Password Length
-  // if (Password.length < 8) {
-  //   alert("Password must be at least 8 characters long");
-  //   return;
-  // }
+    //   // Step 3: Validate Password Length
+    // if (Password.length < 8) {
+    //   alert("Password must be at least 8 characters long");
+    //   return;
+    // }
     try {
       // Prepare data to be sent
       const data = {
-        UserID:UserID,
+        UserID: UserID,
         Plant_ID: Plant_Id,
-        Employee_ID:Employee_ID,
-        User_Name:User_Name,
-        Dept_Name:Dept_Name,
-        Role_Name:Role_Name,
-        User_Level:User_Level,
-        User_Email:User_Email,
-        Password:Password,
-        Active_Status:ActiveStatus, // Make sure this is defined somewhere
+        Employee_ID: Employee_ID,
+        User_Name: User_Name,
+        Dept_Name: Dept_Name,
+        Role_Name: Role_Name,
+        User_Level: User_Level,
+        User_Email: User_Email,
+        Password: Password,
+        Active_Status: ActiveStatus, // Make sure this is defined somewhere
       };
-  
+
       // Step 3: Call the API to add the user
       const response = await getAdd(data); // Ensure getAdd uses a POST request
-  
+
       if (response.data.success) {
         alert("User added successfully!");
         getData(); // refresh UI (e.g. user list)
@@ -242,7 +242,7 @@ const UserMaster = () => {
       }
     } catch (error) {
       console.error("Error in adding user:", error);
-  
+
       // Step 4: Show error from server (like Employee_ID already exists)
       if (error.response && error.response.data && error.response.data.message) {
         alert(error.response.data.message);
@@ -252,7 +252,7 @@ const UserMaster = () => {
     }
   };
 
- 
+
 
   const handleUpdate = async () => {
     const data = {
@@ -264,10 +264,10 @@ const UserMaster = () => {
       User_Email: User_Email,
       Password: Password,
       Active_Status: ActiveStatus,
-      UserID:UserID,
+      UserID: UserID,
     };
     console.log("Data being sent:", data); // Log data to verify it before sending
-   
+
     const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
     if (!emailPattern.test(User_Email)) {
       alert("Please enter a valid email address");
@@ -276,25 +276,25 @@ const UserMaster = () => {
     try {
       const response = await getUpdates(data);
 
-     // If success
-     if (response.data.success) {
-      alert(response.data.message);
-      getData(); // Refresh data
-      handleCloseEditModal(); // Close modal
-    } else {
-      // If success is false, show the backend message
-      alert(response.data.message);
-    }
-  } catch (error) {
-    console.error("Error details:", error.response?.data);
+      // If success
+      if (response.data.success) {
+        alert(response.data.message);
+        getData(); // Refresh data
+        handleCloseEditModal(); // Close modal
+      } else {
+        // If success is false, show the backend message
+        alert(response.data.message);
+      }
+    } catch (error) {
+      console.error("Error details:", error.response?.data);
 
-    if (error.response && error.response.data && error.response.data.message) {
-      alert(error.response.data.message); // Specific error from backend
-    } else {
-      alert("An error occurred while updating the Vendor. Please try again.");
+      if (error.response && error.response.data && error.response.data.message) {
+        alert(error.response.data.message); // Specific error from backend
+      } else {
+        alert("An error occurred while updating the Vendor. Please try again.");
+      }
     }
-  }
-};
+  };
   const GetDepartment = async () => {
     try {
       const response = await getDepartment();
@@ -616,6 +616,8 @@ const UserMaster = () => {
               <MenuItem value={3}>Level 3</MenuItem>
               <MenuItem value={4}>Level 4</MenuItem>
               <MenuItem value={5}>Level 5</MenuItem>
+              <MenuItem value={6}>Level 6</MenuItem>
+
 
             </Select>
           </FormControl>
@@ -808,7 +810,7 @@ const UserMaster = () => {
               <MenuItem value={3}>Level 3</MenuItem>
               <MenuItem value={4}>Level 4</MenuItem>
               <MenuItem value={5}>Level 5</MenuItem>
-
+              <MenuItem value={6}>Level 6</MenuItem>
             </Select>
           </FormControl>
           <TextField

@@ -194,7 +194,7 @@ const get_Plant = async () => {
 
   const getData = async () => {
     try {
-      const response = await getdetails( Plant_ID, RoleID );
+      const response = await getdetails( Plant_ID, RoleID ,Approval_Level);
 
       console.log('response 309',response);  // Check the structure of response
       setData(response);  // Ensure that this is correctly setting the data
