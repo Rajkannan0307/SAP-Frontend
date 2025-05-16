@@ -117,7 +117,7 @@ useEffect(() => {
       >
        {open && (
   <h3 style={{ margin: 0, color: "white" }}>
-    <Link  style={{color:"white",textDecoration: "none"}}to="/home/dashboard">HOME</Link>
+    <Link  style={{color:"white",textDecoration: "none"}}to="/home/Home">HOME</Link>
   </h3>
 )}
 

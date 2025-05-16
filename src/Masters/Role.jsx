@@ -346,62 +346,66 @@ justifyContent: "center",
       }}
     >
       <DataGrid
-        rows={rows}
-        columns={columns}
-        pageSize={5} // Set the number of rows per page to 8
-        rowsPerPageOptions={[5]}
-        getRowId={(row) => row.Role_ID} // Specify a custom id field
-        onRowClick={handleRowClick}
-        disableSelectionOnClick
-        slots={{ toolbar: CustomToolbar }}
-        onCellClick={(params) => {
-          console.log("Clicked cell:", params); // ✅ debug
+  rows={rows}
+  columns={columns}
+  pageSize={5}
+  rowsPerPageOptions={[5]}
+  getRowId={(row) => row.Role_ID}
+  disableSelectionOnClick
+  slots={{ toolbar: CustomToolbar }}
+  onCellClick={(params) => {
+    console.log("Clicked cell:", params); // ✅ Debug
 
-          if (params.field === "Menus" && params.row) {
-            const { Role_ID, Role_Name } = params.row;
-        
-            if (Role_ID && Role_Name) {
-              console.log("Navigating to:", `/home/Role/${Role_ID}`);
-              navigate(`/home/Role/${Role_ID}`, {
-                state: {
-                  role: Role_Name,
-                  Role_No: Role_ID,
-                },
-              });
-            } else {
-              alert("Role data is incomplete.");
-            }
-          }
-        }}
-        
-        sx={{
-          // Header Style
-          "& .MuiDataGrid-columnHeader": {
-            backgroundColor: "#2e59d9",
-            color: "white",
-            fontWeight: "bold",
-          },
-          "& .MuiDataGrid-columnHeaderTitle": {
-            fontSize: "16px",
-            fontWeight: "bold",
-          },
-          "& .MuiDataGrid-row": {
-            backgroundColor: "#f5f5f5", // Default row background
-            "&:hover": {
-              backgroundColor: "#f5f5f5",
-            },
-          },
-          // ✅ Remove Selected Row Background
-          "& .MuiDataGrid-row.Mui-selected": {
-            backgroundColor: "inherit", // No background on selection
-          },
+    if (params.field === "Menus" && params.row) {
+      const { Role_ID, Role_Name } = params.row;
+    console.log("Navigating to:", `/home/Role/${params.row.Role_ID}`);
+console.log("Params:", params.row);
 
-          "& .MuiDataGrid-cell": {
-            color: "#333",
-            fontSize: "14px",
+      if (Role_ID && Role_Name) {
+        console.log("Navigating to:", `/home/Role/${Role_ID}`);
+        navigate(`/home/Role/${Role_ID}`, {
+          state: {
+            role: Role_Name,
+            Role_No: Role_ID,
           },
-        }}
-      />
+        });
+      } else {
+        alert("Role data is incomplete.");
+      }
+    } else {
+      // If it's any other cell, open the edit modal
+      setRoleID(params.row.Role_ID);
+      setRoleName(params.row.Role_Name);
+      setActiveStatus(params.row.Active_Status);
+      setOpenEditModal(true);
+    }
+  }}
+  sx={{
+    "& .MuiDataGrid-columnHeader": {
+      backgroundColor: "#2e59d9",
+      color: "white",
+      fontWeight: "bold",
+    },
+    "& .MuiDataGrid-columnHeaderTitle": {
+      fontSize: "16px",
+      fontWeight: "bold",
+    },
+    "& .MuiDataGrid-row": {
+      backgroundColor: "#f5f5f5",
+      "&:hover": {
+        backgroundColor: "#f5f5f5",
+      },
+    },
+    "& .MuiDataGrid-row.Mui-selected": {
+      backgroundColor: "inherit",
+    },
+    "& .MuiDataGrid-cell": {
+      color: "#333",
+      fontSize: "14px",
+    },
+  }}
+/>
+
     </div>
      {/* {Add Model} */}
           <Modal open={openAddModal} onClose={() => setOpenAddModal(false)}>

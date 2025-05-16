@@ -1,43 +1,48 @@
-import React, { useState } from "react";
+// src/components/pages/Login.js
+import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import LoginImage from "../images/login.png";
+import { TextField, Button, Container, Paper, Typography, Snackbar, Alert, Box } from "@mui/material";
+import LoginImage from "../images/llogin.png";
 import { getLogin } from "../../controller/Masterapiservice";
 import { encryptSessionData, decryptSessionData } from "../../controller/StorageUtils";
+import { AuthContext } from "../../Authentication/AuthContext";
 
 const Login = () => {
   const [username, setUserName] = useState("");
   const [password, setPassword] = useState("");
+  const [openError, setOpenError] = useState(false);
+const [openSuccess, setOpenSuccess] = useState(false);
+const [error, setError] = useState("");
+const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
-  
-  
-  // Handle login form submission
-  const handleLogin = async (e) => {
+  const { login } = useContext(AuthContext);
+ const [UserID, setUserID] = useState('');
+  const handleClose = () => {
+    setOpenError(false);
+    setOpenSuccess(false);
+  };
+
+
+ // src/components/pages/Login.js
+const handleLogin = async (e) => {
   e.preventDefault();
+ 
 
-  console.log(`Sending login request for Employee_ID: ${username} and Password: ${password}`);
-
-  if (username === "") {
-    alert("Enter USERName");
-    return;
-  } else if (password === "") {
-    alert("Enter password");
+  if (!username || !password) {
+    setError("Enter Username and Password");
+    setOpenError(true);
     return;
   }
 
   try {
-    // Send login request
     const response = await getLogin({
-      Employee_ID: username,  // Pass the Employee_ID here
+      Employee_ID: username,
       Password: password
     });
 
-    console.log('response', response.data.message);
-
     if (response.data.message === 'success') {
       const data = response.data.resultLocalStorage[0];
-
-      console.log('data', data);
-       if(data) {
+      if (data) {
         localStorage.setItem('Active', data.Active_Status);
         localStorage.setItem('DeptId', data.Dept_Id);
         localStorage.setItem('UserName',data.User_Name);
@@ -55,7 +60,7 @@ const Login = () => {
          localStorage.setItem('CompanyId', data.Com_ID);
          
 
-        const selectedData = {
+         const selectedData = {
           Active: data.Active_Status,
           DeptId: data.Dept_Id,
           UserName: data.User_Name,
@@ -77,163 +82,198 @@ const Login = () => {
           login:true
         };
         const encryptedData = encryptSessionData(selectedData);
-       
-        
-            sessionStorage.setItem('userData', encryptedData);
+        sessionStorage.setItem('userData', encryptedData);
+      
 
             const encryptedUserData = sessionStorage.getItem('userData');
             const decryptedUserData = decryptSessionData(encryptedUserData);
             console.log('decrypted userdata:', decryptedUserData);
-            
-          
-          
-      navigate("/home/Home");
+        setSuccessMessage("Login successful!");
+        setOpenSuccess(true);
+
+        setTimeout(() => {
+          window.location.href = "/home/Home"; // Hard redirect to clear state
+        }, 500); // 1.5 seconds delay
       }
-      console.log("Login successful", response.data);
-      
     } else {
-      alert(response.data.message); // should never hit this, but just in case
+      setError("Login failed. Please try again.");
+      setOpenError(true);
     }
-
   } catch (error) {
-    console.log("Error Logging in:", error);
-
-    // Handle 401 responses (Invalid user/password)
-    if (error.response && error.response.status === 401) {
-      alert(error.response.data.message);
-    } else {
-      alert("Something went wrong. Try again.");
-    }
+    setError("Something went wrong. Try again.");
+    setOpenError(true);
   }
 };
+ useEffect(() => {
+    const encryptedData = sessionStorage.getItem('userData');
+    console.log("us",encryptedData)
+    if (encryptedData) {
+      const decryptedData = decryptSessionData(encryptedData);
+      setUserID(decryptedData.UserID);
+      console.log("us",decryptedData.UserID)
+    }
+  }, []);
 
-  
 
   return (
+    
+    <>
+   <div
+  style={{
+    height: "100vh",
+    width: "100vw",
+    display: "flex",
+    flexDirection: "column", // For vertical stacking (header + content)
+    justifyContent: "center",
+    alignItems: "center",
+   // background: "linear-gradient(to right, #33ccff 10%,rgb(218, 172, 195) 100%)",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundAttachment: "fixed",
+    backgroundColor:" #1B5088 "
+  }}
+>
+  {/* Centered Header */}
+  <h1 style={{ textAlign: "center", marginBottom: "20px", color: "#fff" }}>SAP APPROVAL LOGIN</h1>
+
+  {/* Outer Centered Box */}
+  <div
+    style={{
+      width: "850px",
+      height: "500px",
+      backgroundColor: "#1B5088",
+      display: "flex",
+      borderRadius: "12px",
+      overflow: "hidden",
+      boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+    }}
+  >
     <div
       style={{
-        height: "100vh",
+        width: "50%",
+        backgroundColor: "#1B5088",
         display: "flex",
-        justifyContent: "space-between",
+        flexDirection: "column",
+        justifyContent: "center",
         alignItems: "center",
-        padding: "0",
+        padding: "20px",
       }}
     >
-      {/* Left Side - Login Form */}
-      <div
+      <img
+        src={LoginImage}
+        alt="Login Visual"
         style={{
-          width: "50%",
+          width: "95%",
           height: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "rgb(134, 218, 250)",
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: "rgb(245, 236, 234)",
-            padding: "40px",
-            borderRadius: "12px",
-            boxShadow: "0 10px 30px rgba(157, 236, 245, 0.2)",
-            width: "450px",
-            textAlign: "center",
-            height:"290px"
-          }}
-        >
-          <h2
-            style={{
-              marginBottom: "20px",
-              color: "rgb(65, 171, 230)",
-              fontSize: "28px",
-              fontWeight:"bolder",
-            }}
-          >
-            SAP APPROVAL WORKFLOW LOGIN
-          </h2>
-          <form
-            className="submit"
-            onSubmit={handleLogin}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            {/* username Input */}
-            <div className="form-group" style={{ marginBottom: "15px" }}>
-              <input
-                placeholder="Login ID"
-                style={{
-                  width: "250px",
-                  padding: "12px",
-                  borderRadius: "20px",
-                  border: "1px solid #ccc",
-                  outline: "none",
-                  textAlign: "center",
-                }}
-                type="text"
-                value={username}
-                onChange={(e) => setUserName(e.target.value)}
-              />
-            </div>
-            {/* password Input */}
-            <div className="form-group" style={{ marginBottom: "15px" }}>
-              <input
-                placeholder="password"
-                style={{
-                  width: "250px",
-                  padding: "12px",
-                  borderRadius: "20px",
-                  border: "1px solid #ccc",
-                  outline: "none",
-                  textAlign: "center",
-                }}
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            {/* Login Button */}
-            <button
-              type="submit"
-              style={{
-                width: "200px",
-                padding: "12px",
-                borderRadius: "20px",
-                backgroundColor: "rgb(65, 171, 230)",
-                color: "#fff",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "16px",
-                fontWeight: "bold",
-                marginTop: "10px",
-                transition: "background-color 0.3s",
-              }}
-              onMouseOver={(e) =>
-                (e.target.style.backgroundColor = "#00CCFF")
-              }
-              onMouseOut={(e) =>
-                (e.target.style.backgroundColor = "rgb(65, 171, 230)")
-              }
-            >
-              Login
-            </button>
-          </form>
-        </div>
-      </div>
-
-      {/* Right Side - Background Image */}
-      <div
-        style={{
-          width: "80%",
-          height: "100vh",
-          backgroundImage: `url(${LoginImage})`,
-          backgroundSize: "30%",
-          backgroundPosition: "40% 70%",
+          objectFit: "contain",
+          borderRadius: "10px",
         }}
       />
     </div>
+
+    {/* Right Column with Inner Login Box */}
+    <div
+      style={{
+        width: "50%",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "30px",
+        flexDirection: "column",
+      }}
+    >
+      {/* Inner Box for Login Details */}
+      <div
+        style={{
+          width: "100%",
+          maxHeight: "500px",
+          maxWidth: "350px",
+          backgroundColor: "#E0F7FA",
+          padding: "20px",
+          borderRadius: "20px",
+          boxShadow: "0 4px 12px rgb(131, 130, 130)",
+        }}
+      >
+        <h3 style={{ textAlign: "center", marginBottom: "20px", color: "#2994d1" }}>Login</h3>
+        <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column" }}>
+          <input
+            type="text"
+            placeholder="Login ID"
+            value={username}
+            onChange={(e) => setUserName(e.target.value)}
+            style={{
+              padding: "10px",
+              borderRadius: "20px",
+              border: "1px solid #ccc",
+              marginBottom: "15px",
+              maxWidth: "180px",
+              textAlign: "center",
+              margin: "5px auto",
+            }}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{
+              padding: "10px",
+              borderRadius: "20px",
+              border: "1px solid #ccc",
+              marginBottom: "20px",
+              textAlign: "center",
+              maxWidth: "180px",
+              margin: "5px auto",
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              padding: "7px 38px",
+              fontSize: "14px",
+              borderRadius: "16px",
+              textAlign: "center",
+              backgroundColor: "#2994d1",
+              color: "#fff",
+              fontWeight: "bold",
+              border: "none",
+              cursor: "pointer",
+              maxWidth: "120px",
+              display: "block",
+              margin: "10px auto",
+            }}
+            onMouseOver={(e) => (e.target.style.backgroundColor = "#00CCFF")}
+            onMouseOut={(e) => (e.target.style.backgroundColor = "rgb(65, 171, 230)")}
+          >
+            Login
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {/* Error Snackbar */}
+  <Snackbar 
+    open={openError} 
+    autoHideDuration={2000} 
+    onClose={() => setOpenError(false)} 
+    anchorOrigin={{ vertical: "top", horizontal: "center" }}
+  >
+    <Alert severity="error">{error}</Alert>
+  </Snackbar>
+
+  <Snackbar 
+    open={openSuccess} 
+    autoHideDuration={500} 
+    onClose={() => setOpenSuccess(false)} 
+    anchorOrigin={{ vertical: "top", horizontal: "center" }}
+  >
+    <Alert severity="success">Login successful!</Alert>
+  </Snackbar>
+</div>
+
+</>
+
   );
 };
 
