@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { TextField, Button, Container, Paper, Typography, Snackbar, Alert, Box } from "@mui/material";
-import LoginImage from "../images/back.jpeg";
+import LoginImage from "../images/llogin.png";
 import { getLogin } from "../../controller/Masterapiservice";
 import { encryptSessionData, decryptSessionData } from "../../controller/StorageUtils";
 import { AuthContext } from "../../Authentication/AuthContext";
@@ -16,7 +16,7 @@ const [error, setError] = useState("");
 const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
-
+ const [UserID, setUserID] = useState('');
   const handleClose = () => {
     setOpenError(false);
     setOpenSuccess(false);
@@ -83,13 +83,17 @@ const handleLogin = async (e) => {
         };
         const encryptedData = encryptSessionData(selectedData);
         sessionStorage.setItem('userData', encryptedData);
+      
 
+            const encryptedUserData = sessionStorage.getItem('userData');
+            const decryptedUserData = decryptSessionData(encryptedUserData);
+            console.log('decrypted userdata:', decryptedUserData);
         setSuccessMessage("Login successful!");
         setOpenSuccess(true);
 
         setTimeout(() => {
           window.location.href = "/home/Home"; // Hard redirect to clear state
-        }, 1500); // 1.5 seconds delay
+        }, 500); // 1.5 seconds delay
       }
     } else {
       setError("Login failed. Please try again.");
@@ -100,67 +104,174 @@ const handleLogin = async (e) => {
     setOpenError(true);
   }
 };
-
+ useEffect(() => {
+    const encryptedData = sessionStorage.getItem('userData');
+    console.log("us",encryptedData)
+    if (encryptedData) {
+      const decryptedData = decryptSessionData(encryptedData);
+      setUserID(decryptedData.UserID);
+      console.log("us",decryptedData.UserID)
+    }
+  }, []);
 
 
   return (
     
     <>
-  <Box 
-    sx={{ 
-      position: "absolute", 
-      top: 0, 
-      left: 0, 
-      width: "100%", 
-      height: "100vh", 
-      background: "linear-gradient(to right, #33ccff 0%, #ff99cc 100%)",
-      zIndex: -1 
-    }} 
-  />
+   <div
+  style={{
+    height: "100vh",
+    width: "100vw",
+    display: "flex",
+    flexDirection: "column", // For vertical stacking (header + content)
+    justifyContent: "center",
+    alignItems: "center",
+   // background: "linear-gradient(to right, #33ccff 10%,rgb(218, 172, 195) 100%)",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundAttachment: "fixed",
+    backgroundColor:" #1B5088 "
+  }}
+>
+  {/* Centered Header */}
+  <h1 style={{ textAlign: "center", marginBottom: "20px", color: "#fff" }}>SAP APPROVAL LOGIN</h1>
 
- <Container maxWidth="sm" sx={{ mt:25 , position: "relative" ,}}>
-      <Box 
-        sx={{ 
-          //backgroundImage: url(${LoginImage}),
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          borderRadius: 4,
-          padding: 4,
-          position: "relative",
-          zIndex: 3,
-          background: "linear-gradient(to right, #33ccff 0%, #ff99cc 100%)", 
+  {/* Outer Centered Box */}
+  <div
+    style={{
+      width: "850px",
+      height: "500px",
+      backgroundColor: "#1B5088",
+      display: "flex",
+      borderRadius: "12px",
+      overflow: "hidden",
+      boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+    }}
+  >
+    <div
+      style={{
+        width: "50%",
+        backgroundColor: "#1B5088",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "20px",
+      }}
+    >
+      <img
+        src={LoginImage}
+        alt="Login Visual"
+        style={{
+          width: "95%",
+          height: "100vh",
+          objectFit: "contain",
+          borderRadius: "10px",
+        }}
+      />
+    </div>
+
+    {/* Right Column with Inner Login Box */}
+    <div
+      style={{
+        width: "50%",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "30px",
+        flexDirection: "column",
+      }}
+    >
+      {/* Inner Box for Login Details */}
+      <div
+        style={{
+          width: "100%",
+          maxHeight: "500px",
+          maxWidth: "350px",
+          backgroundColor: "#E0F7FA",
+          padding: "20px",
+          borderRadius: "20px",
+          boxShadow: "0 4px 12px rgb(131, 130, 130)",
         }}
       >
-        <Paper elevation={3} sx={{ padding: 4, backdropFilter: "blur(10px)", backgroundColor: "rgba(255, 255, 255, 0.8)" }}>
-          <Typography variant="h5" gutterBottom>Login Page</Typography>
-          <form onSubmit={handleLogin}>
-            <TextField fullWidth label="Username" variant="outlined" margin="normal" value={username} onChange={(e) => setUserName(e.target.value)} />
-            <TextField fullWidth label="Password" type="password" variant="outlined" margin="normal" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>Login</Button>
-          </form>
-        </Paper>
-      </Box>
+        <h3 style={{ textAlign: "center", marginBottom: "20px", color: "#2994d1" }}>Login</h3>
+        <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column" }}>
+          <input
+            type="text"
+            placeholder="Login ID"
+            value={username}
+            onChange={(e) => setUserName(e.target.value)}
+            style={{
+              padding: "10px",
+              borderRadius: "20px",
+              border: "1px solid #ccc",
+              marginBottom: "15px",
+              maxWidth: "180px",
+              textAlign: "center",
+              margin: "5px auto",
+            }}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{
+              padding: "10px",
+              borderRadius: "20px",
+              border: "1px solid #ccc",
+              marginBottom: "20px",
+              textAlign: "center",
+              maxWidth: "180px",
+              margin: "5px auto",
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              padding: "7px 38px",
+              fontSize: "14px",
+              borderRadius: "16px",
+              textAlign: "center",
+              backgroundColor: "#2994d1",
+              color: "#fff",
+              fontWeight: "bold",
+              border: "none",
+              cursor: "pointer",
+              maxWidth: "120px",
+              display: "block",
+              margin: "10px auto",
+            }}
+            onMouseOver={(e) => (e.target.style.backgroundColor = "#00CCFF")}
+            onMouseOut={(e) => (e.target.style.backgroundColor = "rgb(65, 171, 230)")}
+          >
+            Login
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
 
-      {/* Error Snackbar */}
-     <Snackbar 
-  open={openError} 
-  autoHideDuration={2000} 
-  onClose={() => setOpenError(false)} 
-  anchorOrigin={{ vertical: "top", horizontal: "center" }}
->
-  <Alert severity="error">{error}</Alert>
-</Snackbar>
+  {/* Error Snackbar */}
+  <Snackbar 
+    open={openError} 
+    autoHideDuration={2000} 
+    onClose={() => setOpenError(false)} 
+    anchorOrigin={{ vertical: "top", horizontal: "center" }}
+  >
+    <Alert severity="error">{error}</Alert>
+  </Snackbar>
 
-<Snackbar 
-  open={openSuccess} 
-  autoHideDuration={2000} 
-  onClose={() => setOpenSuccess(false)} 
-  anchorOrigin={{ vertical: "top", horizontal: "center" }}
->
-  <Alert severity="success">Login successful!</Alert>
-</Snackbar>
+  <Snackbar 
+    open={openSuccess} 
+    autoHideDuration={500} 
+    onClose={() => setOpenSuccess(false)} 
+    anchorOrigin={{ vertical: "top", horizontal: "center" }}
+  >
+    <Alert severity="success">Login successful!</Alert>
+  </Snackbar>
+</div>
 
-    </Container>
 </>
 
   );

@@ -35,7 +35,7 @@ const ProtectedRoute = ({ children }) => {
           onClose={() => setShowAlert(false)}
           anchorOrigin={{ vertical: "top", horizontal: "center" }}
         >
-          <Alert severity="error">Please login to access this page.</Alert>
+          <Alert severity="error">Please login .</Alert>
         </Snackbar>
       </>
     );
