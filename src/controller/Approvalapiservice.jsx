@@ -2,8 +2,8 @@ import { api } from "./constants";
 import axios from "axios";
 
 
-export const getdetails=async (Plant, role,Approval_Level)=>{
-    const response = await axios.get(`${api}/Approval/get_details?Plant=${Plant}&role=${role}&Approval_Level=${Approval_Level}`);
+export const getdetails=async (Plant, role,Role)=>{
+    const response = await axios.get(`${api}/Approval/get_details?Plant=${Plant}&role=${role}&Role=${Role}`);
     return response.data;
 };
 
