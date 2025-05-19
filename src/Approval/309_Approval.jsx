@@ -30,7 +30,7 @@ import axios from 'axios';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { getdetails, getApprovalView, HandleApprovalAction,getPlants,getRole } from '../controller/Approvalapiservice';
-
+import { decryptSessionData } from "../controller/StorageUtils"
 
 
 const Approval = () => {
@@ -84,7 +84,8 @@ const [PlantTable, setPlantTable] = useState([]);
   const [ToMatCode, setToMatCode] = useState("");
   const [NetDifferentPrice, setNetDifferentPrice] = useState("");
   const [ApprovalStatus, setApprovalStatus] = useState([]);
-  
+ 
+  const [Role, setRole] = useState('');
 const UserID = localStorage.getItem('UserID');
 const RoleID=localStorage.getItem('RoleID');
 const Approval_Level=localStorage.getItem('Approval_Level');
@@ -92,6 +93,18 @@ console.log('Approval_Level',Approval_Level)
 const Plant_ID = localStorage.getItem('Plant_ID')
 
 console.log('pl',Plant_ID)
+
+
+ useEffect(() => {
+    const encryptedData = sessionStorage.getItem('userData');
+    if (encryptedData) {
+      const decryptedData = decryptSessionData(encryptedData);
+      setRole(decryptedData.RoleId);
+      console.log("us", decryptedData.RoleId)
+
+    }
+  }, []);
+
 
 //console.log('📤 Sending request to backend with params:', { Plant, Role });
 
@@ -119,7 +132,7 @@ console.log('pl',Plant_ID)
     { field: "Date", headerName: "Date", flex: 1 },
     { field: "Movement_Type", headerName: "Movement Type", flex: 1 },
     { field: "Request_By", headerName: "Requset By", flex: 1 },
-    { field: "Status", headerName: "Approval Status", flex: 1 },
+    { field: "Approver_Status", headerName: "Approver Status", flex: 1 },
 
     // View Column
     {
@@ -194,7 +207,7 @@ const get_Plant = async () => {
 
   const getData = async () => {
     try {
-      const response = await getdetails( Plant_ID, RoleID ,Approval_Level);
+      const response = await getdetails( Plant_ID, RoleID ,Role);
 
       console.log('response 309',response);  // Check the structure of response
       setData(response);  // Ensure that this is correctly setting the data
@@ -244,7 +257,7 @@ const get_Plant = async () => {
       Approver_Comment: Comment,  // Ensure comment is not empty or undefined
       Action: "Approved",  // Action type, in this case "Approve"
       UserID: UserID,  // UserID of the person performing the approval
-      Approval_Level: Approval_Level,  // Current approval level
+      Approval_Level: Role,  // Current approval level
     };
 
    
@@ -276,81 +289,92 @@ const get_Plant = async () => {
     }
   };
 
-  const handleReject = async () => {
-    if (!selectedRow) {
-      alert("No document selected for rejection.");
-      return;
-    }
-  
-    if (!Comment.trim()) {
-      alert("Please provide a comment for rejection.");
-      return;
-    }
-  
-    try {
-      const data = {
-        DocID: selectedRow.Doc_ID,
-        Approver_Comment: Comment,
-        Action: "Reject",
-      };
-  
-      console.log("Sending rejection data:", data);
-      const response = await HandleApprovalAction(data);
-  
-      if (response.data.success) {
-        alert("Document Rejected !");
-        setOpenActionModal(false);
-        getData();
-      } else {
-        alert(response.data.message || "Rejection failed.");
-      }
-    } catch (error) {
-      console.error("Rejection error:", error);
-      if (error.response?.data?.message) {
-        alert(error.response.data.message);
-      } else {
-        alert("An error occurred while rejecting the document.");
-      }
-    }
+const handleReject = async () => {
+  if (!selectedRow) {
+    alert("No document selected for rejection.");
+    return;
+  }
+
+  if (!Comment.trim()) {
+    alert("Please provide a comment for rejection.");
+    return;
+  }
+
+  const data = {
+    Doc_ID: selectedRow.Doc_ID,
+    Approver_Comment: Comment,
+    Action: "Rejected",
+    UserID: UserID,
+    Approval_Level: Role
   };
-  
-  const handleQuery = async () => {
-    if (!selectedRow) {
-      alert("No document selected for query.");
-      return;
+
+  console.log("Sending rejection data:", data);
+
+  try {
+    const response = await HandleApprovalAction(data);
+    console.log("Rejection API response:", response);
+
+    const isSuccess = response?.data?.success ?? response?.success;
+
+    if (isSuccess) {
+      alert("Document Rejected!");
+      setOpenActionModal(false);
+      getData();
+    } else {
+      const message = response?.data?.message ?? response?.message ?? "Rejection failed.";
+      alert(message);
     }
-  
-    if (!Comment.trim()) {
-      alert("Please provide a comment for query.");
-      return;
-    }
-  
-    try {
-      const data = {
-        DocID: selectedRow.Doc_ID,
-        Approver_Comment: Comment,
-        Action: "Query",
-      };
-  
-      console.log("Sending query data:", data);
-      const response = await HandleApprovalAction(data);
-  
-      if (response.data.success) {
-        alert("Document sent for query successfully!");
-        setOpenActionModal(false);
-        getData();
-      } else {
-        alert(response.data.message || "Query failed.");
-      }
-    } catch (error) {
-      console.error("Query error:", error);
-      if (error.response?.data?.message) {
-        alert(error.response.data.message);
-      } else {
-        alert("An error occurred while sending query on the document.");
-      }
-    }
+  } catch (error) {
+    console.error("Rejection error:", error);
+    const errMsg = error.response?.data?.message || "An error occurred while rejecting the document.";
+    alert(errMsg);
+  }
+};
+
+
+const handleQuery = async () => {
+  if (!selectedRow) {
+    alert("No document selected for query.");
+    return;
+  }
+
+  if (!Comment.trim()) {
+    alert("Please provide a comment for query.");
+    return;
+  }
+
+  const data = {
+    Doc_ID: selectedRow.Doc_ID,
+    Approver_Comment: Comment,
+    Action: "Under Query",
+    UserID: UserID,
+    Approval_Level: Role
   };
+
+  console.log("Sending query data:", data);
+
+  try {
+    const response = await HandleApprovalAction(data);
+    console.log("Query API response:", response);
+
+    const isSuccess = response?.data?.success ?? response?.success;
+
+    if (isSuccess) {
+      alert("Document sent for query successfully!");
+      setOpenActionModal(false);
+      getData();
+    } else {
+      const message = response?.data?.message ?? response?.message ?? "Failed to send query.";
+      alert(message);
+    }
+  } catch (error) {
+    console.error("Query error:", error);
+    const errMsg = error.response?.data?.message || "An error occurred while sending query on the document.";
+    alert(errMsg);
+  }
+};
+
+
   
   const handleActionOpen = (row) => {
     console.log('Row selected for action:', row);

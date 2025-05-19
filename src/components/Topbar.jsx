@@ -1,5 +1,5 @@
 
-import React, { useState,useContext,useEffect } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Link } from "react-router-dom";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import HomeIcon from "@mui/icons-material/Home";
@@ -7,13 +7,13 @@ import { FaSignOutAlt } from "react-icons/fa";
 import { Button } from "@mui/material";
 import logo from './images/ranelogo.png';
 import { useNavigate } from 'react-router-dom';
-import { Box, IconButton,Typography,Table, TableBody, TableCell, TableRow, TableContainer  } from "@mui/material";
+import { Box, IconButton, Typography, Table, TableBody, TableCell, TableRow, TableContainer } from "@mui/material";
 import Popover from '@mui/material/Popover';
 import { AuthContext } from "../Authentication/AuthContext";
 import { decryptSessionData } from "../controller/StorageUtils"
 const Topbar = () => {
   const [logoutbtn, setlogoutbtn] = useState(false);
- const { logout } = useContext(AuthContext);
+  const { logout } = useContext(AuthContext);
 
   const GenId = localStorage.getItem('EmpId');
   const Username = localStorage.getItem('UserName');
@@ -21,11 +21,9 @@ const Topbar = () => {
   const Plant = localStorage.getItem('PlantName');
   const Email = localStorage.getItem('Email');
   const Plantcode = localStorage.getItem('Plantcode');
-   
   
   const [EmployeeName,setemployeename]=useState('');
   const [Role,setRole]=useState('');
-  const [UserLevel,setUserLevel]=useState('');
  const navigate = useNavigate();
  
 const handleLogout = () => {
@@ -36,23 +34,19 @@ useEffect(() => {
   const encryptedData = sessionStorage.getItem('userData');
       if (encryptedData) {
         const decryptedData = decryptSessionData(encryptedData);
-        
         setRole(decryptedData.Role);
-        setUserLevel(decryptedData.UserLevelName);
-        console.log("us",decryptedData.UserLevelName)
+        console.log("us",decryptedData.Role)
 
       }
       }, []);
-       const encryptedUserData = sessionStorage.getItem('userData');
-      const decryptedUserData = decryptSessionData(encryptedUserData);
-         console.log('decrypted userdata:', decryptedUserData);
+
   const handlePopoverOpen = () => {
     setlogoutbtn(true);
   };
   const handlePopoverClose = () => {
     setlogoutbtn(false);
   };
-const open = Boolean(logoutbtn);
+  const open = Boolean(logoutbtn);
   const id = open ? 'simple-popover' : undefined;
 
   const popoverContent = (
@@ -60,10 +54,6 @@ const open = Boolean(logoutbtn);
     <TableContainer sx={{ p: 2 }}>
     <Table>
       <TableBody>
-        <TableRow>
-          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Plant:</TableCell>
-          <TableCell>{Plantcode} / {Plant}</TableCell>
-        </TableRow>
         <TableRow>
           <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>GenId :</TableCell>
           <TableCell>{GenId}</TableCell>
@@ -77,10 +67,6 @@ const open = Boolean(logoutbtn);
           <TableCell>{Role}</TableCell>
         </TableRow>
         <TableRow>
-          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>User Level :</TableCell>
-          <TableCell>{UserLevel}</TableCell>
-        </TableRow>
-        <TableRow>
           <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Department :</TableCell>
           <TableCell>{Dept}</TableCell>
         </TableRow>
@@ -88,7 +74,10 @@ const open = Boolean(logoutbtn);
           <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Email:</TableCell>
           <TableCell>{Email}</TableCell>
         </TableRow>
-        
+        <TableRow>
+          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Plant:</TableCell>
+          <TableCell>{Plantcode} / {Plant}</TableCell>
+        </TableRow>
        
       </TableBody>
     </Table>
@@ -124,18 +113,18 @@ const open = Boolean(logoutbtn);
           }}
         >
           <img
-  src={logo}
-  alt="Rane Logo"
-  style={{
-    height: "43px",
-    marginLeft: "0px",
-    background: "white",
-    border: "2px solid white", // White border
-    borderRadius: "6px", // Rounded corners
-  }}
-     />
+            src={logo}
+            alt="Rane Logo"
+            style={{
+              height: "43px",
+              marginLeft: "0px",
+              background: "white",
+              border: "2px solid white", // White border
+              borderRadius: "6px", // Rounded corners
+            }}
+          />
 
-          
+
           <h1 style={{ fontSize: "30px", color: "white" }}>SAP APPROVAL WORK FLOW</h1>
         </div>
 
@@ -152,42 +141,42 @@ const open = Boolean(logoutbtn);
     <AccountCircleIcon
       style={{
         textDecoration: "none",
-        color: "#FFD700",
+        color: "#FB9F9E",
         marginRight: "-8px",
       }}
     />
   </Button>
 
 
-  <Popover
-          id={id}
-          open={open}
-          anchorEl={logoutbtn}
-          onClose={handlePopoverClose}
-          anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
+          <Popover
+            id={id}
+            open={open}
+            anchorEl={logoutbtn}
+            onClose={handlePopoverClose}
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
 
-           transformOrigin={{
-    vertical: 'top', // ⚠️ This line is the issue
-    horizontal: 'right',
-  }}
-          // transformOrigin={{
-          //   vertical: 'right',
-          //   horizontal: 'center',
-          // }}
-          style={{ zIndex:10000, marginTop: '3%' }}
-        >
-          {popoverContent}
-        </Popover>
+            transformOrigin={{
+              vertical: 'top', // ⚠️ This line is the issue
+              horizontal: 'right',
+            }}
+            // transformOrigin={{
+            //   vertical: 'right',
+            //   horizontal: 'center',
+            // }}
+            style={{ zIndex: 10000, marginTop: '3%' }}
+          >
+            {popoverContent}
+          </Popover>
 
   {/* Home Icon */}
   <Link
     to="/home/Home"
     style={{
       textDecoration: "none",
-      color: "#F0F4FF",
+      color: "bisque",
       display: "flex",
       alignItems: "center",
     }}
@@ -195,8 +184,8 @@ const open = Boolean(logoutbtn);
     <HomeIcon />
   </Link>
 
-  {/* Sign Out Icon */}
-  {/* <Link
+          {/* Sign Out Icon */}
+          {/* <Link
     to="/"
     style={{
       color: "white",
@@ -207,7 +196,7 @@ const open = Boolean(logoutbtn);
   > */}
     <FaSignOutAlt
       style={{
-        color:"#FF6666",
+        color:"greenyellow",
         display: "flex",
         alignItems: "center",
         padding: "5px",

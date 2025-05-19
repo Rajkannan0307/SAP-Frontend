@@ -43,7 +43,7 @@ const Partno = () => {
   const [originalRows, setOriginalRows] = useState([]);
   const UserID = localStorage.getItem('UserID');
   const [openAddModal, setOpenAddModal] = useState(false);
-  
+
   const [openExcelDownloadModal, setOpenExcelDownloadModal] = useState(false);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -54,7 +54,7 @@ const Partno = () => {
   const [uploadStatus, setUploadStatus] = useState(""); // Track upload status
   const [uploadedFileData, setUploadedFileData] = useState(null);
   const [data, setData] = useState([]);
- 
+
   const [PlantTable, setPlantTable] = useState([])
   const [MaterialTable, setMaterialTable] = useState([])
 
@@ -193,7 +193,7 @@ const Partno = () => {
         const formData = new FormData();
         console.log('file', uploadedFile)
         formData.append("User_Add", uploadedFile);
-        formData.append("UserID", UserID); 
+        formData.append("UserID", UserID);
         const response = await Movement309(formData)
         console.log('response', response.data)
         alert(response.data.message)
@@ -214,16 +214,16 @@ const Partno = () => {
   const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
     const wb = XLSX.utils.book_new();
 
-      // Column headers for Error Records
-      const ErrorColumns = ['Plant_Code', 'From_Material_Code',
-        'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
-        'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
-        'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
-        'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark', 'Plant_Code_Validation',
-        'From_Material_Code_Validation', 'To_Material_Code_Validation',
-        'From_SLoc_Code_Validation', 'To_SLoc_Code_Validation'
-      ];
-      
+    // Column headers for Error Records
+    const ErrorColumns = ['Plant_Code', 'From_Material_Code',
+      'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
+      'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
+      'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
+      'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark', 'Plant_Code_Validation',
+      'From_Material_Code_Validation', 'To_Material_Code_Validation',
+      'From_SLoc_Code_Validation', 'To_SLoc_Code_Validation'
+    ];
+
     // Column headers for New Records (based on your columns array)
     const newRecordsColumns = ['Plant_Code', 'From_Material_Code',
       'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
@@ -232,11 +232,11 @@ const Partno = () => {
       'To_Storage_Code', 'To_Valuation_Type',
       'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark'
     ];
-  
+
 
     // Column headers for Duplicate Records
     const DuplicateColumns = [
-      
+
       'Plant_Code', 'From_Material_Code',
       'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
       'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
@@ -255,7 +255,7 @@ const Partno = () => {
     //   'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price','Remark'
     // ];
 
-    
+
     // Filter and map the data for Error Records
     const filteredError = errRecord.map(item => ({
       Plant_Code: item.Plant_Code,
@@ -326,95 +326,95 @@ const Partno = () => {
       From_Qty_Duplicate: item.From_Qty,
     }));
 
-      // // Filter and map the data for Updated Records
-      // const filteredUpdate = updateRecord.map(item => ({
-      //   Plant_Code: item.Plant_Code,
-      //   From_Material_Code: item.From_Material_Code,
-      //   From_Qty: item.From_Qty,
-      //   From_Storage_Code: item.From_Storage_Code,
-      //   From_Valuation_Type: item.From_Valuation_Type,
-      //   From_Batch: item.From_Batch,
-      //   From_Rate_Per_Unit: item.From_Rate_Per_Unit,
-      //   To_Material_Code: item.To_Material_Code,
-      //   To_Qty: item.To_Qty,
-      //   To_Storage_Code: item.To_Storage_Code,
-      //   To_Valuation_Type: item.To_Valuation_Type,
-      //   To_Batch: item.To_Batch,
-      //   To_Rate_Per_Unit: item.To_Rate_Per_Unit,
-      //   Net_Different_Price:item.Net_Difference_Price,
-      //   Remark: item.Remark,
+    // // Filter and map the data for Updated Records
+    // const filteredUpdate = updateRecord.map(item => ({
+    //   Plant_Code: item.Plant_Code,
+    //   From_Material_Code: item.From_Material_Code,
+    //   From_Qty: item.From_Qty,
+    //   From_Storage_Code: item.From_Storage_Code,
+    //   From_Valuation_Type: item.From_Valuation_Type,
+    //   From_Batch: item.From_Batch,
+    //   From_Rate_Per_Unit: item.From_Rate_Per_Unit,
+    //   To_Material_Code: item.To_Material_Code,
+    //   To_Qty: item.To_Qty,
+    //   To_Storage_Code: item.To_Storage_Code,
+    //   To_Valuation_Type: item.To_Valuation_Type,
+    //   To_Batch: item.To_Batch,
+    //   To_Rate_Per_Unit: item.To_Rate_Per_Unit,
+    //   Net_Different_Price:item.Net_Difference_Price,
+    //   Remark: item.Remark,
 
-      // }));
-      // 🔹 Helper to style header cells
-      const styleHeaders = (worksheet, columns) => {
-        columns.forEach((_, index) => {
-          const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-          if (worksheet[cellAddress]) {
-            worksheet[cellAddress].s = {
-              font: { bold: true, color: { rgb: '000000' } },
-              fill: { fgColor: { rgb: 'FFFF00' } }, // Yellow background
-              alignment: { horizontal: 'center' },
+    // }));
+    // 🔹 Helper to style header cells
+    const styleHeaders = (worksheet, columns) => {
+      columns.forEach((_, index) => {
+        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+        if (worksheet[cellAddress]) {
+          worksheet[cellAddress].s = {
+            font: { bold: true, color: { rgb: '000000' } },
+            fill: { fgColor: { rgb: 'FFFF00' } }, // Yellow background
+            alignment: { horizontal: 'center' },
+          };
+        }
+      });
+    };
+
+
+    // 🔴 Style red text for validation columns only
+    const styleValidationColumns = (worksheet, columns, dataLength) => {
+      const validationCols = ['Plant_Code_Validation', 'From_Material_Code_Validation',
+        'To_Material_Code_Validation', 'From_SLoc_Code_Validation',
+        'To_SLoc_Code_Validation']
+
+      for (let row = 1; row <= dataLength; row++) {
+        validationCols.forEach(colName => {
+          const colIdx = columns.indexOf(colName);
+          if (colIdx === -1) return;
+
+          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+          const cell = worksheet[cellAddress];
+
+          if (cell && typeof cell.v === 'string') {
+            const value = cell.v.trim().toLowerCase();
+
+            // Apply green if value is "valid", otherwise red
+            cell.s = {
+              font: {
+                color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' } // green or red
+              }
             };
           }
         });
-      };
-
-
-      // 🔴 Style red text for validation columns only
-      const styleValidationColumns = (worksheet, columns, dataLength) => {
-        const validationCols = ['Plant_Code_Validation', 'From_Material_Code_Validation',
-          'To_Material_Code_Validation', 'From_SLoc_Code_Validation',
-          'To_SLoc_Code_Validation']
-
-        for (let row = 1; row <= dataLength; row++) {
-          validationCols.forEach(colName => {
-            const colIdx = columns.indexOf(colName);
-            if (colIdx === -1) return;
-
-            const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-            const cell = worksheet[cellAddress];
-
-            if (cell && typeof cell.v === 'string') {
-              const value = cell.v.trim().toLowerCase();
-
-              // Apply green if value is "valid", otherwise red
-              cell.s = {
-                font: {
-                  color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' } // green or red
-                }
-              };
-            }
-          });
-        }
-      };
-
-
-      
-// ✅ Style only specific duplicate columns in gray
-const styleDuplicateRecords = (worksheet, columns, dataLength) => {
-  const duplicateCols = ['Plant_Code', 'From_Material_Code', 'To_Material_Code', 'From_SLoc_Code', 'To_SLoc_Code']; // 👈 update with actual duplicate column names
-
-  for (let row = 1; row <= dataLength; row++) {
-    duplicateCols.forEach(colName => {
-      const colIdx = columns.indexOf(colName);
-      if (colIdx === -1) return; // skip if not found
-
-      const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-      const cell = worksheet[cellAddress];
-
-      if (cell) {
-        cell.s = {
-          font: { color: { rgb: '808080' } }, // Gray text
-          // fill: { fgColor: { rgb: 'E0E0E0' } } // optional background
-        };
       }
-    });
-  }
-};
+    };
 
 
-      // Add New Records sheet even if empty data is available
-      if(filteredNewData.length === 0) filteredNewData.push({});
+
+    // ✅ Style only specific duplicate columns in gray
+    const styleDuplicateRecords = (worksheet, columns, dataLength) => {
+      const duplicateCols = ['Plant_Code', 'From_Material_Code', 'To_Material_Code', 'From_SLoc_Code', 'To_SLoc_Code']; // 👈 update with actual duplicate column names
+
+      for (let row = 1; row <= dataLength; row++) {
+        duplicateCols.forEach(colName => {
+          const colIdx = columns.indexOf(colName);
+          if (colIdx === -1) return; // skip if not found
+
+          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+          const cell = worksheet[cellAddress];
+
+          if (cell) {
+            cell.s = {
+              font: { color: { rgb: '808080' } }, // Gray text
+              // fill: { fgColor: { rgb: 'E0E0E0' } } // optional background
+            };
+          }
+        });
+      }
+    };
+
+
+    // Add New Records sheet even if empty data is available
+    if (filteredNewData.length === 0) filteredNewData.push({});
     const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, { header: newRecordsColumns });
     styleHeaders(wsNewRecords, newRecordsColumns);
     XLSX.utils.book_append_sheet(wb, wsNewRecords, 'New Records');
@@ -429,8 +429,8 @@ const styleDuplicateRecords = (worksheet, columns, dataLength) => {
 
     // Add     Duplicate Records sheet even if empty data is available
     if (filteredUpdate.length === 0) filteredUpdate.push({});
-    const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, { header:  DuplicateColumns });
-    styleDuplicateRecords(wsUpdated, DuplicateColumns, filteredUpdate.length); 
+    const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, { header: DuplicateColumns });
+    styleDuplicateRecords(wsUpdated, DuplicateColumns, filteredUpdate.length);
     XLSX.utils.book_append_sheet(wb, wsUpdated, 'DuplicateRecords');
 
     // // Add Updated Records sheet even if empty data is available
@@ -439,7 +439,7 @@ const styleDuplicateRecords = (worksheet, columns, dataLength) => {
     // styleHeaders(wsUpdated, UpdatedColumns);
     // XLSX.utils.book_append_sheet(wb, wsUpdated, 'Updated Records');
 
-    
+
 
     // Set the file name and download the Excel file
     const fileName = 'Trn309Movt Data Upload Log.xlsx';
@@ -497,7 +497,7 @@ const styleDuplicateRecords = (worksheet, columns, dataLength) => {
       setRows(originalRows);
     } else {
       const filteredRows = originalRows.filter((row) =>
-        ['Plant_Code', 'Doc_ID', 'Date', 'From_Material_Code', 'To_Material_Code ','Net_Difference_Price','Approval_Status'].some((key) => {
+        ['Plant_Code', 'Doc_ID', 'Date', 'From_Material_Code', 'To_Material_Code ', 'Net_Difference_Price', 'Approval_Status'].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
         })
@@ -604,7 +604,7 @@ const styleDuplicateRecords = (worksheet, columns, dataLength) => {
     { field: "Net_Difference_Price", headerName: "Net Different Price", flex: 1 },
     { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
 
-    
+
     // {
     //   field: "actions",
     //   headerName: "Actions",
@@ -953,7 +953,7 @@ const styleDuplicateRecords = (worksheet, columns, dataLength) => {
         </Box>
       </Modal>
 
-      
+
       {/* upload modal */}
       <Modal open={openUploadModal} onClose={handleCloseUploadModal}>
         <Box
@@ -968,16 +968,25 @@ const styleDuplicateRecords = (worksheet, columns, dataLength) => {
             textAlign: "center",
           }}
         >
-          <h3 style={{ textAlign: "center", marginBottom: "20px", color: "#2e59d9", textDecoration: "underline", textDecorationColor: "#88c57a", textDecorationThickness: "3px" }}>
+          <h3 style={{
+            textAlign: "center",
+            marginBottom: "20px",
+            color: "#2e59d9",
+            textDecoration: "underline",
+            textDecorationColor: "#88c57a",
+            textDecorationThickness: "3px",
+            fontSize: "27px" 
+          }}>
             Upload Excel File
           </h3>
 
+
           <Button
             variant="contained"
-            style={{ marginBottom: '10px', backgroundColor: deepPurple[500], color: 'white' }}
+            style={{ marginBottom: '8px', backgroundColor: deepPurple[500], color: 'white' }}
           >
             <a
-              style={{ textDecoration: "none", color: "white" }}
+              style={{ textDecoration: "none", color: "white" ,fontSize: "13px" }}
               href={`${api}/transaction/Template/Trn309Movt.xlsx`}
             >
               {" "}
@@ -1082,20 +1091,20 @@ const styleDuplicateRecords = (worksheet, columns, dataLength) => {
         </Box>
       </Modal>
 
-      
+
       { /*View modal*/}
 
-         {/* Modal Component */}
+      {/* Modal Component */}
 
-  <Modal open={openViewModal} onClose={handleCloseViewModal}>
+      <Modal open={openViewModal} onClose={handleCloseViewModal}>
         <Box
           sx={{
-            width: 600,  
-            height: 350, 
+            width: 600,
+            height: 350,
             bgcolor: "background.paper",
             borderRadius: 2,
             boxShadow: 24,
-            p: 2,         
+            p: 2,
             margin: "auto",
             marginTop: "10%",
             display: "flex",
@@ -1148,12 +1157,12 @@ const styleDuplicateRecords = (worksheet, columns, dataLength) => {
                   <th style={{
                     textAlign: "left", padding: "5px", backgroundColor: "deepskyblue", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
                   }}>To</th>
-                </tr> 
+                </tr>
 
               </thead>
               <tbody>
-                {[ 
-                  ["Mat Code", FromMatCode, ToMatCode],
+                {[
+                  ["Material Code", FromMatCode, ToMatCode],
                   ["Description", FromDescription, ToDescription],
                   ["Qty", FromQty, ToQty],
                   ["SLoc ID", FromSLocID, ToSLocID],
@@ -1162,7 +1171,7 @@ const styleDuplicateRecords = (worksheet, columns, dataLength) => {
                   ["Batch", FromBatch, ToBatch],
                 ].map(([label, fromValue, toValue], index) => (
                   <tr key={label}>
-                    <td style={{ padding: "5px", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black" ,fontWeight: "bold"}}>{label}</td>
+                    <td style={{ padding: "5px", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black", fontWeight: "bold" }}>{label}</td>
                     <td style={{ padding: "5px", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black" }}>{fromValue || " "}</td>
                     <td style={{ padding: "5px", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black" }}>{toValue || " "}</td>
                   </tr>
@@ -1186,7 +1195,7 @@ const styleDuplicateRecords = (worksheet, columns, dataLength) => {
 
 
 
-      
+
       {/* ExcelDownload Modal */}
 
       <Modal
