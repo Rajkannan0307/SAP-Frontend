@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link,useNavigate } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -23,6 +23,7 @@ import { RiCustomerService2Fill } from "react-icons/ri";
 import { MdBusinessCenter } from "react-icons/md";
 import usePermissions from "../controller/usePermission";
 import { decryptSessionData } from "../controller/StorageUtils";
+import { FaExchangeAlt } from "react-icons/fa";
 const Sidebar = ({ setSidebarOpen }) => {
   const [open, setOpen] = useState(false);
   const [Masters, setMasterOpen] = useState(false);
@@ -31,6 +32,7 @@ const Sidebar = ({ setSidebarOpen }) => {
   const [Report, setReportOpen] = useState(false);
   const [employeeName, setEmployeeName] = useState('');
   const [Role, setRole] = useState('');
+  const navigate = useNavigate();
   // Pass sidebar open state to parent
   useEffect(() => {
     setSidebarOpen(open);
@@ -138,18 +140,43 @@ useEffect(() => {
       {/* Sidebar Menu Items */}
       <div style={{ padding: "10px" }}>
         {/* Dashboard Section */}
-        <SidebarSection
-          open={open}
-          isOpen={Dashboard}
-          toggleSection={toggleDashboard}
-          Permissions={Permissions}
-          icon={<MdDashboard style={{color:"#FFF5EE"}} />}
-          label="Dashboard"
-          links={[{ name: "Dashboard", path: "/home/dashboard",code:'dashboard' }]}
-          codeList={[
-            'dashboard'
-          ]}
-        />
+       
+       {Permissions.includes('dashboard') && (
+  <button
+    onClick={() => navigate("/home/dashboard")}
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      background: "none",
+      border: "none",
+      color: "white",
+      cursor: "pointer",
+      fontWeight: "bold",
+      fontSize: "18px",
+      margin: "10px 0", // Space above and below
+      marginBottom:"16px"
+    }}>
+    <FaExchangeAlt style={{ color: "turquoise", fontSize: "19px" }} />
+    {open && "Transaction"}
+  </button>
+)}
+
+
+        {/* <div style={{ padding: "10px" }}> */}
+  {/* //Transaction (Direct Link)
+  <SidebarSection
+    open={open}
+    isOpen={false} // No dropdown
+    toggleSection={() => navigate("/home/dashboard")} // Directly navigates
+    Permissions={Permissions}
+    icon={<MdDashboard style={{ color: "#FFF5EE" }} />}
+    label="Transaction"
+    links={[{ name: "Transaction", path: "/home/dashboard", code: 'dashboard' }]} // Direct link
+    codeList={['dashboard']}
+  />
+</div> */}
+
         {/* Masters Section */}
         <SidebarSection
           open={open}

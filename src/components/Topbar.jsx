@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState,useContext } from "react";
 import { Link } from "react-router-dom";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import HomeIcon from "@mui/icons-material/Home";
@@ -9,6 +9,8 @@ import logo from './images/ranelogo.png';
 import { useNavigate } from 'react-router-dom';
 import { Box, IconButton,Typography,Table, TableBody, TableCell, TableRow, TableContainer  } from "@mui/material";
 import Popover from '@mui/material/Popover';
+import { AuthContext } from "../Authentication/AuthContext";
+
 const Topbar = () => {
   const [logoutbtn, setlogoutbtn] = useState(false);
  const { logout } = useContext(AuthContext);
@@ -19,9 +21,7 @@ const Topbar = () => {
   const Plant = localStorage.getItem('PlantName');
   const Email = localStorage.getItem('Email');
   const Plantcode = localStorage.getItem('Plantcode');
-   const RoleId = localStorage.getItem('RoleID');
-console.log ('dddd',RoleId)
-
+  
   const [EmployeeName,setemployeename]=useState('');
   const [Role,setRole]=useState('');
  const navigate = useNavigate();
@@ -32,15 +32,6 @@ const handleLogout = () => {
   };
 
 
- useEffect(() => {
-  const encryptedData = sessionStorage.getItem('userData');
-      if (encryptedData) {
-        const decryptedData = decryptSessionData(encryptedData);
-        setRole(decryptedData.Role);
-        console.log("us",decryptedData.Role)
-
-      }
-      }, []);
   const handlePopoverOpen = () => {
     setlogoutbtn(true);
   };

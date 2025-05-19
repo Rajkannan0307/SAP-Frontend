@@ -130,11 +130,11 @@ const handleLogin = async (e) => {
     backgroundSize: "cover",
     backgroundPosition: "center",
     backgroundAttachment: "fixed",
-    backgroundColor:" #1B5088 "
+    backgroundColor:"#E0F7FA "
   }}
 >
   {/* Centered Header */}
-  <h1 style={{ textAlign: "center", marginBottom: "20px", color: "#fff" }}>SAP APPROVAL LOGIN</h1>
+  <h1 style={{ textAlign: "center", marginBottom: "20px", color: "#1B5088" }}>SAP APPROVAL LOGIN</h1>
 
   {/* Outer Centered Box */}
   <div
@@ -183,20 +183,22 @@ const handleLogin = async (e) => {
       }}
     >
       {/* Inner Box for Login Details */}
-      <div
-        style={{
-          width: "100%",
-          maxHeight: "500px",
-          maxWidth: "350px",
-          backgroundColor: "#E0F7FA",
-          padding: "20px",
-          borderRadius: "20px",
-          boxShadow: "0 4px 12px rgb(131, 130, 130)",
-        }}
-      >
-        <h3 style={{ textAlign: "center", marginBottom: "20px", color: "#2994d1" }}>Login</h3>
+    <div
+  style={{
+    width: "100%",
+     height: "250px", // Increased height
+    width: "370px",
+    backgroundColor: "#E0F7FA",
+    padding: "20px",
+    borderRadius: "20px",
+    boxShadow: "0 4px 12px rgb(131, 130, 130)",
+    right:4
+  }}
+>
+
+        <h3 style={{ textAlign: "center", marginBottom: "20px", marginTop: "30px", color: "#2994d1" }}>Login</h3>
         <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column" }}>
-          <input
+          {/* <input
             type="text"
             placeholder="Login ID"
             value={username}
@@ -206,26 +208,57 @@ const handleLogin = async (e) => {
               borderRadius: "20px",
               border: "1px solid #ccc",
               marginBottom: "15px",
-              maxWidth: "180px",
+              Width: "360px",
               textAlign: "center",
               margin: "5px auto",
+               display: "block", 
             }}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{
-              padding: "10px",
-              borderRadius: "20px",
-              border: "1px solid #ccc",
-              marginBottom: "20px",
-              textAlign: "center",
-              maxWidth: "180px",
-              margin: "5px auto",
-            }}
-          />
+          /> */}
+
+       <input
+  type="text"
+  placeholder="Login ID"
+  value={username}
+  onChange={(e) => setUserName(e.target.value)}
+  style={{
+    width: "260px",
+    height:"17px",
+    padding: "10px",
+    borderRadius: "20px",
+    border: "1px solid #ccc",
+    marginBottom: "15px",
+    textAlign: "center",
+    margin: "5px auto",
+    display: "block",
+    outline: "none", // Remove black border on focus
+    transition: "border 0.3s",
+  }}
+  onFocus={(e) => (e.target.style.border = "1px solid #1B5088")} // Green border on focus
+  onBlur={(e) => (e.target.style.border = "1px solid #ccc")}    // Gray border on blur
+/>
+
+<input
+  type="password"
+  placeholder="Password"
+  value={password}
+  onChange={(e) => setPassword(e.target.value)}
+  style={{
+    padding: "10px",
+    borderRadius: "20px",
+    border: "1px solid #ccc",
+    marginBottom: "20px",
+    textAlign: "center",
+    width: "260px",
+    height:"17px",
+    margin: "5px auto",
+    display: "block",
+    outline: "none", // Remove black border on focus
+    transition: "border 0.3s",
+  }}
+  onFocus={(e) => (e.target.style.border = "1px solid #1B5088")} // Green border on focus
+  onBlur={(e) => (e.target.style.border = "1px solid #ccc")}    // Gray border on blur
+/>
+
           <button
             type="submit"
             style={{
@@ -238,9 +271,11 @@ const handleLogin = async (e) => {
               fontWeight: "bold",
               border: "none",
               cursor: "pointer",
-              maxWidth: "120px",
+              width: "160px",
+              height:"30px",
               display: "block",
-              margin: "10px auto",
+              margin: "20px auto",
+              bottom:4
             }}
             onMouseOver={(e) => (e.target.style.backgroundColor = "#00CCFF")}
             onMouseOut={(e) => (e.target.style.backgroundColor = "rgb(65, 171, 230)")}
@@ -255,7 +290,7 @@ const handleLogin = async (e) => {
   {/* Error Snackbar */}
   <Snackbar 
     open={openError} 
-    autoHideDuration={2000} 
+    autoHideDuration={1500} 
     onClose={() => setOpenError(false)} 
     anchorOrigin={{ vertical: "top", horizontal: "center" }}
   >
@@ -264,7 +299,7 @@ const handleLogin = async (e) => {
 
   <Snackbar 
     open={openSuccess} 
-    autoHideDuration={500} 
+    autoHideDuration={200} 
     onClose={() => setOpenSuccess(false)} 
     anchorOrigin={{ vertical: "top", horizontal: "center" }}
   >

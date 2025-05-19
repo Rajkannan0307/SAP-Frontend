@@ -16,12 +16,12 @@ const ProtectedRoute = ({ children, screenId }) => {
         setShowAlert(true);
         setTimeout(() => {
           navigate("/");
-        }, 2000); // Redirect after 2 seconds if not authenticated
+        }, 1000); // Redirect after 2 seconds if not authenticated
       } else if (screenId && !canAccessScreen(screenId)) {
         setShowAlert(true);
         setTimeout(() => {
           navigate("/home/Home"); // Redirect to home if user has no access
-        }, 2000);
+        }, 1000);
       }
     }
   }, [loading, user, navigate, screenId]);
@@ -41,7 +41,7 @@ const ProtectedRoute = ({ children, screenId }) => {
       <>
         <Snackbar
           open={showAlert}
-          autoHideDuration={2000}
+          autoHideDuration={1000}
           onClose={() => setShowAlert(false)}
           anchorOrigin={{ vertical: "top", horizontal: "center" }}
         >
