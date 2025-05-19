@@ -30,6 +30,7 @@ const Sidebar = ({ setSidebarOpen }) => {
   const [Approval, setApprovalOpen] = useState(false);
   const [Dashboard, setDashboardOpen] = useState(false);
   const [Report, setReportOpen] = useState(false);
+  const [SAP, setSapOpen] = useState(false);
   const [employeeName, setEmployeeName] = useState('');
   const [Role, setRole] = useState('');
   const navigate = useNavigate();
@@ -59,7 +60,14 @@ useEffect(() => {
 
   const toggleMasters = () => {
     setMasterOpen(!Masters);
-    
+    setSapOpen(false);
+    setDashboardOpen(false);
+    setReportOpen(false);
+    setApprovalOpen(false);
+  };
+   const toggleSAP = () => {
+    setSapOpen(!SAP);
+     setMasterOpen(false);
     setDashboardOpen(false);
     setReportOpen(false);
     setApprovalOpen(false);
@@ -70,6 +78,7 @@ useEffect(() => {
     setMasterOpen(false);
     setDashboardOpen(false);
     setReportOpen(false);
+     setSapOpen(false);
   };
 
   const toggleReport = () => {
@@ -77,6 +86,7 @@ useEffect(() => {
     setMasterOpen(false);
     setDashboardOpen(false);
     setApprovalOpen(false);
+    setSapOpen(false);
   };
 
   const toggleDashboard = () => {
@@ -84,6 +94,7 @@ useEffect(() => {
     setMasterOpen(false);
     setApprovalOpen(false);
     setReportOpen(false);
+    setSapOpen(false);
   };
 
   const closeAllDropdowns = () => {
@@ -235,6 +246,31 @@ useEffect(() => {
           open={open}
           isOpen={Report}
           toggleSection={toggleReport}
+          icon={<ReportIcon />}
+          Permissions={Permissions}
+          label="Report"
+          links={[
+            {
+              name: "Report 1",
+              path: "/home/Report1",
+              icon: <ReportIcon style={{ marginRight: "8px", color: "#ffcc00" }}/>,
+              code:'Report1'
+            },
+            {
+              name: "Report 2",
+              path: "/home/Report2",
+              icon: <ReportIcon style={{ marginRight: "8px", color: "#ffcc00" }} />,
+              code:'Report2'
+            },
+          ]}
+          codeList={[
+            'Report1','Report2'
+          ]}
+        />
+        <SidebarSection
+          open={open}
+          isOpen={SAP}
+          toggleSection={toggleSAP}
           icon={<ReportIcon />}
           Permissions={Permissions}
           label="Report"

@@ -79,6 +79,7 @@ const App = () => {
             <Route path="SubContracting" element={<ProtectedRoute><SubContracting /></ProtectedRoute>} />
             <Route path="Inward" element={<ProtectedRoute><Inward /></ProtectedRoute>} />
             <Route path="Location" element={<ProtectedRoute><Location /></ProtectedRoute>} />
+            
             <Route path="Home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
             
             {/* Role Management */}

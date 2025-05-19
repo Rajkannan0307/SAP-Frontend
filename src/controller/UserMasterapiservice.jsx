@@ -19,6 +19,11 @@ export const getAdd = async (data) => {
     const response = await axios.get(`${api}/UserMaster/Get_Department`);
     return response;
   };
+  export const getUserLevel = async ()=>{
+
+    const response = await axios.get(`${api}/UserMaster/Get_UserLevel`);
+    return response;
+  };
   export const getRole = async ()=>{
 
     const response = await axios.get(`${api}/UserMaster/Get_Role`);

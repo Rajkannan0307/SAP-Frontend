@@ -28,6 +28,7 @@ import {
   getDepartment,
   getRole,
   getUpdates,
+  getUserLevel
 } from "../controller/UserMasterapiservice";
 
 const UserMaster = () => {
@@ -42,11 +43,12 @@ const UserMaster = () => {
   const [User_ID, setUserID] = useState("");
   const [Plant_Id, setPlantId] = useState([]);
   const [PlantTable, setPlantTable] = useState([]);
+  const [UserLevelTable, setUserLevelTable] = useState([]);
   const [DepartmentTable, setDepartmentTable] = useState([]);
   const [RoleTable, setRoleTable] = useState([]);
   const [User_Name, setUserName] = useState("");
   const [User_Email, setUserEmail] = useState("");
-  const [User_Level, setUserLevel] = useState([]);
+  const [User_Level, setUserLevel] = useState("");
   const [Employee_ID, setEmployeeID] = useState("");
   const [Dept_Name, setDeptName] = useState([]);
   const [Role_Name, setRoleName] = useState("");
@@ -108,6 +110,15 @@ const UserMaster = () => {
       console.error("Error updating user:", error);
     }
   };
+  const get_UserLevel = async () => {
+    try {
+      const response = await getUserLevel();
+       console.log(response);
+      setUserLevelTable(response.data);
+    } catch (error) {
+      console.error("Error updating user:", error);
+    }
+  };
   useEffect(() => {
     getData();
   }, []);
@@ -122,27 +133,30 @@ const UserMaster = () => {
   );
 
   // ✅ Handle Add Modal
-  const handleOpenAddModal = (item) => {
-    setDeptName("");
-    setPlantId("");
-    setEmployeeID("");
-    setPassword("");
-    setRoleName("");
-    setUserEmail("");
-    setUserLevel("");
-    setUserName("");
-    get_Plant();
-    GetDepartment();
-    GetRole();
-    setActiveStatus(true);
-    setOpenAddModal(true);
-  };
+ // ✅ Handle Add Modal (Clear Fields and Fetch Dropdowns)
+const handleOpenAddModal = (item) => {
+  setDeptName("");
+  setPlantId("");
+  setEmployeeID("");
+  setPassword("");
+  setRoleName("");
+  setUserEmail("");
+  setUserLevel(""); // ✅ Clear selected user level
+  setUserName("");
+  get_Plant();
+  GetDepartment();
+  GetRole();
+  get_UserLevel(); // ✅ Fetch user levels (for dropdown)
+  setActiveStatus(true);
+  setOpenAddModal(true);
+};
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
 
   const handleRowClick = (params) => {
     GetDepartment();
     GetRole();
+    get_UserLevel();
     setPlantCode(params.row.Plant_Code);
     setDeptName(params.row.Dept_ID);
     setEmployeeID(params.row.Employee_ID);
@@ -224,7 +238,7 @@ const UserMaster = () => {
         User_Name: User_Name,
         Dept_Name: Dept_Name,
         Role_Name: Role_Name,
-        User_Level: User_Level,
+        User_Level_ID: User_Level,
         User_Email: User_Email,
         Password: Password,
         Active_Status: ActiveStatus, // Make sure this is defined somewhere
@@ -602,7 +616,7 @@ const UserMaster = () => {
             onChange={(e) => setEmployeeID(e.target.value)}
             fullWidth
           />
-          <FormControl fullWidth>
+          {/* <FormControl fullWidth>
             <InputLabel>UserLevel</InputLabel>
             <Select
               label="UserLevel"
@@ -619,6 +633,22 @@ const UserMaster = () => {
               <MenuItem value={6}>Level 6</MenuItem>
 
 
+            </Select>
+          </FormControl> */}
+          <FormControl fullWidth>
+            <InputLabel>UserLevel</InputLabel>
+            <Select
+              label="UserLevel"
+              name="UserLevel"
+              value={User_Level}
+              onChange={(e) => setUserLevel(e.target.value)}
+              required
+            >
+              {UserLevelTable.map((item, index) => (
+                <MenuItem key={index} value={item.User_Level_ID}>
+                  {item.User_Level_Name}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
           <TextField

@@ -45,6 +45,7 @@ const handleLogin = async (e) => {
       if (data) {
         localStorage.setItem('Active', data.Active_Status);
         localStorage.setItem('DeptId', data.Dept_Id);
+        
         localStorage.setItem('UserName',data.User_Name);
         localStorage.setItem('UserID',data.User_ID);
         localStorage.setItem('Deptname', data.Dept_Name);
@@ -54,6 +55,7 @@ const handleLogin = async (e) => {
         localStorage.setItem('EmpId', data.Employee_ID);
         localStorage.setItem('RoleID', data.Role_ID);
         localStorage.setItem('Approval_Level', data.User_Level);
+        localStorage.setItem('UserLevel', data.User_Level);
         localStorage.setItem('Permission', data.Screen_Codes);
 
         localStorage.setItem('Plant_ID', data.Plant_ID);
@@ -71,12 +73,12 @@ const handleLogin = async (e) => {
           PlantCode: data.Plant_Code,
           EmpId: data.Employee_ID,
           RoleId: data.Role_ID,
-         
+          UserLevelName:data.User_Level_Name,
           CompanyCode: data.Company_code,
           CompanyName: data.Company_name,
           CompanyId:data.Com_ID,
           
-          
+          UserLevel:data.User_Level,
           Role: data.Role_Name,
           Permissions:data.Screen_Codes,
           login:true
@@ -134,7 +136,7 @@ const handleLogin = async (e) => {
   }}
 >
   {/* Centered Header */}
-  <h1 style={{ textAlign: "center", marginBottom: "20px", color: "#1B5088" }}>SAP APPROVAL LOGIN</h1>
+  <h1 style={{ textAlign: "center", marginBottom: "20px", color: "#1B5088" }}>SAP-APPROVAL WORKFLOW</h1>
 
   {/* Outer Centered Box */}
   <div

@@ -21,9 +21,11 @@ const Topbar = () => {
   const Plant = localStorage.getItem('PlantName');
   const Email = localStorage.getItem('Email');
   const Plantcode = localStorage.getItem('Plantcode');
+   
   
   const [EmployeeName,setemployeename]=useState('');
   const [Role,setRole]=useState('');
+  const [UserLevel,setUserLevel]=useState('');
  const navigate = useNavigate();
  
 const handleLogout = () => {
@@ -34,12 +36,16 @@ useEffect(() => {
   const encryptedData = sessionStorage.getItem('userData');
       if (encryptedData) {
         const decryptedData = decryptSessionData(encryptedData);
+        
         setRole(decryptedData.Role);
-        console.log("us",decryptedData.Role)
+        setUserLevel(decryptedData.UserLevelName);
+        console.log("us",decryptedData.UserLevelName)
 
       }
       }, []);
-
+       const encryptedUserData = sessionStorage.getItem('userData');
+      const decryptedUserData = decryptSessionData(encryptedUserData);
+         console.log('decrypted userdata:', decryptedUserData);
   const handlePopoverOpen = () => {
     setlogoutbtn(true);
   };
@@ -55,6 +61,10 @@ const open = Boolean(logoutbtn);
     <Table>
       <TableBody>
         <TableRow>
+          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Plant:</TableCell>
+          <TableCell>{Plantcode} / {Plant}</TableCell>
+        </TableRow>
+        <TableRow>
           <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>GenId :</TableCell>
           <TableCell>{GenId}</TableCell>
         </TableRow>
@@ -67,6 +77,10 @@ const open = Boolean(logoutbtn);
           <TableCell>{Role}</TableCell>
         </TableRow>
         <TableRow>
+          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>User Level :</TableCell>
+          <TableCell>{UserLevel}</TableCell>
+        </TableRow>
+        <TableRow>
           <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Department :</TableCell>
           <TableCell>{Dept}</TableCell>
         </TableRow>
@@ -74,10 +88,7 @@ const open = Boolean(logoutbtn);
           <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Email:</TableCell>
           <TableCell>{Email}</TableCell>
         </TableRow>
-        <TableRow>
-          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Plant:</TableCell>
-          <TableCell>{Plantcode} / {Plant}</TableCell>
-        </TableRow>
+        
        
       </TableBody>
     </Table>
@@ -141,7 +152,7 @@ const open = Boolean(logoutbtn);
     <AccountCircleIcon
       style={{
         textDecoration: "none",
-        color: "#FB9F9E",
+        color: "#FFD700",
         marginRight: "-8px",
       }}
     />
@@ -176,7 +187,7 @@ const open = Boolean(logoutbtn);
     to="/home/Home"
     style={{
       textDecoration: "none",
-      color: "bisque",
+      color: "#F0F4FF",
       display: "flex",
       alignItems: "center",
     }}
@@ -196,7 +207,7 @@ const open = Boolean(logoutbtn);
   > */}
     <FaSignOutAlt
       style={{
-        color:"greenyellow",
+        color:"#FF6666",
         display: "flex",
         alignItems: "center",
         padding: "5px",
