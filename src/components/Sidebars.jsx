@@ -143,7 +143,11 @@ useEffect(() => {
        
        {Permissions.includes('dashboard') && (
   <button
-    onClick={() => navigate("/home/dashboard")}
+   
+    onClick={() => {
+      closeAllDropdowns(); // Close other sections
+      navigate("/home/dashboard");
+    }}
     style={{
       display: "flex",
       alignItems: "center",

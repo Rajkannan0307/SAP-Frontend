@@ -141,7 +141,7 @@ const open = Boolean(logoutbtn);
     <AccountCircleIcon
       style={{
         textDecoration: "none",
-        color: "white",
+        color: "#FB9F9E",
         marginRight: "-8px",
       }}
     />
@@ -176,7 +176,7 @@ const open = Boolean(logoutbtn);
     to="/home/Home"
     style={{
       textDecoration: "none",
-      color: "white",
+      color: "bisque",
       display: "flex",
       alignItems: "center",
     }}
@@ -196,7 +196,7 @@ const open = Boolean(logoutbtn);
   > */}
     <FaSignOutAlt
       style={{
-        color: "white",
+        color:"greenyellow",
         display: "flex",
         alignItems: "center",
         padding: "5px",
