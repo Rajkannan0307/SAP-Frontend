@@ -77,7 +77,7 @@ const handleLogin = async (e) => {
           CompanyCode: data.Company_code,
           CompanyName: data.Company_name,
           CompanyId:data.Com_ID,
-          
+          PlantID:data.Plant_ID,
           UserLevel:data.User_Level,
           Role: data.Role_Name,
           Permissions:data.Screen_Codes,
@@ -93,19 +93,48 @@ const handleLogin = async (e) => {
         setSuccessMessage("Login successful!");
         setOpenSuccess(true);
 
-        setTimeout(() => {
-          window.location.href = "/home/Home"; // Hard redirect to clear state
-        }, 500); // 1.5 seconds delay
+      // Role-based redirection
+          setTimeout(() => {
+            switch (data.Role_ID) {
+              case 2:
+                window.location.href = "/home/HomePage";
+                break;
+              case 3:
+                window.location.href = "/home/HomePage";
+                break;
+              case 4:
+                window.location.href = "/home/HomePage";
+                break;
+              case 5:
+                window.location.href = "/home/HomePage";
+                break;
+              case 6:
+                window.location.href = "/home/HomePage";
+                break;
+              case 7:
+                window.location.href = "/home/HomePage";
+                break;
+              case 8:
+                window.location.href = "/home/HomePage";
+                break;
+              case 1:
+              case 9:
+                window.location.href = "/home/Home";
+                break;
+              // default:
+              //   window.location.href = "/home/Home";
+            }
+          }, 100);
+        }
+      } else {
+        setError("Login failed. Please try again.");
+        setOpenError(true);
       }
-    } else {
-      setError("Login failed. Please try again.");
+    } catch (error) {
+      setError("Something went wrong. Try again.");
       setOpenError(true);
     }
-  } catch (error) {
-    setError("Something went wrong. Try again.");
-    setOpenError(true);
-  }
-};
+  };
  useEffect(() => {
     const encryptedData = sessionStorage.getItem('userData');
     console.log("us",encryptedData)
@@ -190,7 +219,7 @@ const handleLogin = async (e) => {
     width: "100%",
      height: "250px", // Increased height
     width: "370px",
-    backgroundColor: "#E0F7FA",
+    backgroundColor: "white",
     padding: "20px",
     borderRadius: "20px",
     boxShadow: "0 4px 12px rgb(131, 130, 130)",
@@ -198,7 +227,7 @@ const handleLogin = async (e) => {
   }}
 >
 
-        <h3 style={{ textAlign: "center", marginBottom: "20px", marginTop: "30px", color: "#2994d1" }}>Login</h3>
+        <h3 style={{ textAlign: "center", marginBottom: "20px", top: "-2px", color: "#2994d1" }}>Login</h3>
         <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column" }}>
           {/* <input
             type="text"
@@ -227,16 +256,17 @@ const handleLogin = async (e) => {
     height:"17px",
     padding: "10px",
     borderRadius: "20px",
-    border: "1px solid #ccc",
+    border: "1px solid #1B5088",
     marginBottom: "15px",
     textAlign: "center",
     margin: "5px auto",
     display: "block",
     outline: "none", // Remove black border on focus
     transition: "border 0.3s",
+    fontSize:"16px"
   }}
-  onFocus={(e) => (e.target.style.border = "1px solid #1B5088")} // Green border on focus
-  onBlur={(e) => (e.target.style.border = "1px solid #ccc")}    // Gray border on blur
+    onFocus={(e) => (e.target.style.border = "1px solid rgb(22, 129, 243)")} // Green border on focus
+  onBlur={(e) => (e.target.style.border = "1px solid  #1B5088")}    // Gray border on blur
 />
 
 <input
@@ -247,7 +277,7 @@ const handleLogin = async (e) => {
   style={{
     padding: "10px",
     borderRadius: "20px",
-    border: "1px solid #ccc",
+    border: "1px solid #1B5088",
     marginBottom: "20px",
     textAlign: "center",
     width: "260px",
@@ -256,9 +286,10 @@ const handleLogin = async (e) => {
     display: "block",
     outline: "none", // Remove black border on focus
     transition: "border 0.3s",
+    fontSize:"16px"
   }}
-  onFocus={(e) => (e.target.style.border = "1px solid #1B5088")} // Green border on focus
-  onBlur={(e) => (e.target.style.border = "1px solid #ccc")}    // Gray border on blur
+  onFocus={(e) => (e.target.style.border = "1px solid rgb(22, 129, 243)")} // Green border on focus
+  onBlur={(e) => (e.target.style.border = "1px solid  #1B5088")}    // Gray border on blur
 />
 
           <button

@@ -161,7 +161,7 @@ const handleOpenAddModal = (item) => {
     setDeptName(params.row.Dept_ID);
     setEmployeeID(params.row.Employee_ID);
     setRoleName(params.row.Role_ID);
-    setUserLevel(params.row.User_Level);
+    setUserLevel(params.row.User_Level_ID);
     setUserEmail(params.row.User_Email);
     setPassword(params.row.Password);
     setUserName(params.row.User_Name);
@@ -274,7 +274,7 @@ const handleOpenAddModal = (item) => {
       User_Name: User_Name,
       Dept_Name: Dept_Name,
       Role_Name: Role_Name,
-      User_Level: User_Level,
+      User_Level_ID: User_Level,
       User_Email: User_Email,
       Password: Password,
       Active_Status: ActiveStatus,
@@ -349,7 +349,7 @@ const handleOpenAddModal = (item) => {
       UserName: item.User_Name,
       Department: item.Dept_Name,
       Role: item.Role_Name,
-      UserLevel: `Level ${item.User_Level}`,
+      UserLevel: item.User_Level_Name,
 
       Email: item.User_Email,
 
@@ -826,7 +826,7 @@ const handleOpenAddModal = (item) => {
             fullWidth
             required
           />
-          <FormControl fullWidth>
+           <FormControl fullWidth>
             <InputLabel>UserLevel</InputLabel>
             <Select
               label="UserLevel"
@@ -835,12 +835,11 @@ const handleOpenAddModal = (item) => {
               onChange={(e) => setUserLevel(e.target.value)}
               required
             >
-              <MenuItem value={1}>Level 1</MenuItem>
-              <MenuItem value={2}>Level 2</MenuItem>
-              <MenuItem value={3}>Level 3</MenuItem>
-              <MenuItem value={4}>Level 4</MenuItem>
-              <MenuItem value={5}>Level 5</MenuItem>
-              <MenuItem value={6}>Level 6</MenuItem>
+              {UserLevelTable.map((item, index) => (
+                <MenuItem key={index} value={item.User_Level_ID}>
+                  {item.User_Level_Name}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
           <TextField

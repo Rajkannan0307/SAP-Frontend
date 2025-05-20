@@ -48,15 +48,47 @@ const Sidebar = ({ setSidebarOpen }) => {
 
   
   
-useEffect(() => {
-  const encryptedData = sessionStorage.getItem('userData');
-  if (encryptedData) {
-    const decryptedData = decryptSessionData(encryptedData);
+// useEffect(() => {
+//   const encryptedData = sessionStorage.getItem('userData');
+//   if (encryptedData) {
+//     const decryptedData = decryptSessionData(encryptedData);
   
-    setEmployeeName(decryptedData.UserName);
-    setRole(decryptedData.Role);
+//     setEmployeeName(decryptedData.UserName);
+   
+   
+
+//   }
+// }, []);
+// useEffect(() => {
+//   const encryptedData = sessionStorage.getItem('userData');
+//       if (encryptedData) {
+//         const decryptedData = decryptSessionData(encryptedData);
+        
+//         setRole(decryptedData.Role);
+        
+//       }
+//       }, []);
+
+
+    
+
+
+useEffect(() => {
+  const encrypted = sessionStorage.getItem("userData");
+  if (encrypted) {
+    const decrypted = decryptSessionData(encrypted);
+    console.log("Decrypted User:", decrypted);
+
+    if (decrypted?.RoleId) {
+      setRole(decrypted.RoleId);
+    } else {
+      console.warn("RoleId is missing from decrypted user data");
+    }
+  } else {
+    console.warn("No EncryptedUserData in sessionStorage");
   }
 }, []);
+
 
   const toggleMasters = () => {
     setMasterOpen(!Masters);
@@ -128,11 +160,22 @@ useEffect(() => {
           cursor: "pointer",
         }}
       >
-       {open && (
-  <h3 style={{ margin: 0, color: "white" }}>
-    <Link  style={{color:"white",textDecoration: "none"}}to="/home/Home">HOME</Link>
+     {open && (
+  <h3
+    style={{ margin: 0, color: "white", cursor: "pointer" }}
+    onClick={() => {
+      const roleId = parseInt(Role); // ✅ Convert Role to number
+      if (roleId === 1 || roleId === 9) {
+        navigate("/home/Home");
+      } else if ([2, 3, 4, 5, 6, 7, 8].includes(roleId)) {
+        navigate("/home/HomePage");
+      }
+    }}
+  >
+    HOME
   </h3>
 )}
+
 
         <button
           onClick={toggleSidebar}
@@ -267,31 +310,30 @@ useEffect(() => {
             'Report1','Report2'
           ]}
         />
-        <SidebarSection
-          open={open}
-          isOpen={SAP}
-          toggleSection={toggleSAP}
-          icon={<ReportIcon />}
-          Permissions={Permissions}
-          label="Report"
-          links={[
-            {
-              name: "Report 1",
-              path: "/home/Report1",
-              icon: <ReportIcon style={{ marginRight: "8px", color: "#ffcc00" }}/>,
-              code:'Report1'
-            },
-            {
-              name: "Report 2",
-              path: "/home/Report2",
-              icon: <ReportIcon style={{ marginRight: "8px", color: "#ffcc00" }} />,
-              code:'Report2'
-            },
-          ]}
-          codeList={[
-            'Report1','Report2'
-          ]}
-        />
+        {/* {Permissions.includes('sap') && (
+  <button
+   
+    onClick={() => {
+      closeAllDropdowns(); // Close other sections
+      navigate("/home/SAP");
+    }}
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      background: "none",
+      border: "none",
+      color: "white",
+      cursor: "pointer",
+      fontWeight: "bold",
+      fontSize: "18px",
+      margin: "10px 0", // Space above and below
+      marginBottom:"16px"
+    }}>
+    <FaExchangeAlt style={{ color: "turquoise", fontSize: "19px" }} />
+    {open && "SAP"}
+  </button>
+)} */}
       </div>
     </div>
   );

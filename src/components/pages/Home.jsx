@@ -62,7 +62,7 @@ const Home = () => {
         }}
       >
         {/* Show button only if user role is admin (role ID 1) */}
-        {(Role === 1 || Role === 9) && (
+       
   <Button
     variant="contained"
     size="large"
@@ -89,7 +89,7 @@ const Home = () => {
   >
     Go to Transaction
   </Button>
-)}
+
 
        
       </div>

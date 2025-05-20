@@ -39,12 +39,14 @@ import Admin from "./Masters/Admin";
 import SubMenu from "./Masters/Submenu";
 import BusinessDivision from "./Masters/BusinessDivision";
 import Home from "./components/pages/Home";
+import ApproverHome from "./components/pages/ApproverHome";
 
 const App = () => {
   return (
     <Router>
       <AuthProvider>
         <Routes>
+         
           <Route path="/" element={<Login />} />
 
           {/* Protected Routes with Role-Based Access */}
@@ -81,7 +83,7 @@ const App = () => {
             <Route path="Location" element={<ProtectedRoute><Location /></ProtectedRoute>} />
             
             <Route path="Home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-            
+             <Route path="HomePage" element={<ProtectedRoute><ApproverHome /></ProtectedRoute>} />
             {/* Role Management */}
             <Route path="Role/:roleId" element={<ProtectedRoute screenId={6}><Admin /></ProtectedRoute>} />
             <Route path="Role/:roleId/:menuId" element={<ProtectedRoute screenId={6}><SubMenu /></ProtectedRoute>} />

@@ -1,19 +1,17 @@
-
-import React, { useState,useContext,useEffect } from "react";
+import React, { useState, useContext, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import HomeIcon from "@mui/icons-material/Home";
 import { FaSignOutAlt } from "react-icons/fa";
-import { Button } from "@mui/material";
+import { Button, Box, IconButton, Typography, Table, TableBody, TableCell, TableRow, TableContainer, Popover } from "@mui/material";
 import logo from './images/ranelogo.png';
-import { useNavigate } from 'react-router-dom';
-import { Box, IconButton,Typography,Table, TableBody, TableCell, TableRow, TableContainer  } from "@mui/material";
-import Popover from '@mui/material/Popover';
 import { AuthContext } from "../Authentication/AuthContext";
-import { decryptSessionData } from "../controller/StorageUtils"
+import { decryptSessionData } from "../controller/StorageUtils";
+
 const Topbar = () => {
-  const [logoutbtn, setlogoutbtn] = useState(false);
- const { logout } = useContext(AuthContext);
+  const { logout } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const GenId = localStorage.getItem('EmpId');
   const Username = localStorage.getItem('UserName');
@@ -21,79 +19,81 @@ const Topbar = () => {
   const Plant = localStorage.getItem('PlantName');
   const Email = localStorage.getItem('Email');
   const Plantcode = localStorage.getItem('Plantcode');
-   
-  
-  const [EmployeeName,setemployeename]=useState('');
-  const [Role,setRole]=useState('');
-  const [UserLevel,setUserLevel]=useState('');
- const navigate = useNavigate();
- 
-const handleLogout = () => {
+
+  const [EmployeeName, setemployeename] = useState('');
+  const [Role, setRole] = useState('');
+  const [RoleID, setRoleID] = useState('');
+  const [UserLevel, setUserLevel] = useState('');
+  const [anchorEl, setAnchorEl] = useState(null); // anchor for Popover
+
+  const handleLogout = () => {
     logout(); // Use AuthContext's logout method
     navigate('/');
   };
-useEffect(() => {
-  const encryptedData = sessionStorage.getItem('userData');
-      if (encryptedData) {
-        const decryptedData = decryptSessionData(encryptedData);
-        
-        setRole(decryptedData.Role);
-        setUserLevel(decryptedData.UserLevelName);
-        console.log("us",decryptedData.UserLevelName)
 
-      }
-      }, []);
-       const encryptedUserData = sessionStorage.getItem('userData');
+  useEffect(() => {
+    const encryptedUserData = sessionStorage.getItem('userData');
+    if (encryptedUserData) {
       const decryptedUserData = decryptSessionData(encryptedUserData);
-         console.log('decrypted userdata:', decryptedUserData);
-  const handlePopoverOpen = () => {
-    setlogoutbtn(true);
+      setRoleID(decryptedUserData.RoleId);
+        console.log('rrr:', RoleID);
+      setRole(decryptedUserData.Role);
+      setUserLevel(decryptedUserData.UserLevelName);
+    }
+  }, []);
+
+  const encryptedUserData = sessionStorage.getItem('userData');
+  const decryptedUserData = decryptSessionData(encryptedUserData);
+  console.log('decrypted userdata:', decryptedUserData);
+
+  const handlePopoverOpen = (event) => {
+    setAnchorEl(event.currentTarget); // correct anchor element
   };
+
   const handlePopoverClose = () => {
-    setlogoutbtn(false);
+    setAnchorEl(null);
   };
-const open = Boolean(logoutbtn);
+
+  const open = Boolean(anchorEl);
   const id = open ? 'simple-popover' : undefined;
 
   const popoverContent = (
-    // <Typography sx={{ p: 2 }}>User Details Here</Typography>
     <TableContainer sx={{ p: 2 }}>
-    <Table>
-      <TableBody>
-        <TableRow>
-          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Plant:</TableCell>
-          <TableCell>{Plantcode} / {Plant}</TableCell>
-        </TableRow>
-        <TableRow>
-          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>GenId :</TableCell>
-          <TableCell>{GenId}</TableCell>
-        </TableRow>
-        <TableRow>
-          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Name :</TableCell>
-          <TableCell>{Username}</TableCell>
-        </TableRow>
-        <TableRow>
-          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Role :</TableCell>
-          <TableCell>{Role}</TableCell>
-        </TableRow>
-        <TableRow>
-          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>User Level :</TableCell>
-          <TableCell>{UserLevel}</TableCell>
-        </TableRow>
-        <TableRow>
-          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Department :</TableCell>
-          <TableCell>{Dept}</TableCell>
-        </TableRow>
-        <TableRow>
-          <TableCell sx={{fontWeight:'700' , fontSize:'12px'}}>Email:</TableCell>
-          <TableCell>{Email}</TableCell>
-        </TableRow>
-        
-       
-      </TableBody>
-    </Table>
-  </TableContainer>
+      <Table>
+        <TableBody>
+          <TableRow>
+            <TableCell sx={{ fontWeight: '700', fontSize: '12px' }}>Plant:</TableCell>
+            <TableCell>{Plantcode} / {Plant}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell sx={{ fontWeight: '700', fontSize: '12px' }}>GenId :</TableCell>
+            <TableCell>{GenId}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell sx={{ fontWeight: '700', fontSize: '12px' }}>Name :</TableCell>
+            <TableCell>{Username}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell sx={{ fontWeight: '700', fontSize: '12px' }}>Role :</TableCell>
+            <TableCell>{Role}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell sx={{ fontWeight: '700', fontSize: '12px' }}>User Level :</TableCell>
+            <TableCell>{UserLevel}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell sx={{ fontWeight: '700', fontSize: '12px' }}>Department :</TableCell>
+            <TableCell>{Dept}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell sx={{ fontWeight: '700', fontSize: '12px' }}>Email:</TableCell>
+            <TableCell>{Email}</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
+
   return (
     <div
       style={{
@@ -124,101 +124,92 @@ const open = Boolean(logoutbtn);
           }}
         >
           <img
-  src={logo}
-  alt="Rane Logo"
-  style={{
-    height: "43px",
-    marginLeft: "0px",
-    background: "white",
-    border: "2px solid white", // White border
-    borderRadius: "6px", // Rounded corners
-  }}
-     />
-
-          
+            src={logo}
+            alt="Rane Logo"
+            style={{
+              height: "43px",
+              marginLeft: "0px",
+              background: "white",
+              border: "2px solid white",
+              borderRadius: "6px",
+            }}
+          />
           <h1 style={{ fontSize: "30px", color: "white" }}>SAP APPROVAL WORK FLOW</h1>
         </div>
 
         <div
-  style={{
-    display: "flex",
-    alignItems: "center",
-    gap: "15px", // Increased gap for better spacing
-    marginLeft: 0,
-  }}
->
-  {/* Account Icon Button */}
-  <Button style={{ padding: 0, minWidth: "40px" }} onClick={handlePopoverOpen}>
-    <AccountCircleIcon
-      style={{
-        textDecoration: "none",
-        color: "#FFD700",
-        marginRight: "-8px",
-      }}
-    />
-  </Button>
-
-
-  <Popover
-          id={id}
-          open={open}
-          anchorEl={logoutbtn}
-          onClose={handlePopoverClose}
-          anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "15px",
+            marginLeft: 0,
           }}
-
-           transformOrigin={{
-    vertical: 'top', // ⚠️ This line is the issue
-    horizontal: 'right',
-  }}
-          // transformOrigin={{
-          //   vertical: 'right',
-          //   horizontal: 'center',
-          // }}
-          style={{ zIndex:10000, marginTop: '3%' }}
         >
-          {popoverContent}
-        </Popover>
+          {/* Account Icon Button */}
+          <Button
+            style={{ padding: 0, minWidth: "40px" }}
+            onClick={(event) => handlePopoverOpen(event)}
+          >
+            <AccountCircleIcon
+              style={{
+                textDecoration: "none",
+                color: "#FFD700",
+                marginRight: "-8px",
+              }}
+            />
+          </Button>
 
-  {/* Home Icon */}
-  <Link
-    to="/home/Home"
-    style={{
-      textDecoration: "none",
-      color: "#F0F4FF",
-      display: "flex",
-      alignItems: "center",
-    }}
-  >
-    <HomeIcon />
-  </Link>
+          <Popover
+            id={id}
+            open={open}
+            anchorEl={anchorEl}
+            onClose={handlePopoverClose}
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            style={{ zIndex: 10000, marginTop: '3%' }}
+          >
+            {popoverContent}
+          </Popover>
 
-  {/* Sign Out Icon */}
-  {/* <Link
-    to="/"
-    style={{
-      color: "white",
-      display: "flex",
-      alignItems: "center",
-    }}
-   
-  > */}
-    <FaSignOutAlt
-      style={{
-        color:"#FF6666",
-        display: "flex",
-        alignItems: "center",
-        padding: "5px",
-        marginRight: "10px",
-        fontSize:"22px"
-      }}
-      onClick={handleLogout}
-    />
-  {/* </Link> */}
-</div>
+          {/* Home Icon */}
+          <HomeIcon
+            style={{
+              textDecoration: "none",
+              color: "#F0F4FF",
+              display: "flex",
+              alignItems: "center",
+              cursor: "pointer",
+            }}
+            onClick={() => {
+              const roleId = parseInt(RoleID); // Convert Role to number
+              if (roleId === 1 || roleId === 9) {
+                navigate("/home/Home");
+              } else if ([2, 3, 4, 5, 6, 7, 8].includes(roleId)) {
+                navigate("/home/HomePage");
+              }
+            }}
+          />
 
+          {/* Sign Out Icon */}
+          <FaSignOutAlt
+            style={{
+              color: "#FF6666",
+              display: "flex",
+              alignItems: "center",
+              padding: "5px",
+              marginRight: "10px",
+              fontSize: "22px",
+              cursor: "pointer",
+            }}
+            onClick={handleLogout}
+          />
+        </div>
       </div>
     </div>
   );
