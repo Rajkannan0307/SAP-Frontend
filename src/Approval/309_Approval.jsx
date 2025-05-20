@@ -130,10 +130,13 @@ const [viewStatusData, setViewStatusData] = useState([]);
 
 
 const handleOpenViewStatusModal = async (rowData) => {
-  console.log("Opening modal for row:", rowData);  // Log the row data
+  const docId = rowData?.Doc_ID; // ✅ Get only Doc_ID
+  console.log("Opening View Status Modal for Doc_ID:", docId);
+
   setOpenViewStatusModal(true);
-  await handleViewStatus(rowData.Doc_ID);  // Fetch data using Doc_ID or other relevant field
+  await handleViewStatus(docId); // ✅ Pass only Doc_ID to API call
 };
+
 
 
   //console.log('📤 Sending request to backend with params:', { Plant, Role });
@@ -830,7 +833,7 @@ const handleOpenViewStatusModal = async (rowData) => {
     <TableBody>
   {viewStatusData.map((item, index) => (
     <TableRow key={index}>
-      <TableCell>{item.Modified_On }</TableCell>
+      <TableCell>{item.Date}</TableCell>
       <TableCell>{item.Modified_By}</TableCell>
       <TableCell>{item.Approver_Comment}</TableCell>
       <TableCell>{item.Status}</TableCell>

@@ -59,5 +59,12 @@ export const get309ApprovalView = async (docId) => {
 
 
 
+export const resubmitAction = async (docId) => {
+  const response = await axios.get(`${api}/Approval/View309ApprovalStatus?Doc_ID=${docId}`);
+  
+  return response.data;
+};
+
+
 
   

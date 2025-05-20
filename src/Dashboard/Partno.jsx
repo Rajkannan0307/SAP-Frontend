@@ -40,7 +40,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { IoMdDownload } from "react-icons/io";
 import { getTransactionData, Movement309 } from "../controller/transactionapiservice";
 import { api } from "../controller/constants";
-import { getdetails, getAdd, getPlants, getMaterial, getView, getExcelDownload } from '../controller/transactionapiservice';
+import { getdetails,getresubmit, getAdd, getPlants, getMaterial, getView, getExcelDownload ,get309ApprovalView} from '../controller/transactionapiservice';
 const Partno = () => {
 
 
@@ -104,6 +104,31 @@ const Partno = () => {
   const [NetDifferentPrice, setNetDifferentPrice] = useState("");
   const [ApprovalStatus, setApprovalStatus] = useState([]);
 
+ const handleViewStatus = async (docId) => {
+  console.log("Fetching approval status for Doc_ID:", docId);
+  try {
+    const response = await get309ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
+    console.log("API Response:", response);
+    setViewStatusData(response);  // Update your state with the fetched data
+  } catch (error) {
+    console.error("❌ Error fetching grouped records:", error);
+    setViewStatusData([]);  // Handle errors and reset data
+  }
+};
+
+
+
+
+
+
+
+const handleOpenViewStatusModal = async (rowData) => {
+  const docId = rowData?.Doc_ID; // ✅ Get only Doc_ID
+  console.log("Opening View Status Modal for Doc_ID:", docId);
+
+  setOpenViewStatusModal(true);
+  await handleViewStatus(docId); // ✅ Pass only Doc_ID to API call
+};
 
 
   const handleCloseAddModal = () => setOpenAddModal(false);
@@ -623,14 +648,20 @@ const Partno = () => {
   //   setOpenModal(true);
   // };
 
-  const handleResubmit = () => {
-    console.log('Resubmitting:', selectedRow);
+  const handleResubmit = async() => {
+    const response= await getresubmit()
     setOpenModal(false);
   };
 
-  const handleCancel = () => {
+  const handleCancel = async() => {
+   const response= await getresubmit()
     setOpenModal(false);
   };
+
+
+
+  
+
 
   // const handleOpenViewModal = (row) => {
   //   console.log('Viewing row:', row);
@@ -1369,7 +1400,7 @@ const Partno = () => {
               {/* Button to open the "View Status" Modal */}
               <Button
                 variant="contained"
-                onClick={() => setOpenViewStatusModal(true)}
+                 onClick={() => handleOpenViewStatusModal(selectedRow)} 
                 sx={{
                   backgroundColor: '#DB7093',
                   '&:hover': {
@@ -1440,10 +1471,10 @@ const Partno = () => {
                   {viewStatusData?.length > 0 ? (
                     viewStatusData.map((row, index) => (
                       <TableRow key={index}>
-                        <TableCell>{new Date(row.Action_Date).toLocaleString()}</TableCell>
-                        <TableCell>{row.Approver_Name}</TableCell>
-                        <TableCell>{row.Comment || "—"}</TableCell>
-                        <TableCell>{row.Approval_Status}</TableCell>
+                        <TableCell>{row.Date}</TableCell>
+                        <TableCell>{row.Modified_By}</TableCell>
+                        <TableCell>{row.Approver_Comment || "—"}</TableCell>
+                        <TableCell>{row.Status}</TableCell>
                       </TableRow>
                     ))
                   ) : (
