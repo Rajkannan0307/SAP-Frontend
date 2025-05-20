@@ -670,136 +670,114 @@ const handleOpenViewStatusModal = async (rowData) => {
 
       {/* Action modal  */}
 
-      <Modal open={openActionModal} onClose={handleCancel}>
-        <Box
-          sx={{
-            width: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <Typography
-            variant="h5"
-            sx={{
-              color: "#1565c0",
-              mb: 3,
-              textAlign: "center",
-              fontWeight: "bold",
-              textDecoration: "underline",
-              textDecorationColor: "limegreen",
-              textDecorationThickness: "3px",
-            }}
-          >
-            309 Approval
-          </Typography>
+     {/* Action modal  */}
+<Modal open={openActionModal} onClose={handleCancel}>
+  <Box
+    sx={{
+      width: 400,
+      bgcolor: "background.paper",
+      borderRadius: 2,
+      boxShadow: 24,
+      p: 4,
+      margin: "auto",
+      marginTop: "10%",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+    }}
+  >
+    <Typography
+      variant="h5"
+      sx={{
+        color: "#1565c0",
+        mb: 3,
+        textAlign: "center",
+        fontWeight: "bold",
+        textDecoration: "underline",
+        textDecorationColor: "limegreen",
+        textDecorationThickness: "3px",
+      }}
+    >
+      309 Approval
+    </Typography>
 
-          <TextField
-            label="Enter your comment"
-            multiline
-            rows={4}
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            onChange={(e) => setComment(e.target.value)}
-          />
+    <TextField
+      label="Enter your comment"
+      multiline
+      rows={4}
+      variant="outlined"
+      fullWidth
+      margin="normal"
+      onChange={(e) => setComment(e.target.value)}
+    />
 
-          {/* Action Buttons */}
-          <Box display="flex" justifyContent="space-between" width="100%" mt={2}>
-            <Button
-              variant="contained"
-              color="success"
-              onClick={handleApprove}
-              startIcon={<CheckCircleIcon />}
-            >
-              Approve
-            </Button>
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleReject}
-              startIcon={<CloseIcon />}
-            >
-              Reject
-            </Button>
-            <Button
-              variant="contained"
-              color="warning"
-              onClick={handleQuery}
-              startIcon={<QueryBuilderIcon />}
-            >
-              Query
-            </Button>
-          </Box>
+    {/* Action Buttons */}
+    <Box display="flex" justifyContent="space-between" width="100%" mt={2}>
+      <Button
+        variant="contained"
+        color="success"
+        onClick={handleApprove}
+        startIcon={<CheckCircleIcon />}
+      >
+        Approve
+      </Button>
+      <Button
+        variant="contained"
+        color="error"
+        onClick={handleReject}
+        startIcon={<CloseIcon />}
+      >
+        Reject
+      </Button>
+      <Button
+        variant="contained"
+        color="warning"
+        onClick={handleQuery}
+        startIcon={<QueryBuilderIcon />}
+      >
+        Query
+      </Button>
+    </Box>
 
-          {/* View Button */}
-          {/* <Button
-  variant="outlined"
-  color="secondary"
-  onClick={handleViewStatus}
-  sx={{
-    mt: 2,
-    color: '#6a1b9a', // purple example
-    borderColor: '#6a1b9a',
-    '&:hover': {
-      backgroundColor: '#f3e5f5', // Light lavender background on hover
-      borderColor: '#4a148c',     // Darker purple border
-      color: '#4a148c',           // Darker text on hover
-    },
-  }}
->
-  View Approval Status
-</Button> */}
+    {/* ✅ Fixed View Button */}
+    <Button
+      variant="outlined"
+      color="secondary"
+      onClick={() => handleOpenViewStatusModal(selectedRow)} // ✅ Using selectedRow instead of params
+      sx={{
+        mt: 2,
+        color: '#4a148c',
+        borderColor: '#4a148c',
+        '&:hover': {
+          backgroundColor: '#4a148c',
+          color: '#ffffff',
+          borderColor: '#4a148c',
+        },
+      }}
+    >
+      View Approval Status
+    </Button>
 
-          <Button
-            variant="outlined"
-            color="secondary"
-            //onClick={openViewStatusModal}
-            onClick={() => handleOpenViewStatusModal(params.row)}
+    {/* Cancel Button */}
+    <Button
+      variant="outlined"
+      onClick={handleCancel}
+      sx={{
+        marginTop: "20px",
+        backgroundColor: "gray",
+        color: "black",
+        borderColor: "black",
+        '&:hover': {
+          borderColor: "black",
+          backgroundColor: "#e0e0e0",
+        },
+      }}
+    >
+      Cancel
+    </Button>
+  </Box>
+</Modal>
 
-            sx={{
-              mt: 2,
-              color: '#4a148c',        // Dark purple text
-              borderColor: '#4a148c',  // Dark purple border
-              '&:hover': {
-                backgroundColor: '#4a148c', // Dark purple background on hover
-                color: '#ffffff',           // White text on hover
-                borderColor: '#4a148c',     // Keep border dark
-              },
-            }}
-          >
-            View Approval Status
-          </Button>
-
-
-
-
-          {/* Cancel Button */}
-          <Button
-            variant="outlined"
-            onClick={handleCancel}
-            sx={{
-              marginTop: "20px",
-              backgroundColor: "gray",
-              color: "black",
-              borderColor: "black",
-              '&:hover': {
-                borderColor: "black",
-                backgroundColor: "#e0e0e0",
-              },
-            }}
-          >
-            Cancel
-          </Button>
-
-        </Box>
-      </Modal>
 
 
 <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
