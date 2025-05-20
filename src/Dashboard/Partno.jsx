@@ -15,7 +15,11 @@ import { FaDownload } from "react-icons/fa";
 import { deepPurple } from '@mui/material/colors';
 import { FormControl, Select, MenuItem } from '@mui/material';
 
+import EditIcon from '@mui/icons-material/Edit';
 
+
+import { Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 
 
 import {
@@ -38,6 +42,17 @@ import { getTransactionData, Movement309 } from "../controller/transactionapiser
 import { api } from "../controller/constants";
 import { getdetails, getAdd, getPlants, getMaterial, getView, getExcelDownload } from '../controller/transactionapiservice';
 const Partno = () => {
+
+
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+
+  const [openViewStatusModal, setOpenViewStatusModal] = useState(false);
+  const [viewStatusData, setViewStatusData] = useState([]);
+
+  const [isEditable, setIsEditable] = useState(false);
+
+
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]); // ✅ Initial empty rows
   const [originalRows, setOriginalRows] = useState([]);
@@ -145,7 +160,7 @@ const Partno = () => {
     }
     try {
       const data = {
-        UserID:UserID,
+        UserID: UserID,
         Plant_Code: PlantCode,
         Date: Date,
         From_Mat_Code: FromMatCode,
@@ -209,6 +224,8 @@ const Partno = () => {
     }
     handleCloseUploadModal();
   }
+
+
 
 
   const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
@@ -591,8 +608,33 @@ const Partno = () => {
   };
 
 
+  const handleEdit = (rowData) => {
+    setSelectedRow(rowData);
+    const status = (rowData.Approval_Status || "").toLowerCase();
+    const editable = status === "rejected" || status === "under query";
+    setIsEditable(editable);
+    setOpenModal(true);
+  };
 
 
+  // 👇 DEFINE THESE FUNCTIONS HERE
+  // const handleEdit = (rowData) => {
+  //   setSelectedRow(rowData);
+  //   setOpenModal(true);
+  // };
+
+  const handleResubmit = () => {
+    console.log('Resubmitting:', selectedRow);
+    setOpenModal(false);
+  };
+
+  const handleCancel = () => {
+    setOpenModal(false);
+  };
+
+  // const handleOpenViewModal = (row) => {
+  //   console.log('Viewing row:', row);
+  // };
 
   //✅ DataGrid Columns with Edit & Delete Buttons
   const columns = [
@@ -605,41 +647,50 @@ const Partno = () => {
     { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
 
 
-    // {
-    //   field: "actions",
-    //   headerName: "Actions",
-    //   flex: 1,
-    //   sortable: false,
-    //   renderCell: (params) => (
-
-
-    //     <div style={{ display: "flex", gap: "10px" }}>
-    //       <IconButton size="large" color="primary" onClick={handleOpenViewModal}>
-    //         <VisibilityIcon fontSize="small" />
-    //       </IconButton>
-    //     </div>
-    //   ),
-    // },
     {
       field: "actions",
       headerName: "Actions",
       flex: 1,
       sortable: false,
-      renderCell: (params) => (
-        <div style={{ display: "flex", gap: "10px" }}>
-          <IconButton
-            size="large"
-            color="primary"
-            onClick={() => handleOpenViewModal(params.row)} // Pass the row data to the modal handler
-          >
-            <VisibilityIcon fontSize="small" />
-          </IconButton>
-        </div>
-      ),
-    },
+      renderCell: (params) => {
+        const approvalStatus = (params.row.Approval_Status || "").toLowerCase();
 
+        const isEditable =
+          approvalStatus === "rejected" || approvalStatus === "under query";
+
+        return (
+          <div style={{ display: "flex", gap: "10px" }}>
+            <IconButton
+              size="large"
+              color="primary"
+              onClick={() => handleOpenViewModal(params.row)}
+            >
+              <VisibilityIcon fontSize="small" />
+            </IconButton>
+
+            {isEditable && (
+              <IconButton
+                size="large"
+                sx={{
+                  color: "#6a0dad",
+                  '&:hover': {
+                    color: "#4b0082",
+                  },
+                }}
+                onClick={() => handleEdit(params.row)}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            )}
+          </div>
+        );
+      }
+    }
 
   ];
+
+
+
   // ✅ Custom Toolbar
   const CustomToolbar = () => (
     <GridToolbarContainer>
@@ -975,7 +1026,7 @@ const Partno = () => {
             textDecoration: "underline",
             textDecorationColor: "#88c57a",
             textDecorationThickness: "3px",
-            fontSize: "27px" 
+            fontSize: "27px"
           }}>
             Upload Excel File
           </h3>
@@ -986,7 +1037,7 @@ const Partno = () => {
             style={{ marginBottom: '8px', backgroundColor: deepPurple[500], color: 'white' }}
           >
             <a
-              style={{ textDecoration: "none", color: "white" ,fontSize: "13px" }}
+              style={{ textDecoration: "none", color: "white", fontSize: "13px" }}
               href={`${api}/transaction/Template/Trn309Movt.xlsx`}
             >
               {" "}
@@ -1274,8 +1325,184 @@ const Partno = () => {
           </Box>
         </Box>
       </Modal>
-    </div>
 
+
+
+
+      {/* ✅ Modal with Resubmit and Cancel */}
+
+
+      <Modal open={openModal} onClose={handleCancel}>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 400,
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+          }}
+        >
+          <h2>Edit Document</h2>
+
+          <p>
+            Need to change something?{" "}
+            <span style={{ color: 'green', fontWeight: 'bold' }}>Click Resubmit👇.</span>
+          </p>
+
+
+          <Box>
+
+            {/* Button to open the "View Status" Modal */}
+
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center', // Center horizontally
+                alignItems: 'center',     // Center vertically
+                height: '20vh',          // Full viewport height
+              }}
+            >
+              {/* Button to open the "View Status" Modal */}
+              <Button
+                variant="contained"
+                onClick={() => setOpenViewStatusModal(true)}
+                sx={{
+                  backgroundColor: '#DB7093',
+                  '&:hover': {
+                    backgroundColor: '#C71585',
+                  },
+                  padding: '10px 20px',
+                  fontSize: '16px',
+                  height: '50px',
+                  width: '200px',
+                  borderRadius: '8px',
+                }}
+              >
+                View Details
+              </Button>
+            </Box>
+          </Box>
+
+
+
+          <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
+            <Box
+              sx={{
+                width: 600,
+                bgcolor: "background.paper",
+                borderRadius: 2,
+                boxShadow: 24,
+                p: 3,
+                margin: "auto",
+                marginTop: "10%",
+                position: "relative", // to position X button
+              }}
+            >
+              {/* ❌ Top-right close (X) button */}
+              <IconButton
+                onClick={() => setOpenViewStatusModal(false)}
+                sx={{ position: "absolute", top: 8, right: 8 }}
+              >
+                <CloseIcon />
+              </IconButton>
+
+              {/* 📝 Modal Title */}
+              <Typography
+                variant="h6"
+                align="center"
+                sx={{
+                  mb: 2,
+                  fontWeight: "bold",
+                  color: "#1565c0",
+                  textDecoration: "underline",
+                  textDecorationColor: "limegreen",
+                  textDecorationThickness: "3px",
+                }}
+              >
+                Approval Status Details
+              </Typography>
+
+              {/* 📋 Table */}
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Date</TableCell>
+                    <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Name</TableCell>
+                    <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Comment</TableCell>
+                    <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {viewStatusData?.length > 0 ? (
+                    viewStatusData.map((row, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{new Date(row.Action_Date).toLocaleString()}</TableCell>
+                        <TableCell>{row.Approver_Name}</TableCell>
+                        <TableCell>{row.Comment || "—"}</TableCell>
+                        <TableCell>{row.Approval_Status}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center">
+                        No data available
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </Box>
+          </Modal>
+
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+            <Button
+              variant="contained"
+              onClick={handleResubmit}
+              sx={{
+                width: '48%',
+                backgroundColor: '#1976d2', // Business blue (primary)
+                '&:hover': {
+                  backgroundColor: '#115293', // Darker navy-blue
+                },
+                padding: '10px',
+                fontSize: '16px',
+                borderRadius: '8px',
+                textTransform: 'none', // Optional: keep text case natural
+              }}
+            >
+              Resubmit
+            </Button>
+
+            <Button
+              variant="contained"
+              onClick={handleCancel}
+              sx={{
+                width: '48%',
+                backgroundColor: '#6c757d', // Neutral gray
+                '&:hover': {
+                  backgroundColor: '#5a6268', // Slightly darker gray
+                },
+                padding: '10px',
+                fontSize: '16px',
+                borderRadius: '8px',
+                textTransform: 'none',
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+
+        </Box>
+      </Modal>
+
+
+
+    </div>
   );
 };
 

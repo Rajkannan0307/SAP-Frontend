@@ -29,14 +29,15 @@ import axios from 'axios';
 
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { getdetails, getApprovalView, HandleApprovalAction,getPlants,getRole } from '../controller/Approvalapiservice';
+import { getdetails, getApprovalView, HandleApprovalAction, getPlants, getRole,get309ApprovalView } from '../controller/Approvalapiservice';
 import { decryptSessionData } from "../controller/StorageUtils"
+
 
 
 const Approval = () => {
   // State to control the visibility of the modal
   const [openViewModal, setOpenViewModal] = useState(false);
-const [PlantTable, setPlantTable] = useState([]);
+  const [PlantTable, setPlantTable] = useState([]);
   const [RoleTable, setRoleTable] = useState([]);
   const [selectedRow, setSelectedRow] = useState(null);
 
@@ -84,18 +85,24 @@ const [PlantTable, setPlantTable] = useState([]);
   const [ToMatCode, setToMatCode] = useState("");
   const [NetDifferentPrice, setNetDifferentPrice] = useState("");
   const [ApprovalStatus, setApprovalStatus] = useState([]);
- 
+ const [Doc_ID, setDoc_ID] = useState(null);
+
+  //ApprovalListView
   const [Role, setRole] = useState('');
-const UserID = localStorage.getItem('UserID');
-const RoleID=localStorage.getItem('RoleID');
-const Approval_Level=localStorage.getItem('Approval_Level');
-console.log('Approval_Level',Approval_Level)
-const Plant_ID = localStorage.getItem('Plant_ID')
+  const UserID = localStorage.getItem('UserID');
+  const RoleID = localStorage.getItem('RoleID');
+  const Approval_Level = localStorage.getItem('Approval_Level');
+  console.log('Approval_Level', Approval_Level)
+  const Plant_ID = localStorage.getItem('Plant_ID')
 
-console.log('pl',Plant_ID)
+  console.log('pl', Plant_ID)
+
+  //ApprovalListView (View approver status)
+const [openViewStatusModal, setOpenViewStatusModal] = useState(false);
+const [viewStatusData, setViewStatusData] = useState([]);
 
 
- useEffect(() => {
+  useEffect(() => {
     const encryptedData = sessionStorage.getItem('userData');
     if (encryptedData) {
       const decryptedData = decryptSessionData(encryptedData);
@@ -106,19 +113,49 @@ console.log('pl',Plant_ID)
   }, []);
 
 
-//console.log('📤 Sending request to backend with params:', { Plant, Role });
+  const handleViewStatus = async (docId) => {
+  console.log("Fetching approval status for Doc_ID:", docId);
+  try {
+    const response = await get309ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
+    console.log("API Response:", response);
+    setViewStatusData(response);  // Update your state with the fetched data
+  } catch (error) {
+    console.error("❌ Error fetching grouped records:", error);
+    setViewStatusData([]);  // Handle errors and reset data
+  }
+};
+
+
+
+
+
+const handleOpenViewStatusModal = async (rowData) => {
+  console.log("Opening modal for row:", rowData);  // Log the row data
+  setOpenViewStatusModal(true);
+  await handleViewStatus(rowData.Doc_ID);  // Fetch data using Doc_ID or other relevant field
+};
+
+
+  //console.log('📤 Sending request to backend with params:', { Plant, Role });
 
   const handleOpenViewModal = async (item) => {
-    setOpenViewModal(true); // Opens the modal
-    console.log(item); // Log to check if item is being passed correctly
-    await getViewButton(item.Doc_ID); // Pass Doc_ID to fetch data
+    console.log("Opening modal with item:", item);
+
+    // Make sure Doc_ID exists and is numeric
+    if (!item.Doc_ID || isNaN(item.Doc_ID)) {
+      console.error("❌ Invalid Doc_ID:", item.Doc_ID);
+      return;
+    }
+
+    await getViewButton(item.Doc_ID);  // ✅ Load the data BEFORE showing the modal
+    setOpenViewModal(true);            // ✅ Show modal AFTER data is loaded
   };
-  
+
 
   const handleCloseViewModal = () => {
     setOpenViewModal(false);  // Closes the modal
   };
-  
+
   // Function to handle search input (you can implement filtering here)
   const handleSearch = () => {
     console.log("Searching for:", searchText);
@@ -186,7 +223,7 @@ console.log('pl',Plant_ID)
   );
 
 
-const get_Plant = async () => {
+  const get_Plant = async () => {
     try {
       const response = await getPlants();
       setPlantTable(response.data);
@@ -196,20 +233,20 @@ const get_Plant = async () => {
   };
 
   const GetRole = async () => {
-      try {
-        const response = await getRole();
-        setRoleTable(response.data);
-      } catch (error) {
-        console.error("Error updating user:", error);
-      }
-    };
-  
+    try {
+      const response = await getRole();
+      setRoleTable(response.data);
+    } catch (error) {
+      console.error("Error updating user:", error);
+    }
+  };
+
 
   const getData = async () => {
     try {
-      const response = await getdetails( Plant_ID, RoleID ,Role);
+      const response = await getdetails(Plant_ID, RoleID, Role);
 
-      console.log('response 309',response);  // Check the structure of response
+      console.log('response 309', response);  // Check the structure of response
       setData(response);  // Ensure that this is correctly setting the data
       setOriginalRows(response); // for reference during search
       setRows(response);
@@ -225,17 +262,17 @@ const get_Plant = async () => {
   const getViewButton = async (docId) => {
     try {
       const response = await getApprovalView(docId);
-     
+
       setSelectedRow(response); // Set grouped records
-      
+
     } catch (error) {
-      
+
       setSelectedRow([]); // Fallback to empty array
     }
   };
-  
 
-  
+
+
 
   useEffect(() => {
     getData();
@@ -250,17 +287,17 @@ const get_Plant = async () => {
       return;
     }
 
-    
+
     // Prepare the data object to send for approval
     const data = {
-      Doc_ID: selectedRow.Doc_ID,  // Get Doc_ID from the selected row
-      Approver_Comment: Comment,  // Ensure comment is not empty or undefined
-      Action: "Approved",  // Action type, in this case "Approve"
-      UserID: UserID,  // UserID of the person performing the approval
+      Doc_ID: selectedRow.Doc_ID, 
+      Approver_Comment: Comment, 
+      Action: "Approved", 
+      UserID: UserID,  
       Approval_Level: Role,  // Current approval level
     };
 
-   
+
     console.log('Sending approval data:', data);
 
     try {
@@ -289,99 +326,99 @@ const get_Plant = async () => {
     }
   };
 
-const handleReject = async () => {
-  if (!selectedRow) {
-    alert("No document selected for rejection.");
-    return;
-  }
+  const handleReject = async () => {
+    if (!selectedRow) {
+      alert("No document selected for rejection.");
+      return;
+    }
 
-  if (!Comment.trim()) {
-    alert("Please provide a comment for rejection.");
-    return;
-  }
+    if (!Comment.trim()) {
+      alert("Please provide a comment for rejection.");
+      return;
+    }
 
-  const data = {
-    Doc_ID: selectedRow.Doc_ID,
-    Approver_Comment: Comment,
-    Action: "Rejected",
-    UserID: UserID,
-    Approval_Level: Role
+    const data = {
+      Doc_ID: selectedRow.Doc_ID,
+      Approver_Comment: Comment,
+      Action: "Rejected",
+      UserID: UserID,
+      Approval_Level: Role
+    };
+
+    console.log("Sending rejection data:", data);
+
+    try {
+      const response = await HandleApprovalAction(data);
+      console.log("Rejection API response:", response);
+
+      const isSuccess = response?.data?.success ?? response?.success;
+
+      if (isSuccess) {
+        alert("Document Rejected!");
+        setOpenActionModal(false);
+        getData();
+      } else {
+        const message = response?.data?.message ?? response?.message ?? "Rejection failed.";
+        alert(message);
+      }
+    } catch (error) {
+      console.error("Rejection error:", error);
+      const errMsg = error.response?.data?.message || "An error occurred while rejecting the document.";
+      alert(errMsg);
+    }
   };
 
-  console.log("Sending rejection data:", data);
 
-  try {
-    const response = await HandleApprovalAction(data);
-    console.log("Rejection API response:", response);
-
-    const isSuccess = response?.data?.success ?? response?.success;
-
-    if (isSuccess) {
-      alert("Document Rejected!");
-      setOpenActionModal(false);
-      getData();
-    } else {
-      const message = response?.data?.message ?? response?.message ?? "Rejection failed.";
-      alert(message);
+  const handleQuery = async () => {
+    if (!selectedRow) {
+      alert("No document selected for query.");
+      return;
     }
-  } catch (error) {
-    console.error("Rejection error:", error);
-    const errMsg = error.response?.data?.message || "An error occurred while rejecting the document.";
-    alert(errMsg);
-  }
-};
 
+    if (!Comment.trim()) {
+      alert("Please provide a comment for query.");
+      return;
+    }
 
-const handleQuery = async () => {
-  if (!selectedRow) {
-    alert("No document selected for query.");
-    return;
-  }
+    const data = {
+      Doc_ID: selectedRow.Doc_ID,
+      Approver_Comment: Comment,
+      Action: "Under Query",
+      UserID: UserID,
+      Approval_Level: Role
+    };
 
-  if (!Comment.trim()) {
-    alert("Please provide a comment for query.");
-    return;
-  }
+    console.log("Sending query data:", data);
 
-  const data = {
-    Doc_ID: selectedRow.Doc_ID,
-    Approver_Comment: Comment,
-    Action: "Under Query",
-    UserID: UserID,
-    Approval_Level: Role
+    try {
+      const response = await HandleApprovalAction(data);
+      console.log("Query API response:", response);
+
+      const isSuccess = response?.data?.success ?? response?.success;
+
+      if (isSuccess) {
+        alert("Document sent for query successfully!");
+        setOpenActionModal(false);
+        getData();
+      } else {
+        const message = response?.data?.message ?? response?.message ?? "Failed to send query.";
+        alert(message);
+      }
+    } catch (error) {
+      console.error("Query error:", error);
+      const errMsg = error.response?.data?.message || "An error occurred while sending query on the document.";
+      alert(errMsg);
+    }
   };
 
-  console.log("Sending query data:", data);
-
-  try {
-    const response = await HandleApprovalAction(data);
-    console.log("Query API response:", response);
-
-    const isSuccess = response?.data?.success ?? response?.success;
-
-    if (isSuccess) {
-      alert("Document sent for query successfully!");
-      setOpenActionModal(false);
-      getData();
-    } else {
-      const message = response?.data?.message ?? response?.message ?? "Failed to send query.";
-      alert(message);
-    }
-  } catch (error) {
-    console.error("Query error:", error);
-    const errMsg = error.response?.data?.message || "An error occurred while sending query on the document.";
-    alert(errMsg);
-  }
-};
 
 
-  
   const handleActionOpen = (row) => {
     console.log('Row selected for action:', row);
     setSelectedRow(row);  // Store selected row to pass to the modal
     setOpenActionModal(true);  // Open the action modal
   };
-  
+
 
   const handleCancel = () => {
     setOpenActionModal(false); // Simply close the modal without doing anything
@@ -399,7 +436,7 @@ const handleQuery = async () => {
     borderBottom: "1px solid #eee",
   };
 
-  
+
   return (
     <div
       style={{
@@ -521,11 +558,11 @@ const handleQuery = async () => {
       </div>
 
       {/* View Modal for row details */}
-   
+
       <Modal open={openViewModal} onClose={() => setOpenViewModal(false)}>
         <Box
           sx={{
-            
+
             width: 900,
             height: 400,
             bgcolor: "background.paper",
@@ -538,22 +575,22 @@ const handleQuery = async () => {
             flexDirection: "column",
             alignItems: "flex-start",
             overflowY: "auto",
-            cursor: "scroll",  
+            cursor: "scroll",
           }}
         >
-     <div style={{ width: "100%", textAlign: "center" }}>
-  <h3
-    style={{
-      marginBottom: "15px",
-      color: "blue",
-      textDecoration: "underline",
-      textDecorationColor: "limegreen",
-      textDecorationThickness: "3px",
-    }}
-  >
-    Document Details
-  </h3>
-</div>
+          <div style={{ width: "100%", textAlign: "center" }}>
+            <h3
+              style={{
+                marginBottom: "15px",
+                color: "blue",
+                textDecoration: "underline",
+                textDecorationColor: "limegreen",
+                textDecorationThickness: "3px",
+              }}
+            >
+              Document Details
+            </h3>
+          </div>
 
           <Table>
             <TableHead>
@@ -564,50 +601,50 @@ const handleQuery = async () => {
                 <TableCell sx={{ backgroundColor: "blue", color: "white" }}>To Material </TableCell>
                 <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Qty</TableCell>
                 <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Net Difference Price</TableCell>
-                
+
               </TableRow>
             </TableHead>
 
-<TableBody>
-  {selectedRow && selectedRow.length > 0 && (
-    <>
-      {/* Calculate the total sum of Total_Net_Difference */}
+            <TableBody>
+              {selectedRow && selectedRow.length > 0 && (
+                <>
+                  {/* Calculate the total sum of Total_Net_Difference */}
 
-      {selectedRow.map((item, index, array) => {
-        console.log('item', item); 
-        
-      const totalNetDifference = selectedRow.reduce((acc, item) => acc + item.Net_Difference
-      , 0);
-        return (
-          <React.Fragment key={index}>
-            {/* Table row with item details */}
-            <TableRow>
-              <TableCell>{item.Plant_Code}</TableCell>
-              <TableCell>{item.Date}</TableCell>
-              <TableCell>{item.From_Material}</TableCell>
-              <TableCell>{item.To_Material}</TableCell>
-              <TableCell>{item.Qty}</TableCell>
-              <TableCell sx={{ textAlign: "right" }}>{item.Net_Difference}</TableCell>
-            
-            </TableRow>
+                  {selectedRow.map((item, index, array) => {
+                    console.log('item', item);
 
-            {/* Total row, displayed after the last item */}
-            {index === array.length - 1 && (
-              <TableRow sx={{ backgroundColor: "#f9f9f9" }}>
-                <TableCell colSpan={5} sx={{ textAlign: "right", fontWeight: "bold" }}>
-                  Total
-                </TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>
-                  {totalNetDifference} {/* Display total sum here */}
-                </TableCell>
-              </TableRow>
-            )}
-          </React.Fragment>
-        );
-      })}
-    </>
-  )}
-</TableBody>
+                    const totalNetDifference = selectedRow.reduce((acc, item) => acc + item.Net_Difference
+                      , 0);
+                    return (
+                      <React.Fragment key={index}>
+                        {/* Table row with item details */}
+                        <TableRow>
+                          <TableCell>{item.Plant_Code}</TableCell>
+                          <TableCell>{item.Date}</TableCell>
+                          <TableCell>{item.From_Material}</TableCell>
+                          <TableCell>{item.To_Material}</TableCell>
+                          <TableCell>{item.Qty}</TableCell>
+                          <TableCell sx={{ textAlign: "right" }}>{item.Net_Difference}</TableCell>
+
+                        </TableRow>
+
+                        {/* Total row, displayed after the last item */}
+                        {index === array.length - 1 && (
+                          <TableRow sx={{ backgroundColor: "#f9f9f9" }}>
+                            <TableCell colSpan={5} sx={{ textAlign: "right", fontWeight: "bold" }}>
+                              Total
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: "bold" }}>
+                              {totalNetDifference} {/* Display total sum here */}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </>
+              )}
+            </TableBody>
 
           </Table>
 
@@ -636,24 +673,23 @@ const handleQuery = async () => {
       <Modal open={openActionModal} onClose={handleCancel}>
         <Box
           sx={{
-            width: 370,
-            height: 300,
+            width: 400,
             bgcolor: "background.paper",
             borderRadius: 2,
             boxShadow: 24,
             p: 4,
             margin: "auto",
-            marginTop: "15%",
+            marginTop: "10%",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
           }}
         >
           <Typography
-            variant="h6"
-            style={{
-              color: "blue",
-              marginBottom: "20px",
+            variant="h5"
+            sx={{
+              color: "#1565c0",
+              mb: 3,
               textAlign: "center",
               fontWeight: "bold",
               textDecoration: "underline",
@@ -664,30 +700,26 @@ const handleQuery = async () => {
             309 Approval
           </Typography>
 
-          {/* Comment Box */}
           <TextField
-            label="Comment"
+            label="Enter your comment"
             multiline
             rows={4}
             variant="outlined"
             fullWidth
             margin="normal"
-            onChange={(e) =>  setComment(e.target.value)} // Update the comment state
+            onChange={(e) => setComment(e.target.value)}
           />
 
-
-{/* Action Buttons */}
-
-          <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+          {/* Action Buttons */}
+          <Box display="flex" justifyContent="space-between" width="100%" mt={2}>
             <Button
               variant="contained"
               color="success"
               onClick={handleApprove}
               startIcon={<CheckCircleIcon />}
             >
-              Approved
+              Approve
             </Button>
-
             <Button
               variant="contained"
               color="error"
@@ -698,13 +730,54 @@ const handleQuery = async () => {
             </Button>
             <Button
               variant="contained"
-              color="primary"
+              color="warning"
               onClick={handleQuery}
               startIcon={<QueryBuilderIcon />}
             >
               Query
             </Button>
-          </div> 
+          </Box>
+
+          {/* View Button */}
+          {/* <Button
+  variant="outlined"
+  color="secondary"
+  onClick={handleViewStatus}
+  sx={{
+    mt: 2,
+    color: '#6a1b9a', // purple example
+    borderColor: '#6a1b9a',
+    '&:hover': {
+      backgroundColor: '#f3e5f5', // Light lavender background on hover
+      borderColor: '#4a148c',     // Darker purple border
+      color: '#4a148c',           // Darker text on hover
+    },
+  }}
+>
+  View Approval Status
+</Button> */}
+
+          <Button
+            variant="outlined"
+            color="secondary"
+            //onClick={openViewStatusModal}
+            onClick={() => handleOpenViewStatusModal(params.row)}
+
+            sx={{
+              mt: 2,
+              color: '#4a148c',        // Dark purple text
+              borderColor: '#4a148c',  // Dark purple border
+              '&:hover': {
+                backgroundColor: '#4a148c', // Dark purple background on hover
+                color: '#ffffff',           // White text on hover
+                borderColor: '#4a148c',     // Keep border dark
+              },
+            }}
+          >
+            View Approval Status
+          </Button>
+
+
 
 
           {/* Cancel Button */}
@@ -713,22 +786,87 @@ const handleQuery = async () => {
             onClick={handleCancel}
             sx={{
               marginTop: "20px",
-              backgroundColor: "gray",     // Button background
-              color: "black",              // Text color
-              borderColor: "black",        // Border color (now black)
+              backgroundColor: "gray",
+              color: "black",
+              borderColor: "black",
               '&:hover': {
                 borderColor: "black",
-                backgroundColor: "#e0e0e0", // Slightly lighter gray on hover
+                backgroundColor: "#e0e0e0",
               },
             }}
           >
             Cancel
           </Button>
 
-
-
         </Box>
       </Modal>
+
+
+<Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
+  <Box
+    sx={{
+      width: 500,
+      bgcolor: "background.paper",
+      borderRadius: 2,
+      boxShadow: 24,
+      p: 3,
+      margin: "auto",
+      marginTop: "10%",
+      position: "relative", // to position X button
+    }}
+  >
+    {/* ❌ Top-right close (X) button */}
+    <IconButton
+      onClick={() => setOpenViewStatusModal(false)}
+      sx={{ position: "absolute", top: 8, right: 8 }}
+    >
+      <CloseIcon />
+    </IconButton>
+
+    {/* 📝 Modal Title */}
+    <Typography
+      variant="h6"
+      align="center"
+      sx={{
+        mb: 2,
+        fontWeight: "bold",
+        color: "#1565c0",
+        textDecoration: "underline",
+        textDecorationColor: "limegreen",
+        textDecorationThickness: "3px",
+      }}
+    >
+      Approval Status Details
+    </Typography>
+
+    {/* 📋 Table */}
+    <Table size="small">
+      <TableHead>
+        <TableRow>
+          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Date</TableCell>
+          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Name</TableCell>
+          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Comment</TableCell>
+          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Status</TableCell>
+        </TableRow>
+      </TableHead>
+    <TableBody>
+  {viewStatusData.map((item, index) => (
+    <TableRow key={index}>
+      <TableCell>{item.Modified_On }</TableCell>
+      <TableCell>{item.Modified_By}</TableCell>
+      <TableCell>{item.Approver_Comment}</TableCell>
+      <TableCell>{item.Status}</TableCell>
+    </TableRow>
+  ))}
+</TableBody>
+
+
+
+
+    </Table>
+  </Box>
+</Modal>
+
     </div>
   );
 };

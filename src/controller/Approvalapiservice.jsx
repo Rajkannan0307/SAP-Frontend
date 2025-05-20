@@ -51,4 +51,13 @@ export const HandleApprovalAction = async (data) => {
 
 
 
+export const get309ApprovalView = async (docId) => {
+  const response = await axios.get(`${api}/Approval/View309ApprovalStatus?Doc_ID=${docId}`);
+  
+  return response.data;
+};
+
+
+
+
   
