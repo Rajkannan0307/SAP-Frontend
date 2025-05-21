@@ -24,6 +24,7 @@ import { MdBusinessCenter } from "react-icons/md";
 import usePermissions from "../controller/usePermission";
 import { decryptSessionData } from "../controller/StorageUtils";
 import { FaExchangeAlt } from "react-icons/fa";
+import { SiSap } from "react-icons/si";
 const Sidebar = ({ setSidebarOpen }) => {
   const [open, setOpen] = useState(false);
   const [Masters, setMasterOpen] = useState(false);
@@ -310,7 +311,7 @@ useEffect(() => {
             'Report1','Report2'
           ]}
         />
-        {/* {Permissions.includes('sap') && (
+        {Permissions.includes('sap') && (
   <button
    
     onClick={() => {
@@ -330,10 +331,10 @@ useEffect(() => {
       margin: "10px 0", // Space above and below
       marginBottom:"16px"
     }}>
-    <FaExchangeAlt style={{ color: "turquoise", fontSize: "19px" }} />
-    {open && "SAP"}
+    <SiSap style={{ color: "turquoise", fontSize: "35px" }} />
+    {open && "SAP LOGIN"}
   </button>
-)} */}
+)}
       </div>
     </div>
   );

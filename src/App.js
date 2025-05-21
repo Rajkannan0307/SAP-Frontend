@@ -40,7 +40,7 @@ import SubMenu from "./Masters/Submenu";
 import BusinessDivision from "./Masters/BusinessDivision";
 import Home from "./components/pages/Home";
 import ApproverHome from "./components/pages/ApproverHome";
-
+import SAP from"./Sap User Access/Sap"
 const App = () => {
   return (
     <Router>
@@ -81,7 +81,7 @@ const App = () => {
             <Route path="SubContracting" element={<ProtectedRoute><SubContracting /></ProtectedRoute>} />
             <Route path="Inward" element={<ProtectedRoute><Inward /></ProtectedRoute>} />
             <Route path="Location" element={<ProtectedRoute><Location /></ProtectedRoute>} />
-            
+             <Route path="SAP" element={<ProtectedRoute><SAP /></ProtectedRoute>} />
             <Route path="Home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
              <Route path="HomePage" element={<ProtectedRoute><ApproverHome /></ProtectedRoute>} />
             {/* Role Management */}

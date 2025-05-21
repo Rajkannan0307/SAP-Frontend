@@ -92,7 +92,7 @@ const ApproverHome = () => {
   }}
 >
 
-      <Typography variant="h4" fontWeight="bold" mb={5} mt={16}>
+      <Typography variant="h4" fontWeight="bold" mb={5} mt={16} color="#2e59d9">
         Approvals
       </Typography>
 
