@@ -49,8 +49,15 @@ export const get309ApprovalView = async (docId) => {
 };
 
 
-export const getresubmit = async (docId) => {
-  const response = await axios.post(`${api}/transaction/View309ApprovalStatus?Doc_ID=${docId}`);
+export const getresubmit = async (data) => {
+  const response = await axios.post(`${api}/transaction/HandleResubmitAction`, data);
+  
+  return response.data;
+};
+
+
+export const getCancel = async (data) => {
+  const response = await axios.post(`${api}/transaction/HandleCancelAction?Doc_ID`,data);
   
   return response.data;
 };

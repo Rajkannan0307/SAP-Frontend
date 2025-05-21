@@ -637,7 +637,7 @@ const handleOpenViewStatusModal = async (rowData) => {
                             <TableCell colSpan={5} sx={{ textAlign: "right", fontWeight: "bold" }}>
                               Total
                             </TableCell>
-                            <TableCell sx={{ fontWeight: "bold" }}>
+                            <TableCell sx={{ textAlign: "right",  fontWeight: "bold" }}>
                               {totalNetDifference} {/* Display total sum here */}
                             </TableCell>
                           </TableRow>
@@ -671,7 +671,7 @@ const handleOpenViewStatusModal = async (rowData) => {
         </Box>
       </Modal>
 
-      {/* Action modal  */}
+    
 
      {/* Action modal  */}
 <Modal open={openActionModal} onClose={handleCancel}>
@@ -786,10 +786,11 @@ const handleOpenViewStatusModal = async (rowData) => {
 <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
   <Box
     sx={{
-      width: 500,
+      width: 610,
       bgcolor: "background.paper",
       borderRadius: 2,
       boxShadow: 24,
+      // fontSize: 12,
       p: 3,
       margin: "auto",
       marginTop: "10%",
@@ -825,15 +826,17 @@ const handleOpenViewStatusModal = async (rowData) => {
       <TableHead>
         <TableRow>
           <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Date</TableCell>
+          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Role</TableCell> 
           <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Name</TableCell>
           <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Comment</TableCell>
-          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Status</TableCell>
+          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Status</TableCell>   
         </TableRow>
       </TableHead>
     <TableBody>
   {viewStatusData.map((item, index) => (
     <TableRow key={index}>
       <TableCell>{item.Date}</TableCell>
+      <TableCell>{item.Role}</TableCell>
       <TableCell>{item.Modified_By}</TableCell>
       <TableCell>{item.Approver_Comment}</TableCell>
       <TableCell>{item.Status}</TableCell>

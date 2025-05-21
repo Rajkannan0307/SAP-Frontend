@@ -40,7 +40,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { IoMdDownload } from "react-icons/io";
 import { getTransactionData, Movement309 } from "../controller/transactionapiservice";
 import { api } from "../controller/constants";
-import { getdetails,getresubmit, getAdd, getPlants, getMaterial, getView, getExcelDownload ,get309ApprovalView} from '../controller/transactionapiservice';
+import { getdetails, getresubmit, getCancel, getAdd, getPlants, getMaterial, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
 const Partno = () => {
 
 
@@ -51,6 +51,12 @@ const Partno = () => {
   const [viewStatusData, setViewStatusData] = useState([]);
 
   const [isEditable, setIsEditable] = useState(false);
+
+
+  const [openViewStatus, setOpenViewStatus] = useState(false);
+
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [openStatusModal, setOpenStatusModal] = useState(false); // rename to avoid confusion
 
 
   const [searchText, setSearchText] = useState("");
@@ -104,17 +110,17 @@ const Partno = () => {
   const [NetDifferentPrice, setNetDifferentPrice] = useState("");
   const [ApprovalStatus, setApprovalStatus] = useState([]);
 
- const handleViewStatus = async (docId) => {
-  console.log("Fetching approval status for Doc_ID:", docId);
-  try {
-    const response = await get309ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
-    console.log("API Response:", response);
-    setViewStatusData(response);  // Update your state with the fetched data
-  } catch (error) {
-    console.error("❌ Error fetching grouped records:", error);
-    setViewStatusData([]);  // Handle errors and reset data
-  }
-};
+  const handleViewStatus = async (docId) => {
+    console.log("Fetching approval status for Doc_ID:", docId);
+    try {
+      const response = await get309ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
+      console.log("API Response:", response);
+      setViewStatusData(response);  // Update your state with the fetched data
+    } catch (error) {
+      console.error("❌ Error fetching grouped records:", error);
+      setViewStatusData([]);  // Handle errors and reset data
+    }
+  };
 
 
 
@@ -122,13 +128,13 @@ const Partno = () => {
 
 
 
-const handleOpenViewStatusModal = async (rowData) => {
-  const docId = rowData?.Doc_ID; // ✅ Get only Doc_ID
-  console.log("Opening View Status Modal for Doc_ID:", docId);
+  const handleOpenViewStatusModal = async (rowData) => {
+    const docId = rowData?.Doc_ID; // ✅ Get only Doc_ID
+    console.log("Opening View Status Modal for Doc_ID:", rowData);
 
-  setOpenViewStatusModal(true);
-  await handleViewStatus(docId); // ✅ Pass only Doc_ID to API call
-};
+    setOpenViewStatusModal(true);
+    await handleViewStatus(docId); // ✅ Pass only Doc_ID to API call
+  };
 
 
   const handleCloseAddModal = () => setOpenAddModal(false);
@@ -648,19 +654,83 @@ const handleOpenViewStatusModal = async (rowData) => {
   //   setOpenModal(true);
   // };
 
-  const handleResubmit = async() => {
-    const response= await getresubmit()
-    setOpenModal(false);
+  const handleResubmit = async () => {
+    if (!selectedRow) {
+      alert("No document selected for Resubmit.");
+      return;
+    }
+    const data = {
+      Doc_ID: selectedRow.Doc_ID,
+      Action: "Resubmit",
+      UserID: UserID,
+
+    };
+
+    console.log("Sending Resubmit data:", data);
+
+    try {
+      const response = await getresubmit(data);
+      console.log("Resubmit API response:", response);
+
+      const isSuccess = response?.data?.success ?? response?.success;
+
+      if (isSuccess) {
+        alert("Document Resubmit!");
+        setOpenModal(false);
+        getData();
+      } else {
+        const message = response?.data?.message ?? response?.message ?? "Resubmit failed.";
+        alert(message);
+      }
+    } catch (error) {
+      console.error("Resubmit error:", error);
+      const errMsg = error.response?.data?.message || "An error occurred while Resubmit the document.";
+      alert(errMsg);
+    }
   };
 
-  const handleCancel = async() => {
-   const response= await getresubmit()
-    setOpenModal(false);
+
+  const handleCancel = async () => {
+    if (!selectedRow) {
+      alert("No document selected for Cancel.");
+      return;
+    }
+    const data = {
+      Doc_ID: selectedRow.Doc_ID,
+      Action: "Cancel",
+      UserID: UserID,
+
+    };
+
+    console.log("Sending Cancel data:", data);
+
+    try {
+      const response = await getCancel(data);
+      console.log("Cancel API response:", response);
+
+      const isSuccess = response?.data?.success ?? response?.success;
+
+      if (isSuccess) {
+        alert("Document Cancelled!");
+        setOpenModal(false)
+
+        getData();
+      } else {
+        const message = response?.data?.message ?? response?.message ?? "Cancel failed.";
+        alert(message);
+      }
+    } catch (error) {
+      console.error("Cancel error:", error);
+      const errMsg = error.response?.data?.message || "An error occurred while Cancel the document.";
+      alert(errMsg);
+    }
   };
 
 
-
-  
+  const handleCloseEditModal = () => {
+    setOpenEditModal(false);
+    setSelectedRow(null); // optionally reset selected data
+  };
 
 
   // const handleOpenViewModal = (row) => {
@@ -721,6 +791,14 @@ const handleOpenViewStatusModal = async (rowData) => {
   ];
 
 
+  const handleOpenViewStatus = (selectedRow) => {
+    // Do something with the selectedRow, then open the modal
+    setOpenViewStatus(true);
+  };
+
+  const handleCloseViewStatus = () => {
+    setOpenViewStatus(false);
+  };
 
   // ✅ Custom Toolbar
   const CustomToolbar = () => (
@@ -870,13 +948,13 @@ const handleOpenViewStatusModal = async (rowData) => {
           sx={{
             // Header Style
             "& .MuiDataGrid-columnHeader": {
-              backgroundColor: "#2e59d9",
-              color: "white",
-              fontWeight: "bold",
+              backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
+              color: "black"
+          
             },
             "& .MuiDataGrid-columnHeaderTitle": {
               fontSize: "16px",
-              fontWeight: "bold",
+              //fontWeight: "bold",
             },
             "& .MuiDataGrid-row": {
               backgroundColor: "#f5f5f5", // Default row background
@@ -1231,13 +1309,13 @@ const handleOpenViewStatusModal = async (rowData) => {
                 <tr>
                   {/* Table Header with Blue Background */}
                   <th style={{
-                    textAlign: "left", padding: "5px", backgroundColor: "deepskyblue", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
+                    textAlign: "left", padding: "5px", backgroundColor: "#696969", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
                   }}>Content</th>
                   <th style={{
-                    textAlign: "left", padding: "5px", backgroundColor: "deepskyblue", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
+                    textAlign: "left", padding: "5px", backgroundColor: "#696969", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
                   }}>From</th>
                   <th style={{
-                    textAlign: "left", padding: "5px", backgroundColor: "deepskyblue", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
+                    textAlign: "left", padding: "5px", backgroundColor: "#696969", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
                   }}>To</th>
                 </tr>
 
@@ -1363,85 +1441,91 @@ const handleOpenViewStatusModal = async (rowData) => {
       {/* ✅ Modal with Resubmit and Cancel */}
 
 
-      <Modal open={openModal} onClose={handleCancel}>
+      <Modal open={openModal} onClose={handleCloseEditModal}>
         <Box
           sx={{
             position: 'absolute',
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            width: 400,
+            width: 250,
+            height: 150,
+            fontSize: 12,
             bgcolor: 'background.paper',
             borderRadius: 2,
-            boxShadow: 24,
+            //boxShadow: 24,
             p: 4,
           }}
         >
-          <h2>Edit Document</h2>
-
-          <p>
-            Need to change something?{" "}
-            <span style={{ color: 'green', fontWeight: 'bold' }}>Click Resubmit👇.</span>
-          </p>
-
-
-          <Box>
-
-            {/* Button to open the "View Status" Modal */}
-
-            <Box
+          <h2>Edit Document </h2>
+          <Box sx={{ position: 'absolute', top: 15, right: 8 }}>
+            <IconButton
+              aria-label="close"
+              onClick={() => setOpenModal(false)} // ✅ Closes the Edit Document modal
               sx={{
-                display: 'flex',
-                justifyContent: 'center', // Center horizontally
-                alignItems: 'center',     // Center vertically
-                height: '20vh',          // Full viewport height
+                color: '#dc3545',
+                '&:hover': {
+                  backgroundColor: '#f8d7da',
+                },
               }}
             >
-              {/* Button to open the "View Status" Modal */}
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          <Box>
+            {/* View Details Button */}
+            <Box
+              sx={{
+                height: '100px',
+                width: '250px',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '20vh',
+
+              }}
+            >
               <Button
                 variant="contained"
-                 onClick={() => handleOpenViewStatusModal(selectedRow)} 
+                onClick={() => handleOpenViewStatusModal(selectedRow)}
                 sx={{
+
                   backgroundColor: '#DB7093',
                   '&:hover': {
                     backgroundColor: '#C71585',
                   },
-                  padding: '10px 20px',
-                  fontSize: '16px',
-                  height: '50px',
-                  width: '200px',
+                  // padding: '10px 20px',
+                  fontSize: '12px',
+                  height: '30px',
+                  width: '150px',
                   borderRadius: '8px',
+                  marginTop: "-90px",
+                  marginBottom: "20px",
                 }}
               >
-                View Details
+                ViewpprovalStatus
               </Button>
+
             </Box>
+
           </Box>
 
-
-
+          {/* View Details Modal */}
           <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
             <Box
               sx={{
-                width: 600,
+                width: 610,
                 bgcolor: "background.paper",
                 borderRadius: 2,
                 boxShadow: 24,
                 p: 3,
                 margin: "auto",
                 marginTop: "10%",
-                position: "relative", // to position X button
+                position: "relative",
               }}
             >
-              {/* ❌ Top-right close (X) button */}
-              <IconButton
-                onClick={() => setOpenViewStatusModal(false)}
-                sx={{ position: "absolute", top: 8, right: 8 }}
-              >
-                <CloseIcon />
-              </IconButton>
-
-              {/* 📝 Modal Title */}
+              {/* Modal Title */}
               <Typography
                 variant="h6"
                 align="center"
@@ -1457,11 +1541,12 @@ const handleOpenViewStatusModal = async (rowData) => {
                 Approval Status Details
               </Typography>
 
-              {/* 📋 Table */}
+              {/* Data Table */}
               <Table size="small">
                 <TableHead>
                   <TableRow>
                     <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Date</TableCell>
+                    <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Role</TableCell>
                     <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Name</TableCell>
                     <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Comment</TableCell>
                     <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Status</TableCell>
@@ -1472,6 +1557,7 @@ const handleOpenViewStatusModal = async (rowData) => {
                     viewStatusData.map((row, index) => (
                       <TableRow key={index}>
                         <TableCell>{row.Date}</TableCell>
+                        <TableCell>{row.Role}</TableCell>
                         <TableCell>{row.Modified_By}</TableCell>
                         <TableCell>{row.Approver_Comment || "—"}</TableCell>
                         <TableCell>{row.Status}</TableCell>
@@ -1486,24 +1572,41 @@ const handleOpenViewStatusModal = async (rowData) => {
                   )}
                 </TableBody>
               </Table>
+
+              {/* Cancel Button inside View Details Modal */}
+              <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
+                <IconButton
+                  aria-label="close"
+                  onClick={() => setOpenViewStatusModal(false)} // Close the View Details modal
+                  sx={{
+                    color: '#dc3545',
+                    '&:hover': {
+                      backgroundColor: '#f8d7da',  // '#e2e3e5'Lighter gray for hover effect
+                    },
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+
             </Box>
           </Modal>
 
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+          {/* Bottom Buttons in Edit Document Modal */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '-100px' }}>
             <Button
               variant="contained"
               onClick={handleResubmit}
               sx={{
-                width: '48%',
-                backgroundColor: '#1976d2', // Business blue (primary)
+                backgroundColor: '#1976d2',
                 '&:hover': {
-                  backgroundColor: '#115293', // Darker navy-blue
+                  backgroundColor: '#115293',
                 },
-                padding: '10px',
-                fontSize: '16px',
+                fontSize: '14px',
+                height: '35px',
+                width: '130px',
                 borderRadius: '8px',
-                textTransform: 'none', // Optional: keep text case natural
+                textTransform: 'none',
               }}
             >
               Resubmit
@@ -1513,13 +1616,13 @@ const handleOpenViewStatusModal = async (rowData) => {
               variant="contained"
               onClick={handleCancel}
               sx={{
-                width: '48%',
-                backgroundColor: '#6c757d', // Neutral gray
+                backgroundColor: '#6c757d',
                 '&:hover': {
-                  backgroundColor: '#5a6268', // Slightly darker gray
+                  backgroundColor: '#5a6268',
                 },
-                padding: '10px',
-                fontSize: '16px',
+                fontSize: '14px',
+                height: '35px',
+                width: '130px',
                 borderRadius: '8px',
                 textTransform: 'none',
               }}
@@ -1530,8 +1633,6 @@ const handleOpenViewStatusModal = async (rowData) => {
 
         </Box>
       </Modal>
-
-
 
     </div>
   );
