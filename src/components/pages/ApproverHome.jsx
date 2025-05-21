@@ -15,6 +15,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
+import { FiCheckCircle } from "react-icons/fi";
 
 import { api } from "../../controller/constants";
 
@@ -23,20 +24,20 @@ const ApproverHome = () => {
   const [approvalStatus, setApprovalStatus] = useState({});
 
  const approvalItems = [
-  { id: "4", title: "309 Part no Conversion", path: "/home/Approval_309", movementId: 4, icon: <AssignmentIcon /> },
-  { id: "3", title: "201 Approval", path: "/approval/201", movementId: 3, icon: <VerifiedIcon /> },
-  { id: "2", title: "311 Approval", path: "/approval/311", movementId: 2, icon: <CheckCircleIcon /> },
-  { id: "1", title: "511 Approval", path: "/approval/511", movementId: 1, icon: <FactCheckIcon /> },
-  { id: "5", title: "202 Approval", path: "/approval/202", movementId: 5, icon: <TaskAltIcon /> },
-  { id: "6", title: "203 Approval", path: "/approval/203", movementId: 6, icon: <AssignmentIcon /> },
-  { id: "7", title: "204 Approval", path: "/approval/204", movementId: 7, icon: <VerifiedIcon /> },
-  { id: "8", title: "205 Approval", path: "/approval/205", movementId: 8, icon: <CheckCircleIcon /> },
-  { id: "9", title: "206 Approval", path: "/approval/206", movementId: 9, icon: <FactCheckIcon /> },
-  { id: "10", title: "207 Approval", path: "/approval/207", movementId: 10, icon: <TaskAltIcon /> },
-  { id: "11", title: "208 Approval", path: "/approval/208", movementId: 11, icon: <AssignmentIcon /> },
-  { id: "12", title: "209 Approval", path: "/approval/209", movementId: 12, icon: <VerifiedIcon /> },
-  { id: "13", title: "210 Approval", path: "/approval/210", movementId: 13, icon: <CheckCircleIcon /> },
-  { id: "14", title: "211 Approval", path: "/approval/211", movementId: 14, icon: <FactCheckIcon /> },
+  { id: "4", title: "309 Part no Conversion", path: "/home/Approval_309", movementId: 4, icon: <FiCheckCircle /> },
+  { id: "3", title: "201/202 Stock Posting", path: "/approval/201", movementId: 3, icon: <FiCheckCircle /> },
+  { id: "2", title: "311 Location Transfer", path: "/approval/311", movementId: 2, icon: <FiCheckCircle /> },
+  { id: "1", title: "511 Scrap Posting", path: "/approval/511", movementId: 1, icon: <FiCheckCircle /> },
+  { id: "5", title: "Rs1 Conversion", path: "/approval/202", movementId: 5, icon: <FiCheckCircle /> },
+  { id: "6", title: "ME38 Manual Schedule", path: "/approval/203", movementId: 6, icon: <FiCheckCircle /> },
+  { id: "7", title: "RGP/NRGP ", path: "/approval/204", movementId: 7, icon: <FiCheckCircle /> },
+  { id: "8", title: "Inward of Old Invoices", path: "/approval/205", movementId: 8, icon: <FiCheckCircle /> },
+  { id: "9", title: "Emergency Procurement", path: "/approval/206", movementId: 9, icon: <FiCheckCircle /> },
+  { id: "10", title: "Production Order Aging Control Change", path: "/approval/207", movementId: 10, icon: <FiCheckCircle /> },
+  { id: "11", title: "Phy Inventory Adjustment", path: "/approval/208", movementId: 11, icon: <FiCheckCircle /> },
+  { id: "12", title: "Scrap  Disposal ", path: "/approval/209", movementId: 12, icon: <FiCheckCircle /> },
+  { id: "13", title: "Subcontracting Stock Value / Aging Change", path: "/approval/210", movementId: 13, icon: <FiCheckCircle /> },
+  { id: "14", title: "Material Status Change", path: "/approval/211", movementId: 14, icon: <FiCheckCircle /> },
 ];
 
 
@@ -91,20 +92,22 @@ const ApproverHome = () => {
   }}
 >
 
-      <Typography variant="h4" fontWeight="bold" mb={2} mt={8}>
+      <Typography variant="h4" fontWeight="bold" mb={5} mt={16}>
         Approvals
       </Typography>
 
       <Box
         sx={{
+         // mt:10,
+          justifyContent:"center",
           backgroundColor: "rgb(219, 236, 240)",
           borderRadius: "16px",
           padding: 4,
           boxShadow: "0 0 12px rgb(202, 190, 157)",
           width: "90%",
-          maxWidth: "1300px",
+          maxWidth: "1600px",
           height: "55%",
-          maxHeight: "1400px",
+          maxHeight: "1500px",
           
         }}
       >
@@ -135,8 +138,8 @@ const ApproverHome = () => {
                         height: "70px",
                          
                         background: hasApproval
-                          ? "linear-gradient(135deg,rgb(98, 218, 226),rgb(9, 106, 136))"
-                          : "#ccc",
+                          ? "#ffffff"
+                          : "#DADADA",
                         borderRadius: 2,
                         boxShadow: hasApproval
                           ? "0 0 10px rgba(3, 17, 39, 0.5)"
@@ -152,9 +155,8 @@ const ApproverHome = () => {
 
 
                         <Typography
-                          variant="body2"
-                          fontWeight="500"
-                          color={hasApproval ? "#ffffff" : "#000000"}
+                         sx={{ fontSize: 13}}
+                          color={hasApproval ? "rgb(2, 5, 12)" : "#C0C0C0"}
                         >
                           {item.title}
                         </Typography>
@@ -175,6 +177,7 @@ const ApproverHome = () => {
                           padding: "4px 12px",
                           minWidth: "90px",
                           borderRadius: "8px",
+                          left:6,
                           "&:hover": {
                             background: hasApproval
                               ? "linear-gradient(135deg, #1E3A8A, #3B82F6)"
@@ -191,7 +194,7 @@ const ApproverHome = () => {
 
               {/* Divider after each row except the last */}
               {groupIndex < groupedItems.length - 1 && (
-                <Divider sx={{ my: 2 }} />
+                <Divider sx={{ border:"2px solid rgba(43, 43, 44, 0.2)" }} />
               )}
             </React.Fragment>
           ))}
