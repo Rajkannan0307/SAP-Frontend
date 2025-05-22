@@ -471,7 +471,7 @@ const handleOpenViewStatusModal = async (rowData) => {
             textDecorationThickness: '3px'
           }}
         >
-          309 Approval
+          201/202 Approval
         </h2>
       </div>
 

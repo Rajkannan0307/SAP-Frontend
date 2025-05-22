@@ -25,6 +25,9 @@ import usePermissions from "../controller/usePermission";
 import { decryptSessionData } from "../controller/StorageUtils";
 import { FaExchangeAlt } from "react-icons/fa";
 import { SiSap } from "react-icons/si";
+import { BsFillSignpostFill } from "react-icons/bs";
+//import { TbCarCrane } from "react-icons/tb";
+
 const Sidebar = ({ setSidebarOpen }) => {
   const [open, setOpen] = useState(false);
   const [Masters, setMasterOpen] = useState(false);
@@ -277,8 +280,8 @@ useEffect(() => {
           Permissions={Permissions}
           label="Approval"
           links={[
-            { name: "309 Approval", path: "/home/Approval_309" ,icon:<MdOutlineApproval  style={{ fontSize: "20px",marginRight: "3px" , color:"rgb(228, 46, 182)"}}/>,code:'Approval_309'},
-            { name: "201/202 Approval", path: "/home/Approval_201_202" ,icon:<MdOutlineApproval  style={{ fontSize: "20px",marginRight: "3px" , color:"rgb(228, 46, 182)"}}/>,code:'Approval_201_202'},
+            { name: "309 Approval", path: "/home/Approval_309" ,icon:<MdOutlineApproval  style={{ fontSize: "20px",marginRight: "3px" , color:"rgb(233, 127, 228)"}}/>,code:'Approval_309'},
+            { name: "201/202 Approval", path: "/home/Approval_201_202" ,icon:<BsFillSignpostFill  style={{ fontSize: "20px",marginRight: "3px" , color:"rgb(52, 188, 252)"}}/>,code:'Approval_201_202'},
  
           ]}
           codeList={[
