@@ -34,6 +34,7 @@ import Inward from "./Dashboard/Inward";
 import Location from "./Dashboard/Location";
 import UserMaster from "./Masters/UserMaster";
 import Approval309 from "./Approval/309_Approval";
+import Approval201202 from "./Approval/201_202_Approval";
 import Role from "./Masters/Role";
 import Admin from "./Masters/Admin";
 import SubMenu from "./Masters/Submenu";
@@ -65,6 +66,7 @@ const App = () => {
             <Route path="MVT_LIST_ITEM" element={<ProtectedRoute screenId={12}><MVT_LIST_ITEM /></ProtectedRoute>} />
             <Route path="CostCenter" element={<ProtectedRoute screenId={13}><CostCenter /></ProtectedRoute>} />
             <Route path="Approval_309" element={<ProtectedRoute screenId={14}><Approval309 /></ProtectedRoute>} />
+            <Route path="Approval_201_202" element={<ProtectedRoute screenId={19}><Approval201202 /></ProtectedRoute>} />
             <Route path="dashboard" element={<ProtectedRoute screenId={15}><DashBoard /></ProtectedRoute>} />
             <Route path="Report1" element={<ProtectedRoute screenId={16}><Report1 /></ProtectedRoute>} />
             <Route path="Report2" element={<ProtectedRoute screenId={17}><Report2 /></ProtectedRoute>} />

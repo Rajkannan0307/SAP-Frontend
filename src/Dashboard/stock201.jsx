@@ -55,6 +55,22 @@ const Stock = () => {
    const [data, setData] = useState([]);
   
 
+  const [DocID, setDocID] = useState("");
+  const [PlantID, setPlantID] = useState("");
+  const [MovementID, setMovementID] = useState("");
+  const [Quantity, setQuantity] = useState("");
+  const [SLocID, setSLocID] = useState("");
+  const [ValuationType, sValuationType] = useState("");
+  const [Batch, setBatch] = useState("");
+  const [RatePerUnit, setRatePerUnit] = useState("");
+  const [Description, setDescription] = useState("");
+  const [Remark, setRemark] = useState("");
+  const [SAPTransactionStatus, setSAPTransactionStatus] = useState("");
+  const [PlantCode, setPlantCode] = useState('');
+  const [Date, setDate] = useState("");
+  const [ApprovalStatus, setApprovalStatus] = useState([]);
+
+
    const handleCloseAddModal = () => setOpenAddModal(false);
   const getData = async () => {
     try {
@@ -498,13 +514,13 @@ const Stock = () => {
         sx={{
           // Header Style
           "& .MuiDataGrid-columnHeader": {
-            backgroundColor: "#2e59d9",
-            color: "white",
+            backgroundColor: "#bdbdbd",
+            color: "black",
             fontWeight: "bold",
           },
           "& .MuiDataGrid-columnHeaderTitle": {
             fontSize: "16px",
-            fontWeight: "bold",
+            //fontWeight: "bold",
           },
           "& .MuiDataGrid-row": {
             backgroundColor: "#f5f5f5", // Default row background
@@ -548,7 +564,7 @@ const Stock = () => {
           >
             <a
               style={{ textDecoration: "none", color: "white" }}
-              href={`${api}/transaction/Template/Template For 202_201.xlsx`}
+              href={`${api}/transaction/Template/TemplateFor 202_201.xlsx`}
             >
               {" "}
               <FaDownload className="icon" /> &nbsp;&nbsp;Download Template

@@ -278,10 +278,11 @@ useEffect(() => {
           label="Approval"
           links={[
             { name: "309 Approval", path: "/home/Approval_309" ,icon:<MdOutlineApproval  style={{ fontSize: "20px",marginRight: "3px" , color:"rgb(228, 46, 182)"}}/>,code:'Approval_309'},
-
+            { name: "201/202 Approval", path: "/home/Approval_201_202" ,icon:<MdOutlineApproval  style={{ fontSize: "20px",marginRight: "3px" , color:"rgb(228, 46, 182)"}}/>,code:'Approval_201_202'},
+ 
           ]}
           codeList={[
-            'Approval_309'
+            'Approval_309','Approval_201_202'
           ]}
         />
 
