@@ -4,9 +4,11 @@ import {
   Button,
   Modal,
   Box,
-  FormControlLabel,
+  FormControl,
+  InputLabel,
   IconButton,
-  Switch,
+  Select,
+  MenuItem
 } from "@mui/material";
 import {
   DataGrid,
@@ -23,11 +25,12 @@ import * as XLSX from "xlsx-js-style";
 import { deepOrange } from "@mui/material/colors";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import {
-  User_Img,
+  
   getAdd,
   getUpdates,
   getdetails,
-} from "../controller/CompanyMasterapiservice";
+  getPlants
+} from "../controller/SapMasterapiservice";
 import { api } from "../controller/constants";
 import { decryptSessionData } from "../controller/StorageUtils"
 const Sap = () => {
@@ -39,68 +42,45 @@ const Sap = () => {
   const [openEditModal, setOpenEditModal] = useState(false);
 
   const [UserID, setUserID] = useState('');
-  const [uploadedFile, setUploadedFile] = useState(null);
+  const [Last_Punch, setLast_Punch] = useState('');
 
   const [ActiveStatus, setActiveStatus] = useState(false);
-
+const [PlantTable, setPlantTable] = useState([]);
  // const UserID = localStorage.getItem("UserID");
  
 
-  const [CompanyCode, setCompanyCode] = useState("");
-  const [CompanyID, setCompanyID] = useState("");
-  const [CompanyName, setCompanyName] = useState("");
-  const [imagePreview, setImagePreview] = useState("");
-  const [CompanyLogo, setCompanyLogo] = useState("");
+  const [Plant_Code, setPlantCode] = useState("");
+  const [SAP_LOGIN_ID, setSAPLOGINID] = useState("");
+  const [Employee_ID, setEmployeeID] = useState("");
+  const [User_Name, setUserName] = useState("");
+  const [Dept_Name, setDeptName] = useState("");
   const columns = [
-    { field: "Com_Code", headerName: "Company Code", flex: 1 },
+    { field: "Plant_Code", headerName: "Plant", flex: 1 },
 
-    { field: "Com_Name", headerName: "Company Name", flex: 1 },
-    {
-      field: "CompanyLogo",
-      headerName: "Company Logo",
-      flex: 1,
-      renderCell: (params) => (
-        <div style={{ display: "flex", gap: "10px" }}>
-          <Button
-            onClick={(event) => {
-              event.stopPropagation();
-              console.log(params.row); // ✅ prevent row click
-              handleViewImage(params.row);
-            }}
-            style={{ fontSize: "18px", color: "blue" }}
-          >
-            <VisibilityIcon fontSize="small" />
-          </Button>
-        </div>
-      ),
-    },
+    { field: "SAP_LOGIN_ID", headerName: "Sap Login", flex: 1 },
+    { field: "Employee_ID", headerName: "Employee ID", flex: 1 },
+   { field: "User_Name", headerName: "Name", flex: 1 },
+   { field: "Dept_Name", headerName: "Department", flex: 1 },
 
     {
-      field: "ActiveStatus",
-      headerName: "Active Status",
-      flex: 1,
-      renderCell: (params) => {
-        const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
-        return (
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isActive} // Use the boolean value directly
-                color="default" // Neutral color for default theme
-                sx={{
-                  "& .MuiSwitch-track": {
-                    backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                  },
-                  "& .MuiSwitch-thumb": {
-                    backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                  },
-                }}
-              />
-            }
-          />
-        );
-      },
-    },
+  field: "Active_Status",
+  headerName: "Active Status",
+  flex: 1,
+  renderCell: (params) => {
+    const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
+    return (
+      <span
+        style={{
+          color: isActive ? "#2e7d32" : "#d32f2f", // Green for active, red for inactive
+          fontWeight: "bold",
+        }}
+      >
+        {isActive ? "Active" : "Inactive"}
+      </span>
+    );
+  },
+},
+    { field: "Last_Punch", headerName: "Last Punch", flex: 1 },
   ];
 
   // ✅ Custom Toolbar
@@ -127,6 +107,15 @@ const Sap = () => {
     }
   };
 
+    const get_Plant = async () => {
+      try {
+        const response = await getPlants();
+        setPlantTable(response.data);
+      } catch (error) {
+        console.error("Error updating user:", error);
+      }
+    };
+  
     useEffect(() => {
     const encryptedData = sessionStorage.getItem('userData');
     if (encryptedData) {
@@ -142,11 +131,13 @@ const Sap = () => {
 
   // ✅ Handle Add Modal
   const handleOpenAddModal = (item) => {
-    setCompanyCode("");
-    setCompanyName("");
+    setPlantCode("");
+    setSAPLOGINID("");
+    
 
     setActiveStatus(true);
     setOpenAddModal(true);
+    get_Plant();
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
@@ -154,11 +145,12 @@ const Sap = () => {
   // ✅ Handle Row Click for Edit
 
   const handleRowClick = (params) => {
-    setCompanyID(params.row.Com_ID);
+    setPlantCode(params.row.Plant_Code);
 
-    setCompanyCode(params.row.Com_Code);
-    setCompanyName(params.row.Com_Name);
-    setCompanyLogo(params.row.CompanyLogo);
+    setSAPLOGINID(params.row.SAP_LOGIN_ID);
+    setEmployeeID(params.row.Employee_ID);
+    setUserName(params.row.User_Name);
+    setDeptName(params.row.Dept_Name);
     setActiveStatus(params.row.Active_Status);
     setOpenEditModal(true); // Open the modal
     // get_Company();
@@ -172,7 +164,7 @@ const Sap = () => {
       setRows(originalRows);
     } else {
       const filteredRows = originalRows.filter((row) =>
-        ["Com_Code", "Com_Name", "Com_Address"].some((key) => {
+        ["Plant_Code", "SAP_LOGIN_ID", "Employee_ID","User_Name","Dept_Name"].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
         })
@@ -181,146 +173,90 @@ const Sap = () => {
     }
   };
 
-  const handleAdd = async () => {
-    console.log("Data being sent to the server:", {
-      ActiveStatus,
-      UserID,
-      CompanyCode,
-      CompanyName,
-    });
-    console.log("Add button clicked");
-
-    if (CompanyCode === "" || CompanyName === "") {
-      alert("Please fill in all required fields");
-      return;
-    }
-
-    try {
-      const data = {
-        UserID: UserID,
-        Com_Code: CompanyCode,
-        Com_Name: CompanyName,
-        Active_Status: ActiveStatus,
-        CompanyLogo: CompanyLogo,
-      };
-
-      // First API call - Adding Company
-      const response1 = await getAdd(data);
-      console.log("Company add response:", response1.data);
-
-      if (response1.data.success) {
-        const comId = response1.data.Com_ID;
-        console.log("New Company ID:", comId);
-
-        // Prepare formData for image upload
-        const formData = new FormData();
-        formData.append("Com_ID", comId);
-
-        // Check if uploadedFile exists
-        if (uploadedFile) {
-          console.log("File to be uploaded:", uploadedFile);
-          formData.append("User_Image", uploadedFile);
-          formData.append("UserID", UserID);
-
-          // Second API call - Uploading Image
-          const response2 = await User_Img(formData);
-          console.log("Image upload response:", response2.data); // Log the response
-
-          if (response2.data.message === "Image Uploaded Successfully") {
-            alert("Company and image added successfully!");
-            getData(); // Refresh UI
-            handleCloseAddModal(); // Close modal
-          } else {
-            console.log("Error in image upload response:", response2.data);
-            alert("Error while uploading image. Please try again.");
-          }
-        } else {
-          alert("Please select an image to upload.");
-        }
-      } else {
-        alert("Error while adding the company. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error in adding Company:", error);
-
-      if (error.response?.data?.message) {
-        alert(error.response.data.message);
-      } else {
-        alert("An error occurred while adding the Company.");
-      }
-    }
-  };
-
-  const handleUpdate = async () => {
-    try {
-      const data = {
-        UserID: UserID,
-        Com_ID: CompanyID,
-        Com_Code: CompanyCode,
-        Com_Name: CompanyName,
-        Active_Status: ActiveStatus,
-        CompanyLogo: CompanyLogo,
-      };
-
-      console.log("Data being sent for update:", data);
-
-      // First API call - Updating the company data (without image)
-      const response = await getUpdates(data);
-
-      if (response.data.success) {
-        // If a new company logo is selected, proceed with image upload
-        if (uploadedFile) {
-          console.log("File to be uploaded:", uploadedFile);
-
-          // Prepare FormData for image upload
-          const formData = new FormData();
-          formData.append("Com_ID", CompanyID);
-          formData.append("UserID", UserID);
-          formData.append("User_Image", uploadedFile); // Assuming uploadedFile is the selected file
-
-          // Second API call - Uploading the new CompanyLogo
-          const response2 = await User_Img(formData);
-          console.log("Image upload response:", response2.data); // Log the response
-
-          if (response2.data.message === "Image Uploaded Successfully") {
-            alert("Company and image updated successfully!");
-            getData(); // Refresh the UI
-            handleCloseEditModal(); // Close modal
-          } else {
-            console.log("Error in image upload response:", response2.data);
-            alert("Error while uploading image. Please try again.");
-          }
-        } else {
-          alert("No new image selected for upload.");
-        }
-      } else {
-        // If updating the company fails, show backend message
-        alert(response.data.message);
-      }
-    } catch (error) {
-      console.error("Error in updating Company:", error);
-
-      if (error.response?.data?.message) {
-        alert(error.response.data.message); // Specific error from backend
-      } else {
-        alert(
-          "An error occurred while updating the Company. Please try again."
-        );
-      }
-    }
-  };
-
-  const handleFileUpload = (event) => {
-    setUploadedFile(event.target.files[0]);
-  };
-
-  const handleViewImage = (company) => {
-    console.log(company);
-    const imageUrl = `${api}/CompanyMaster/ViewImage/${company.CompanyLogo}`;
-
-    setImagePreview(imageUrl);
-  };
-
+ const handleAdd = async () => {
+     console.log("Data being sent to the server:", {
+      Plant_Code,
+      SAP_LOGIN_ID,
+       UserID,
+     });
+     console.log("Add button clicked");
+   
+    //  Step 1: Validate required fields
+     if (
+       
+       Plant_Code === "" || SAP_LOGIN_ID ===""
+      
+     ) {
+       alert("Please fill in all required fields");
+       return;
+     }
+   
+     
+     try {
+       // Prepare data to be sent
+       const data = {
+         UserID:UserID,
+         Plant_Code:Plant_Code,
+         SAP_LOGIN_ID:SAP_LOGIN_ID,
+         Active_Status:ActiveStatus, // Make sure this is defined somewhere
+       };
+   
+       // Step 3: Call the API to add the user
+       const response = await getAdd(data); // Ensure getAdd uses a POST request
+   
+       if (response.data.success) {
+         alert("Sap added successfully!");
+         getData(); // refresh UI (e.g. user list)
+         handleCloseAddModal(); // close the modal
+       } else {
+         alert(response.data.message || "Failed to add Role.");
+       }
+     } catch (error) {
+       console.error("Error in adding Role:", error);
+      // Step 4: Show error from server (like Employee_ID already exists)
+      if (error.response && error.response.data && error.response.data.message) {
+       alert(error.response.data.message);
+     } else {
+       alert("An error occurred while adding the Role.");
+     }
+   
+     
+     }
+   };
+ 
+    const handleUpdate = async () => {
+        const data = {
+        Employee_ID:Employee_ID,
+        User_Name:User_Name,
+        Dept_Name:Dept_Name,
+          UserID:UserID,
+          Active_Status: ActiveStatus,
+        };
+        console.log("Data being sent:", data); // Log data to verify it before sending
+    
+        try {
+          const response = await getUpdates(data);
+    
+          // If success
+       if (response.data.success) {
+         alert(response.data.message);
+         getData(); // Refresh data
+         handleCloseEditModal(); // Close modal
+       } else {
+         // If success is false, show the backend message
+         alert(response.data.message);
+       }
+     } catch (error) {
+       console.error("Error details:", error.response?.data);
+   
+       if (error.response && error.response.data && error.response.data.message) {
+         alert(error.response.data.message); // Specific error from backend
+       } else {
+         alert("An error occurred while updating the Vendor. Please try again.");
+       }
+     }
+   };
+   
   // excel download
   const handleDownloadExcel = () => {
     if (data.length === 0) {
@@ -328,13 +264,15 @@ const Sap = () => {
       return;
     }
 
-    const DataColumns = ["Company_Code", "Company_Name", "ActiveStatus"];
+    const DataColumns = ["Plant_Code", "SAP_LOGIN_ID","Employee_ID","User_Name","Dept_Name", "ActiveStatus"];
 
     const filteredData = data.map((item) => ({
-      Company_Code: item.Com_Code,
+      Plant_Code: item.Plant_Code,
 
-      Company_Name: item.Com_Name,
-
+      SAP_LOGIN_ID: item.SAP_LOGIN_ID,
+      Employee_ID:item.Employee_ID,
+      User_Name:item.User_Name,
+      Dept_Name:item.Dept_Name,
       ActiveStatus: item.Active_Status ? "Active" : "Inactive",
     }));
 
@@ -395,7 +333,7 @@ const Sap = () => {
             marginBottom: -7,
           }}
         >
-          Company Master
+          Sap Acess Login
         </h2>
       </div>
 
@@ -493,7 +431,7 @@ const Sap = () => {
           columns={columns}
           pageSize={5} // Set the number of rows per page to 8
           rowsPerPageOptions={[5]}
-          getRowId={(row) => row.Com_ID} // Specify a custom id field
+          getRowId={(row) => row.SAP_ID} // Specify a custom id field
           onRowClick={handleRowClick}
           disableSelectionOnClick
           slots={{ toolbar: CustomToolbar }}
@@ -552,78 +490,35 @@ const Sap = () => {
               textDecorationThickness: "3px",
             }}
           >
-            Add Company
+            Add Sap Acess
           </h3>
 
+           <FormControl fullWidth>
+            <InputLabel>Plant Code</InputLabel>
+            <Select
+              label="Plant Code"
+              name="PlantCode"
+              value={Plant_Code}
+              onChange={(e) => setPlantCode(e.target.value)}
+              required
+            >
+              {PlantTable.map((item, index) => (
+                <MenuItem key={index} value={item.Plant_Id}>{item.Plant_Code}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
           <TextField
-            label="Company Code"
-            name="CompanyCode"
-            value={CompanyCode}
-            type="text"
-            onChange={(e) => {
-              const value = e.target.value;
-              // Remove any non-digit character
-              if (/^\d*$/.test(value)) {
-                setCompanyCode(value);
-              }
-            }}
-            inputProps={{
-              inputMode: "numeric",
-              pattern: "[0-9]*",
-              maxLength: 4,
-            }}
+            label="SAP_LOGIN_ID"
+            name="SAP_LOGIN_ID"
+            value={SAP_LOGIN_ID}
+            onChange={(e) => setSAPLOGINID(e.target.value)}
             required
           />
 
-          <TextField
-            label="Company Name"
-            name=" Company Name"
-            value={CompanyName}
-            onChange={(e) => setCompanyName(e.target.value)}
-            required
-          />
+         
 
-          <input
-            type="file"
-            accept=".jpg,.jpeg,.png"
-            onChange={handleFileUpload}
-            style={{
-              padding: "8px",
-              backgroundColor: "white", // ✅ Blue background
-              color: "black",
-              border: "1px solid black",
-              borderRadius: "5px",
-              cursor: "pointer",
-              width: "180px",
-              marginTop: "10px",
-            }}
-          />
-
-          <FormControlLabel
-            control={
-              <Switch
-                checked={ActiveStatus}
-                onChange={(e) => setActiveStatus(e.target.checked)}
-                color="success" // Always use 'success' to keep the thumb green when active
-                sx={{
-                  "& .MuiSwitch-track": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                    backgroundImage: "none !important", // Disable background image
-                  },
-                  "& .MuiSwitch-thumb": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                    borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                  },
-                }}
-              />
-            }
-            label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-            labelPlacement="end"
-            style={{
-              color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-              fontWeight: "bold",
-            }}
-          />
+        
           <Box
             sx={{
               gridColumn: "span 2",
@@ -653,7 +548,7 @@ const Sap = () => {
       </Modal>
 
       {/* ✅ Edit Modal */}
-      <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
+      {/* <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
         <Box
           sx={{
             display: "grid",
@@ -698,46 +593,8 @@ const Sap = () => {
             required
           />
 
-          <input
-            type="file"
-            accept=".jpg,.jpeg,.png"
-            onChange={handleFileUpload}
-            style={{
-              padding: "8px",
-              backgroundColor: "white", // ✅ Blue background
-              color: "black",
-              border: "1px solid black",
-              borderRadius: "5px",
-              cursor: "pointer",
-              width: "180px",
-              marginTop: "10px",
-            }}
-          />
-          <FormControlLabel
-            control={
-              <Switch
-                checked={ActiveStatus}
-                onChange={(e) => setActiveStatus(e.target.checked)}
-                color="success" // Always use 'success' to keep the thumb green when active
-                sx={{
-                  "& .MuiSwitch-track": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                    backgroundImage: "none !important", // Disable background image
-                  },
-                  "& .MuiSwitch-thumb": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                    borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                  },
-                }}
-              />
-            }
-            label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-            labelPlacement="end"
-            style={{
-              color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-              fontWeight: "bold",
-            }}
-          />
+          
+         
 
           <Box
             sx={{
@@ -760,49 +617,10 @@ const Sap = () => {
             </Button>
           </Box>
         </Box>
-      </Modal>
+      </Modal> */}
 
-      {/* Modal for Viewing Image */}
-      <Modal
-        open={imagePreview !== ""}
-        onClose={() => setImagePreview("")}
-        aria-labelledby="view-image-modal"
-        aria-describedby="modal-for-viewing-image"
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            backgroundColor: "white",
-            padding: "20px",
-            borderRadius: "10px",
-            boxShadow: 24,
-            width: 400,
-          }}
-        >
-          <Box display="flex" justifyContent="center">
-            <img
-              src={imagePreview}
-              alt="CompanyLogo"
-              style={{ width: "100%", maxHeight: "400px", objectFit: "cover" }}
-            />
-          </Box>
-          <Box display="flex" justifyContent="center" mt={2}>
-            <Button
-              onClick={() => setImagePreview("")}
-              style={{
-                backgroundColor: deepOrange[500],
-                color: "white",
-                fontSize: "12px",
-              }}
-            >
-              Close
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+     
+    
     </div>
   );
 };
