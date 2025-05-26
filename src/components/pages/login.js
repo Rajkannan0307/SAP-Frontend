@@ -216,7 +216,7 @@ const handleLogin = async (e) => {
       {/* Inner Box for Login Details */}
     <div
   style={{
-    width: "100%",
+  
      height: "250px", // Increased height
     width: "370px",
     backgroundColor: "white",

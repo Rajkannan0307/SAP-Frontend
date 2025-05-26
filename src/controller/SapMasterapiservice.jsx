@@ -19,3 +19,11 @@ export const getAdd = async (data) => {
     const response = await axios.get(`${api}/Master/Get_Plants`);
     return response;
 };
+export const getcategory=async (selectedCategory,Plant_Code)=>{
+    const response = await axios.post(`${api}/SapMaster/Get_Category`, {
+      Category: selectedCategory,
+      Plant_Code:Plant_Code
+    });
+    return response.data;
+};
+

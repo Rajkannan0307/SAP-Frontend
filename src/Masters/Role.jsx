@@ -36,6 +36,7 @@ const Role = () => {
       const [Role_Name, setRoleName] = useState("");
       const [Role_ID, setRoleID] = useState("");
       const UserID = localStorage.getItem('UserID');
+      console.log('role userid',UserID)
       const RoleID=localStorage.getItem("RoleID")
        const navigate = useNavigate();
       
