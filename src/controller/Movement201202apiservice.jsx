@@ -8,8 +8,8 @@ export const Movement201202 = async (data) => {
     return response;
 };
 
-export const getdetails=async ()=>{
-    const response = await axios.get(`${api}/Movement201202/get_details`);
+export const getdetails=async (user)=>{
+    const response = await axios.get(`${api}/Movement201202/get_details?userid=${user}`);
     return response.data;
 };
 export const getAdd = async (data)=>{
