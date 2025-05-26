@@ -71,7 +71,7 @@ const [ActiveStatus, setActiveStatus] = useState('');
 
     { field: "SAP_LOGIN_ID", headerName: "Sap Login", flex: 1 },
     { field: "Employee_ID", headerName: "Employee ID", flex: 1 },
-    { field: "User_Name", headerName: "Name", flex: 1 },
+    { field: "Employee_Name", headerName: "Name", flex: 1 },
     { field: "Dept_Name", headerName: "Department", flex: 1 },
     {
   field: "Active_Status",
@@ -251,52 +251,55 @@ useEffect(() => {
   };
 
   const handleAdd = async () => {
-    console.log("Data being sent to the server:", {
+     console.log("Data being sent to the server:", {
       Plant_Code,
       SAP_LOGIN_ID,
-      UserID,
-    });
-    console.log("Add button clicked");
-
+       UserID,
+     });
+     console.log("Add button clicked");
+   
     //  Step 1: Validate required fields
-    if (Plant_Code === "" || SAP_LOGIN_ID === "") {
-      alert("Please fill in all required fields");
-      return;
-    }
-
-    try {
-      // Prepare data to be sent
-      const data = {
-        UserID: UserID,
-        Plant_Code: Plant_Code,
-        SAP_LOGIN_ID: SAP_LOGIN_ID,
+     if (
+       
+       Plant_Code === "" || SAP_LOGIN_ID ===""
       
-      };
-
-      // Step 3: Call the API to add the user
-      const response = await getAdd(data); // Ensure getAdd uses a POST request
-
-      if (response.data.success) {
-        alert("Sap added successfully!");
-        getData(); // refresh UI (e.g. user list)
-        handleCloseAddModal(); // close the modal
-      } else {
-        alert(response.data.message || "Failed to add Sap.");
-      }
-    } catch (error) {
-      console.error("Error in adding Sap:", error);
+     ) {
+       alert("Please fill in all required fields");
+       return;
+     }
+   
+     
+     try {
+       // Prepare data to be sent
+       const data = {
+         UserID:UserID,
+         Plant_Code:Plant_Code,
+         SAP_LOGIN_ID:SAP_LOGIN_ID,
+         Active_Status:ActiveStatus, // Make sure this is defined somewhere
+       };
+   
+       // Step 3: Call the API to add the user
+       const response = await getAdd(data); // Ensure getAdd uses a POST request
+   
+       if (response.data.success) {
+         alert("Sap added successfully!");
+         getData(); // refresh UI (e.g. user list)
+         handleCloseAddModal(); // close the modal
+       } else {
+         alert(response.data.message || "Failed to add Role.");
+       }
+     } catch (error) {
+       console.error("Error in adding Role:", error);
       // Step 4: Show error from server (like Employee_ID already exists)
-      if (
-        error.response &&
-        error.response.data &&
-        error.response.data.message
-      ) {
-        alert(error.response.data.message);
-      } else {
-        alert("An error occurred while adding the Sap.");
-      }
-    }
-  };
+      if (error.response && error.response.data && error.response.data.message) {
+       alert(error.response.data.message);
+     } else {
+       alert("An error occurred while adding the Role.");
+     }
+   
+     
+     }
+   };
 
   const handleUpdate = async () => {
    const data = {
@@ -577,10 +580,10 @@ useEffect(() => {
               textDecorationThickness: "3px",
             }}
           >
-            Add Sap Access
+            Add Sap Acess
           </h3>
 
-          <FormControl fullWidth>
+           <FormControl fullWidth>
             <InputLabel>Plant Code</InputLabel>
             <Select
               label="Plant Code"
@@ -590,9 +593,7 @@ useEffect(() => {
               required
             >
               {PlantTable.map((item, index) => (
-                <MenuItem key={index} value={item.Plant_Code}>
-                  {item.Plant_Code}
-                </MenuItem>
+                <MenuItem key={index} value={item.Plant_Id}>{item.Plant_Code}</MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -605,6 +606,9 @@ useEffect(() => {
             required
           />
 
+         
+
+        
           <Box
             sx={{
               gridColumn: "span 2",
@@ -614,14 +618,13 @@ useEffect(() => {
               marginTop: "15px",
             }}
           >
-           <Button
-  variant="contained"
-  color="error"
-  onClick={handleCloseAddModal}
->
-  Cancel
-</Button>
-
+            <Button
+              variant="contained"
+              color="error"
+              onClick={() => handleCloseAddModal(false)}
+            >
+              Cancel
+            </Button>
             <Button
               style={{ width: "90px" }}
               variant="contained"
@@ -729,7 +732,7 @@ useEffect(() => {
           <InputLabel id="employee-select-label">Employee</InputLabel>
         <Select
   labelId="employee-select-label"
-  value={EmployeeID || ''}
+  value={EmployeeID}
   label="Employee"
  onChange={(e) => {
   const selectedId = e.target.value;
@@ -750,7 +753,7 @@ useEffect(() => {
   <MenuItem value="">Select Employee</MenuItem>
   {filteredEmployees.map((emp) => (
     <MenuItem key={emp.empl_slno} value={emp.empl_slno}>
-      {emp.Emp_Name}
+      {emp.empl_slno}
     </MenuItem>
   ))}
 </Select>
