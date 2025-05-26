@@ -61,25 +61,39 @@ const [PlantTable, setPlantTable] = useState([]);
     { field: "Employee_ID", headerName: "Employee ID", flex: 1 },
    { field: "User_Name", headerName: "Name", flex: 1 },
    { field: "Dept_Name", headerName: "Department", flex: 1 },
-
-    {
-  field: "Active_Status",
-  headerName: "Active Status",
-  flex: 1,
-  renderCell: (params) => {
-    const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
-    return (
-      <span
-        style={{
-          color: isActive ? "#2e7d32" : "#d32f2f", // Green for active, red for inactive
-          fontWeight: "bold",
-        }}
-      >
-        {isActive ? "Active" : "Inactive"}
-      </span>
-    );
+   {
+    field: "Active_Status",
+    headerName: "Active Status",
+    flex: 1,
+    renderCell: (params) => {
+      const value = params.value;
+      if (value === null || value === undefined) return "";
+  
+      const color = value === 1 ? "green" : "red";
+      const label = value === 1 ? "Active" : "Inactive";
+  
+      return <span style={{ color, fontWeight: "bold" }}>{label}</span>;
+    }
   },
-},
+
+//     {
+//   field: "Active_Status",
+//   headerName: "Active Status",
+//   flex: 1,
+//   renderCell: (params) => {
+//     const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
+//     return (
+//       <span
+//         style={{
+//           color: isActive ? "#2e7d32" : "#d32f2f", // Green for active, red for inactive
+//           fontWeight: "bold",
+//         }}
+//       >
+//         {isActive ? "Active" : "Inactive"}
+//       </span>
+//     );
+//   },
+// },
     { field: "Last_Punch", headerName: "Last Punch", flex: 1 },
   ];
 
@@ -575,23 +589,7 @@ const [PlantTable, setPlantTable] = useState([]);
           >
             Edit Business Division
           </h3>
-          <TextField
-            label="Company Code"
-            name="Company_Code"
-            value={CompanyCode}
-            onChange={(e) => setCompanyCode(e.target.value)}
-            InputProps={{
-              readOnly: true, // This makes the TextField read-only
-            }}
-          />
-
-          <TextField
-            label=" Company Name"
-            name=" Company Name"
-            value={CompanyName}
-            onChange={(e) => setCompanyName(e.target.value)}
-            required
-          />
+          
 
           
          
