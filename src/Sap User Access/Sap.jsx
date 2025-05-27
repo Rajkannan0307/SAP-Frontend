@@ -144,26 +144,17 @@ const fetchCategoryData = async (selectedCategory, Plant_Code) => {
 useEffect(() => {
   const fetchEmployees = async () => {
     try {
-      const response = await getcategory(Category,Plant_Code);
+      const response = await getcategory(Category, Plant_Code);
       const data = response.data;
 
-      if (Category === "executive") {
-        setFilteredEmployees(
-          data.map((emp) => ({
-            ...emp,
-            empl_slno: emp.empl_slno,
-            Emp_Name: emp.Emp_Name,
-          }))
-        );
-      } else if (Category === "temporary") {
-        setFilteredEmployees(
-          data.map((emp) => ({
-            ...emp,
-            empl_slno: emp.apln_slno,
-            Emp_Name: emp.fullname,
-          }))
-        );
-      }
+      // Normalize employee data
+      const normalizedEmployees = data.map((emp) => ({
+        ...emp,
+        employee_id: emp.gen_id, // Use a consistent key
+        Emp_Name: Category === "executive" ? emp.Emp_Name : emp.fullname,
+      }));
+
+      setFilteredEmployees(normalizedEmployees);
     } catch (err) {
       console.error("Failed to fetch employees", err);
     }
@@ -172,7 +163,7 @@ useEffect(() => {
   if (Category) {
     fetchEmployees();
   }
-}, [Category,Plant_Code]);
+}, [Category, Plant_Code]);
 
 
 
@@ -218,7 +209,7 @@ useEffect(() => {
     setLast_Punch(params.row.Last_Punch);
     setSAPLOGINID(params.row.SAP_LOGIN_ID);
     setEmployeeID(params.row.Employee_ID);
-    setUserName(params.row.User_Name);
+    setUserName(params.row.Employee_Name);
     setDeptName(params.row.Dept_Name);
     setActiveStatus(params.row.Active_Status);
     setCategory(params.row.Category); // This ensures category is set
@@ -229,77 +220,66 @@ useEffect(() => {
 
   // ✅ Search Functionality
   const handleSearch = () => {
-    const text = searchText.trim().toLowerCase();
+  const text = searchText.trim().toLowerCase();
 
-    if (!text) {
-      setRows(originalRows);
-    } else {
-      const filteredRows = originalRows.filter((row) =>
-        [
-          "Plant_Code",
-          "SAP_LOGIN_ID",
-          "Employee_ID",
-          "User_Name",
-          "Dept_Name",
-        ].some((key) => {
-          const value = row[key];
-          return value && String(value).toLowerCase().includes(text);
-        })
-      );
-      setRows(filteredRows);
-    }
-  };
+  const filteredRows = originalRows.filter((row) =>
+    ["Plant_Code", "SAP_LOGIN_ID", "Employee_ID", "Employee_Name", "Dept_Name","Active_Status"].some((key) => {
+      const value = row[key];
+      return value?.toString().toLowerCase().includes(text);
+    })
+  );
+
+  setRows(text ? filteredRows : originalRows);
+};
+
 
   const handleAdd = async () => {
-     console.log("Data being sent to the server:", {
+    console.log("Data being sent to the server:", {
       Plant_Code,
       SAP_LOGIN_ID,
-       UserID,
-     });
-     console.log("Add button clicked");
-   
+      UserID,
+    });
+    console.log("Add button clicked");
+
     //  Step 1: Validate required fields
-     if (
-       
-       Plant_Code === "" || SAP_LOGIN_ID ===""
+    if (Plant_Code === "" || SAP_LOGIN_ID === "") {
+      alert("Please fill in all required fields");
+      return;
+    }
+
+    try {
+      // Prepare data to be sent
+      const data = {
+        UserID: UserID,
+        Plant_Code: Plant_Code,
+        SAP_LOGIN_ID: SAP_LOGIN_ID,
       
-     ) {
-       alert("Please fill in all required fields");
-       return;
-     }
-   
-     
-     try {
-       // Prepare data to be sent
-       const data = {
-         UserID:UserID,
-         Plant_Code:Plant_Code,
-         SAP_LOGIN_ID:SAP_LOGIN_ID,
-         Active_Status:ActiveStatus, // Make sure this is defined somewhere
-       };
-   
-       // Step 3: Call the API to add the user
-       const response = await getAdd(data); // Ensure getAdd uses a POST request
-   
-       if (response.data.success) {
-         alert("Sap added successfully!");
-         getData(); // refresh UI (e.g. user list)
-         handleCloseAddModal(); // close the modal
-       } else {
-         alert(response.data.message || "Failed to add Role.");
-       }
-     } catch (error) {
-       console.error("Error in adding Role:", error);
+      };
+
+      // Step 3: Call the API to add the user
+      const response = await getAdd(data); // Ensure getAdd uses a POST request
+
+      if (response.data.success) {
+        alert("Sap added successfully!");
+        getData(); // refresh UI (e.g. user list)
+        handleCloseAddModal(); // close the modal
+      } else {
+        alert(response.data.message || "Failed to add Sap.");
+      }
+    } catch (error) {
+      console.error("Error in adding Sap:", error);
       // Step 4: Show error from server (like Employee_ID already exists)
-      if (error.response && error.response.data && error.response.data.message) {
-       alert(error.response.data.message);
-     } else {
-       alert("An error occurred while adding the Role.");
-     }
-   
-     
-     }
-   };
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        alert(error.response.data.message);
+      } else {
+        alert("An error occurred while adding the Sap.");
+      }
+    }
+  };
 
   const handleUpdate = async () => {
    const data = {
@@ -351,8 +331,8 @@ useEffect(() => {
       "Plant_Code",
       "SAP_LOGIN_ID",
       "Employee_ID",
-      "User_Name",
-      "Dept_Name",
+      "Name",
+      "Department",
       "ActiveStatus",
     ];
 
@@ -361,9 +341,10 @@ useEffect(() => {
 
       SAP_LOGIN_ID: item.SAP_LOGIN_ID,
       Employee_ID: item.Employee_ID,
-      User_Name: item.User_Name,
-      Dept_Name: item.Dept_Name,
+      Name: item.Employee_Name,
+      Department: item.Dept_Name,
       ActiveStatus: item.Active_Status ? "Active" : "Inactive",
+      Last_Punch:item.Last_Punch
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(filteredData, {
@@ -580,10 +561,10 @@ useEffect(() => {
               textDecorationThickness: "3px",
             }}
           >
-            Add Sap Acess
+            Add Sap Access
           </h3>
 
-           <FormControl fullWidth>
+          <FormControl fullWidth>
             <InputLabel>Plant Code</InputLabel>
             <Select
               label="Plant Code"
@@ -593,7 +574,9 @@ useEffect(() => {
               required
             >
               {PlantTable.map((item, index) => (
-                <MenuItem key={index} value={item.Plant_Id}>{item.Plant_Code}</MenuItem>
+                <MenuItem key={index} value={item.Plant_Id}>
+                  {item.Plant_Code}
+                </MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -606,9 +589,6 @@ useEffect(() => {
             required
           />
 
-         
-
-        
           <Box
             sx={{
               gridColumn: "span 2",
@@ -618,13 +598,14 @@ useEffect(() => {
               marginTop: "15px",
             }}
           >
-            <Button
-              variant="contained"
-              color="error"
-              onClick={() => handleCloseAddModal(false)}
-            >
-              Cancel
-            </Button>
+           <Button
+  variant="contained"
+  color="error"
+  onClick={handleCloseAddModal}
+>
+  Cancel
+</Button>
+
             <Button
               style={{ width: "90px" }}
               variant="contained"
@@ -683,87 +664,79 @@ useEffect(() => {
         />
 
         {/* Category Radio Buttons */}
-        <Box
-          sx={{
-            gridColumn: "span 2",
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-          }}
-        >
-          <FormLabel component="legend" sx={{ whiteSpace: "nowrap" }}>
-            Category
-          </FormLabel>
-          <RadioGroup
-            row
-            value={Category}
-             onChange={(e) => {
-  const selected = e.target.value;
-  setCategory(selected);
-
-  // Reset employee info
-  setEmployeeID("");
-  setUserName("");
-  setDeptName("");
-  setActiveStatus("");
-}}
-
+       <Box
+  sx={{
+    gridColumn: "span 2",
+    display: "flex",
+    alignItems: "center",
+    gap: 2,
+  }}
 >
-            
-            <FormControlLabel
-              value="executive"
-              control={<Radio />}
-              label="Executive"
-            />
-            <FormControlLabel
-              value="temporary"
-              control={<Radio />}
-              label="Temporary"
-            />
-          </RadioGroup>
-        </Box>
+  <FormLabel component="legend" sx={{ whiteSpace: "nowrap" }}>
+    Category
+  </FormLabel>
+  <RadioGroup
+    row
+    value={Category}
+    onChange={(e) => {
+      const selected = e.target.value;
+      setCategory(selected);
 
-        {/* Employee Select */}
-        <FormControl
-          fullWidth
-          // sx={{ mt: 2, gridColumn: "span 2" }}
-          disabled={!Category}
-        >
-          <InputLabel id="employee-select-label">Employee</InputLabel>
-        <Select
-  labelId="employee-select-label"
-  value={EmployeeID}
-  label="Employee"
- onChange={(e) => {
-  const selectedId = e.target.value;
-  setEmployeeID(selectedId);
+      // Reset employee info
+      setEmployeeID("");
+      setUserName("");
+      setDeptName("");
+      setActiveStatus("");
+    }}
+  >
+    <FormControlLabel
+      value="executive"
+      control={<Radio />}
+      label="Executive"
+    />
+    <FormControlLabel
+      value="temporary"
+      control={<Radio />}
+      label="Temporary"
+    />
+  </RadioGroup>
+</Box>
 
-  const selectedEmployee = filteredEmployees.find(
-    (emp) => emp.empl_slno === Number(selectedId) // careful about type here
-  );
-  if (selectedEmployee) {
-    setUserName(selectedEmployee.Emp_Name);
-    setDeptName(selectedEmployee.dept_name);
-    setActiveStatus(selectedEmployee.Active_Status);
-  }
-}}
+{/* Employee Select */}
+<FormControl fullWidth disabled={!Category}>
+  <InputLabel id="employee-select-label">Employee</InputLabel>
+  <Select
+    labelId="employee-select-label"
+    value={EmployeeID || ""}
+    label="Employee"
+    onChange={(e) => {
+      const selectedId = e.target.value;
+      setEmployeeID(selectedId);
 
+      const selectedEmployee = filteredEmployees.find(
+        (emp) => emp.employee_id === selectedId
+      );
 
->
-  <MenuItem value="">Select Employee</MenuItem>
-  {filteredEmployees.map((emp) => (
-    <MenuItem key={emp.empl_slno} value={emp.empl_slno}>
-      {emp.empl_slno}
-    </MenuItem>
-  ))}
-</Select>
+      if (selectedEmployee) {
+        setUserName(selectedEmployee.Emp_Name);
+        setDeptName(selectedEmployee.dept_name);
+        setActiveStatus(selectedEmployee.Active_Status);
+      }
+    }}
+  >
+    <MenuItem value="">Select Employee</MenuItem>
+    {filteredEmployees.map((emp) => (
+      <MenuItem key={emp.employee_id} value={emp.employee_id}>
+        {emp.employee_id}
+      </MenuItem>
+    ))}
+  </Select>
+  {!Category && (
+    <FormHelperText>Please select a category first</FormHelperText>
+  )}
+</FormControl>
 
-          {!Category && (
-            <FormHelperText>Please select a category first</FormHelperText>
-          )}
-        </FormControl>
-
-       <TextField
+<TextField
   label="User Name"
   variant="outlined"
   fullWidth
@@ -772,23 +745,24 @@ useEffect(() => {
   InputLabelProps={{ shrink: true }}
 />
 
-        <TextField
-          label="Department"
-          variant="outlined"
-          fullWidth
-          value={DeptName}
-         InputProps={{ readOnly: true }}
+<TextField
+  label="Department"
+  variant="outlined"
+  fullWidth
+  value={DeptName}
+  InputProps={{ readOnly: true }}
   InputLabelProps={{ shrink: true }}
-        />
+/>
 
-        <TextField
-          label="Active Status"
-          variant="outlined"
-          fullWidth
-          value={ActiveStatus}
-         InputProps={{ readOnly: true }}
+<TextField
+  label="Active Status"
+  variant="outlined"
+  fullWidth
+  value={ActiveStatus}
+  InputProps={{ readOnly: true }}
   InputLabelProps={{ shrink: true }}
-        />
+/>
+
 
         <Box
           sx={{
