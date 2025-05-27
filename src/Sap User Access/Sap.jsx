@@ -13,7 +13,7 @@ import {
   Radio,
   RadioGroup,
   FormHelperText,
-  FormLabel
+  FormLabel,ListSubheader
 } from "@mui/material";
 import {
   DataGrid,
@@ -50,8 +50,9 @@ const Sap = () => {
   const [categoryOptions, setcategoryOptions] = useState([]);
   const [UserID, setUserID] = useState("");
   const [Last_Punch, setLast_Punch] = useState("");
- const [getCategory, setGetCategory] = useState([]);
-const [employeeName, setEmployeeName] = useState('');
+const [searchTerm, setSearchTerm] = useState("");
+const [selectOpen, setSelectOpen] = useState(false); 
+  
 
 const [filteredEmployees, setFilteredEmployees] = useState([]); // Based on category
  
@@ -65,7 +66,9 @@ const [EmployeeID, setEmployeeID] = useState('');
 const [UserName, setUserName] = useState('');
 const [DeptName, setDeptName] = useState('');
 const [ActiveStatus, setActiveStatus] = useState('');
-
+const filtered = filteredEmployees.filter((emp) =>
+    emp.employee_id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   const columns = [
     { field: "Plant_Code", headerName: "Plant", flex: 1 },
 
@@ -211,7 +214,8 @@ useEffect(() => {
     setEmployeeID(params.row.Employee_ID);
     setUserName(params.row.Employee_Name);
     setDeptName(params.row.Dept_Name);
-    setActiveStatus(params.row.Active_Status);
+   const statusLabel = params.row.Active_Status === true ? "Active" : "Inactive";
+  setActiveStatus(statusLabel);
     setCategory(params.row.Category); // This ensures category is set
 
     setOpenEditModal(true); // Open the modal
@@ -288,7 +292,7 @@ useEffect(() => {
   SAP_LOGIN_ID,
   Category,         // ✅ Add this
   UserID,
-  Active_Status: ActiveStatus,
+  Active_Status: ActiveStatus === "Active" ? 1 : 0, 
 };
 
     console.log("Data being sent:", data); // Log data to verify it before sending
@@ -705,36 +709,79 @@ useEffect(() => {
 {/* Employee Select */}
 <FormControl fullWidth disabled={!Category}>
   <InputLabel id="employee-select-label">Employee</InputLabel>
-  <Select
-    labelId="employee-select-label"
-    value={EmployeeID || ""}
-    label="Employee"
-    onChange={(e) => {
-      const selectedId = e.target.value;
-      setEmployeeID(selectedId);
+ <Select
+  labelId="employee-select-label"
+  value={EmployeeID}
+  label="Employee"
+  open={selectOpen}
+  onOpen={() => setSelectOpen(true)}
+  onClose={() => {
+    setSelectOpen(false);
+    setSearchTerm(""); // ✅ Reset search when dropdown closes
+  }}
+  onChange={(e) => {
+    const selectedId = e.target.value;
+    setEmployeeID(selectedId);
 
-      const selectedEmployee = filteredEmployees.find(
-        (emp) => emp.employee_id === selectedId
-      );
+    const selectedEmployee = filteredEmployees.find(
+      (emp) => emp.employee_id === selectedId
+    );
 
-      if (selectedEmployee) {
-        setUserName(selectedEmployee.Emp_Name);
-        setDeptName(selectedEmployee.dept_name);
-        setActiveStatus(selectedEmployee.Active_Status);
-      }
-    }}
-  >
-    <MenuItem value="">Select Employee</MenuItem>
-    {filteredEmployees.map((emp) => (
-      <MenuItem key={emp.employee_id} value={emp.employee_id}>
-        {emp.employee_id}
+    if (selectedEmployee) {
+      setUserName(selectedEmployee.Emp_Name);
+      setDeptName(selectedEmployee.dept_name);
+      setActiveStatus(selectedEmployee.Active_Status === 1 ? "Active" : "Inactive");
+    }
+
+    // Optionally clear search here too:
+    setSearchTerm("");
+    setSelectOpen(false); // Close dropdown after selection
+  }}
+  MenuProps={{
+    PaperProps: {
+      style: { maxHeight: 600 },
+      onMouseDown: (event) => {
+        if (event.target.closest("input")) {
+          event.stopPropagation();
+        }
+      },
+    },
+  }}
+>
+  <ListSubheader disableSticky>
+    <TextField
+      size="small"
+      placeholder="Search Employee ID"
+      fullWidth
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+      inputProps={{
+        style: { padding: "6px 8px", fontSize: 14 },
+      }}
+    />
+  </ListSubheader>
+
+  <MenuItem value="">Select Employee</MenuItem>
+
+  {filteredEmployees
+    .filter((emp) =>
+      emp.employee_id.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .map((emp) => (
+      <MenuItem dense key={emp.employee_id} value={emp.employee_id}>
+        {emp.employee_id} - {emp.Emp_Name}
       </MenuItem>
     ))}
-  </Select>
+</Select>
+
+
   {!Category && (
     <FormHelperText>Please select a category first</FormHelperText>
   )}
 </FormControl>
+
 
 <TextField
   label="User Name"
