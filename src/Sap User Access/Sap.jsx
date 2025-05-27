@@ -27,8 +27,7 @@ import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
 
-import { deepOrange } from "@mui/material/colors";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+
 import {
   getAdd,
   getUpdates,
@@ -36,7 +35,7 @@ import {
   getPlants,
   getcategory,
 } from "../controller/SapMasterapiservice";
-import { api } from "../controller/constants";
+
 import { decryptSessionData } from "../controller/StorageUtils";
 import { Label } from "@mui/icons-material";
 const Sap = () => {
@@ -47,7 +46,7 @@ const Sap = () => {
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [Category, setCategory] = useState("");
-  const [categoryOptions, setcategoryOptions] = useState([]);
+   const [role, setRole] = useState('');
   const [UserID, setUserID] = useState("");
   const [Last_Punch, setLast_Punch] = useState("");
 const [searchTerm, setSearchTerm] = useState("");
@@ -66,9 +65,9 @@ const [EmployeeID, setEmployeeID] = useState('');
 const [UserName, setUserName] = useState('');
 const [DeptName, setDeptName] = useState('');
 const [ActiveStatus, setActiveStatus] = useState('');
-const filtered = filteredEmployees.filter((emp) =>
-    emp.employee_id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+// const filtered = filteredEmployees.filter((emp) =>
+//     emp.employee_id.toLowerCase().includes(searchTerm.toLowerCase())
+//   );
   const columns = [
     { field: "Plant_Code", headerName: "Plant", flex: 1 },
 
@@ -91,10 +90,7 @@ const filtered = filteredEmployees.filter((emp) =>
     return <span style={{ color, fontWeight: "bold" }}>{label}</span>;
   },
 },
-
-
-   
-    { field: "Last_Punch", headerName: "Last Punch", flex: 1 },
+{ field: "Last_Punch", headerName: "Last Punch", flex: 1 },
   ];
 
   // ✅ Custom Toolbar
@@ -186,13 +182,19 @@ useEffect(() => {
     if (encryptedData) {
       const decryptedData = decryptSessionData(encryptedData);
       setUserID(decryptedData.UserID);
+       setRole(decryptedData.RoleId);
+      console.log("sap roleid", decryptedData.RoleId)
       console.log("Sap userid", decryptedData.UserID);
     }
   }, []);
+  const isCorp = role === 7 || role === 9;
+const isPlantMRPC = role === 4;
 
   useEffect(() => {
     getData();
   }, []);
+
+
 
   // ✅ Handle Add Modal
   const handleOpenAddModal = (item) => {
@@ -478,6 +480,7 @@ useEffect(() => {
           {/* Add Button */}
           <IconButton
             onClick={handleOpenAddModal}
+            disabled={!isCorp}
             style={{
               borderRadius: "50%",
               backgroundColor: "#0066FF",
@@ -539,7 +542,7 @@ useEffect(() => {
           }}
         />
       </div>
-
+{isCorp && (
       <Modal open={openAddModal} onClose={() => setOpenAddModal(false)}>
         <Box
           sx={{
@@ -621,8 +624,9 @@ useEffect(() => {
           </Box>
         </Box>
       </Modal>
-
+)}
       {/* ✅ Edit Modal */}
+      {(isCorp || isPlantMRPC) && (
      <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
       <Box
         sx={{
@@ -652,20 +656,21 @@ useEffect(() => {
         </h3>
 
         <TextField
-          label="Plant Code"
-          name="Plant_Code"
-          value={Plant_Code}
-          onChange={(e) => setPlantCode(e.target.value)}
-          InputProps={{ readOnly: true }}
-        />
+  label="Plant Code"
+  name="Plant_Code"
+  value={Plant_Code}
+  onChange={(e) => setPlantCode(e.target.value)}
+  InputProps={{ readOnly: !isCorp }}
+/>
 
-        <TextField
-          label="SAP_LOGIN_ID"
-          name="SAP_LOGIN_ID"
-          value={SAP_LOGIN_ID}
-          onChange={(e) => setSAPLOGINID(e.target.value)}
-          InputProps={{ readOnly: true }}
-        />
+<TextField
+  label="SAP_LOGIN_ID"
+  name="SAP_LOGIN_ID"
+  value={SAP_LOGIN_ID}
+  onChange={(e) => setSAPLOGINID(e.target.value)}
+  InputProps={{ readOnly: !isCorp }}
+/>
+
 
         {/* Category Radio Buttons */}
        <Box
@@ -829,6 +834,7 @@ useEffect(() => {
         </Box>
       </Box>
     </Modal>
+     )}
     </div>
   );
 };
