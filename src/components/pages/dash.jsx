@@ -23,7 +23,10 @@ const Dashboard = () => {
         navigate("/home/phy"); // Navigate on button click
       };
       const handleClickStock = () => {
-        navigate("/home/Stock"); // Navigate on button click
+        navigate("/home/Stock201"); // Navigate on button click
+      };
+       const handleClickStock1 = () => {
+        navigate("/home/Stock202"); // Navigate on button click
       };
       const handleClickScrapDisposal = () => {
         navigate("/home/scrap disposal"); // Navigate on button click
@@ -162,7 +165,53 @@ const Dashboard = () => {
       textAlign: "center",
     }}
   >
-    Stock Posting - 201/202 Movement
+    Stock Posting - 201 Movement
+  </div>
+</div>
+{/* Button 2 - Stock Posting */}
+<div
+  style={{
+    width: "180px",
+    height: "120px",
+    borderRadius: "12px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    cursor: "pointer",
+    backgroundColor: "#F5EEE6",
+    boxShadow: "0 8px 16px #2B7A78"
+  }}
+>
+  <div
+    style={{
+      width: "100%",
+      height: "70%",
+      borderTopLeftRadius: "12px",
+      borderTopRightRadius: "12px",
+      backgroundColor: "rgb(219, 223, 190)",
+    }}
+    onClick={handleClickStock1}
+  >
+    <AiOutlineStock style={{ height: "80px", width: "180px" }}/>
+  </div>
+  <div
+    style={{
+      width: "100%",
+      height: "40%",
+      backgroundColor: "#FFFFFF",
+      borderBottomLeftRadius: "12px",
+      borderBottomRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      fontSize: "12px",
+      fontWeight: "bold",
+      color: "#2e59d9",
+      textAlign: "center",
+    }}
+  >
+    Stock Posting - 202 Movement
   </div>
 </div>
 {/* Button 3 - Scrap Disposal */}

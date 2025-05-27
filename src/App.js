@@ -23,7 +23,8 @@ import Report2 from "./Report/Report 2";
 import Emergency from "./Dashboard/Emergency";
 import Rs from "./Dashboard/Rs";
 import RGP from "./Dashboard/RGP";
-import Stock from "./Dashboard/stock201";
+import Stock201 from "./Dashboard/stock201";
+import Stock202 from "./Dashboard/stock202";
 import Partno from "./Dashboard/Partno";
 import ScrapDisposal from "./Dashboard/scrap disposal";
 import Manual from "./Dashboard/Manual";
@@ -34,7 +35,8 @@ import Inward from "./Dashboard/Inward";
 import Location from "./Dashboard/Location";
 import UserMaster from "./Masters/UserMaster";
 import Approval309 from "./Approval/309_Approval";
-import Approval201202 from "./Approval/201_202_Approval";
+import Approval201 from "./Approval/201_Approval";
+import Approval202 from "./Approval/202_Approval";
 import Role from "./Masters/Role";
 import Admin from "./Masters/Admin";
 import SubMenu from "./Masters/Submenu";
@@ -66,7 +68,8 @@ const App = () => {
             <Route path="MVT_LIST_ITEM" element={<ProtectedRoute screenId={12}><MVT_LIST_ITEM /></ProtectedRoute>} />
             <Route path="CostCenter" element={<ProtectedRoute screenId={13}><CostCenter /></ProtectedRoute>} />
             <Route path="Approval_309" element={<ProtectedRoute screenId={14}><Approval309 /></ProtectedRoute>} />
-            <Route path="Approval_201_202" element={<ProtectedRoute screenId={19}><Approval201202 /></ProtectedRoute>} />
+            <Route path="Approval_201" element={<ProtectedRoute screenId={19}><Approval201 /></ProtectedRoute>} />
+            <Route path="Approval_202" element={<ProtectedRoute screenId={19}><Approval202 /></ProtectedRoute>} />
             <Route path="dashboard" element={<ProtectedRoute screenId={15}><DashBoard /></ProtectedRoute>} />
             <Route path="Report1" element={<ProtectedRoute screenId={16}><Report1 /></ProtectedRoute>} />
             <Route path="Report2" element={<ProtectedRoute screenId={17}><Report2 /></ProtectedRoute>} />
@@ -74,7 +77,8 @@ const App = () => {
             <Route path="Emergency" element={<ProtectedRoute><Emergency /></ProtectedRoute>} />
             <Route path="Rs" element={<ProtectedRoute><Rs /></ProtectedRoute>} />
             <Route path="RGP" element={<ProtectedRoute><RGP /></ProtectedRoute>} />
-            <Route path="Stock" element={<ProtectedRoute><Stock /></ProtectedRoute>} />
+            <Route path="Stock201" element={<ProtectedRoute><Stock201 /></ProtectedRoute>} />
+            <Route path="Stock202" element={<ProtectedRoute><Stock202 /></ProtectedRoute>} />
             <Route path="Partno" element={<ProtectedRoute><Partno /></ProtectedRoute>} />
             <Route path="scrap Disposal" element={<ProtectedRoute><ScrapDisposal /></ProtectedRoute>} />
             <Route path="manual" element={<ProtectedRoute><Manual /></ProtectedRoute>} />

@@ -34,7 +34,7 @@ import { decryptSessionData } from "../controller/StorageUtils"
 
 
 
-const Approval201202 = () => {
+const Approval201 = () => {
   // State to control the visibility of the modal
   const [openViewModal, setOpenViewModal] = useState(false);
   const [PlantTable, setPlantTable] = useState([]);
@@ -855,4 +855,4 @@ const handleOpenViewStatusModal = async (rowData) => {
   );
 };
 
-export default Approval201202;
+export default Approval201;

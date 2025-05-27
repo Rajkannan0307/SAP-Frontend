@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link,useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -47,51 +47,51 @@ const Sidebar = ({ setSidebarOpen }) => {
     setOpen(!open);
     if (open) closeAllDropdowns();
   };
-  
-  const Permissions= usePermissions();
 
-  
-  
-// useEffect(() => {
-//   const encryptedData = sessionStorage.getItem('userData');
-//   if (encryptedData) {
-//     const decryptedData = decryptSessionData(encryptedData);
-  
-//     setEmployeeName(decryptedData.UserName);
-   
-   
-
-//   }
-// }, []);
-// useEffect(() => {
-//   const encryptedData = sessionStorage.getItem('userData');
-//       if (encryptedData) {
-//         const decryptedData = decryptSessionData(encryptedData);
-        
-//         setRole(decryptedData.Role);
-        
-//       }
-//       }, []);
+  const Permissions = usePermissions();
 
 
-    
+
+  // useEffect(() => {
+  //   const encryptedData = sessionStorage.getItem('userData');
+  //   if (encryptedData) {
+  //     const decryptedData = decryptSessionData(encryptedData);
+
+  //     setEmployeeName(decryptedData.UserName);
 
 
-useEffect(() => {
-  const encrypted = sessionStorage.getItem("userData");
-  if (encrypted) {
-    const decrypted = decryptSessionData(encrypted);
-    console.log("Decrypted User:", decrypted);
 
-    if (decrypted?.RoleId) {
-      setRole(decrypted.RoleId);
+  //   }
+  // }, []);
+  // useEffect(() => {
+  //   const encryptedData = sessionStorage.getItem('userData');
+  //       if (encryptedData) {
+  //         const decryptedData = decryptSessionData(encryptedData);
+
+  //         setRole(decryptedData.Role);
+
+  //       }
+  //       }, []);
+
+
+
+
+
+  useEffect(() => {
+    const encrypted = sessionStorage.getItem("userData");
+    if (encrypted) {
+      const decrypted = decryptSessionData(encrypted);
+      console.log("Decrypted User:", decrypted);
+
+      if (decrypted?.RoleId) {
+        setRole(decrypted.RoleId);
+      } else {
+        console.warn("RoleId is missing from decrypted user data");
+      }
     } else {
-      console.warn("RoleId is missing from decrypted user data");
+      console.warn("No EncryptedUserData in sessionStorage");
     }
-  } else {
-    console.warn("No EncryptedUserData in sessionStorage");
-  }
-}, []);
+  }, []);
 
 
   const toggleMasters = () => {
@@ -101,9 +101,9 @@ useEffect(() => {
     setReportOpen(false);
     setApprovalOpen(false);
   };
-   const toggleSAP = () => {
+  const toggleSAP = () => {
     setSapOpen(!SAP);
-     setMasterOpen(false);
+    setMasterOpen(false);
     setDashboardOpen(false);
     setReportOpen(false);
     setApprovalOpen(false);
@@ -114,7 +114,7 @@ useEffect(() => {
     setMasterOpen(false);
     setDashboardOpen(false);
     setReportOpen(false);
-     setSapOpen(false);
+    setSapOpen(false);
   };
 
   const toggleReport = () => {
@@ -164,21 +164,21 @@ useEffect(() => {
           cursor: "pointer",
         }}
       >
-     {open && (
-  <h3
-    style={{ margin: 0, color: "white", cursor: "pointer" }}
-    onClick={() => {
-      const roleId = parseInt(Role); // ✅ Convert Role to number
-      if (roleId === 1 || roleId === 9) {
-        navigate("/home/Home");
-      } else if ([2, 3, 4, 5, 6, 7, 8].includes(roleId)) {
-        navigate("/home/HomePage");
-      }
-    }}
-  >
-    HOME
-  </h3>
-)}
+        {open && (
+          <h3
+            style={{ margin: 0, color: "white", cursor: "pointer" }}
+            onClick={() => {
+              const roleId = parseInt(Role); // ✅ Convert Role to number
+              if (roleId === 1 || roleId === 9) {
+                navigate("/home/Home");
+              } else if ([2, 3, 4, 5, 6, 7, 8].includes(roleId)) {
+                navigate("/home/HomePage");
+              }
+            }}
+          >
+            HOME
+          </h3>
+        )}
 
 
         <button
@@ -198,35 +198,35 @@ useEffect(() => {
       {/* Sidebar Menu Items */}
       <div style={{ padding: "10px" }}>
         {/* Dashboard Section */}
-       
-       {Permissions.includes('dashboard') && (
-  <button
-   
-    onClick={() => {
-      closeAllDropdowns(); // Close other sections
-      navigate("/home/dashboard");
-    }}
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-      background: "none",
-      border: "none",
-      color: "white",
-      cursor: "pointer",
-      fontWeight: "bold",
-      fontSize: "18px",
-      margin: "10px 0", // Space above and below
-      marginBottom:"16px"
-    }}>
-    <FaExchangeAlt style={{ color: "turquoise", fontSize: "19px" }} />
-    {open && "Transaction"}
-  </button>
-)}
+
+        {Permissions.includes('dashboard') && (
+          <button
+
+            onClick={() => {
+              closeAllDropdowns(); // Close other sections
+              navigate("/home/dashboard");
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "none",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              fontWeight: "bold",
+              fontSize: "18px",
+              margin: "10px 0", // Space above and below
+              marginBottom: "16px"
+            }}>
+            <FaExchangeAlt style={{ color: "turquoise", fontSize: "19px" }} />
+            {open && "Transaction"}
+          </button>
+        )}
 
 
         {/* <div style={{ padding: "10px" }}> */}
-  {/* //Transaction (Direct Link)
+        {/* //Transaction (Direct Link)
   <SidebarSection
     open={open}
     isOpen={false} // No dropdown
@@ -244,33 +244,33 @@ useEffect(() => {
           open={open}
           isOpen={Masters}
           toggleSection={toggleMasters}
-          icon={<PiNuclearPlantFill style={{ color: "lightcoral" }}/>}
+          icon={<PiNuclearPlantFill style={{ color: "lightcoral" }} />}
           Permissions={Permissions}
           label="Masters"
           links={[
-            { name: "Company", path: "/home/company" ,icon:<BusinessIcon style={{ marginRight: "2px" ,color:"yellow",}}/>,code:'company',},
-            { name: "Business Division", path: "/home/BusinessDivision" ,icon:<MdBusinessCenter style={{ marginRight: "2px",fontSize:"22px" ,color:"ButtonFace",}}/>,code:'BusinessDivision'},
-            { name: "Plant", path: "/home/Plant" ,icon: <GiPlantsAndAnimals style={{ marginRight: "2px",fontSize:"22px",color: "hotpink"  }} /> ,code:'Plant' },
-            { name: "Department", path: "/home/Department",icon: <Diversity2Icon style={{ marginRight: "2px",fontSize:"22px",color: "bisque" }} />,code:'Department'  },
-            { name: "Login User", path: "/home/UserMaster" ,icon:< AccountCircleIcon style={{ marginRight: "2px", color:"aqua" }}/>,code:'UserMaster'},
-            { name: "Role", path: "/home/Role" ,icon:< MdOutlineAdminPanelSettings style={{ marginRight: "2px",width:"25px",fontSize:"24px" ,color:"goldenrod" ,}}/>,code:'Role' },
-            { name: "Material", path: "/home/Material" , icon:<AcUnitIcon style={{ marginRight: "2px", color:"greenyellow" ,code:'Material' }}/>,code:'Material'},
-            { name: "Vendor", path: "/home/Vendor" ,icon:<FcFactory style={{ marginRight: "2px",fontSize:"24px" ,width:"25px" ,code:'Vendor' }}/>,code:'Vendor'},
-            { name: "Customer", path: "/home/Customer",icon:<RiCustomerService2Fill style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"deepskyblue" }}/>,code:'Customer' },
-            { name: "Storage Location", path: "/home/StorageLocation" ,icon:<GrStorage style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"gold" }}/>,code:'StorageLocation'},
-            { name: "Movement Type", path: "/home/Movement_Type",icon:<DriveFileMoveIcon  style={{ marginRight: "2px",fontSize:"22px" ,width:"25px",color:"turquoise" }}/>,code:'Movement_Type'},
-            { name: "MVT List Item", path: "/home/MVT_LIST_ITEM",icon:<FaTableList style={{ marginRight: "2px",fontSize:"20px" ,width:"25px",color:"crimson" }}/>,code:'MVT_LIST_ITEM' },
-            { name: "Cost Center", path: "/home/CostCenter",icon:<FaDollarSign style={{ marginRight: "2px",fontSize:"22px" ,width:"25px",color:"darkorange" }}/>,code:'CostCenter'},
+            { name: "Company", path: "/home/company", icon: <BusinessIcon style={{ marginRight: "2px", color: "yellow", }} />, code: 'company', },
+            { name: "Business Division", path: "/home/BusinessDivision", icon: <MdBusinessCenter style={{ marginRight: "2px", fontSize: "22px", color: "ButtonFace", }} />, code: 'BusinessDivision' },
+            { name: "Plant", path: "/home/Plant", icon: <GiPlantsAndAnimals style={{ marginRight: "2px", fontSize: "22px", color: "hotpink" }} />, code: 'Plant' },
+            { name: "Department", path: "/home/Department", icon: <Diversity2Icon style={{ marginRight: "2px", fontSize: "22px", color: "bisque" }} />, code: 'Department' },
+            { name: "Login User", path: "/home/UserMaster", icon: < AccountCircleIcon style={{ marginRight: "2px", color: "aqua" }} />, code: 'UserMaster' },
+            { name: "Role", path: "/home/Role", icon: < MdOutlineAdminPanelSettings style={{ marginRight: "2px", width: "25px", fontSize: "24px", color: "goldenrod", }} />, code: 'Role' },
+            { name: "Material", path: "/home/Material", icon: <AcUnitIcon style={{ marginRight: "2px", color: "greenyellow", code: 'Material' }} />, code: 'Material' },
+            { name: "Vendor", path: "/home/Vendor", icon: <FcFactory style={{ marginRight: "2px", fontSize: "24px", width: "25px", code: 'Vendor' }} />, code: 'Vendor' },
+            { name: "Customer", path: "/home/Customer", icon: <RiCustomerService2Fill style={{ marginRight: "2px", fontSize: "20px", width: "25px", color: "deepskyblue" }} />, code: 'Customer' },
+            { name: "Storage Location", path: "/home/StorageLocation", icon: <GrStorage style={{ marginRight: "2px", fontSize: "20px", width: "25px", color: "gold" }} />, code: 'StorageLocation' },
+            { name: "Movement Type", path: "/home/Movement_Type", icon: <DriveFileMoveIcon style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "turquoise" }} />, code: 'Movement_Type' },
+            { name: "MVT List Item", path: "/home/MVT_LIST_ITEM", icon: <FaTableList style={{ marginRight: "2px", fontSize: "20px", width: "25px", color: "crimson" }} />, code: 'MVT_LIST_ITEM' },
+            { name: "Cost Center", path: "/home/CostCenter", icon: <FaDollarSign style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkorange" }} />, code: 'CostCenter' },
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
             'UserMaster', 'Role', 'Material', 'Vendor',
-            'Customer', 'StorageLocation', 'Movement_Type','MVT_LIST_ITEM','CostCenter'
+            'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter'
           ]}
         />
 
 
-  
+
         {/* Approval Section */}
         <SidebarSection
           open={open}
@@ -280,12 +280,13 @@ useEffect(() => {
           Permissions={Permissions}
           label="Approval"
           links={[
-            { name: "309 Approval", path: "/home/Approval_309" ,icon:<MdOutlineApproval  style={{ fontSize: "20px",marginRight: "3px" , color:"rgb(233, 127, 228)"}}/>,code:'Approval_309'},
-            { name: "201/202 Approval", path: "/home/Approval_201_202" ,icon:<BsFillSignpostFill  style={{ fontSize: "20px",marginRight: "3px" , color:"rgb(52, 188, 252)"}}/>,code:'Approval_201_202'},
- 
+            { name: "309 Approval", path: "/home/Approval_309", icon: <MdOutlineApproval style={{ fontSize: "20px", marginRight: "3px", color: "rgb(233, 127, 228)" }} />, code: 'Approval_309' },
+            { name: "201 Approval", path: "/home/Approval_201", icon: <BsFillSignpostFill style={{ fontSize: "20px", marginRight: "3px", color: "rgb(52, 188, 252)" }} />, code: 'Approval_201' },
+            { name: "202 Approval", path: "/home/Approval_202", icon: <BsFillSignpostFill style={{ fontSize: "20px", marginRight: "3px", color: "rgb(52, 188, 252)" }} />, code: 'Approval_202' },
+
           ]}
           codeList={[
-            'Approval_309','Approval_201_202'
+            'Approval_309', 'Approval_201','Approval_202'
           ]}
         />
 
@@ -301,44 +302,44 @@ useEffect(() => {
             {
               name: "Report 1",
               path: "/home/Report1",
-              icon: <ReportIcon style={{ marginRight: "8px", color: "#ffcc00" }}/>,
-              code:'Report1'
+              icon: <ReportIcon style={{ marginRight: "8px", color: "#ffcc00" }} />,
+              code: 'Report1'
             },
             {
               name: "Report 2",
               path: "/home/Report2",
               icon: <ReportIcon style={{ marginRight: "8px", color: "#ffcc00" }} />,
-              code:'Report2'
+              code: 'Report2'
             },
           ]}
           codeList={[
-            'Report1','Report2'
+            'Report1', 'Report2'
           ]}
         />
         {Permissions.includes('sap') && (
-  <button
-   
-    onClick={() => {
-      closeAllDropdowns(); // Close other sections
-      navigate("/home/SAP");
-    }}
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-      background: "none",
-      border: "none",
-      color: "white",
-      cursor: "pointer",
-      fontWeight: "bold",
-      fontSize: "18px",
-      margin: "10px 0", // Space above and below
-      marginBottom:"16px"
-    }}>
-    <SiSap style={{ color: "turquoise", fontSize: "35px" }} />
-    {open && "SAP LOGIN"}
-  </button>
-)}
+          <button
+
+            onClick={() => {
+              closeAllDropdowns(); // Close other sections
+              navigate("/home/SAP");
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "none",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              fontWeight: "bold",
+              fontSize: "18px",
+              margin: "10px 0", // Space above and below
+              marginBottom: "16px"
+            }}>
+            <SiSap style={{ color: "turquoise", fontSize: "35px" }} />
+            {open && "SAP LOGIN"}
+          </button>
+        )}
       </div>
     </div>
   );

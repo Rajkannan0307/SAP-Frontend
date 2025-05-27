@@ -37,7 +37,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from 'sheetjs-style';
-import{ Movement201,getdetails} from "../controller/Movement201apiservice";
+import{ Movement202,getdetails} from "../controller/Movement202apiservice";
 import {  getresubmit, getCancel, setOpenEditModal, getPlants, getMaterial, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
 
 
@@ -45,7 +45,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { IoMdDownload } from "react-icons/io";
 
 import { api } from "../controller/constants";
-const Stock201 = () => {
+const Stock202 = () => {
 
    const [searchText, setSearchText] = useState("");
     const [rows, setRows] = useState([]); // ✅ Initial empty rows
@@ -126,6 +126,7 @@ const [openEditModal, setOpenEditModal] = useState(false);
     setUploadedFile(event.target.files[0]);
   };
 
+
   const handleUploadData = async () => {
     if (!uploadedFile) {
       alert("Please select a file first.");
@@ -138,7 +139,7 @@ const [openEditModal, setOpenEditModal] = useState(false);
         console.log('file', uploadedFile)
         formData.append("User_Add", uploadedFile);
         formData.append("UserID", UserID);
-        const response = await Movement201(formData)
+        const response = await Movement202(formData)
         console.log('response', response.data)
         alert(response.data.message)
         if (response.data.NewRecord.length > 0 || response.data.DuplicateRecords.length > 0 || response.data.ErrorRecords.length > 0) {
@@ -154,173 +155,9 @@ const [openEditModal, setOpenEditModal] = useState(false);
     handleCloseUploadModal();
   }
 
-
-
-
-  const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
-    const wb = XLSX.utils.book_new();
-
-    // Column headers for Error Records
-    const ErrorColumns = ['Doc_ID', 'Plant_ID', 'Material_ID', 'Quantity', 'SLoc_ID', 'CostCenter_ID', 
-      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 'User_ID', 
-      'Approval_Status', 'SAP_Transaction_Status', 
-    ];
-
-    // Column headers for New Records (based on your columns array)
-    const newRecordsColumns = ['Doc_ID', 'Plant_ID', 'Material_ID', 'Quantity', 'SLoc_ID', 'CostCenter_ID', 
-      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 'User_ID', 
-      'Approval_Status', 'SAP_Transaction_Status',  ];
-
-
-    // Column headers for Duplicate Records
-    const DuplicateColumns = ['Doc_ID', 'Plant_ID', 'Material_ID', 'Quantity', 'SLoc_ID', 'CostCenter_ID', 
-      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 'User_ID', 
-      'Approval_Status', 'SAP_Transaction_Status', 
-    ];
-
-
-    // Filter and map the data for Error Records
-    const filteredError = errRecord.map(item => ({
-          Doc_ID: selectedRow.Doc_ID || '',
-      Plant_ID: selectedRow.Plant_ID || '',
-      Material_ID: selectedRow.Material_ID || '',
-      Quantity: selectedRow.Quantity || '',
-      SLoc_ID: selectedRow.SLoc_ID || '',
-      CostCenter_ID: selectedRow.CostCenter_ID || '',
-      Movement_ID: selectedRow.Movement_ID || '',
-      Valuation_Type: selectedRow.Valuation_Type || '',
-      Batch: selectedRow.Batch || '',
-      Rate_Unit: selectedRow.Rate_Unit || '',
-      Remark: selectedRow.Remark || '',
-      User_ID: selectedRow.User_ID || '',
-      Approval_Status: selectedRow.Approval_Status || '',
-      SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
-
-      Plant_Code_Validation: item.Plant_Val,
-      Material_Code_Validation: item.Material_Val,
-      SLoc_Code_Validation: item.SLoc_Val,
-      CostCenter_Code_Validation: item.CostCenter_Val,
-
-    }));
-    // Filter and map the data for New Records
-    const filteredNewData = newRecord.map(item => ({
-        Doc_ID: selectedRow.Doc_ID || '',
-      Plant_ID: selectedRow.Plant_ID || '',
-      Material_ID: selectedRow.Material_ID || '',
-      Quantity: selectedRow.Quantity || '',
-      SLoc_ID: selectedRow.SLoc_ID || '',
-      CostCenter_ID: selectedRow.CostCenter_ID || '',
-      Movement_ID: selectedRow.Movement_ID || '',
-      Valuation_Type: selectedRow.Valuation_Type || '',
-      Batch: selectedRow.Batch || '',
-      Rate_Unit: selectedRow.Rate_Unit || '',
-      Remark: selectedRow.Remark || '',
-      User_ID: selectedRow.User_ID || '',
-      Approval_Status: selectedRow.Approval_Status || '',
-      SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
-
-    }));
-
-
-
-    // Filter and map the data for Duplicate Record
-    const filteredUpdate = DuplicateRecord.map(item => ({
-
-         Doc_ID: selectedRow.Doc_ID || '',
-      Plant_ID: selectedRow.Plant_ID || '',
-      Material_ID: selectedRow.Material_ID || '',
-      Quantity: selectedRow.Quantity || '',
-      SLoc_ID: selectedRow.SLoc_ID || '',
-      CostCenter_ID: selectedRow.CostCenter_ID || '',
-      Movement_ID: selectedRow.Movement_ID || '',
-      Valuation_Type: selectedRow.Valuation_Type || '',
-      Batch: selectedRow.Batch || '',
-      Rate_Unit: selectedRow.Rate_Unit || '',
-      Remark: selectedRow.Remark || '',
-      User_ID: selectedRow.User_ID || '',
-      Approval_Status: selectedRow.Approval_Status || '',
-      SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
-
-
-      Plant_Code_Duplicate: item.Plant_Code,
-      Material_Code_Duplicate: item.Material_Code,
-      CostCenter_Code_Duplicate: item.CostCenter_Code,
-      Duplicate: item.Qty,
-    }));
-
- 
-    // 🔹 Helper to style header cells
-    const styleHeaders = (worksheet, columns) => {
-      columns.forEach((_, index) => {
-        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-        if (worksheet[cellAddress]) {
-          worksheet[cellAddress].s = {
-            font: { bold: true, color: { rgb: '000000' } },
-            fill: { fgColor: { rgb: 'FFFF00' } }, // Yellow background
-            alignment: { horizontal: 'center' },
-          };
-        }
-      });
-    };
-
-
-    // 🔴 Style red text for validation columns only
-    const styleValidationColumns = (worksheet, columns, dataLength) => {
-      const validationCols = ['Plant_Val', 'Material_Val',
-        'SLoc_Val', 'CostCenter_Val',]
-
-      for (let row = 1; row <= dataLength; row++) {
-        validationCols.forEach(colName => {
-          const colIdx = columns.indexOf(colName);
-          if (colIdx === -1) return;
-
-          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-          const cell = worksheet[cellAddress];
-
-          if (cell && typeof cell.v === 'string') {
-            const value = cell.v.trim().toLowerCase();
-
-            // Apply green if value is "valid", otherwise red
-            cell.s = {
-              font: {
-                color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' } // green or red
-              }
-            };
-          }
-        });
-      }
-    };
-
-
-
-    // ✅ Style only specific duplicate columns in gray
-    const styleDuplicateRecords = (worksheet, columns, dataLength) => {
-      const duplicateCols = ['Plant_Code', 'Material_Code', 'SLoc_Code','Material_Code', 'CostCenter_Code']; // 👈 update with actual duplicate column names
-
-      for (let row = 1; row <= dataLength; row++) {
-        duplicateCols.forEach(colName => {
-          const colIdx = columns.indexOf(colName);
-          if (colIdx === -1) return; // skip if not found
-
-          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-          const cell = worksheet[cellAddress];
-
-          if (cell) {
-            cell.s = {
-              font: { color: { rgb: '808080' } }, // Gray text
-              // fill: { fgColor: { rgb: 'E0E0E0' } } // optional background
-            };
-          }
-        });
-      }
-    };
-
-
-  }
-
-  // const downloadExcel = () => {
-  //   // Logic to download Excel file
-  // };
+  const downloadExcel = () => {
+    // Logic to download Excel file
+  };
    // excel download
    const handleDownloadExcel = (selectedRow) => {
     if (!selectedRow) {
@@ -331,7 +168,7 @@ const [openEditModal, setOpenEditModal] = useState(false);
     // Define new data columns
     const DataColumns = [
       'Doc_ID', 'Plant_ID', 'Material_ID', 'Quantity', 'SLoc_ID', 'CostCenter_ID', 
-      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit',  'User_ID', 
+      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 'User_ID', 
       'Approval_Status', 'SAP_Transaction_Status', 'Created_By'
     ];
   
@@ -347,7 +184,7 @@ const [openEditModal, setOpenEditModal] = useState(false);
       Valuation_Type: selectedRow.Valuation_Type || '',
       Batch: selectedRow.Batch || '',
       Rate_Unit: selectedRow.Rate_Unit || '',
-     
+      Remark: selectedRow.Remark || '',
       User_ID: selectedRow.User_ID || '',
       Approval_Status: selectedRow.Approval_Status || '',
       SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
@@ -426,10 +263,10 @@ const [openEditModal, setOpenEditModal] = useState(false);
     });
   
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Trn201Movt_Doc_Row_Data");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Trn201201Movt_Doc_Row_Data");
 
     // Use Material_ID or Doc_ID for filename
-    XLSX.writeFile(workbook, `Trn201Movt_${selectedRow.Doc_ID || 'Row'}.xlsx`);
+    XLSX.writeFile(workbook, `Trn201201Movt_${selectedRow.Doc_ID || 'Row'}.xlsx`);
 
   };
   
@@ -708,7 +545,7 @@ const [openEditModal, setOpenEditModal] = useState(false);
           textDecorationThickness: '3px'
         }}
       >
-        201 Movement Transaction
+        202 Movement Transaction
       </h2>
     </div>
 
@@ -866,7 +703,7 @@ const [openEditModal, setOpenEditModal] = useState(false);
           >
             <a
               style={{ textDecoration: "none", color: "white" }}
-              href={`${api}/transaction/Template/Trn201Movt.xlsx`}
+              href={`${api}/transaction/Template/Trn202Movt.xlsx`}
             >
               {" "}
               <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
@@ -956,6 +793,10 @@ const [openEditModal, setOpenEditModal] = useState(false);
           </Box>
         </Box>
       </Modal>
+
+
+
+
 
 
       {/* ✅ Modal with Resubmit and Cancel */}
@@ -1161,4 +1002,4 @@ const [openEditModal, setOpenEditModal] = useState(false);
 }
 
 
-export default Stock201
+export default Stock202

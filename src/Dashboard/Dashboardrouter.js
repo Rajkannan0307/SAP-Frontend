@@ -10,7 +10,8 @@ import Location from './Location'
 import Manual from './Manual'
 import Partno from './Partno'
 import ScrapDisposal from './scrap disposal'
-import Stock from './stock201'
+import Stock201 from './stock201'
+import Stock202 from './stock202'
 import Scrap from './scrap551'
 import MaterialStatus from './MaterialStatus'
 import SubContracting from './SubContracting'
@@ -25,7 +26,8 @@ const Dashboardrouter =  {
       {path: 'Inward', element:<Inward/>},
       {path: 'Location', element:<Location/>},
       {path: 'Manual', element:<Manual/>},
-      {path: 'Stock', element:<Stock />},
+      {path: 'Stock201', element:<Stock201 />},
+      {path: 'Stock202', element:<Stock202 />},
       {path: 'Partno', element:<Partno/>},
       {path: 'scrap disposal', element:<ScrapDisposal/>},
       {path: 'scrap551', element:<Scrap/>},
