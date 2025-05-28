@@ -317,6 +317,33 @@ const [openEditModal, setOpenEditModal] = useState(false);
     };
 
 
+    
+        // Add New Records sheet even if empty data is available
+        if (filteredNewData.length === 0) filteredNewData.push({});
+        const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, { header: newRecordsColumns });
+        styleHeaders(wsNewRecords, newRecordsColumns);
+        XLSX.utils.book_append_sheet(wb, wsNewRecords, 'New Records');
+    
+    
+        // Add Error Records sheet  even if empty data is available
+        if (filteredError.length === 0) filteredError.push({});
+        const wsError = XLSX.utils.json_to_sheet(filteredError, { header: ErrorColumns });
+        styleHeaders(wsError, ErrorColumns);
+        styleValidationColumns(wsError, ErrorColumns, filteredError.length);
+        XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
+    
+        // Add     Duplicate Records sheet even if empty data is available
+        if (filteredUpdate.length === 0) filteredUpdate.push({});
+        const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, { header: DuplicateColumns });
+        styleDuplicateRecords(wsUpdated, DuplicateColumns, filteredUpdate.length);
+        XLSX.utils.book_append_sheet(wb, wsUpdated, 'DuplicateRecords');
+    
+
+          const fileName = 'Trn201Movt Data UploadLog.xlsx';
+            XLSX.writeFile(wb, fileName);
+        
+        
+
   }
 
   // const downloadExcel = () => {
@@ -380,7 +407,9 @@ const [openEditModal, setOpenEditModal] = useState(false);
     XLSX.writeFile(workbook, "Material_Data.xlsx");
   };
   
-  //View icon Download row data
+
+
+  //View  Download row data
   const handleDownloadExcelRowView = (selectedRow) => {
     if (!selectedRow) {
       alert("No row selected.");
