@@ -30,3 +30,9 @@ export const getTransactionData = async ()=>{
     const response = await axios.get(`${api}/Movement201/download_data`, );
     return response;
 };
+
+export const get201ApprovalView = async (docId) => {
+  const response = await axios.get(`${api}/Movement201/View201ApprovalStatus?Doc_ID=${docId}`);
+  
+  return response.data;
+};

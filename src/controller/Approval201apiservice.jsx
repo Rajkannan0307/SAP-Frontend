@@ -11,7 +11,7 @@ export const getdetails=async (Plant, role,Role)=>{
 export const getApprovalView = async (docId) => {
     
       // Send docId as a query parameter
-      const response = await axios.get(`${api}/Approval201202/get_ViewButton`, {
+      const response = await axios.get(`${api}/Approval201/get_ViewButton`, {
         params: { Doc_ID: docId } 
       });
   
@@ -23,13 +23,14 @@ export const getApprovalView = async (docId) => {
 
   export const getPlants = async ()=>{
 
-    const response = await axios.get(`${api}/Approval201202/Get_Plants`);
+    const response = await axios.get(`${api}/Approval201/Get_Plants`);
     return response;
 };
 
 
+
 export const getRole=async ()=>{
-    const response = await axios.get(`${api}/Approval201202/Get_Role`);
+    const response = await axios.get(`${api}/Approval201/Get_Role`);
     return response.data;
 };
 
@@ -38,7 +39,7 @@ export const getRole=async ()=>{
 export const HandleApprovalAction = async (data) => {
   try {
     // Send docId, action (approve/reject/query), and comment as request payload
-    const response = await axios.post(`${api}/Approval201202/HandleApprovalAction`, 
+    const response = await axios.post(`${api}/Approval201/HandleApprovalAction`, 
      data
     );
 
@@ -51,8 +52,8 @@ export const HandleApprovalAction = async (data) => {
 
 
 
-export const get309ApprovalView = async (docId) => {
-  const response = await axios.get(`${api}/Approval201202/View309ApprovalStatus?Doc_ID=${docId}`);
+export const get201ApprovalView = async (docId) => {
+  const response = await axios.get(`${api}/Approval201/View201ApprovalStatus?Doc_ID=${docId}`);
   
   return response.data;
 };
@@ -60,7 +61,7 @@ export const get309ApprovalView = async (docId) => {
 
 
 export const resubmitAction = async (docId) => {
-  const response = await axios.get(`${api}/Approval201202/View309ApprovalStatus?Doc_ID=${docId}`);
+  const response = await axios.get(`${api}/Approval201/HandleResubmitAction?Doc_ID=${docId}`);
   
   return response.data;
 };

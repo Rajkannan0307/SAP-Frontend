@@ -29,7 +29,7 @@ import axios from 'axios';
 
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { getdetails, getApprovalView, HandleApprovalAction, getPlants, getRole,get309ApprovalView } from '../controller/Approvalapiservice';
+import { getdetails, getApprovalView, HandleApprovalAction, getPlants, getRole,get201ApprovalView } from '../controller/Approval201apiservice';
 import { decryptSessionData } from "../controller/StorageUtils"
 
 
@@ -116,7 +116,7 @@ const [viewStatusData, setViewStatusData] = useState([]);
   const handleViewStatus = async (docId) => {
   console.log("Fetching approval status for Doc_ID:", docId);
   try {
-    const response = await get309ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
+    const response = await get201ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
     console.log("API Response:", response);
     setViewStatusData(response);  // Update your state with the fetched data
   } catch (error) {

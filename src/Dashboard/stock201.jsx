@@ -37,7 +37,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from 'sheetjs-style';
-import{ Movement201,getdetails} from "../controller/Movement201apiservice";
+import{ Movement201,getdetails,get201ApprovalView} from "../controller/Movement201apiservice";
 import {  getresubmit, getCancel, setOpenEditModal, getPlants, getMaterial, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
 
 
@@ -144,13 +144,14 @@ const [openEditModal, setOpenEditModal] = useState(false);
         if (response.data.NewRecord.length > 0 || response.data.DuplicateRecords.length > 0 || response.data.ErrorRecords.length > 0) {
           downloadExcel(response.data.NewRecord, response.data.DuplicateRecords, response.data.ErrorRecords);
         }
-        getData();
+       
       } catch (error) {
         if (error.response && error.response.status === 400) {
           alert(error.response.data.message)
         }
       }
     }
+     getData();
     handleCloseUploadModal();
   }
 
@@ -460,7 +461,7 @@ const [openEditModal, setOpenEditModal] = useState(false);
     { field: "Date", headerName: "Date", flex: 1 },
     { field: "Material_Code", headerName: "Material Code", flex: 1 },
     { field: "Qty", headerName: "Qty", flex: 1 },
-    { field: "Movement_Type", headerName: "Movement Type ", flex: 1 },
+    { field: "Movement_Code", headerName: "Movement Type", flex: 1 },
     { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
     
     // {
@@ -661,11 +662,19 @@ const [openEditModal, setOpenEditModal] = useState(false);
   };
 
   
-  const handleViewStatus = (row) => {
-  console.log("View Status clicked for row:", row);
-  setSelectedRow(row);
-  setOpenViewStatusModal(true);
-};
+  //[View_Stock201Approval_Status]
+  const handleViewStatus = async (docId) => {
+    console.log("Fetching approval status for Doc_ID:", docId);
+    try {
+      const response = await get201ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
+      console.log("API Response:", response);
+      setViewStatusData(response);  // Update your state with the fetched data
+    } catch (error) {
+      console.error("❌ Error fetching grouped records:", error);
+      setViewStatusData([]);  // Handle errors and reset data
+    }
+  };
+;
 
   
     // ✅ Custom Toolbar

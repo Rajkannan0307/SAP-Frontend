@@ -110,6 +110,8 @@ const Partno = () => {
   const [NetDifferentPrice, setNetDifferentPrice] = useState("");
   const [ApprovalStatus, setApprovalStatus] = useState([]);
 
+
+  //[View_PartnoApproval_Status]
   const handleViewStatus = async (docId) => {
     console.log("Fetching approval status for Doc_ID:", docId);
     try {
