@@ -37,8 +37,8 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from 'sheetjs-style';
-import{ Movement202,getdetails} from "../controller/Movement202apiservice";
-import {  getresubmit, getCancel, setOpenEditModal, getPlants, getMaterial, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
+import{ Movement202,getdetails,get202ApprovalView} from "../controller/Movement202apiservice";
+import {  getresubmit, getCancel, setOpenEditModal, getPlants, getMaterial, getView, getExcelDownload,  } from '../controller/Movement202apiservice';
 
 
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -126,7 +126,6 @@ const [openEditModal, setOpenEditModal] = useState(false);
     setUploadedFile(event.target.files[0]);
   };
 
-
   const handleUploadData = async () => {
     if (!uploadedFile) {
       alert("Please select a file first.");
@@ -145,19 +144,184 @@ const [openEditModal, setOpenEditModal] = useState(false);
         if (response.data.NewRecord.length > 0 || response.data.DuplicateRecords.length > 0 || response.data.ErrorRecords.length > 0) {
           downloadExcel(response.data.NewRecord, response.data.DuplicateRecords, response.data.ErrorRecords);
         }
-        getData();
+       
       } catch (error) {
         if (error.response && error.response.status === 400) {
           alert(error.response.data.message)
         }
       }
     }
+     getData();
     handleCloseUploadModal();
   }
 
-  const downloadExcel = () => {
-    // Logic to download Excel file
-  };
+
+
+
+  const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
+    const wb = XLSX.utils.book_new();
+
+    // Column headers for Error Records
+    const ErrorColumns = ['Doc_ID', 'Plant_ID', 'Material_ID', 'Quantity', 'SLoc_ID', 'CostCenter_ID', 
+      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 'User_ID', 
+      'Approval_Status', 'SAP_Transaction_Status', 
+    ];
+
+    // Column headers for New Records (based on your columns array)
+    const newRecordsColumns = ['Doc_ID', 'Plant_ID', 'Material_ID', 'Quantity', 'SLoc_ID', 'CostCenter_ID', 
+      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 'User_ID', 
+      'Approval_Status', 'SAP_Transaction_Status',  ];
+
+
+    // Column headers for Duplicate Records
+    const DuplicateColumns = ['Doc_ID', 'Plant_ID', 'Material_ID', 'Quantity', 'SLoc_ID', 'CostCenter_ID', 
+      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 'User_ID', 
+      'Approval_Status', 'SAP_Transaction_Status', 
+    ];
+
+
+    // Filter and map the data for Error Records
+    const filteredError = errRecord.map(item => ({
+          Doc_ID: selectedRow.Doc_ID || '',
+      Plant_ID: selectedRow.Plant_ID || '',
+      Material_ID: selectedRow.Material_ID || '',
+      Quantity: selectedRow.Quantity || '',
+      SLoc_ID: selectedRow.SLoc_ID || '',
+      CostCenter_ID: selectedRow.CostCenter_ID || '',
+      Movement_ID: selectedRow.Movement_ID || '',
+      Valuation_Type: selectedRow.Valuation_Type || '',
+      Batch: selectedRow.Batch || '',
+      Rate_Unit: selectedRow.Rate_Unit || '',
+      Remark: selectedRow.Remark || '',
+      User_ID: selectedRow.User_ID || '',
+      Approval_Status: selectedRow.Approval_Status || '',
+      SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
+
+      Plant_Code_Validation: item.Plant_Val,
+      Material_Code_Validation: item.Material_Val,
+      SLoc_Code_Validation: item.SLoc_Val,
+      CostCenter_Code_Validation: item.CostCenter_Val,
+
+    }));
+    // Filter and map the data for New Records
+    const filteredNewData = newRecord.map(item => ({
+        Doc_ID: selectedRow.Doc_ID || '',
+      Plant_ID: selectedRow.Plant_ID || '',
+      Material_ID: selectedRow.Material_ID || '',
+      Quantity: selectedRow.Quantity || '',
+      SLoc_ID: selectedRow.SLoc_ID || '',
+      CostCenter_ID: selectedRow.CostCenter_ID || '',
+      Movement_ID: selectedRow.Movement_ID || '',
+      Valuation_Type: selectedRow.Valuation_Type || '',
+      Batch: selectedRow.Batch || '',
+      Rate_Unit: selectedRow.Rate_Unit || '',
+      Remark: selectedRow.Remark || '',
+      User_ID: selectedRow.User_ID || '',
+      Approval_Status: selectedRow.Approval_Status || '',
+      SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
+
+    }));
+
+
+
+    // Filter and map the data for Duplicate Record
+    const filteredUpdate = DuplicateRecord.map(item => ({
+
+         Doc_ID: selectedRow.Doc_ID || '',
+      Plant_ID: selectedRow.Plant_ID || '',
+      Material_ID: selectedRow.Material_ID || '',
+      Quantity: selectedRow.Quantity || '',
+      SLoc_ID: selectedRow.SLoc_ID || '',
+      CostCenter_ID: selectedRow.CostCenter_ID || '',
+      Movement_ID: selectedRow.Movement_ID || '',
+      Valuation_Type: selectedRow.Valuation_Type || '',
+      Batch: selectedRow.Batch || '',
+      Rate_Unit: selectedRow.Rate_Unit || '',
+      Remark: selectedRow.Remark || '',
+      User_ID: selectedRow.User_ID || '',
+      Approval_Status: selectedRow.Approval_Status || '',
+      SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
+
+
+      Plant_Code_Duplicate: item.Plant_Code,
+      Material_Code_Duplicate: item.Material_Code,
+      CostCenter_Code_Duplicate: item.CostCenter_Code,
+      Duplicate: item.Qty,
+    }));
+
+ 
+    // 🔹 Helper to style header cells
+    const styleHeaders = (worksheet, columns) => {
+      columns.forEach((_, index) => {
+        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+        if (worksheet[cellAddress]) {
+          worksheet[cellAddress].s = {
+            font: { bold: true, color: { rgb: '000000' } },
+            fill: { fgColor: { rgb: 'FFFF00' } }, // Yellow background
+            alignment: { horizontal: 'center' },
+          };
+        }
+      });
+    };
+
+
+    // 🔴 Style red text for validation columns only
+    const styleValidationColumns = (worksheet, columns, dataLength) => {
+      const validationCols = ['Plant_Val', 'Material_Val',
+        'SLoc_Val', 'CostCenter_Val',]
+
+      for (let row = 1; row <= dataLength; row++) {
+        validationCols.forEach(colName => {
+          const colIdx = columns.indexOf(colName);
+          if (colIdx === -1) return;
+
+          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+          const cell = worksheet[cellAddress];
+
+          if (cell && typeof cell.v === 'string') {
+            const value = cell.v.trim().toLowerCase();
+
+            // Apply green if value is "valid", otherwise red
+            cell.s = {
+              font: {
+                color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' } // green or red
+              }
+            };
+          }
+        });
+      }
+    };
+
+
+
+    // ✅ Style only specific duplicate columns in gray
+    const styleDuplicateRecords = (worksheet, columns, dataLength) => {
+      const duplicateCols = ['Plant_Code', 'Material_Code', 'SLoc_Code','Material_Code', 'CostCenter_Code']; // 👈 update with actual duplicate column names
+
+      for (let row = 1; row <= dataLength; row++) {
+        duplicateCols.forEach(colName => {
+          const colIdx = columns.indexOf(colName);
+          if (colIdx === -1) return; // skip if not found
+
+          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+          const cell = worksheet[cellAddress];
+
+          if (cell) {
+            cell.s = {
+              font: { color: { rgb: '808080' } }, // Gray text
+              // fill: { fgColor: { rgb: 'E0E0E0' } } // optional background
+            };
+          }
+        });
+      }
+    };
+
+
+  }
+
+  // const downloadExcel = () => {
+  //   // Logic to download Excel file
+  // };
    // excel download
    const handleDownloadExcel = (selectedRow) => {
     if (!selectedRow) {
@@ -168,7 +332,7 @@ const [openEditModal, setOpenEditModal] = useState(false);
     // Define new data columns
     const DataColumns = [
       'Doc_ID', 'Plant_ID', 'Material_ID', 'Quantity', 'SLoc_ID', 'CostCenter_ID', 
-      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 'User_ID', 
+      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit',  'User_ID', 
       'Approval_Status', 'SAP_Transaction_Status', 'Created_By'
     ];
   
@@ -184,7 +348,7 @@ const [openEditModal, setOpenEditModal] = useState(false);
       Valuation_Type: selectedRow.Valuation_Type || '',
       Batch: selectedRow.Batch || '',
       Rate_Unit: selectedRow.Rate_Unit || '',
-      Remark: selectedRow.Remark || '',
+     
       User_ID: selectedRow.User_ID || '',
       Approval_Status: selectedRow.Approval_Status || '',
       SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
@@ -263,10 +427,10 @@ const [openEditModal, setOpenEditModal] = useState(false);
     });
   
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Trn201201Movt_Doc_Row_Data");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Trn202Movt_Doc_Row_Data");
 
     // Use Material_ID or Doc_ID for filename
-    XLSX.writeFile(workbook, `Trn201201Movt_${selectedRow.Doc_ID || 'Row'}.xlsx`);
+    XLSX.writeFile(workbook, `Trn202Movt_${selectedRow.Doc_ID || 'Row'}.xlsx`);
 
   };
   
@@ -297,7 +461,7 @@ const [openEditModal, setOpenEditModal] = useState(false);
     { field: "Date", headerName: "Date", flex: 1 },
     { field: "Material_Code", headerName: "Material Code", flex: 1 },
     { field: "Qty", headerName: "Qty", flex: 1 },
-    { field: "Movement_Type", headerName: "Movement Type ", flex: 1 },
+    { field: "Movement_Code", headerName: "Movement Type", flex: 1 },
     { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
     
     // {
@@ -498,11 +662,19 @@ const [openEditModal, setOpenEditModal] = useState(false);
   };
 
   
-  const handleViewStatus = (row) => {
-  console.log("View Status clicked for row:", row);
-  setSelectedRow(row);
-  setOpenViewStatusModal(true);
-};
+  //[View_Stock202Approval_Status]
+  const handleViewStatus = async (docId) => {
+    console.log("Fetching approval status for Doc_ID:", docId);
+    try {
+      const response = await get202ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
+      console.log("API Response:", response);
+      setViewStatusData(response);  // Update your state with the fetched data
+    } catch (error) {
+      console.error("❌ Error fetching grouped records:", error);
+      setViewStatusData([]);  // Handle errors and reset data
+    }
+  };
+;
 
   
     // ✅ Custom Toolbar
@@ -793,10 +965,6 @@ const [openEditModal, setOpenEditModal] = useState(false);
           </Box>
         </Box>
       </Modal>
-
-
-
-
 
 
       {/* ✅ Modal with Resubmit and Cancel */}

@@ -533,13 +533,13 @@ const handleOpenViewStatusModal = async (rowData) => {
           sx={{
             // Header Style
             "& .MuiDataGrid-columnHeader": {
-              backgroundColor: "#2e59d9",
-              color: "white",
+              backgroundColor: "#bdbdbd",
+              color: "black",
               fontWeight: "bold",
             },
             "& .MuiDataGrid-columnHeaderTitle": {
               fontSize: "16px",
-              fontWeight: "bold",
+              //fontWeight: "bold",
             },
             "& .MuiDataGrid-row": {
               backgroundColor: "#f5f5f5", // Default row background

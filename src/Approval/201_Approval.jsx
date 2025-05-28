@@ -170,28 +170,28 @@ const handleOpenViewStatusModal = async (rowData) => {
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
     { field: "Doc_ID", headerName: "Doc ID ", flex: 1 },
     { field: "Date", headerName: "Date", flex: 1 },
-    { field: "Movement_Type", headerName: "Movement Type", flex: 1 },
+    { field: "Movement_ID", headerName: "Movement Type", flex: 1 },
     { field: "Request_By", headerName: "Requset By", flex: 1 },
     { field: "Approver_Status", headerName: "Approver Status", flex: 1 },
 
     // View Column
-    {
-      field: "view",
-      headerName: "View",
-      flex: 1,
-      sortable: false,
-      renderCell: (params) => (
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <IconButton
-            size="large"
-            color="primary"
-            onClick={() => handleOpenViewModal(params.row)} // Pass row data to the view modal
-          >
-            <VisibilityIcon fontSize="small" />
-          </IconButton>
-        </div>
-      ),
-    },
+    // {
+    //   field: "view",
+    //   headerName: "View",
+    //   flex: 1,
+    //   sortable: false,
+    //   renderCell: (params) => (
+    //     <div style={{ display: "flex", justifyContent: "center" }}>
+    //       <IconButton
+    //         size="large"
+    //         color="primary"
+    //         onClick={() => handleOpenViewModal(params.row)} // Pass row data to the view modal
+    //       >
+    //         <VisibilityIcon fontSize="small" />
+    //       </IconButton>
+    //     </div>
+    //   ),
+    // },
 
     // Approve Column
     {
@@ -249,7 +249,7 @@ const handleOpenViewStatusModal = async (rowData) => {
     try {
       const response = await getdetails(Plant_ID, RoleID, Role);
 
-      console.log('response 309', response);  // Check the structure of response
+      console.log('response 201', response);  // Check the structure of response
       setData(response);  // Ensure that this is correctly setting the data
       setOriginalRows(response); // for reference during search
       setRows(response);
@@ -471,7 +471,7 @@ const handleOpenViewStatusModal = async (rowData) => {
             textDecorationThickness: '3px'
           }}
         >
-          201/202 Approval
+          201 Approval
         </h2>
       </div>
 
@@ -533,13 +533,13 @@ const handleOpenViewStatusModal = async (rowData) => {
           sx={{
             // Header Style
             "& .MuiDataGrid-columnHeader": {
-              backgroundColor: "#2e59d9",
-              color: "white",
+              backgroundColor: '#bdbdbd',
+              color:"black", //"white",
               fontWeight: "bold",
             },
             "& .MuiDataGrid-columnHeaderTitle": {
               fontSize: "16px",
-              fontWeight: "bold",
+              //fontWeight: "bold",
             },
             "& .MuiDataGrid-row": {
               backgroundColor: "#f5f5f5", // Default row background
@@ -701,7 +701,7 @@ const handleOpenViewStatusModal = async (rowData) => {
         textDecorationThickness: "3px",
       }}
     >
-      309 Approval
+      201 Approval
     </Typography>
 
     <TextField
