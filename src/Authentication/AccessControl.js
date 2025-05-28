@@ -6,12 +6,12 @@ const accessMap = {
   1: [15, 16, 17], // REQUESTER can access Dashboard, Report1, Report2
   2: [14, 16, 17,19,20], // PLANT MMD HEAD can access Approval_309, Report1, Report2
   3: [14, 16, 17,19,20], // PLANT FINANCE HEAD can access Approval_309, Report1, Report2
-  4: [14, 16, 17,19,20], // PLANT MRPC can access Approval_309, Report1, Report2
+  4: [14, 16, 17,18,19,20], // PLANT MRPC can access Approval_309, Report1, Report2
   5: [14, 16, 17,19,20], // PLANT HEAD can access Approval_309, Report1, Report2
   6: [14, 16, 17,19,20], // CORP FINANCE HEAD can access Approval_309, Report1, Report2
-  7: [7, 8, 9, 10, 12, 13, 14, 16, 17,19,20], // CORP MRPC can access multiple screens
+  7: [7, 8, 9, 10, 12, 13, 14, 16, 17,18,19,20], // CORP MRPC can access multiple screens
   8: [14, 16, 17,19,20], // BUSINESS HEAD can access Approval_309, Report1, Report2
-  9: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,19,20], // CORP ADMIN (Full Access)
+  9: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,18,19,20], // CORP ADMIN (Full Access)
 };
 
 // Function to check if a role has access to a specific screen

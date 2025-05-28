@@ -52,7 +52,7 @@ const Sap = () => {
 const [searchTerm, setSearchTerm] = useState("");
 const [selectOpen, setSelectOpen] = useState(false); 
   
-
+const [SAP_ID, setSapID] = useState("");
 const [filteredEmployees, setFilteredEmployees] = useState([]); // Based on category
  
   const [PlantTable, setPlantTable] = useState([]);
@@ -109,7 +109,7 @@ const [ActiveStatus, setActiveStatus] = useState('');
       setData(response); // Ensure that this is correctly setting the data
       setOriginalRows(response); // for reference during search
       setRows(response);
-      console.log("Active_Status values:", response.map(row => row.Active_Status));
+      
 
     } catch (error) {
       console.error(error);
@@ -140,31 +140,84 @@ const fetchCategoryData = async (selectedCategory, Plant_Code) => {
 
 
 
+// useEffect(() => {
+//   const fetchEmployees = async () => {
+//     try {
+//       const response = await getcategory(Category, Plant_Code);
+//       const data = response.data;
+
+//       // Normalize employee data
+//       const normalizedEmployees = data.map((emp) => ({
+//         ...emp,
+//         employee_id: emp.gen_id, // Use a consistent key
+//         Emp_Name: Category === "executive" ? emp.Emp_Name : emp.fullname,
+//       }));
+
+//       setFilteredEmployees(normalizedEmployees);
+//     } catch (err) {
+//       console.error("Failed to fetch employees", err);
+//     }
+//   };
+
+//   if (Category) {
+//     fetchEmployees();
+//   }
+// }, [Category, Plant_Code]);
+
+// useEffect(() => {
+//     const timer = setTimeout(() => {
+//       window.location.reload();
+//     }, 3600000);
+
+//     // Clean up on unmount
+//     return () => clearTimeout(timer);
+//   }, []);
+
 useEffect(() => {
+  // Decrypt session data
+  const encryptedData = sessionStorage.getItem("userData");
+  if (encryptedData) {
+    const decryptedData = decryptSessionData(encryptedData);
+    setUserID(decryptedData.UserID);
+    setRole(decryptedData.RoleId);
+    console.log("sap roleid", decryptedData.RoleId);
+    console.log("Sap userid", decryptedData.UserID);
+  }
+
+  // Auto-refresh after 1 hour 5 min
+  const timer = setTimeout(() => {
+    window.location.reload();
+  }, 3900000);  //1 hr 5 min
+
+  // Fetch employee data
   const fetchEmployees = async () => {
-    try {
-      const response = await getcategory(Category, Plant_Code);
-      const data = response.data;
+    if (Category) {
+      try {
+        const response = await getcategory(Category, Plant_Code);
+        const data = response.data;
 
-      // Normalize employee data
-      const normalizedEmployees = data.map((emp) => ({
-        ...emp,
-        employee_id: emp.gen_id, // Use a consistent key
-        Emp_Name: Category === "executive" ? emp.Emp_Name : emp.fullname,
-      }));
+        // Normalize employee data
+        const normalizedEmployees = data.map((emp) => ({
+          ...emp,
+          employee_id: emp.gen_id,
+          Emp_Name: Category === "executive" ? emp.Emp_Name : emp.fullname,
+        }));
 
-      setFilteredEmployees(normalizedEmployees);
-    } catch (err) {
-      console.error("Failed to fetch employees", err);
+        setFilteredEmployees(normalizedEmployees);
+      } catch (err) {
+        console.error("Failed to fetch employees", err);
+      }
     }
   };
 
-  if (Category) {
-    fetchEmployees();
-  }
+  fetchEmployees();
+
+  // Fetch other data
+  getData();
+
+  // Cleanup
+  return () => clearTimeout(timer);
 }, [Category, Plant_Code]);
-
-
 
 
   const get_Plant = async () => {
@@ -177,22 +230,22 @@ useEffect(() => {
   };
  
 
-  useEffect(() => {
-    const encryptedData = sessionStorage.getItem("userData");
-    if (encryptedData) {
-      const decryptedData = decryptSessionData(encryptedData);
-      setUserID(decryptedData.UserID);
-       setRole(decryptedData.RoleId);
-      console.log("sap roleid", decryptedData.RoleId)
-      console.log("Sap userid", decryptedData.UserID);
-    }
-  }, []);
+//   useEffect(() => {
+//     const encryptedData = sessionStorage.getItem("userData");
+//     if (encryptedData) {
+//       const decryptedData = decryptSessionData(encryptedData);
+//       setUserID(decryptedData.UserID);
+//        setRole(decryptedData.RoleId);
+//       console.log("sap roleid", decryptedData.RoleId)
+//       console.log("Sap userid", decryptedData.UserID);
+//     }
+//   }, []);
   const isCorp = role === 7 || role === 9;
 const isPlantMRPC = role === 4;
 
-  useEffect(() => {
-    getData();
-  }, []);
+//   useEffect(() => {
+//     getData();
+//   }, []);
 
 
 
@@ -210,6 +263,7 @@ const isPlantMRPC = role === 4;
   // ✅ Handle Row Click for Edit
 
   const handleRowClick = (params) => {
+    setSapID(params.row.SAP_ID)
     setPlantCode(params.row.Plant_Code);
     setLast_Punch(params.row.Last_Punch);
     setSAPLOGINID(params.row.SAP_LOGIN_ID);
@@ -291,6 +345,7 @@ const isPlantMRPC = role === 4;
    const data = {
   EmployeeID,
   UserName,
+  SAP_ID,
   SAP_LOGIN_ID,
   Category,         // ✅ Add this
   UserID,
