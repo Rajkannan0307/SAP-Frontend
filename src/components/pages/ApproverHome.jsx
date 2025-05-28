@@ -25,8 +25,9 @@ const ApproverHome = () => {
 
  const approvalItems = [
   { id: "4", title: "309 Part no Conversion", path: "/home/Approval_309", movementId: 4, icon: <FiCheckCircle /> },
-  { id: "3", title: "201/202 Stock Posting", path: "/approval/201", movementId: 3, icon: <FiCheckCircle /> },
-  { id: "2", title: "311 Location Transfer", path: "/approval/311", movementId: 2, icon: <FiCheckCircle /> },
+  { id: "2", title: "201 Stock Posting", path: "/home/Approval_202", movementId: 2, icon: <FiCheckCircle /> },
+  { id: "3", title: "202 Stock Posting", path: "/home/Approval_202", movementId: 3, icon: <FiCheckCircle /> },
+  { id: "11", title: "311 Location Transfer", path: "/approval/311", movementId: 11, icon: <FiCheckCircle /> },
   { id: "1", title: "511 Scrap Posting", path: "/approval/511", movementId: 1, icon: <FiCheckCircle /> },
   { id: "5", title: "Rs1 Conversion", path: "/approval/202", movementId: 5, icon: <FiCheckCircle /> },
   { id: "6", title: "ME38 Manual Schedule", path: "/approval/203", movementId: 6, icon: <FiCheckCircle /> },
