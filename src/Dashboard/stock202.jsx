@@ -156,46 +156,42 @@ const [openEditModal, setOpenEditModal] = useState(false);
   }
 
 
-
-
-  const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
+const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
     const wb = XLSX.utils.book_new();
 
     // Column headers for Error Records
-    const ErrorColumns = ['Doc_ID', 'Plant_ID', 'Material_ID', 'Quantity', 'SLoc_ID', 'CostCenter_ID', 
-      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 'User_ID', 
-      'Approval_Status', 'SAP_Transaction_Status', 
+    const ErrorColumns = [ 'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
+      
     ];
 
     // Column headers for New Records (based on your columns array)
-    const newRecordsColumns = ['Doc_ID', 'Plant_ID', 'Material_ID', 'Quantity', 'SLoc_ID', 'CostCenter_ID', 
-      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 'User_ID', 
-      'Approval_Status', 'SAP_Transaction_Status',  ];
+    const newRecordsColumns = [ 'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',];
 
 
     // Column headers for Duplicate Records
-    const DuplicateColumns = ['Doc_ID', 'Plant_ID', 'Material_ID', 'Quantity', 'SLoc_ID', 'CostCenter_ID', 
-      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 'User_ID', 
-      'Approval_Status', 'SAP_Transaction_Status', 
+    const DuplicateColumns = [ 'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 
     ];
 
 
     // Filter and map the data for Error Records
     const filteredError = errRecord.map(item => ({
-          Doc_ID: selectedRow.Doc_ID || '',
-      Plant_ID: selectedRow.Plant_ID || '',
-      Material_ID: selectedRow.Material_ID || '',
-      Quantity: selectedRow.Quantity || '',
-      SLoc_ID: selectedRow.SLoc_ID || '',
-      CostCenter_ID: selectedRow.CostCenter_ID || '',
-      Movement_ID: selectedRow.Movement_ID || '',
-      Valuation_Type: selectedRow.Valuation_Type || '',
-      Batch: selectedRow.Batch || '',
-      Rate_Unit: selectedRow.Rate_Unit || '',
-      Remark: selectedRow.Remark || '',
-      User_ID: selectedRow.User_ID || '',
-      Approval_Status: selectedRow.Approval_Status || '',
-      SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
+      //Doc_ID: item.Doc_ID || '',
+      Plant_Code: item.Plant_Code || '',
+      Material_Code: item.Material_Code || '',
+      Quantity: item.Quantity || '',
+      SLoc_Code: item.SLoc_Code || '',
+      CostCenter_Code: item.CostCenter_Code || '',
+      Movement_Code: item.Movement_Code || '',
+      Valuation_Type: item.Valuation_Type || '',
+      Batch: item.Batch || '',
+      Rate_Unit: item.Rate_Per_Unit || '',
+      Remark: item.Reason_For_Movt || '',
+      //User_Code: item.User_ID || '',
+     // Approval_Status: item.Approval_Status || '',
+     // SAP_Transaction_Status: item.SAP_Transaction_Status || '',
 
       Plant_Code_Validation: item.Plant_Val,
       Material_Code_Validation: item.Material_Val,
@@ -205,20 +201,20 @@ const [openEditModal, setOpenEditModal] = useState(false);
     }));
     // Filter and map the data for New Records
     const filteredNewData = newRecord.map(item => ({
-        Doc_ID: selectedRow.Doc_ID || '',
-      Plant_ID: selectedRow.Plant_ID || '',
-      Material_ID: selectedRow.Material_ID || '',
-      Quantity: selectedRow.Quantity || '',
-      SLoc_ID: selectedRow.SLoc_ID || '',
-      CostCenter_ID: selectedRow.CostCenter_ID || '',
-      Movement_ID: selectedRow.Movement_ID || '',
-      Valuation_Type: selectedRow.Valuation_Type || '',
-      Batch: selectedRow.Batch || '',
-      Rate_Unit: selectedRow.Rate_Unit || '',
-      Remark: selectedRow.Remark || '',
-      User_ID: selectedRow.User_ID || '',
-      Approval_Status: selectedRow.Approval_Status || '',
-      SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
+     // Doc_ID: selectedRow.Doc_ID || '',
+      Plant_Code: item.Plant_Code || '',
+      Material_Code: item.Material_Code || '',
+      Quantity: item.Quantity || '',
+      SLoc_Code: item.SLoc_Code || '',
+      CostCenter_Code: item.CostCenter_Code || '',
+      Movement_Code: item.Movement_Code || '',
+      Valuation_Type: item.Valuation_Type || '',
+      Batch: item.Batch || '',
+      Rate_Unit: item.Rate_Per_Unit || '',
+      Remark: item.Reason_For_Movt || '',
+      //User_Code: selectedRow.User_Code || '',
+      //Approval_Status: selectedRow.Approval_Status || '',
+    //  SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
 
     }));
 
@@ -227,29 +223,29 @@ const [openEditModal, setOpenEditModal] = useState(false);
     // Filter and map the data for Duplicate Record
     const filteredUpdate = DuplicateRecord.map(item => ({
 
-         Doc_ID: selectedRow.Doc_ID || '',
-      Plant_ID: selectedRow.Plant_ID || '',
-      Material_ID: selectedRow.Material_ID || '',
-      Quantity: selectedRow.Quantity || '',
-      SLoc_ID: selectedRow.SLoc_ID || '',
-      CostCenter_ID: selectedRow.CostCenter_ID || '',
-      Movement_ID: selectedRow.Movement_ID || '',
-      Valuation_Type: selectedRow.Valuation_Type || '',
-      Batch: selectedRow.Batch || '',
-      Rate_Unit: selectedRow.Rate_Unit || '',
-      Remark: selectedRow.Remark || '',
-      User_ID: selectedRow.User_ID || '',
-      Approval_Status: selectedRow.Approval_Status || '',
-      SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
+      //Doc_ID: selectedRow.Doc_ID || '',
+      Plant_Code: item.Plant_Code || '',
+      Material_Code: item.Material_Code || '',
+      Quantity: item.Quantity || '',
+      SLoc_Code: item.SLoc_Code || '',
+      CostCenter_Code: item.CostCenter_Code || '',
+      Movement_Code: item.Movement_Code || '',
+      Valuation_Type: item.Valuation_Type || '',
+      Batch: item.Batch || '',
+      Rate_Unit: item.Rate_Per_Unit || '',
+      Remark: item.Reason_For_Movt || '',
+      //User_Code: selectedRow.User_Code || '',
+      //Approval_Status: selectedRow.Approval_Status || '',
+      //SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
 
 
       Plant_Code_Duplicate: item.Plant_Code,
       Material_Code_Duplicate: item.Material_Code,
       CostCenter_Code_Duplicate: item.CostCenter_Code,
-      Duplicate: item.Qty,
+      //Duplicate: item.Qty,
     }));
 
- 
+
     // 🔹 Helper to style header cells
     const styleHeaders = (worksheet, columns) => {
       columns.forEach((_, index) => {
@@ -296,7 +292,7 @@ const [openEditModal, setOpenEditModal] = useState(false);
 
     // ✅ Style only specific duplicate columns in gray
     const styleDuplicateRecords = (worksheet, columns, dataLength) => {
-      const duplicateCols = ['Plant_Code', 'Material_Code', 'SLoc_Code','Material_Code', 'CostCenter_Code']; // 👈 update with actual duplicate column names
+      const duplicateCols = ['Plant_Code', 'Material_Code', 'SLoc_Code', 'Material_Code', 'CostCenter_Code']; // 👈 update with actual duplicate column names
 
       for (let row = 1; row <= dataLength; row++) {
         duplicateCols.forEach(colName => {
@@ -317,8 +313,34 @@ const [openEditModal, setOpenEditModal] = useState(false);
     };
 
 
-  }
 
+    // Add New Records sheet even if empty data is available
+    if (filteredNewData.length === 0) filteredNewData.push({});
+    const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, { header: newRecordsColumns });
+    styleHeaders(wsNewRecords, newRecordsColumns);
+    XLSX.utils.book_append_sheet(wb, wsNewRecords, 'New Records');
+
+
+    // Add Error Records sheet  even if empty data is available
+    if (filteredError.length === 0) filteredError.push({});
+    const wsError = XLSX.utils.json_to_sheet(filteredError, { header: ErrorColumns });
+    styleHeaders(wsError, ErrorColumns);
+    styleValidationColumns(wsError, ErrorColumns, filteredError.length);
+    XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
+
+    // Add     Duplicate Records sheet even if empty data is available
+    if (filteredUpdate.length === 0) filteredUpdate.push({});
+    const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, { header: DuplicateColumns });
+    styleDuplicateRecords(wsUpdated, DuplicateColumns, filteredUpdate.length);
+    XLSX.utils.book_append_sheet(wb, wsUpdated, 'DuplicateRecords');
+
+
+    const fileName = 'Trn202Movt Data UploadLog.xlsx';
+    XLSX.writeFile(wb, fileName);
+
+
+
+  }
   // const downloadExcel = () => {
   //   // Logic to download Excel file
   // };

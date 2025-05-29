@@ -148,10 +148,9 @@ const Stock201 = () => {
         const response = await Movement201(formData)
         console.log('response', response.data)
         alert(response.data.message)
-        if (response.data.NewRecord.length > 0 || response.data.DuplicateRecords.length > 0 || response.data.ErrorRecords.length > 0) {
+         if (response.data.NewRecord.length > 0 || response.data.DuplicateRecords.length > 0 || response.data.ErrorRecords.length > 0) {
           downloadExcel(response.data.NewRecord, response.data.DuplicateRecords, response.data.ErrorRecords);
         }
-
       } catch (error) {
         if (error.response && error.response.status === 400) {
           alert(error.response.data.message)
@@ -169,40 +168,38 @@ const Stock201 = () => {
     const wb = XLSX.utils.book_new();
 
     // Column headers for Error Records
-    const ErrorColumns = ['Doc_ID', 'Plant_ID', 'Material_ID', 'Quantity', 'SLoc_ID', 'CostCenter_ID',
-      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 'User_ID',
-      'Approval_Status', 'SAP_Transaction_Status',
+    const ErrorColumns = [ 'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
+      
     ];
 
     // Column headers for New Records (based on your columns array)
-    const newRecordsColumns = ['Doc_ID', 'Plant_ID', 'Material_ID', 'Quantity', 'SLoc_ID', 'CostCenter_ID',
-      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 'User_ID',
-      'Approval_Status', 'SAP_Transaction_Status',];
+    const newRecordsColumns = [ 'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',];
 
 
     // Column headers for Duplicate Records
-    const DuplicateColumns = ['Doc_ID', 'Plant_ID', 'Material_ID', 'Quantity', 'SLoc_ID', 'CostCenter_ID',
-      'Movement_ID', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 'User_ID',
-      'Approval_Status', 'SAP_Transaction_Status',
+    const DuplicateColumns = [ 'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 
     ];
 
 
     // Filter and map the data for Error Records
     const filteredError = errRecord.map(item => ({
-      Doc_ID: selectedRow.Doc_ID || '',
-      Plant_ID: selectedRow.Plant_ID || '',
-      Material_ID: selectedRow.Material_ID || '',
-      Quantity: selectedRow.Quantity || '',
-      SLoc_ID: selectedRow.SLoc_ID || '',
-      CostCenter_ID: selectedRow.CostCenter_ID || '',
-      Movement_ID: selectedRow.Movement_ID || '',
-      Valuation_Type: selectedRow.Valuation_Type || '',
-      Batch: selectedRow.Batch || '',
-      Rate_Unit: selectedRow.Rate_Unit || '',
-      Remark: selectedRow.Remark || '',
-      User_ID: selectedRow.User_ID || '',
-      Approval_Status: selectedRow.Approval_Status || '',
-      SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
+      //Doc_ID: item.Doc_ID || '',
+      Plant_Code: item.Plant_Code || '',
+      Material_Code: item.Material_Code || '',
+      Quantity: item.Quantity || '',
+      SLoc_Code: item.SLoc_Code || '',
+      CostCenter_Code: item.CostCenter_Code || '',
+      Movement_Code: item.Movement_Code || '',
+      Valuation_Type: item.Valuation_Type || '',
+      Batch: item.Batch || '',
+      Rate_Unit: item.Rate_Per_Unit || '',
+      Remark: item.Reason_For_Movt || '',
+      //User_Code: item.User_ID || '',
+     // Approval_Status: item.Approval_Status || '',
+     // SAP_Transaction_Status: item.SAP_Transaction_Status || '',
 
       Plant_Code_Validation: item.Plant_Val,
       Material_Code_Validation: item.Material_Val,
@@ -212,20 +209,20 @@ const Stock201 = () => {
     }));
     // Filter and map the data for New Records
     const filteredNewData = newRecord.map(item => ({
-      Doc_ID: selectedRow.Doc_ID || '',
-      Plant_ID: selectedRow.Plant_ID || '',
-      Material_ID: selectedRow.Material_ID || '',
-      Quantity: selectedRow.Quantity || '',
-      SLoc_ID: selectedRow.SLoc_ID || '',
-      CostCenter_ID: selectedRow.CostCenter_ID || '',
-      Movement_ID: selectedRow.Movement_ID || '',
-      Valuation_Type: selectedRow.Valuation_Type || '',
-      Batch: selectedRow.Batch || '',
-      Rate_Unit: selectedRow.Rate_Unit || '',
-      Remark: selectedRow.Remark || '',
-      User_ID: selectedRow.User_ID || '',
-      Approval_Status: selectedRow.Approval_Status || '',
-      SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
+     // Doc_ID: selectedRow.Doc_ID || '',
+      Plant_Code: item.Plant_Code || '',
+      Material_Code: item.Material_Code || '',
+      Quantity: item.Quantity || '',
+      SLoc_Code: item.SLoc_Code || '',
+      CostCenter_Code: item.CostCenter_Code || '',
+      Movement_Code: item.Movement_Code || '',
+      Valuation_Type: item.Valuation_Type || '',
+      Batch: item.Batch || '',
+      Rate_Unit: item.Rate_Per_Unit || '',
+      Remark: item.Reason_For_Movt || '',
+      //User_Code: selectedRow.User_Code || '',
+      //Approval_Status: selectedRow.Approval_Status || '',
+    //  SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
 
     }));
 
@@ -234,26 +231,26 @@ const Stock201 = () => {
     // Filter and map the data for Duplicate Record
     const filteredUpdate = DuplicateRecord.map(item => ({
 
-      Doc_ID: selectedRow.Doc_ID || '',
-      Plant_ID: selectedRow.Plant_ID || '',
-      Material_ID: selectedRow.Material_ID || '',
-      Quantity: selectedRow.Quantity || '',
-      SLoc_ID: selectedRow.SLoc_ID || '',
-      CostCenter_ID: selectedRow.CostCenter_ID || '',
-      Movement_ID: selectedRow.Movement_ID || '',
-      Valuation_Type: selectedRow.Valuation_Type || '',
-      Batch: selectedRow.Batch || '',
-      Rate_Unit: selectedRow.Rate_Unit || '',
-      Remark: selectedRow.Remark || '',
-      User_ID: selectedRow.User_ID || '',
-      Approval_Status: selectedRow.Approval_Status || '',
-      SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
+      //Doc_ID: selectedRow.Doc_ID || '',
+      Plant_Code: item.Plant_Code || '',
+      Material_Code: item.Material_Code || '',
+      Quantity: item.Quantity || '',
+      SLoc_Code: item.SLoc_Code || '',
+      CostCenter_Code: item.CostCenter_Code || '',
+      Movement_Code: item.Movement_Code || '',
+      Valuation_Type: item.Valuation_Type || '',
+      Batch: item.Batch || '',
+      Rate_Unit: item.Rate_Per_Unit || '',
+      Remark: item.Reason_For_Movt || '',
+      //User_Code: selectedRow.User_Code || '',
+      //Approval_Status: selectedRow.Approval_Status || '',
+      //SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
 
 
       Plant_Code_Duplicate: item.Plant_Code,
       Material_Code_Duplicate: item.Material_Code,
       CostCenter_Code_Duplicate: item.CostCenter_Code,
-      Duplicate: item.Qty,
+      //Duplicate: item.Qty,
     }));
 
 
