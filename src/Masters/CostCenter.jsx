@@ -291,7 +291,7 @@ const CostCenter = () => {
         marginTop: "50px",
         display: "flex",
         flexDirection: "column",
-        height: "840px", // or a specific height if necessary
+        height: "calc(100vh - 90px)",// or a specific height if necessary
       }}
     >
       {/* Header Section */}
@@ -419,8 +419,8 @@ const CostCenter = () => {
           sx={{
             // Header Style
             "& .MuiDataGrid-columnHeader": {
-              backgroundColor: "#2e59d9",
-              color: "white",
+            backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
+              color: "black",
               fontWeight: "bold",
             },
             "& .MuiDataGrid-columnHeaderTitle": {

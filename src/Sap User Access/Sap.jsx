@@ -74,6 +74,7 @@ const [ActiveStatus, setActiveStatus] = useState('');
     { field: "SAP_LOGIN_ID", headerName: "Sap Login", flex: 1 },
     { field: "Employee_ID", headerName: "Employee ID", flex: 1 },
     { field: "Employee_Name", headerName: "Name", flex: 1 },
+    { field: "Category", headerName: "Category", flex: 1 },
     { field: "Dept_Name", headerName: "Department", flex: 1 },
     {
   field: "Active_Status",
@@ -283,7 +284,7 @@ const isPlantMRPC = role === 4;
   const text = searchText.trim().toLowerCase();
 
   const filteredRows = originalRows.filter((row) =>
-    ["Plant_Code", "SAP_LOGIN_ID", "Employee_ID", "Employee_Name", "Dept_Name","Active_Status"].some((key) => {
+    ["Plant_Code", "SAP_LOGIN_ID", "Employee_ID", "Employee_Name","Category", "Dept_Name"].some((key) => {
       const value = row[key];
       return value?.toString().toLowerCase().includes(text);
     })
@@ -393,6 +394,7 @@ const isPlantMRPC = role === 4;
       "SAP_LOGIN_ID",
       "Employee_ID",
       "Name",
+      "Category",
       "Department",
       "ActiveStatus",
     ];
@@ -403,6 +405,7 @@ const isPlantMRPC = role === 4;
       SAP_LOGIN_ID: item.SAP_LOGIN_ID,
       Employee_ID: item.Employee_ID,
       Name: item.Employee_Name,
+      Category:item.Category,
       Department: item.Dept_Name,
       ActiveStatus: item.Active_Status ? "Active" : "Inactive",
       Last_Punch:item.Last_Punch
@@ -443,7 +446,7 @@ const isPlantMRPC = role === 4;
         marginTop: "50px",
         display: "flex",
         flexDirection: "column",
-        height: "840px", // or a specific height if necessary
+         height: "calc(100vh - 90px)",// or a specific height if necessary
       }}
     >
       {/* Header Section */}
@@ -533,19 +536,20 @@ const isPlantMRPC = role === 4;
           </IconButton>
 
           {/* Add Button */}
-          <IconButton
-            onClick={handleOpenAddModal}
-            disabled={!isCorp}
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#0066FF",
-              color: "white",
-              width: "40px",
-              height: "40px",
-            }}
-          >
-            <AddIcon />
-          </IconButton>
+         {isCorp && (
+  <IconButton
+    onClick={handleOpenAddModal}
+    style={{
+      borderRadius: "50%",
+      backgroundColor: "#0066FF",
+      color: "white",
+      width: "40px",
+      height: "40px",
+    }}
+  >
+    <AddIcon />
+  </IconButton>
+)}
         </div>
       </div>
 
@@ -571,8 +575,8 @@ const isPlantMRPC = role === 4;
           sx={{
             // Header Style
             "& .MuiDataGrid-columnHeader": {
-              backgroundColor: "#2e59d9",
-              color: "white",
+             backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
+              color: "black",
               fontWeight: "bold",
             },
             "& .MuiDataGrid-columnHeaderTitle": {

@@ -84,7 +84,7 @@ const ApproverHome = () => {
     <Box
   sx={{
     backgroundColor: "#ffffff",
-    height: "890px",
+    height: "calc(100vh - 90px)",
     overflow: "hidden", // ✅ Prevent scrolling
     display: "flex",
     flexDirection: "column",

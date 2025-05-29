@@ -22,7 +22,7 @@ import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
 import { MenuItem, InputLabel, FormControl } from "@mui/material";
-import { getdetails,getAdd,getUpdates } from "../controller/Roleapiservices";
+import { getdetails,getAdd,getUpdates } from "../controller/ValuationTypeMasterapiservice";
 import SubjectRoundedIcon from "@mui/icons-material/SubjectRounded";
 
 const Role = () => {
@@ -32,29 +32,29 @@ const Role = () => {
       const [data, setData] = useState([]);
       const [openAddModal, setOpenAddModal] = useState(false);
       const [openEditModal, setOpenEditModal] = useState(false);
-      const [ActiveStatus, setActiveStatus] = useState(false);
-      const [Role_Name, setRoleName] = useState("");
-      const [Role_ID, setRoleID] = useState("");
+      
+      const [Valuation_Name, setValuationName] = useState("");
+      const [Valuation_ID, setValuationID] = useState("");
       const UserID = localStorage.getItem('UserID');
       console.log('role userid',UserID)
-      const RoleID=localStorage.getItem("RoleID")
+      const RoleID=localStorage.getItem("RoleID") 
        const navigate = useNavigate();
       
        const columns = [
           
-          { field: "Role_Name", headerName: "Role", flex: 1,width:"40%" },
-          {
-            field: 'Menus',
-            headerName: 'Menus',
-            width: 150,
+          { field: "Valuation_Name", headerName: "ValuationType Name", flex: 1,width:"20%" },
+        //   {
+        //     field: 'Menus',
+        //     headerName: 'Menus',
+        //     width: 150,
            
-            renderCell: () => (
-              <IconButton sx={{ height: 40, width: 40, color: "#000" }}>
-                  <SubjectRoundedIcon />
-              </IconButton>
-          ),
-            renderHeader: () => <div style={{ fontSize: '16px' }}>Menus</div>
-        },
+        //     renderCell: () => (
+        //       <IconButton sx={{ height: 40, width: 40, color: "#000" }}>
+        //           <SubjectRoundedIcon />
+        //       </IconButton>
+        //   ),
+        //     renderHeader: () => <div style={{ fontSize: '16px' }}>Menus</div>
+        // },
     
           // {
           //   field: "ActiveStatus",
@@ -118,7 +118,7 @@ const Role = () => {
       setRows(originalRows);
     } else {
       const filteredRows = originalRows.filter((row) =>
-        [ 'Role_Name'].some((key) => {
+        [ 'Valuation_Name'].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
         })
@@ -128,17 +128,17 @@ const Role = () => {
   };
   // ✅ Handle Add Modal
   const handleOpenAddModal = (item) => {
-     setRoleName("")
-    setActiveStatus(true);
+     setValuationName("")
+   
     setOpenAddModal(true);
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
 
   const handleRowClick = (params) => {
-    setRoleID(params.row.Role_ID);
-    setRoleName(params.row.Role_Name);
-    setActiveStatus(params.row.Active_Status);
+    setValuationID(params.row.Valuation_ID);
+    setValuationName(params.row.Valuation_Name);
+    
     setOpenEditModal(true); // Open the modal
   };
 
@@ -146,7 +146,7 @@ const Role = () => {
   const handleAdd = async () => {
     console.log("Data being sent to the server:", {
      
-      Role_Name,
+      Valuation_Name,
       UserID,
     });
     console.log("Add button clicked");
@@ -154,7 +154,7 @@ const Role = () => {
     // Step 1: Validate required fields
     if (
       
-      Role_Name === "" 
+      Valuation_Name === "" 
      
     ) {
       alert("Please fill in all required fields");
@@ -166,20 +166,20 @@ const Role = () => {
       // Prepare data to be sent
       const data = {
         UserID:UserID,
-        Role_Name:Role_Name,
+        Valuation_Name:Valuation_Name,
         
-        Active_Status:ActiveStatus, // Make sure this is defined somewhere
+        // Make sure this is defined somewhere
       };
   
       // Step 3: Call the API to add the user
       const response = await getAdd(data); // Ensure getAdd uses a POST request
   
       if (response.data.success) {
-        alert("Role added successfully!");
+        alert("ValuationType added successfully!");
         getData(); // refresh UI (e.g. user list)
         handleCloseAddModal(); // close the modal
       } else {
-        alert(response.data.message || "Failed to add Role.");
+        alert(response.data.message || "Failed to add ValuationType.");
       }
     } catch (error) {
       console.error("Error in adding Role:", error);
@@ -187,7 +187,7 @@ const Role = () => {
      if (error.response && error.response.data && error.response.data.message) {
       alert(error.response.data.message);
     } else {
-      alert("An error occurred while adding the Role.");
+      alert("An error occurred while adding the ValuationType.");
     }
   
     
@@ -196,10 +196,10 @@ const Role = () => {
 
    const handleUpdate = async () => {
        const data = {
-        Role_ID:Role_ID,
-         Role_Name: Role_Name,
+        Valuation_ID:Valuation_ID,
+         Valuation_Name: Valuation_Name,
          UserID:UserID,
-         Active_Status: ActiveStatus,
+        
        };
        console.log("Data being sent:", data); // Log data to verify it before sending
    
@@ -257,7 +257,7 @@ const Role = () => {
           marginBottom: -7,
         }}
       >
-        Role Master
+        ValuationType Master
       </h2>
     </div>
 
@@ -310,7 +310,7 @@ const Role = () => {
       </div>
 
       {/* Icons */}
-      <div style={{ display: "flex", gap: "10px", marginRight:"30%" }}>
+      <div style={{ display: "flex", gap: "10px", marginRight:"60%" }}>
        
 
         {/* Add Button */}
@@ -333,13 +333,13 @@ const Role = () => {
     {/* DataGrid */}
     <div
       style={{
-        width:"70%",
+        width:"40%",
     //    marginLeft:"10%",
       flexGrow: 1, // Ensures it grows to fill the remaining space
         backgroundColor: "#fff",
         borderRadius: 8,
         boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-        height: "calc(5 * 48px)",
+       // height: "calc(5 * 48px)",
         display: "flex",
 alignItems: "center",
 justifyContent: "center",
@@ -351,36 +351,11 @@ justifyContent: "center",
   columns={columns}
   pageSize={5}
   rowsPerPageOptions={[5]}
-  getRowId={(row) => row.Role_ID}
+  onRowClick={handleRowClick}
+  getRowId={(row) => row.Valuation_ID}
   disableSelectionOnClick
   slots={{ toolbar: CustomToolbar }}
-  onCellClick={(params) => {
-    console.log("Clicked cell:", params); // ✅ Debug
-
-    if (params.field === "Menus" && params.row) {
-      const { Role_ID, Role_Name } = params.row;
-    console.log("Navigating to:", `/home/Role/${params.row.Role_ID}`);
-console.log("Params:", params.row);
-
-      if (Role_ID && Role_Name) {
-        console.log("Navigating to:", `/home/Role/${Role_ID}`);
-        navigate(`/home/Role/${Role_ID}`, {
-          state: {
-            role: Role_Name,
-            Role_No: Role_ID,
-          },
-        });
-      } else {
-        alert("Role data is incomplete.");
-      }
-    } else {
-      // If it's any other cell, open the edit modal
-      setRoleID(params.row.Role_ID);
-      setRoleName(params.row.Role_Name);
-      setActiveStatus(params.row.Active_Status);
-      setOpenEditModal(true);
-    }
-  }}
+  
   sx={{
     "& .MuiDataGrid-columnHeader": {
      backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
@@ -434,15 +409,15 @@ console.log("Params:", params.row);
                   textDecorationThickness: "3px",
                 }}
               >
-                Add Role
+                Add ValuationType
               </h3>
               
               
                 <TextField
-                  label="Role"
-                  name="Role"
-                  value={Role_Name}
-                  onChange={(e) => setRoleName(e.target.value)}
+                  label="Valuation Name"
+                  name="Valuation Name"
+                  value={Valuation_Name}
+                  onChange={(e) => setValuationName(e.target.value)}
                   required
                 />
                  
@@ -453,31 +428,7 @@ console.log("Params:", params.row);
               
               
     
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={ActiveStatus}
-                    onChange={(e) => setActiveStatus(e.target.checked)}
-                    color="success" // Always use 'success' to keep the thumb green when active
-                    sx={{
-                      "& .MuiSwitch-track": {
-                        backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                        backgroundImage: "none !important", // Disable background image
-                      },
-                      "& .MuiSwitch-thumb": {
-                        backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                        borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                      },
-                    }}
-                  />
-                }
-                label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-                labelPlacement="end"
-                style={{
-                  color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-                  fontWeight: "bold",
-                }}
-              />
+             
               <Box
                 sx={{
                   gridColumn: "span 2",
@@ -531,43 +482,18 @@ console.log("Params:", params.row);
                         textDecorationThickness: "3px",
                       }}
                     >
-                      Edit Role
+                      Edit ValuationType
                     </h3>
                     <TextField
-                  label="Role"
-                  name="Role"
-                  value={Role_Name}
-                  onChange={(e) => setRoleName(e.target.value)}
+                  label="Valuation Name"
+                  name="Valuation Name"
+                  value={Valuation_Name}
+                  onChange={(e) => setValuationName(e.target.value)}
                   required
                 />
                  
           
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={ActiveStatus}
-                          onChange={(e) => setActiveStatus(e.target.checked)}
-                          color="success" // Always use 'success' to keep the thumb green when active
-                          sx={{
-                            "& .MuiSwitch-track": {
-                              backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                              backgroundImage: "none !important", // Disable background image
-                            },
-                            "& .MuiSwitch-thumb": {
-                              backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                              borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                            },
-                          }}
-                        />
-                      }
-                      label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-                      labelPlacement="end"
-                      style={{
-                        color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-                        fontWeight: "bold",
-                      }}
-                    />
-          
+                    
                     <Box
                       sx={{
                         gridColumn: "span 2",

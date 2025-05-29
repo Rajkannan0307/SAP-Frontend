@@ -29,7 +29,7 @@ import {
   getdetails,
 } from "../controller/CompanyMasterapiservice";
 import { api } from "../controller/constants";
-import { decryptSessionData } from "../controller/StorageUtils"
+import { decryptSessionData } from "../controller/StorageUtils";
 const Company = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
@@ -38,13 +38,12 @@ const Company = () => {
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
 
-  const [UserID, setUserID] = useState('');
+  const [UserID, setUserID] = useState("");
   const [uploadedFile, setUploadedFile] = useState(null);
 
   const [ActiveStatus, setActiveStatus] = useState(false);
 
- // const UserID = localStorage.getItem("UserID");
- 
+  // const UserID = localStorage.getItem("UserID");
 
   const [CompanyCode, setCompanyCode] = useState("");
   const [CompanyID, setCompanyID] = useState("");
@@ -127,12 +126,12 @@ const Company = () => {
     }
   };
 
-    useEffect(() => {
-    const encryptedData = sessionStorage.getItem('userData');
+  useEffect(() => {
+    const encryptedData = sessionStorage.getItem("userData");
     if (encryptedData) {
       const decryptedData = decryptSessionData(encryptedData);
       setUserID(decryptedData.UserID);
-      console.log("us",decryptedData.UserID)
+      console.log("us", decryptedData.UserID);
     }
   }, []);
 
@@ -367,13 +366,13 @@ const Company = () => {
 
   return (
     <div
-      style={{
+      style={{                                                                                 
         padding: 20,
         backgroundColor: "#F5F5F5",
         marginTop: "50px",
         display: "flex",
         flexDirection: "column",
-        height: "840px", // or a specific height if necessary
+        height: "calc(100vh - 90px)", // or a specific height if necessary
       }}
     >
       {/* Header Section */}
@@ -500,8 +499,8 @@ const Company = () => {
           sx={{
             // Header Style
             "& .MuiDataGrid-columnHeader": {
-              backgroundColor: "#2e59d9",
-              color: "white",
+             backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
+              color: "black",
               fontWeight: "bold",
             },
             "& .MuiDataGrid-columnHeaderTitle": {
