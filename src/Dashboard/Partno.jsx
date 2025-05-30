@@ -1208,19 +1208,7 @@ const Partno = () => {
             </Box>
           )}
 
-          {/* ✅ Download Button */}
-          {/* {uploadedFileData && (
-            
-             <Button
-                variant="outlined"
-                color="success"
-                onClick={handleDownloadFile}
-                style={{ marginTop: "5px", }}
-              ><IoMdDownload style={{ marginRight: "5px", fontSize: "18px", width:"18px"}} />
-                   Download Uploaded File
-                  </Button>
-            
-          )} */}
+      
           <Box
             sx={{
               gridColumn: "span 2",
