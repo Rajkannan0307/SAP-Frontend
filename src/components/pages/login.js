@@ -157,7 +157,8 @@ const Login = () => {
     <>
       <div
         style={{
-           height: "calc(100vh - 5px)",
+         minHeight:"calc(100vh - 1px)" ,
+
           width: "100vw",
           display: "flex",
           flexDirection: "column", // For vertical stacking (header + content)
@@ -179,7 +180,7 @@ const Login = () => {
     fontSize: "75px",
     fontFamily:"serif",
     //marginBottom:"70px", // Increase the font size here
-    marginTop:-45
+    marginTop:-23
   }}
 >
   SAP-APPROVAL WORKFLOW
