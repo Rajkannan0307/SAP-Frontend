@@ -26,11 +26,13 @@ import {
 import CloseIcon from '@mui/icons-material/Close'; // For CloseIcon
 import QueryBuilderIcon from '@mui/icons-material/QueryBuilder'; // For QueryBuilderIcon
 import axios from 'axios';
-
+//import * as XLSX from 'xlsx';
+import * as XLSX from 'sheetjs-style';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { getdetails, getApprovalView, HandleApprovalAction, getPlants, getRole, get201ApprovalView } from '../controller/Approval201apiservice';
+import { getdetails, getApprovalView, HandleApprovalAction, getPlants, getRole, get201ApprovalView,DownloadAllExcel } from '../controller/Approval201apiservice';
 import { decryptSessionData } from "../controller/StorageUtils"
+import DownloadIcon from '@mui/icons-material/Download';
 
 
 
@@ -53,7 +55,7 @@ const Approval201 = () => {
   // State to store text entered in the search box
   const [searchText, setSearchText] = useState('');
   const [rows, setRows] = useState([]);
-
+  const [User_Level, setUser_Level] = useState("");
 
   // Function to open the view modal
 
@@ -108,7 +110,8 @@ const Approval201 = () => {
       const decryptedData = decryptSessionData(encryptedData);
       setRole(decryptedData.RoleId);
       console.log("us", decryptedData.RoleId)
-
+      setUser_Level(decryptedData.UserLevelName)
+      console.log("userlevel", decryptedData.UserLevelName)
     }
   }, []);
 
@@ -160,11 +163,29 @@ const Approval201 = () => {
   };
 
   // Function to handle search input (you can implement filtering here)
-  const handleSearch = () => {
-    console.log("Searching for:", searchText);
-    // TODO: Add logic to filter your data based on searchText
-  };
 
+  const handleSearch = () => {
+    const text = searchText.trim().toLowerCase();
+
+    if (!text) {
+      setRows(originalRows);
+    } else {
+      const filteredRows = originalRows.filter((row) =>
+        [
+          "Plant_Code",
+          "Doc_ID",
+          "Date",
+          "Movement_ID",
+          "Request_By",
+          "Approver_Status"
+        ].some((key) => {
+          const value = row[key];
+          return value && String(value).toLowerCase().includes(text);
+        })
+      );
+      setRows(filteredRows);
+    }
+  };
   // Table columns for DataGrid
   const columns = [
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
@@ -174,44 +195,38 @@ const Approval201 = () => {
     { field: "Request_By", headerName: "Requset By", flex: 1 },
     { field: "Approver_Status", headerName: "Approver Status", flex: 1 },
 
-    // View Column
-    // {
-    //   field: "view",
-    //   headerName: "View",
-    //   flex: 1,
-    //   sortable: false,
-    //   renderCell: (params) => (
-    //     <div style={{ display: "flex", justifyContent: "center" }}>
-    //       <IconButton
-    //         size="large"
-    //         color="primary"
-    //         onClick={() => handleOpenViewModal(params.row)} // Pass row data to the view modal
-    //       >
-    //         <VisibilityIcon fontSize="small" />
-    //       </IconButton>
-    //     </div>
-    //   ),
-    // },
 
     // Approve Column
     {
-      field: "approved",
+      field: "action",
       headerName: "Action",
       flex: 1,
       sortable: false,
       renderCell: (params) => (
-        <div style={{ display: "flex", justifyContent: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: "8px" }}>
+          {/* Approve Button */}
           <IconButton
             size="large"
             color="success"
-            onClick={() => handleActionOpen(params.row)} // Call approve function with row data
+            onClick={() => handleActionOpen(params.row)}
+            title="Approve"
           >
             <CheckCircleIcon fontSize="small" />
           </IconButton>
+
+          {/* Download Button */}
+        <IconButton
+  size="large"
+  color="primary"
+  onClick={() => handleDownloadAllExcel(params.row.Doc_ID)} // ✅ only pass the docId
+  title="Download"
+>
+  <DownloadIcon fontSize="small" />
+</IconButton>
+
         </div>
       ),
-    },
-
+    }
 
 
   ];
@@ -274,6 +289,120 @@ const Approval201 = () => {
     }
   };
 
+  //view docid detail for Particular DocID Particular row  download
+const handleDownloadExcelRowView = (row) => {
+  if (!row) {
+    alert("No data available to export.");
+    return;
+  }
+
+  const DataColumns = [
+    "Doc_ID", "Plant_Code", "Material_Code", "Quantity", "SLoc_Code", "CostCenter_Code",
+    "Movement_Code", "Valuation_Type", "Batch", "Rate_Unit", "Reason_For_Movt",
+    "Approval_Status"
+  ];
+
+  const filteredData = [{
+    Doc_ID: row.Doc_ID || '',
+    Plant_Code: row.Plant_Code || '',
+    Material_Code: row.Material_Code || '',
+    Quantity: row.Qty || '',
+    SLoc_Code: row.SLoc_Code || '',
+    CostCenter_Code: row.CostCenter_Code || '',
+    Movement_Code: row.Movement_Code || '',
+    Valuation_Type: row.Valuation_Type || '',
+    Batch: row.Batch || '',
+    Rate_Unit: row.Rate_PerPart || '',
+    Reason_For_Movt: row.Remarks || '',
+    Approval_Status: row.Approval_Status || ''
+  }];
+
+  const worksheet = XLSX.utils.json_to_sheet(filteredData, { header: DataColumns });
+
+  // Style header
+  DataColumns.forEach((_, index) => {
+    const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+    if (worksheet[cellAddress]) {
+      worksheet[cellAddress].s = {
+        font: { bold: true, color: { rgb: "000000" } },
+        fill: { fgColor: { rgb: "FFFF00" } },
+        alignment: { horizontal: "center" },
+      };
+    }
+  });
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Row_Details");
+
+  XLSX.writeFile(workbook, `Trn201Movt_${row.Doc_ID || 'Row'}.xlsx`);
+
+  alert("Refer To The XLSX sheet For The Particular DocID Details.");
+};
+
+
+  //view detail for Particular DocID Details ... download
+
+
+const handleDownloadAllExcel = async (DocID) => {
+  try {
+    const response = await DownloadAllExcel(DocID);
+    console.log('Data from API:', response.data);
+
+    if (!response.data || response.data.length === 0) {
+      alert('No data available to download.');
+      return;
+    }
+
+    const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+    const fileExtension = ".xlsx";
+    const fileName = "Trn 201 Movement List";
+
+    // Create worksheet from JSON data
+    const ws = XLSX.utils.json_to_sheet(response.data);
+
+    // Style headers - row 0
+    const headers = Object.keys(response.data[0] || {});
+    headers.forEach((_, colIdx) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+      if (ws[cellAddress]) {
+        ws[cellAddress].s = {
+          font: { bold: true, color: { rgb: "000000" } },
+          fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
+          alignment: { horizontal: "center" },
+        };
+      }
+    });
+
+    // Create workbook and add worksheet
+    const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+
+    // Generate Excel file buffer
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+
+    // Create Blob and trigger download
+    const data = new Blob([excelBuffer], { type: fileType });
+    const url = window.URL.createObjectURL(data);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", fileName + fileExtension);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    alert("File downloaded successfully!");
+  } catch (error) {
+    console.error("Download failed:", error);
+
+    if (error.response) {
+      alert(`Error: ${error.response.data.message || 'Unknown backend error'}`);
+    } else if (error.request) {
+      alert('No response from server. Please try again later.');
+    } else {
+      alert(`Error: ${error.message}`);
+    }
+  }
+};
 
 
 
@@ -468,7 +597,8 @@ const Approval201 = () => {
             textDecoration: "underline",
             textDecorationColor: "limegreen",
             marginBottom: -7,
-            textDecorationThickness: '3px'
+            textDecorationThickness: '3px',
+            textUnderlineOffset: "6px",
           }}
         >
           201 Approval
@@ -476,39 +606,30 @@ const Approval201 = () => {
       </div>
 
       {/* Search and Filter Section */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 10,
-        }}
-      >
-        {/* Search input and button */}
-        <div style={{ display: "flex", gap: "10px" }}>
-          <TextField
-            size="small"
-            variant="outlined"
-            placeholder="Type here..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)} // Update state as user types
-            onKeyUp={handleSearch} // Optional: Trigger search on key press
-            style={{ width: "400px" }}
-          />
-          <Button
-            onClick={handleSearch}
-            style={{
-              borderRadius: "25px",
-              border: "2px solid skyblue",
-              color: "skyblue",
-              fontWeight: "bold",
-              textTransform: "none",
-            }}
-          >
-            <SearchIcon style={{ marginRight: "5px" }} />
-            Search
-          </Button>
-        </div>
+      {/* Search Box */}
+      <div style={{ display: "flex", gap: "10px" }}>
+        <TextField
+          size="small"
+          variant="outlined"
+          placeholder="Type here..."
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          onKeyUp={handleSearch}
+          style={{ width: "400px" }}
+        />
+        <Button
+          onClick={handleSearch}
+          style={{
+            borderRadius: "25px",
+            border: "2px solid skyblue",
+            color: "skyblue",
+            fontWeight: "bold",
+            textTransform: "none",
+          }}
+        >
+          <SearchIcon style={{ marginRight: "5px" }} />
+          Search
+        </Button>
       </div>
 
       {/* ✅ DataGrid */}
@@ -700,6 +821,7 @@ const Approval201 = () => {
               borderBottom: "3px solid limegreen",  // underline with control
               paddingBottom: "1px",                  // space between text and underline
               display: "inline-block",               // shrink width to text only
+              textUnderlineOffset: "px",
             }}
           >
             201 Approval
@@ -795,7 +917,7 @@ const Approval201 = () => {
       <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
         <Box
           sx={{
-            width: 610,
+            width: 1000,
             bgcolor: "background.paper",
             borderRadius: 2,
             boxShadow: 24,
@@ -824,31 +946,33 @@ const Approval201 = () => {
               color: "#1565c0",
               textDecoration: "underline",
               textDecorationColor: "limegreen",
-              textDecorationThickness: "3px",
+              textDecorationThickness: "2px",
+              textUnderlineOffset: "6px",
+
             }}
           >
             Approval Status Details
           </Typography>
 
           {/* 📋 Table */}
-          <Table size="small">
+          <Table size="small" sx={{ borderCollapse: 'collapse' }}>
             <TableHead>
-              <TableRow>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Date</TableCell>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Role</TableCell>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Name</TableCell>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Comment</TableCell>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Status</TableCell>
+              <TableRow sx={{ bgcolor: '#bdbdbd' }}>
+                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Date</TableCell>
+                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Role</TableCell>
+                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Name</TableCell>
+                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Comment</TableCell>
+                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Status</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {viewStatusData.map((item, index) => (
                 <TableRow key={index}>
-                  <TableCell>{item.Date}</TableCell>
-                  <TableCell>{item.Role}</TableCell>
-                  <TableCell>{item.Modified_By}</TableCell>
-                  <TableCell>{item.Approver_Comment}</TableCell>
-                  <TableCell>{item.Status}</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Date}</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Role}</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Modified_By}</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Approver_Comment}</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Status} - {User_Level}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

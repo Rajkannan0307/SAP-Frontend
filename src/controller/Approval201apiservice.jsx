@@ -69,6 +69,10 @@ export const resubmitAction = async (docId) => {
   return response.data;
 };
 
-
+export const DownloadAllExcel = async (DocID)=>{
+  console.log('Calling API with docId:', DocID); 
+    const response = await axios.get(`${api}/Approval201/download_data?Doc_ID=${DocID}`, );
+    return response;
+};
 
   

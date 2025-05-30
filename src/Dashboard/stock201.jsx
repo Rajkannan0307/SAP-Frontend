@@ -23,7 +23,7 @@ import {
   TableBody
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-
+import { decryptSessionData } from "../controller/StorageUtils"
 import EditIcon from '@mui/icons-material/Edit';
 import {
   DataGrid,
@@ -55,6 +55,8 @@ const Stock201 = () => {
   const [openViewModal, setOpenViewModal] = useState(false);
   const [openExcelDownloadModal, setOpenExcelDownloadModal] = useState(false);
   const UserID = localStorage.getItem('UserID');
+
+ const [User_Level, setUser_Level] = useState("");
 
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -115,8 +117,14 @@ const Stock201 = () => {
 
   useEffect(() => {
     getData();
-    // getViewData();
-
+   const encryptedData = sessionStorage.getItem('userData');
+       if (encryptedData) {
+         const decryptedData = decryptSessionData(encryptedData);
+         
+    
+     setUser_Level(decryptedData.UserLevelName)
+      console.log("userlevel", decryptedData.UserLevelName)
+       }
   }, []);
 
 
@@ -414,58 +422,55 @@ const Stock201 = () => {
 
 
   //View  Download row data
-  const handleDownloadExcelRowView = (selectedRow) => {
-    if (!selectedRow) {
-      alert("No row selected.");
-      return;
+  const handleDownloadExcelRowView = (item) => {
+  if (!item) {
+    alert("No row selected.");
+    return;
+  }
+
+  const DataColumns = [
+    "Doc_ID", "Plant_Code", "Material_Code", "Quantity", "SLoc_Code", "CostCenter_Code",
+    "Movement_Code", "Valuation_Type", "Batch", "Rate_Unit", "Reason_For_Movt", 
+    "Approval_Status", 
+  ];
+
+  const filteredData = [{
+    Doc_ID: item.Doc_ID || '',
+    Plant_Code: item.Plant_Code || '',
+    Material_Code: item.Material_Code || '',
+    Quantity: item.Qty || '',
+    SLoc_Code: item.SLoc_Code || '',
+    CostCenter_Code: item.CostCenter_Code || '',
+    Movement_Code: item.Movement_Code || '',
+    Valuation_Type: item.Valuation_Type || '',
+    Batch: item.Batch || '',
+    Rate_Unit: item.Rate_PerPart || '',
+    Reason_For_Movt: item.Remarks || '',
+    Approval_Status: item.Approval_Status || '',
+  }];
+
+  const worksheet = XLSX.utils.json_to_sheet(filteredData, { header: DataColumns });
+
+  // Apply styling to header
+  DataColumns.forEach((_, index) => {
+    const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+    if (worksheet[cellAddress]) {
+      worksheet[cellAddress].s = {
+        font: { bold: true, color: { rgb: "000000" } },
+        fill: { fgColor: { rgb: "FFFF00" } },
+        alignment: { horizontal: "center" },
+      };
     }
+  });
 
-    const DataColumns = [
-      "Doc_ID", "Plant_ID", "Material_ID", "Quantity", "SLoc_ID", "CostCenter_ID",
-      "Movement_ID", "Valuation_Type", "Batch", "Rate_Unit", "Remark", "User_ID",
-      "Approval_Status", "SAP_Transaction_Status", "Created_By", "Created_On"
-    ];
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Trn201Movt_Doc_Row_Data");
 
-    const filteredData = [{
-      Doc_ID: selectedRow.Doc_ID || '',
-      Plant_ID: selectedRow.Plant_ID || '',
-      Material_ID: selectedRow.Material_ID || '',
-      Quantity: selectedRow.Quantity || '',
-      SLoc_ID: selectedRow.SLoc_ID || '',
-      CostCenter_ID: selectedRow.CostCenter_ID || '',
-      Movement_ID: selectedRow.Movement_ID || '',
-      Valuation_Type: selectedRow.Valuation_Type || '',
-      Batch: selectedRow.Batch || '',
-      Rate_Unit: selectedRow.Rate_Unit || '',
-      Remark: selectedRow.Remark || '',
-      User_ID: selectedRow.User_ID || '',
-      Approval_Status: selectedRow.Approval_Status || '',
-      SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
-      Created_By: selectedRow.Created_By || '',
-      Created_On: selectedRow.Created_On || ''
-    }];
+  XLSX.writeFile(workbook, `Trn201Movt_${item.Doc_ID || 'Row'}.xlsx`);
 
-    const worksheet = XLSX.utils.json_to_sheet(filteredData, { header: DataColumns });
-
-    // Apply styling to header
-    DataColumns.forEach((_, index) => {
-      const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-      if (worksheet[cellAddress]) {
-        worksheet[cellAddress].s = {
-          font: { bold: true, color: { rgb: "000000" } },
-          fill: { fgColor: { rgb: "FFFF00" } },
-          alignment: { horizontal: "center" },
-        };
-      }
-    });
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Trn201Movt_Doc_Row_Data");
-
-    // Use Material_ID or Doc_ID for filename
-    XLSX.writeFile(workbook, `Trn201Movt_${selectedRow.Doc_ID || 'Row'}.xlsx`);
-
-  };
+  // ✅ Show alert after download
+  alert("Refer to the XLSX sheet for the particular row details.");
+};
 
 
 
@@ -599,101 +604,10 @@ const Stock201 = () => {
   };
 
 
-  //   const handleEdit = (rowData) => {
-  //   setSelectedRow(rowData);
-  //   const status = (rowData.Approval_Status || "").toLowerCase();
-  //   const editable = status === "rejected" || status === "under query";
-  //   setIsEditable(editable);
-  //   setOpenModal(true);
-  // };
-
-
-  //  const handleResubmit = async () => {
-  //     if (!selectedRow) {
-  //       alert("No document selected for Resubmit.");
-  //       return;
-  //     }
-  //     const data = {
-  //       Doc_ID: selectedRow.Doc_ID,
-  //       Action: "Resubmit",
-  //       UserID: UserID,
-
-  //     };
-
-  //     console.log("Sending Resubmit data:", data);
-
-  //     try {
-  //       const response = await getresubmit(data);
-  //       console.log("Resubmit API response:", response);
-
-  //       const isSuccess = response?.data?.success ?? response?.success;
-
-  //       if (isSuccess) {
-  //         alert("Document Resubmit!");
-  //         setOpenModal(false);
-  //         getData();
-  //       } else {
-  //         const message = response?.data?.message ?? response?.message ?? "Resubmit failed.";
-  //         alert(message);
-  //       }
-  //     } catch (error) {
-  //       console.error("Resubmit error:", error);
-  //       const errMsg = error.response?.data?.message || "An error occurred while Resubmit the document.";
-  //       alert(errMsg);
-  //     }
-  //   };
-
-
-  //   const handleCancel = async () => {
-  //     if (!selectedRow) {
-  //       alert("No document selected for Cancel.");
-  //       return;
-  //     }
-  //     const data = {
-  //       Doc_ID: selectedRow.Doc_ID,
-  //       Action: "Cancel",
-  //       UserID: UserID,
-
-  //     };
-
-  //     console.log("Sending Cancel data:", data);
-
-  //     try {
-  //       const response = await getCancel(data);
-  //       console.log("Cancel API response:", response);
-
-  //       const isSuccess = response?.data?.success ?? response?.success;
-
-  //       if (isSuccess) {
-  //         alert("Document Cancelled!");
-  //         setOpenModal(false)
-
-  //         getData();
-  //       } else {
-  //         const message = response?.data?.message ?? response?.message ?? "Cancel failed.";
-  //         alert(message);
-  //       }
-  //     } catch (error) {
-  //       console.error("Cancel error:", error);
-  //       const errMsg = error.response?.data?.message || "An error occurred while Cancel the document.";
-  //       alert(errMsg);
-  //     }
-  //   };
-
-
-  //   const handleCloseEditModal = () => {
-  //     setOpenEditModal(false);
-  //     setSelectedRow(null); // optionally reset selected data
-  //   };
-
-
-
-
   const handleEdit = (rowData) => {
     setSelectedRow(rowData);        // Set the selected document
     setOpenEditModal(true);         // Open the Edit Modal
   };
-
 
 
   const renderActionButtons = (rowData) => {
@@ -1264,7 +1178,7 @@ const Stock201 = () => {
         <Box sx={{
           position: 'relative', // Required for absolute positioning
           p: 4,
-          width: { xs: '90%', sm: 700 },
+          width: { xs: '90%', sm: 900 },
           mx: 'auto',
           mt: '5%',
           bgcolor: 'background.paper',
@@ -1326,8 +1240,8 @@ const Stock201 = () => {
                       <TableCell sx={{ border: '1px solid #555555' }}>{row.Role}</TableCell>
                       <TableCell sx={{ border: '1px solid #555555' }}>{row.Modified_By}</TableCell>
                       <TableCell sx={{ border: '1px solid #555555' }}>{row.Approver_Comment || '—'}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Status}</TableCell>
-                    </TableRow>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Status} - {User_Level}</TableCell>
+                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
