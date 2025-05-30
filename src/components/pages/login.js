@@ -64,7 +64,7 @@ const Login = () => {
           localStorage.setItem("Plantcode", data.Plant_Code);
           localStorage.setItem("EmpId", data.Employee_ID);
           localStorage.setItem("RoleID", data.Role_ID);
-          localStorage.setItem("Approval_Level", data.User_Level);
+          localStorage.setItem("Approval_Level", data.User_Level_ID);
           localStorage.setItem("UserLevel", data.User_Level);
           localStorage.setItem("Permission", data.Screen_Codes);
 
