@@ -199,7 +199,7 @@ const Sidebar = ({ setSidebarOpen }) => {
       <div style={{ padding: "10px" }}>
         {/* Dashboard Section */}
 
-        {Permissions.includes('dashboard') && (
+        {/* {Permissions.includes('dashboard') && (
           <button
 
             onClick={() => {
@@ -222,7 +222,7 @@ const Sidebar = ({ setSidebarOpen }) => {
             <FaExchangeAlt style={{ color: "turquoise", fontSize: "19px" }} />
             {open && "Transaction"}
           </button>
-        )}
+        )} */}
 
 
         {/* <div style={{ padding: "10px" }}> */}
@@ -271,7 +271,29 @@ const Sidebar = ({ setSidebarOpen }) => {
           ]}
         />
 
-
+{Permissions.includes('dashboard') && (
+    <button
+      onClick={() => {
+        closeAllDropdowns(); // Close other sections
+        navigate("/home/dashboard");
+      }}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        background: "none",
+        border: "none",
+        color: "white",
+        cursor: "pointer",
+        fontWeight: "bold",
+        fontSize: "18px",
+        margin: "10px 0",
+        marginBottom: "10px"
+      }}>
+      <FaExchangeAlt style={{ color: "turquoise", fontSize: "19px" }} />
+      {open && "Transaction"}
+    </button>
+  )}
 
         {/* Approval Section */}
         <SidebarSection

@@ -177,7 +177,7 @@ const Login = () => {
     textAlign: "center",
     marginBottom: "20px",
     color: "#1B5088",
-    fontSize: "75px",
+    fontSize: "65px",
     fontFamily:"serif",
     //marginBottom:"70px", // Increase the font size here
     marginTop:-23
@@ -190,8 +190,8 @@ const Login = () => {
         {/* Outer Centered Box */}
         <div
           style={{
-            width: "750px",
-            height: "500px",
+            width: "700px",
+            height: "450px",
             backgroundColor: "#1B5088",
             display: "flex",
             borderRadius: "12px",
@@ -216,7 +216,7 @@ const Login = () => {
               src={LoginImage}
               alt="Login Visual"
               style={{
-                width: "95%",
+                width: "87%",
                 height: "100vh",
                 objectFit: "contain",
                 borderRadius: "10px",
@@ -238,8 +238,8 @@ const Login = () => {
             {/* Inner Box for Login Details */}
             <div
               style={{
-                height: "230px", // Increased height
-                width: "320px",
+                height: "220px", // Increased height
+                width: "290px",
                 backgroundColor: "white",
                 padding: "20px",
                 borderRadius: "20px",
@@ -285,7 +285,7 @@ const Login = () => {
                   value={username}
                   onChange={(e) => setUserName(e.target.value)}
                   style={{
-                    width: "200px",
+                    width: "180px",
                     height: "17px",
                     padding: "10px",
                     borderRadius: "20px",
@@ -315,7 +315,7 @@ const Login = () => {
                     border: "1px solid #1B5088",
                     marginBottom: "20px",
                     textAlign: "center",
-                    width: "200px",
+                    width: "180px",
                     height: "17px",
                     margin: "5px auto",
                     display: "block",
@@ -341,7 +341,7 @@ const Login = () => {
                     fontWeight: "bold",
                     border: "none",
                     cursor: "pointer",
-                    width: "140px",
+                    width: "120px",
                     height: "30px",
                     display: "block",
                     margin: "20px auto",
