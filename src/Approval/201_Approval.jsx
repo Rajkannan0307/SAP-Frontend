@@ -97,6 +97,7 @@ const Approval201 = () => {
   console.log('Approval_Level', Approval_Level)
   const Plant_ID = localStorage.getItem('Plant_ID')
 
+  const Movement_ID = localStorage.getItem('Movement_ID');
   console.log('pl', Plant_ID)
 
   //ApprovalListView (View approver status)
@@ -262,7 +263,7 @@ const Approval201 = () => {
 
   const getData = async () => {
     try {
-      const response = await getdetails(Plant_ID, RoleID, Role);
+      const response = await getdetails(Plant_ID, RoleID, Role,Movement_ID);
 
       console.log('response 201', response);  // Check the structure of response
       setData(response);  // Ensure that this is correctly setting the data
