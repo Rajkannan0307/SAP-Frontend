@@ -190,14 +190,15 @@ const Stock202 = () => {
       // SAP_Transaction_Status: item.SAP_Transaction_Status || '',
 
       Plant_Code_Validation: item.Plant_Val,
-      Material_Code_Validation: item.Material_Val,
+      Plant_Material_Code_Validation: item.Material_Val,
       SLoc_Code_Validation: item.SLoc_Val,
       CostCenter_Code_Validation: item.CostCenter_Val,
 
-      PlantMaterial_Code_Validation: item.Plant_SLoc_Val,
-      PlantSLoc_Code_Validation: item.Plant_SLoc_Val,
+      Plant_SLoc_Val_Validation: item.Plant_SLoc_Val,
+      Plant_CostCenter_Val_Validation: item.Plant_CostCenter_Val,
       Movt_Validation: item.Reason_Val,
       Mst_Valuation_Val: item.Valuation_Val,
+      User_Plant_Val: item.User_Plant_Val, 
 
 
     }));
@@ -266,7 +267,9 @@ const Stock202 = () => {
     // 🔴 Style red text for validation columns only
     const styleValidationColumns = (worksheet, columns, dataLength) => {
       const validationCols = ['Plant_Val', 'Material_Val',
-        'SLoc_Val', 'CostCenter_Val',]
+        'SLoc_Val', 'CostCenter_Val','Plant_SLoc_Val', 
+        'Plant_CostCenter_Val','Reason_Val',
+        'Valuation_Val','User_Plant_Val',]
 
       for (let row = 1; row <= dataLength; row++) {
         validationCols.forEach(colName => {
@@ -1197,12 +1200,12 @@ const Stock202 = () => {
                 </TableHead>
                 <TableBody>
                   {viewStatusData.map((row, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell>{row.Action_Date}</TableCell>
-                      <TableCell>{row.Role}</TableCell>
-                      <TableCell>{row.Action_By}</TableCell>
-                      <TableCell>{row.Approver_Comment || '—'}</TableCell>
-                      <TableCell>{row.Status} - {User_Level}</TableCell>
+                    <TableRow key={idx} sx={{ border: '1px solid #555555' }}>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_Date}</TableCell>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Role}</TableCell>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_By}</TableCell>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Approver_Comment || '—'}</TableCell>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Status} - {User_Level}</TableCell>
                     </TableRow>
                   ))}
 
