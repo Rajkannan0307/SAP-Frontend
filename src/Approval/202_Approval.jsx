@@ -26,11 +26,13 @@ import {
 import CloseIcon from '@mui/icons-material/Close'; // For CloseIcon
 import QueryBuilderIcon from '@mui/icons-material/QueryBuilder'; // For QueryBuilderIcon
 import axios from 'axios';
-
+//import * as XLSX from 'xlsx';
+import * as XLSX from 'sheetjs-style';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { getdetails, getApprovalView, HandleApprovalAction, getPlants, getRole,get202ApprovalView } from '../controller/Approval202apiservice';
+import { getdetails, getApprovalView, HandleApprovalAction, getPlants, getRole, get202ApprovalView,DownloadAllExcel } from '../controller/Approval202apiservice';
 import { decryptSessionData } from "../controller/StorageUtils"
+import DownloadIcon from '@mui/icons-material/Download';
 
 
 
@@ -53,7 +55,7 @@ const Approval202 = () => {
   // State to store text entered in the search box
   const [searchText, setSearchText] = useState('');
   const [rows, setRows] = useState([]);
-
+  const [User_Level, setUser_Level] = useState("");
 
   // Function to open the view modal
 
@@ -85,7 +87,7 @@ const Approval202 = () => {
   const [ToMatCode, setToMatCode] = useState("");
   const [NetDifferentPrice, setNetDifferentPrice] = useState("");
   const [ApprovalStatus, setApprovalStatus] = useState([]);
- const [Doc_ID, setDoc_ID] = useState(null);
+  const [Doc_ID, setDoc_ID] = useState(null);
 
   //ApprovalListView
   const [Role, setRole] = useState('');
@@ -98,8 +100,8 @@ const Approval202 = () => {
   console.log('pl', Plant_ID)
 
   //ApprovalListView (View approver status)
-const [openViewStatusModal, setOpenViewStatusModal] = useState(false);
-const [viewStatusData, setViewStatusData] = useState([]);
+  const [openViewStatusModal, setOpenViewStatusModal] = useState(false);
+  const [viewStatusData, setViewStatusData] = useState([]);
 
 
   useEffect(() => {
@@ -108,34 +110,35 @@ const [viewStatusData, setViewStatusData] = useState([]);
       const decryptedData = decryptSessionData(encryptedData);
       setRole(decryptedData.RoleId);
       console.log("us", decryptedData.RoleId)
-
+      setUser_Level(decryptedData.UserLevelName)
+      console.log("userlevel", decryptedData.UserLevelName)
     }
   }, []);
 
 
   const handleViewStatus = async (docId) => {
-  console.log("Fetching approval status for Doc_ID:", docId);
-  try {
-    const response = await get202ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
-    console.log("API Response:", response);
-    setViewStatusData(response);  // Update your state with the fetched data
-  } catch (error) {
-    console.error("❌ Error fetching grouped records:", error);
-    setViewStatusData([]);  // Handle errors and reset data
-  }
-};
+    console.log("Fetching approval status for Doc_ID:", docId);
+    try {
+      const response = await get202ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
+      console.log("API Response:", response);
+      setViewStatusData(response);  // Update your state with the fetched data
+    } catch (error) {
+      console.error("❌ Error fetching grouped records:", error);
+      setViewStatusData([]);  // Handle errors and reset data
+    }
+  };
 
 
 
 
 
-const handleOpenViewStatusModal = async (rowData) => {
-  const docId = rowData?.Doc_ID; // ✅ Get only Doc_ID
-  console.log("Opening View Status Modal for Doc_ID:", docId);
+  const handleOpenViewStatusModal = async (rowData) => {
+    const docId = rowData?.Doc_ID; // ✅ Get only Doc_ID
+    console.log("Opening View Status Modal for Doc_ID:", docId);
 
-  setOpenViewStatusModal(true);
-  await handleViewStatus(docId); // ✅ Pass only Doc_ID to API call
-};
+    setOpenViewStatusModal(true);
+    await handleViewStatus(docId); // ✅ Pass only Doc_ID to API call
+  };
 
 
 
@@ -160,11 +163,29 @@ const handleOpenViewStatusModal = async (rowData) => {
   };
 
   // Function to handle search input (you can implement filtering here)
-  const handleSearch = () => {
-    console.log("Searching for:", searchText);
-    // TODO: Add logic to filter your data based on searchText
-  };
 
+  const handleSearch = () => {
+    const text = searchText.trim().toLowerCase();
+
+    if (!text) {
+      setRows(originalRows);
+    } else {
+      const filteredRows = originalRows.filter((row) =>
+        [
+          "Plant_Code",
+          "Doc_ID",
+          "Date",
+          "Movement_ID",
+          "Request_By",
+          "Approver_Status"
+        ].some((key) => {
+          const value = row[key];
+          return value && String(value).toLowerCase().includes(text);
+        })
+      );
+      setRows(filteredRows);
+    }
+  };
   // Table columns for DataGrid
   const columns = [
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
@@ -174,44 +195,38 @@ const handleOpenViewStatusModal = async (rowData) => {
     { field: "Request_By", headerName: "Requset By", flex: 1 },
     { field: "Approver_Status", headerName: "Approver Status", flex: 1 },
 
-    // View Column
-    // {
-    //   field: "view",
-    //   headerName: "View",
-    //   flex: 1,
-    //   sortable: false,
-    //   renderCell: (params) => (
-    //     <div style={{ display: "flex", justifyContent: "center" }}>
-    //       <IconButton
-    //         size="large"
-    //         color="primary"
-    //         onClick={() => handleOpenViewModal(params.row)} // Pass row data to the view modal
-    //       >
-    //         <VisibilityIcon fontSize="small" />
-    //       </IconButton>
-    //     </div>
-    //   ),
-    // },
 
     // Approve Column
     {
-      field: "approved",
+      field: "action",
       headerName: "Action",
       flex: 1,
       sortable: false,
       renderCell: (params) => (
-        <div style={{ display: "flex", justifyContent: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: "8px" }}>
+          {/* Approve Button */}
           <IconButton
             size="large"
             color="success"
-            onClick={() => handleActionOpen(params.row)} // Call approve function with row data
+            onClick={() => handleActionOpen(params.row)}
+            title="Approve"
           >
             <CheckCircleIcon fontSize="small" />
           </IconButton>
+
+          {/* Download Button */}
+        <IconButton
+  size="large"
+  color="primary"
+  onClick={() => handleDownloadAllExcel(params.row.Doc_ID)} // ✅ only pass the docId
+  title="Download"
+>
+  <DownloadIcon fontSize="small" />
+</IconButton>
+
         </div>
       ),
-    },
-
+    }
 
 
   ];
@@ -247,7 +262,7 @@ const handleOpenViewStatusModal = async (rowData) => {
 
   const getData = async () => {
     try {
-      const response = await getdetails(Plant_ID, RoleID, Role,);
+      const response = await getdetails(Plant_ID, RoleID, Role);
 
       console.log('response 202', response);  // Check the structure of response
       setData(response);  // Ensure that this is correctly setting the data
@@ -274,6 +289,120 @@ const handleOpenViewStatusModal = async (rowData) => {
     }
   };
 
+  //view docid detail for Particular DocID Particular row  download
+const handleDownloadExcelRowView = (row) => {
+  if (!row) {
+    alert("No data available to export.");
+    return;
+  }
+
+  const DataColumns = [
+    "Doc_ID", "Plant_Code", "Material_Code", "Quantity", "SLoc_Code", "CostCenter_Code",
+    "Movement_Code", "Valuation_Type", "Batch", "Rate_Unit", "Reason_For_Movt",
+    "Approval_Status"
+  ];
+
+  const filteredData = [{
+    Doc_ID: row.Doc_ID || '',
+    Plant_Code: row.Plant_Code || '',
+    Material_Code: row.Material_Code || '',
+    Quantity: row.Qty || '',
+    SLoc_Code: row.SLoc_Code || '',
+    CostCenter_Code: row.CostCenter_Code || '',
+    Movement_Code: row.Movement_Code || '',
+    Valuation_Type: row.Valuation_Type || '',
+    Batch: row.Batch || '',
+    Rate_Unit: row.Rate_PerPart || '',
+    Reason_For_Movt: row.Remarks || '',
+    Approval_Status: row.Approval_Status || ''
+  }];
+
+  const worksheet = XLSX.utils.json_to_sheet(filteredData, { header: DataColumns });
+
+  // Style header
+  DataColumns.forEach((_, index) => {
+    const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+    if (worksheet[cellAddress]) {
+      worksheet[cellAddress].s = {
+        font: { bold: true, color: { rgb: "000000" } },
+        fill: { fgColor: { rgb: "FFFF00" } },
+        alignment: { horizontal: "center" },
+      };
+    }
+  });
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Row_Details");
+
+  XLSX.writeFile(workbook, `Trn202Movt_${row.Doc_ID || 'Row'}.xlsx`);
+
+  alert("Refer To The XLSX sheet For The Particular DocID Details.");
+};
+
+
+  //view detail for Particular DocID Details ... download
+
+
+const handleDownloadAllExcel = async (DocID) => {
+  try {
+    const response = await DownloadAllExcel(DocID);
+    console.log('Data from API:', response.data);
+
+    if (!response.data || response.data.length === 0) {
+      alert('No data available to download.');
+      return;
+    }
+
+    const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+    const fileExtension = ".xlsx";
+    const fileName = "Trn 202 Movement List";
+
+    // Create worksheet from JSON data
+    const ws = XLSX.utils.json_to_sheet(response.data);
+
+    // Style headers - row 0
+    const headers = Object.keys(response.data[0] || {});
+    headers.forEach((_, colIdx) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+      if (ws[cellAddress]) {
+        ws[cellAddress].s = {
+          font: { bold: true, color: { rgb: "000000" } },
+          fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
+          alignment: { horizontal: "center" },
+        };
+      }
+    });
+
+    // Create workbook and add worksheet
+    const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+
+    // Generate Excel file buffer
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+
+    // Create Blob and trigger download
+    const data = new Blob([excelBuffer], { type: fileType });
+    const url = window.URL.createObjectURL(data);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", fileName + fileExtension);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    alert("File downloaded successfully! View The Particular DocID Details ...");
+  } catch (error) {
+    console.error("Download failed:", error);
+
+    if (error.response) {
+      alert(`Error: ${error.response.data.message || 'Unknown backend error'}`);
+    } else if (error.request) {
+      alert('No response from server. Please try again later.');
+    } else {
+      alert(`Error: ${error.message}`);
+    }
+  }
+};
 
 
 
@@ -293,10 +422,10 @@ const handleOpenViewStatusModal = async (rowData) => {
 
     // Prepare the data object to send for approval
     const data = {
-      Doc_ID: selectedRow.Doc_ID, 
-      Approver_Comment: Comment, 
-      Action: "Approved", 
-      UserID: UserID,  
+      Doc_ID: selectedRow.Doc_ID,
+      Approver_Comment: Comment,
+      Action: "Approved",
+      UserID: UserID,
       Approval_Level: Role,  // Current approval level
     };
 
@@ -468,7 +597,8 @@ const handleOpenViewStatusModal = async (rowData) => {
             textDecoration: "underline",
             textDecorationColor: "limegreen",
             marginBottom: -7,
-            textDecorationThickness: '3px'
+            textDecorationThickness: '3px',
+            textUnderlineOffset: "6px",
           }}
         >
           202 Approval
@@ -476,39 +606,30 @@ const handleOpenViewStatusModal = async (rowData) => {
       </div>
 
       {/* Search and Filter Section */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 10,
-        }}
-      >
-        {/* Search input and button */}
-        <div style={{ display: "flex", gap: "10px" }}>
-          <TextField
-            size="small"
-            variant="outlined"
-            placeholder="Type here..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)} // Update state as user types
-            onKeyUp={handleSearch} // Optional: Trigger search on key press
-            style={{ width: "400px" }}
-          />
-          <Button
-            onClick={handleSearch}
-            style={{
-              borderRadius: "25px",
-              border: "2px solid skyblue",
-              color: "skyblue",
-              fontWeight: "bold",
-              textTransform: "none",
-            }}
-          >
-            <SearchIcon style={{ marginRight: "5px" }} />
-            Search
-          </Button>
-        </div>
+      {/* Search Box */}
+      <div style={{ display: "flex", gap: "10px" }}>
+        <TextField
+          size="small"
+          variant="outlined"
+          placeholder="Type here..."
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          onKeyUp={handleSearch}
+          style={{ width: "400px" }}
+        />
+        <Button
+          onClick={handleSearch}
+          style={{
+            borderRadius: "25px",
+            border: "2px solid skyblue",
+            color: "skyblue",
+            fontWeight: "bold",
+            textTransform: "none",
+          }}
+        >
+          <SearchIcon style={{ marginRight: "5px" }} />
+          Search
+        </Button>
       </div>
 
       {/* ✅ DataGrid */}
@@ -533,8 +654,8 @@ const handleOpenViewStatusModal = async (rowData) => {
           sx={{
             // Header Style
             "& .MuiDataGrid-columnHeader": {
-              backgroundColor: "#bdbdbd",
-              color: "black",
+              backgroundColor: '#bdbdbd',
+              color: "black", //"white",
               fontWeight: "bold",
             },
             "& .MuiDataGrid-columnHeaderTitle": {
@@ -562,294 +683,195 @@ const handleOpenViewStatusModal = async (rowData) => {
 
       {/* View Modal for row details */}
 
-      <Modal open={openViewModal} onClose={() => setOpenViewModal(false)}>
+      {/* Action modal  */}
+      <Modal open={openActionModal} onClose={handleCancel}>
         <Box
           sx={{
-
-            width: 900,
-            height: 400,
+            width: 380,
+            height: '330px',
             bgcolor: "background.paper",
             borderRadius: 2,
             boxShadow: 24,
             p: 4,
             margin: "auto",
-            marginTop: "5%",
+            marginTop: "10%",
             display: "flex",
             flexDirection: "column",
-            alignItems: "flex-start",
-            overflowY: "auto",
-            cursor: "scroll",
+            alignItems: "center",
           }}
         >
-          <div style={{ width: "100%", textAlign: "center" }}>
-            <h3
-              style={{
-                marginBottom: "15px",
-                color: "blue",
-                textDecoration: "underline",
-                textDecorationColor: "limegreen",
-                textDecorationThickness: "3px",
+          <Typography
+            variant="h5"
+            sx={{
+              color: "#1565c0",
+              mb: 3,
+              textAlign: "center",
+              fontWeight: "bold",
+              borderBottom: "3px solid limegreen",  // underline with control
+              paddingBottom: "1px",                  // space between text and underline
+              display: "inline-block",               // shrink width to text only
+              textUnderlineOffset: "px",
+            }}
+          >
+            202 Approval
+          </Typography>
+
+          <TextField
+            label="Enter your comment"
+            multiline
+            rows={3}
+            variant="outlined"
+            fullWidth
+            margin="normal"
+            onChange={(e) => setComment(e.target.value)}
+          />
+
+          {/* Action Buttons */}
+          <Box display="flex" justifyContent="space-between" width="100%" mt={2}>
+            <Button
+              variant="contained"
+              color="success"
+              onClick={handleApprove}
+              startIcon={<CheckCircleIcon />}
+            >
+              Approve
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleReject}
+              startIcon={<CloseIcon />}
+              sx={{
+                bgcolor: '#d32f2f', // default red (MUI error.main)
+                '&:hover': {
+                  bgcolor: '#9a0007', // darker red on hover (MUI error.dark)
+                },
               }}
             >
-              Document Details
-            </h3>
-          </div>
+              Reject
+            </Button>
+            <Button
+              variant="contained"
+              color="warning"
+              onClick={handleQuery}
+              startIcon={<QueryBuilderIcon />}
+            >
+              Query
+            </Button>
+          </Box>
 
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Plant Code</TableCell>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Date</TableCell>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>From Material</TableCell>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>To Material </TableCell>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Qty</TableCell>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Net Difference Price</TableCell>
-
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {selectedRow && selectedRow.length > 0 && (
-                <>
-                  {/* Calculate the total sum of Total_Net_Difference */}
-
-                  {selectedRow.map((item, index, array) => {
-                    console.log('item', item);
-
-                    const totalNetDifference = selectedRow.reduce((acc, item) => acc + item.Net_Difference
-                      , 0);
-                    return (
-                      <React.Fragment key={index}>
-                        {/* Table row with item details */}
-                        <TableRow>
-                          <TableCell>{item.Plant_Code}</TableCell>
-                          <TableCell>{item.Date}</TableCell>
-                          <TableCell>{item.From_Material}</TableCell>
-                          <TableCell>{item.To_Material}</TableCell>
-                          <TableCell>{item.Qty}</TableCell>
-                          <TableCell sx={{ textAlign: "right" }}>{item.Net_Difference}</TableCell>
-
-                        </TableRow>
-
-                        {/* Total row, displayed after the last item */}
-                        {index === array.length - 1 && (
-                          <TableRow sx={{ backgroundColor: "#f9f9f9" }}>
-                            <TableCell colSpan={5} sx={{ textAlign: "right", fontWeight: "bold" }}>
-                              Total
-                            </TableCell>
-                            <TableCell sx={{ textAlign: "right",  fontWeight: "bold" }}>
-                              {totalNetDifference} {/* Display total sum here */}
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </>
-              )}
-            </TableBody>
-
-          </Table>
-
+          {/* ✅ Fixed View Button */}
           <Button
-            onClick={() => setOpenViewModal(false)}
-            variant="contained"
-            size="small"
-            color="error"
+            variant="outlined"
+            color="secondary"
+            onClick={() => handleOpenViewStatusModal(selectedRow)}
             sx={{
-              mt: 2,              // Margin top for spacing
-              width: "120px",     // Fixed width
-              alignSelf: "center",
-              backgroundColor: "#f44336", // Red 
+              mt: 2,
+              color: '#ffffff',           //  purple text
+              borderColor: '#6a1b9a',     // purple border
+              bgcolor: '#6a1b9a',         // light purple background
               '&:hover': {
-                backgroundColor: "#d32f2f", // Darker red when hovered 
+                bgcolor: '#4a148c',       // dark purple background on hover
+                color: '#ffffff',         // white text on hover
+                borderColor: '#4a148c',   // dark purple border on hover
               },
             }}
           >
-            Close
+            View Approval Status
+          </Button>
+
+
+          {/* Cancel Button */}
+          <Button
+            variant="outlined"
+            onClick={handleCancel}
+            sx={{
+              marginTop: "20px",
+              backgroundColor: "gray",
+              color: "black",
+              borderColor: "black",
+              '&:hover': {
+                borderColor: "black",
+                backgroundColor: "#e0e0e0",
+              },
+            }}
+          >
+            Cancel
           </Button>
         </Box>
       </Modal>
 
-    
-
-     {/* Action modal  */}
-<Modal open={openActionModal} onClose={handleCancel}>
-  <Box
-    sx={{
-      width: 400,
-      bgcolor: "background.paper",
-      borderRadius: 2,
-      boxShadow: 24,
-      p: 4,
-      margin: "auto",
-      marginTop: "10%",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-    }}
-  >
-    <Typography
-      variant="h5"
-      sx={{
-        color: "#1565c0",
-        mb: 3,
-        textAlign: "center",
-        fontWeight: "bold",
-        textDecoration: "underline",
-        textDecorationColor: "limegreen",
-        textDecorationThickness: "3px",
-      }}
-    >
-      202 Approval
-    </Typography>
-
-    <TextField
-      label="Enter your comment"
-      multiline
-      rows={4}
-      variant="outlined"
-      fullWidth
-      margin="normal"
-      onChange={(e) => setComment(e.target.value)}
-    />
-
-    {/* Action Buttons */}
-    <Box display="flex" justifyContent="space-between" width="100%" mt={2}>
-      <Button
-        variant="contained"
-        color="success"
-        onClick={handleApprove}
-        startIcon={<CheckCircleIcon />}
-      >
-        Approve
-      </Button>
-      <Button
-        variant="contained"
-        color="error"
-        onClick={handleReject}
-        startIcon={<CloseIcon />}
-      >
-        Reject
-      </Button>
-      <Button
-        variant="contained"
-        color="warning"
-        onClick={handleQuery}
-        startIcon={<QueryBuilderIcon />}
-      >
-        Query
-      </Button>
-    </Box>
-
-    {/* ✅ Fixed View Button */}
-    <Button
-      variant="outlined"
-      color="secondary"
-      onClick={() => handleOpenViewStatusModal(selectedRow)} // ✅ Using selectedRow instead of params
-      sx={{
-        mt: 2,
-        color: '#4a148c',
-        borderColor: '#4a148c',
-        '&:hover': {
-          backgroundColor: '#4a148c',
-          color: '#ffffff',
-          borderColor: '#4a148c',
-        },
-      }}
-    >
-      View Approval Status
-    </Button>
-
-    {/* Cancel Button */}
-    <Button
-      variant="outlined"
-      onClick={handleCancel}
-      sx={{
-        marginTop: "20px",
-        backgroundColor: "gray",
-        color: "black",
-        borderColor: "black",
-        '&:hover': {
-          borderColor: "black",
-          backgroundColor: "#e0e0e0",
-        },
-      }}
-    >
-      Cancel
-    </Button>
-  </Box>
-</Modal>
 
 
+      <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
+        <Box
+          sx={{
+            width: 1000,
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            // fontSize: 12,
+            p: 3,
+            margin: "auto",
+            marginTop: "10%",
+            position: "relative", // to position X button
+          }}
+        >
+          {/* ❌ Top-right close (X) button */}
+          <IconButton
+            onClick={() => setOpenViewStatusModal(false)}
+            sx={{ position: "absolute", top: 8, right: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
 
-<Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
-  <Box
-    sx={{
-      width: 610,
-      bgcolor: "background.paper",
-      borderRadius: 2,
-      boxShadow: 24,
-      // fontSize: 12,
-      p: 3,
-      margin: "auto",
-      marginTop: "10%",
-      position: "relative", // to position X button
-    }}
-  >
-    {/* ❌ Top-right close (X) button */}
-    <IconButton
-      onClick={() => setOpenViewStatusModal(false)}
-      sx={{ position: "absolute", top: 8, right: 8 }}
-    >
-      <CloseIcon />
-    </IconButton>
+          {/* 📝 Modal Title */}
+          <Typography
+            variant="h6"
+            align="center"
+            sx={{
+              mb: 2,
+              fontWeight: "bold",
+              color: "#1565c0",
+              textDecoration: "underline",
+              textDecorationColor: "limegreen",
+              textDecorationThickness: "2px",
+              textUnderlineOffset: "6px",
 
-    {/* 📝 Modal Title */}
-    <Typography
-      variant="h6"
-      align="center"
-      sx={{
-        mb: 2,
-        fontWeight: "bold",
-        color: "#1565c0",
-        textDecoration: "underline",
-        textDecorationColor: "limegreen",
-        textDecorationThickness: "3px",
-      }}
-    >
-      Approval Status Details
-    </Typography>
+            }}
+          >
+            Approval Status Details
+          </Typography>
 
-    {/* 📋 Table */}
-    <Table size="small">
-      <TableHead>
-        <TableRow>
-          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Date</TableCell>
-          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Role</TableCell> 
-          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Name</TableCell>
-          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Comment</TableCell>
-          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Status</TableCell>   
-        </TableRow>
-      </TableHead>
-    <TableBody>
-  {viewStatusData.map((item, index) => (
-    <TableRow key={index}>
-      <TableCell>{item.Date}</TableCell>
-      <TableCell>{item.Role}</TableCell>
-      <TableCell>{item.Modified_By}</TableCell>
-      <TableCell>{item.Approver_Comment}</TableCell>
-      <TableCell>{item.Status}</TableCell>
-    </TableRow>
-  ))}
-</TableBody>
+          {/* 📋 Table */}
+          <Table size="small" sx={{ borderCollapse: 'collapse' }}>
+            <TableHead>
+              <TableRow sx={{ bgcolor: '#bdbdbd' }}>
+                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Date</TableCell>
+                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Role</TableCell>
+                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Name</TableCell>
+                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Comment</TableCell>
+                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Status</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {viewStatusData.map((item, index) => (
+                <TableRow key={index}>
+                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Date}</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Role}</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Modified_By}</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Approver_Comment}</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Status} - {User_Level}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
 
 
 
 
-    </Table>
-  </Box>
-</Modal>
+          </Table>
+        </Box>
+      </Modal>
 
     </div>
   );

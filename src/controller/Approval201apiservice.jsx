@@ -2,12 +2,10 @@ import { api } from "./constants";
 import axios from "axios";
 
 
-export const getdetails=async (Plant, role,Role,Doc_ID, Movement_ID)=>{
-    const response = await axios.get(`${api}/Approval201/get_details?Plant=${Plant}&role=${role}&Role=${Role}&Movement_ID${Movement_ID}`);
+export const getdetails=async (Plant, role,Role,Doc_ID)=>{
+    const response = await axios.get(`${api}/Approval201/get_details?Plant=${Plant}&role=${role}&Role=${Role}`);
     return response.data;
 };
-
-
 
 export const getApprovalView = async (docId) => {
     
@@ -57,7 +55,6 @@ export const get_detailsApproval=async (Plant, role,Role,Doc_ID)=>{
     const response = await axios.get(`${api}/Approval201/get_detailsApproval?Plant=${Plant}&role=${role}&Role=${Role}`);
     return response.data; 
    }; 
-
 export const get201ApprovalView = async (docId) => {
   const response = await axios.get(`${api}/Approval201/View201ApprovalStatus?Doc_ID=${docId}`);
   

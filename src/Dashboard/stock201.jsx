@@ -56,7 +56,7 @@ const Stock201 = () => {
   const [openExcelDownloadModal, setOpenExcelDownloadModal] = useState(false);
   const UserID = localStorage.getItem('UserID');
 
- const [User_Level, setUser_Level] = useState("");
+  const [User_Level, setUser_Level] = useState("");
 
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -66,26 +66,8 @@ const Stock201 = () => {
   const [data, setData] = useState([]);
 
 
-  const [DocID, setDocID] = useState("");
-  const [PlantID, setPlantID] = useState("");
-  const [MovementID, setMovementID] = useState("");
-  const [Quantity, setQuantity] = useState("");
-  const [SLocID, setSLocID] = useState("");
-  const [ValuationType, sValuationType] = useState("");
-  const [Batch, setBatch] = useState("");
-  const [RatePerUnit, setRatePerUnit] = useState("");
-  const [Description, setDescription] = useState("");
-  const [Remark, setRemark] = useState("");
-  const [SAPTransactionStatus, setSAPTransactionStatus] = useState("");
-  const [PlantCode, setPlantCode] = useState('');
-  const [Date, setDate] = useState("");
-  const [ApprovalStatus, setApprovalStatus] = useState([]);
 
   const [openModal, setOpenModal] = useState(false);
-  // const [openViewStatusModal, setOpenViewStatusModal] = useState(false);
-  // const [selectedRow, setSelectedRow] = useState(null);
-  // const [viewStatusData, setViewStatusData] = useState([]);
-  // const [openEditModal, setOpenEditModal] = useState(false);
 
   const [selectedRow, setSelectedRow] = useState(null);
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -117,14 +99,14 @@ const Stock201 = () => {
 
   useEffect(() => {
     getData();
-   const encryptedData = sessionStorage.getItem('userData');
-       if (encryptedData) {
-         const decryptedData = decryptSessionData(encryptedData);
-         
-    
-     setUser_Level(decryptedData.UserLevelName)
+    const encryptedData = sessionStorage.getItem('userData');
+    if (encryptedData) {
+      const decryptedData = decryptSessionData(encryptedData);
+
+
+      setUser_Level(decryptedData.UserLevelName)
       console.log("userlevel", decryptedData.UserLevelName)
-       }
+    }
   }, []);
 
 
@@ -156,7 +138,7 @@ const Stock201 = () => {
         const response = await Movement201(formData)
         console.log('response', response.data)
         alert(response.data.message)
-         if (response.data.NewRecord.length > 0 || response.data.DuplicateRecords.length > 0 || response.data.ErrorRecords.length > 0) {
+        if (response.data.NewRecord.length > 0 || response.data.DuplicateRecords.length > 0 || response.data.ErrorRecords.length > 0) {
           downloadExcel(response.data.NewRecord, response.data.DuplicateRecords, response.data.ErrorRecords);
         }
       } catch (error) {
@@ -170,25 +152,23 @@ const Stock201 = () => {
   }
 
 
-
-
   const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
     const wb = XLSX.utils.book_new();
 
     // Column headers for Error Records
-    const ErrorColumns = [ 'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+    const ErrorColumns = ['Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
       'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
-      
+
     ];
 
     // Column headers for New Records (based on your columns array)
-    const newRecordsColumns = [ 'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+    const newRecordsColumns = ['Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
       'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',];
 
 
     // Column headers for Duplicate Records
-    const DuplicateColumns = [ 'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
-      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark', 
+    const DuplicateColumns = ['Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
     ];
 
 
@@ -206,18 +186,24 @@ const Stock201 = () => {
       Rate_Unit: item.Rate_Per_Unit || '',
       Remark: item.Reason_For_Movt || '',
       //User_Code: item.User_ID || '',
-     // Approval_Status: item.Approval_Status || '',
-     // SAP_Transaction_Status: item.SAP_Transaction_Status || '',
+      // Approval_Status: item.Approval_Status || '',
+      // SAP_Transaction_Status: item.SAP_Transaction_Status || '',
 
       Plant_Code_Validation: item.Plant_Val,
       Material_Code_Validation: item.Material_Val,
       SLoc_Code_Validation: item.SLoc_Val,
       CostCenter_Code_Validation: item.CostCenter_Val,
 
+      PlantMaterial_Code_Validation: item.Plant_SLoc_Val,
+      PlantSLoc_Code_Validation: item.Plant_SLoc_Val,
+      Movt_Validation: item.Reason_Val,
+      Mst_Valuation_Val: item.Valuation_Val,
+
+
     }));
     // Filter and map the data for New Records
     const filteredNewData = newRecord.map(item => ({
-     // Doc_ID: selectedRow.Doc_ID || '',
+      // Doc_ID: selectedRow.Doc_ID || '',
       Plant_Code: item.Plant_Code || '',
       Material_Code: item.Material_Code || '',
       Quantity: item.Quantity || '',
@@ -230,7 +216,7 @@ const Stock201 = () => {
       Remark: item.Reason_For_Movt || '',
       //User_Code: selectedRow.User_Code || '',
       //Approval_Status: selectedRow.Approval_Status || '',
-    //  SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
+      //  SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
 
     }));
 
@@ -423,54 +409,54 @@ const Stock201 = () => {
 
   //View  Download row data
   const handleDownloadExcelRowView = (item) => {
-  if (!item) {
-    alert("No row selected.");
-    return;
-  }
-
-  const DataColumns = [
-    "Doc_ID", "Plant_Code", "Material_Code", "Quantity", "SLoc_Code", "CostCenter_Code",
-    "Movement_Code", "Valuation_Type", "Batch", "Rate_Unit", "Reason_For_Movt", 
-    "Approval_Status", 
-  ];
-
-  const filteredData = [{
-    Doc_ID: item.Doc_ID || '',
-    Plant_Code: item.Plant_Code || '',
-    Material_Code: item.Material_Code || '',
-    Quantity: item.Qty || '',
-    SLoc_Code: item.SLoc_Code || '',
-    CostCenter_Code: item.CostCenter_Code || '',
-    Movement_Code: item.Movement_Code || '',
-    Valuation_Type: item.Valuation_Type || '',
-    Batch: item.Batch || '',
-    Rate_Unit: item.Rate_PerPart || '',
-    Reason_For_Movt: item.Remarks || '',
-    Approval_Status: item.Approval_Status || '',
-  }];
-
-  const worksheet = XLSX.utils.json_to_sheet(filteredData, { header: DataColumns });
-
-  // Apply styling to header
-  DataColumns.forEach((_, index) => {
-    const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-    if (worksheet[cellAddress]) {
-      worksheet[cellAddress].s = {
-        font: { bold: true, color: { rgb: "000000" } },
-        fill: { fgColor: { rgb: "FFFF00" } },
-        alignment: { horizontal: "center" },
-      };
+    if (!item) {
+      alert("No row selected.");
+      return;
     }
-  });
 
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Trn201Movt_Doc_Row_Data");
+    const DataColumns = [
+      "Doc_ID", "Plant_Code", "Material_Code", "Quantity", "SLoc_Code", "CostCenter_Code",
+      "Movement_Code", "Valuation_Type", "Batch", "Rate_Unit", "Reason_For_Movt",
+      "Approval_Status",
+    ];
 
-  XLSX.writeFile(workbook, `Trn201Movt_${item.Doc_ID || 'Row'}.xlsx`);
+    const filteredData = [{
+      Doc_ID: item.Doc_ID || '',
+      Plant_Code: item.Plant_Code || '',
+      Material_Code: item.Material_Code || '',
+      Quantity: item.Qty || '',
+      SLoc_Code: item.SLoc_Code || '',
+      CostCenter_Code: item.CostCenter_Code || '',
+      Movement_Code: item.Movement_Code || '',
+      Valuation_Type: item.Valuation_Type || '',
+      Batch: item.Batch || '',
+      Rate_Unit: item.Rate_PerPart || '',
+      Reason_For_Movt: item.Remarks || '',
+      Approval_Status: item.Approval_Status || '',
+    }];
 
-  // ✅ Show alert after download
-  alert("Refer to the XLSX sheet for the particular row details.");
-};
+    const worksheet = XLSX.utils.json_to_sheet(filteredData, { header: DataColumns });
+
+    // Apply styling to header
+    DataColumns.forEach((_, index) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+      if (worksheet[cellAddress]) {
+        worksheet[cellAddress].s = {
+          font: { bold: true, color: { rgb: "000000" } },
+          fill: { fgColor: { rgb: "FFFF00" } },
+          alignment: { horizontal: "center" },
+        };
+      }
+    });
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Trn201Movt_Doc_Row_Data");
+
+    XLSX.writeFile(workbook, `Trn201Movt_${item.Doc_ID || 'Row'}.xlsx`);
+
+    // ✅ Show alert after download
+    alert("Refer to the XLSX sheet for the particular row details.");
+  };
 
 
 
@@ -502,23 +488,6 @@ const Stock201 = () => {
     { field: "Movement_Code", headerName: "Movement Type", flex: 1 },
     { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
 
-    // {
-    //   field: "actions",
-    //   headerName: "Actions",
-    //   flex: 1,
-    //   sortable: false,
-    //   renderCell: (params) => (
-    //     <div style={{ display: "flex", gap: "10px" }}>
-    //       <IconButton
-    //         size="large"
-    //         color="primary"
-    //         onClick={() => handleOpenViewModal(params.row)} // Pass the row data to the modal handler
-    //       >
-    //         <VisibilityIcon fontSize="small" />
-    //       </IconButton>
-    //     </div>
-    //   ),
-    // },
 
     {
       field: "actions",
@@ -526,12 +495,7 @@ const Stock201 = () => {
       flex: 1,
       sortable: false,
       renderCell: (params) => {
-        //const approvalStatus = params.row.approvalStatus?.toLowerCase(); // Safely get and normalize
-        //const isEditable = approvalStatus === "rejected" || approvalStatus === "under query";
-        const approvalStatus = (params.row.Approval_Status || "").toLowerCase();
 
-        const isEditable =
-          approvalStatus === "rejected" || approvalStatus === "under query";
 
         return (
           <div style={{ display: "flex", gap: "10px" }}>
@@ -545,20 +509,20 @@ const Stock201 = () => {
             </IconButton>
 
             {/* Edit Button (conditional) */}
-            {isEditable && (
-              <IconButton
-                size="small"
-                sx={{
-                  color: "#6a0dad",
-                  '&:hover': {
-                    color: "#4b0082",
-                  },
-                }}
-                onClick={() => handleEdit(params.row)}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-            )}
+
+            <IconButton
+              size="small"
+              sx={{
+                color: "#6a0dad",
+                '&:hover': {
+                  color: "#4b0082",
+                },
+              }}
+              onClick={() => handleEdit(params.row)}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+
           </div>
         );
       },
@@ -734,15 +698,18 @@ const Stock201 = () => {
 
   const handleOpenViewStatusModal = async (rowData) => {
     const docId = rowData?.Doc_ID;
-    setSelectedRow(rowData); // Ensure correct row is stored
-    setOpenViewStatusModal(true); // Open modal
+    setSelectedRow(rowData); // sets selected row for conditional UI logic
+    setOpenViewStatusModal(true); // opens the modal
+    console.log("Selected Doc ID:", docId);
 
     try {
-      const response = await get201ApprovalView(docId); // Or your API function
+      const response = await get201ApprovalView(docId);
+      console.log("Approval View Response:", response); // fetches status history
       setViewStatusData(response);
+
     } catch (error) {
       console.error("Error fetching approval status:", error);
-      setViewStatusData([]);
+      setViewStatusData([]); // fallback to empty state
     }
   };
 
@@ -1176,7 +1143,7 @@ const Stock201 = () => {
       {/* 🟨 View Status Modal */}
       <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
         <Box sx={{
-          position: 'relative', // Required for absolute positioning
+          position: 'relative',
           p: 4,
           width: { xs: '90%', sm: 900 },
           mx: 'auto',
@@ -1193,61 +1160,57 @@ const Stock201 = () => {
               position: 'absolute',
               top: 8,
               right: 8,
-              color: '#f44336', // red[500]
-              '&:hover': {
-                color: '#d32f2f', // red[700] - darker on hover
-              },
+              color: '#f44336',
+              '&:hover': { color: '#d32f2f' },
             }}
           >
             <CloseIcon />
           </IconButton>
 
+          {/* 🔷 Title */}
           <Box sx={{ textAlign: 'center' }}>
             <Typography
               variant="h6"
               gutterBottom
               sx={{
-                color: '#1976d2',       // blue text
-                textDecoration: 'none', // disable default underline
-                borderBottom: '2px solid limegreen', // lime green underline
-                display: 'inline-block',  // shrink underline to text width
+                color: '#1976d2',
+                borderBottom: '2px solid limegreen',
+                display: 'inline-block',
               }}
             >
               Approval Status
             </Typography>
           </Box>
 
-
-
-
-
+          {/* 🧾 Status Table */}
           {viewStatusData?.length > 0 ? (
             <>
               <Table size="small" sx={{ borderCollapse: 'collapse' }}>
                 <TableHead>
                   <TableRow sx={{ bgcolor: '#bdbdbd' }}>
-                    <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Date</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Role</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Name</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Comment</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Status</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>Date</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>Role</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>Name</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>Comment</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>Status</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {viewStatusData.map((row, idx) => (
                     <TableRow key={idx}>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Date}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Role}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Modified_By}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Approver_Comment || '—'}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Status} - {User_Level}</TableCell>
-                     </TableRow>
+                      <TableCell>{row.Action_Date}</TableCell>
+                      <TableCell>{row.Role}</TableCell>
+                      <TableCell>{row.Action_By}</TableCell>
+                      <TableCell>{row.Approver_Comment || '—'}</TableCell>
+                      <TableCell>{row.Status} - {User_Level}</TableCell>
+                    </TableRow>
                   ))}
+
                 </TableBody>
               </Table>
 
-              {/* === This is the conditional buttons block === */}
-              {(selectedRow?.Approval_Status?.toLowerCase() === 'rejected' || selectedRow?.Approval_Status?.toLowerCase() === 'under query') && (
+              {/* ✅ Conditional Action Buttons */}
+              {['under query', 'rejected'].includes(selectedRow?.Approval_Status?.toLowerCase()) && (
                 <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 4 }}>
                   <Button
                     variant="contained"
@@ -1256,10 +1219,8 @@ const Stock201 = () => {
                       setOpenResubmitModal(true);
                     }}
                     sx={{
-                      bgcolor: '#1976d2',        // blue
-                      '&:hover': {
-                        bgcolor: '#115293',       // dark blue hover
-                      },
+                      bgcolor: '#1976d2',
+                      '&:hover': { bgcolor: '#115293' },
                     }}
                   >
                     Resubmit Request
@@ -1272,23 +1233,20 @@ const Stock201 = () => {
                       setOpenCancelModal(true);
                     }}
                     sx={{
-                      color: '#fff',               // white text for contrast
-                      borderColor: '#d32f2f',     // red border
-                      bgcolor: '#d32f2f',         // red background
+                      color: '#fff',
+                      borderColor: '#d32f2f',
+                      bgcolor: '#d32f2f',
                       '&:hover': {
-                        bgcolor: '#9a0007',       // darker red background on hover
-                        borderColor: '#9a0007',   // darker red border on hover
-                        color: '#fff',            // keep white text on hover
+                        bgcolor: '#9a0007',
+                        borderColor: '#9a0007',
+                        color: '#fff',
                       },
                     }}
                   >
                     Request Cancel
                   </Button>
                 </Box>
-
               )}
-
-
             </>
           ) : (
             <Typography sx={{ mt: 2 }}>No approval data found.</Typography>

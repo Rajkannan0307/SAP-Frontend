@@ -97,7 +97,6 @@ const Approval201 = () => {
   console.log('Approval_Level', Approval_Level)
   const Plant_ID = localStorage.getItem('Plant_ID')
 
-  const Movement_ID = localStorage.getItem('Movement_ID');
   console.log('pl', Plant_ID)
 
   //ApprovalListView (View approver status)
@@ -263,7 +262,7 @@ const Approval201 = () => {
 
   const getData = async () => {
     try {
-      const response = await getdetails(Plant_ID, RoleID, Role,Movement_ID);
+      const response = await getdetails(Plant_ID, RoleID, Role);
 
       console.log('response 201', response);  // Check the structure of response
       setData(response);  // Ensure that this is correctly setting the data
@@ -391,7 +390,7 @@ const handleDownloadAllExcel = async (DocID) => {
     link.remove();
     window.URL.revokeObjectURL(url);
 
-    alert("File downloaded successfully!");
+    alert("File downloaded successfully! View The Particular DocID Details ...");
   } catch (error) {
     console.error("Download failed:", error);
 
@@ -684,117 +683,6 @@ const handleDownloadAllExcel = async (DocID) => {
 
       {/* View Modal for row details */}
 
-      <Modal open={openViewModal} onClose={() => setOpenViewModal(false)}>
-        <Box
-          sx={{
-
-            width: 900,
-            height: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "5%",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
-            overflowY: "auto",
-            cursor: "scroll",
-          }}
-        >
-          <div style={{ width: "100%", textAlign: "center" }}>
-            <h3
-              style={{
-                marginBottom: "15px",
-                color: "blue",
-                textDecoration: "underline",
-                textDecorationColor: "limegreen",
-                textDecorationThickness: "3px",
-              }}
-            >
-              Document Details
-            </h3>
-          </div>
-
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Plant Code</TableCell>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Date</TableCell>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>From Material</TableCell>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>To Material </TableCell>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Qty</TableCell>
-                <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Net Difference Price</TableCell>
-
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {selectedRow && selectedRow.length > 0 && (
-                <>
-                  {/* Calculate the total sum of Total_Net_Difference */}
-
-                  {selectedRow.map((item, index, array) => {
-                    console.log('item', item);
-
-                    const totalNetDifference = selectedRow.reduce((acc, item) => acc + item.Net_Difference
-                      , 0);
-                    return (
-                      <React.Fragment key={index}>
-                        {/* Table row with item details */}
-                        <TableRow>
-                          <TableCell>{item.Plant_Code}</TableCell>
-                          <TableCell>{item.Date}</TableCell>
-                          <TableCell>{item.From_Material}</TableCell>
-                          <TableCell>{item.To_Material}</TableCell>
-                          <TableCell>{item.Qty}</TableCell>
-                          <TableCell sx={{ textAlign: "right" }}>{item.Net_Difference}</TableCell>
-
-                        </TableRow>
-
-                        {/* Total row, displayed after the last item */}
-                        {index === array.length - 1 && (
-                          <TableRow sx={{ backgroundColor: "#f9f9f9" }}>
-                            <TableCell colSpan={5} sx={{ textAlign: "right", fontWeight: "bold" }}>
-                              Total
-                            </TableCell>
-                            <TableCell sx={{ textAlign: "right", fontWeight: "bold" }}>
-                              {totalNetDifference} {/* Display total sum here */}
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </>
-              )}
-            </TableBody>
-
-          </Table>
-
-          <Button
-            onClick={() => setOpenViewModal(false)}
-            variant="contained"
-            size="small"
-            color="error"
-            sx={{
-              mt: 2,              // Margin top for spacing
-              width: "120px",     // Fixed width
-              alignSelf: "center",
-              backgroundColor: "#f44336", // Red 
-              '&:hover': {
-                backgroundColor: "#d32f2f", // Darker red when hovered 
-              },
-            }}
-          >
-            Close
-          </Button>
-        </Box>
-      </Modal>
-
-
-
       {/* Action modal  */}
       <Modal open={openActionModal} onClose={handleCancel}>
         <Box
@@ -879,8 +767,8 @@ const handleDownloadAllExcel = async (DocID) => {
             onClick={() => handleOpenViewStatusModal(selectedRow)}
             sx={{
               mt: 2,
-              color: '#ffffff',           // medium purple text
-              borderColor: '#6a1b9a',     // medium purple border
+              color: '#ffffff',           //  purple text
+              borderColor: '#6a1b9a',     // purple border
               bgcolor: '#6a1b9a',         // light purple background
               '&:hover': {
                 bgcolor: '#4a148c',       // dark purple background on hover
