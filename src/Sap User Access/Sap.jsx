@@ -199,10 +199,13 @@ useEffect(() => {
 
         // Normalize employee data
         const normalizedEmployees = data.map((emp) => ({
-          ...emp,
-          employee_id: emp.gen_id,
-          Emp_Name: Category === "executive" ? emp.Emp_Name : emp.fullname,
-        }));
+  ...emp,
+  employee_id: emp.gen_id,
+  Emp_Name:
+    Category === "executive"
+      ? emp.Emp_Name || emp.fullname 
+      : emp.fullname || emp.Emp_Name ,
+}));
 
         setFilteredEmployees(normalizedEmployees);
       } catch (err) {
@@ -269,11 +272,15 @@ const isPlantMRPC = role === 4;
     setLast_Punch(params.row.Last_Punch);
     setSAPLOGINID(params.row.SAP_LOGIN_ID);
     setEmployeeID(params.row.Employee_ID);
+   setCategory(params.row.Category);
+console.log("Category from row:", params.row.Category);
+
     setUserName(params.row.Employee_Name);
     setDeptName(params.row.Dept_Name);
    const statusLabel = params.row.Active_Status === true ? "Active" : "Inactive";
   setActiveStatus(statusLabel);
-    setCategory(params.row.Category); // This ensures category is set
+   const category = params.row.Category;
+  setCategory(category);// This ensures category is set
 
     setOpenEditModal(true); // Open the modal
     // get_Company();
@@ -758,12 +765,12 @@ const isPlantMRPC = role === 4;
     }}
   >
     <FormControlLabel
-      value="executive"
+      value="Executive"
       control={<Radio />}
       label="Executive"
     />
     <FormControlLabel
-      value="temporary"
+      value="Temporary"
       control={<Radio />}
       label="Temporary"
     />
