@@ -42,7 +42,7 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { IoMdDownload } from "react-icons/io";
-import { getTransactionData, Movement309 } from "../controller/transactionapiservice";
+import { getTransactionData, Movement309, Movement309ReUpload } from "../controller/transactionapiservice";
 import { api } from "../controller/constants";
 import { getdetails,DownloadAllExcel, getresubmit, getCancel, getAdd, getPlants, getMaterial, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
 const Partno = () => {
@@ -276,6 +276,34 @@ const Partno = () => {
 
 
 
+  const handleReUploadData = async () => {
+    if (!uploadedFile) {
+      alert("Please select a file first.");
+      return;
+    }
+
+    else {
+      try {
+        const formData = new FormData();
+        console.log('file', uploadedFile)
+        formData.append("User_Add", uploadedFile);
+        formData.append("UserID", UserID);
+        const response = await Movement309ReUpload(formData)
+        console.log('response', response.data)
+        alert(response.data.message)
+        if (response.data.NewRecord.length > 0 || response.data.DuplicateRecords.length > 0 || response.data.ErrorRecords.length > 0) {
+          downloadExcel(response.data.NewRecord, response.data.DuplicateRecords, response.data.ErrorRecords);
+        }
+        getData();
+      } catch (error) {
+        if (error.response && error.response.status === 400) {
+          alert(error.response.data.message)
+        }
+      }
+    }
+    handleCloseUploadModal();
+  }
+
 
   const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
     const wb = XLSX.utils.book_new();
@@ -346,7 +374,7 @@ const Partno = () => {
       To_Material_Code_Validation: item.To_Mat_Val,
       From_SLoc_Code_Validation: item.From_SLoc_Val,
       To_SLoc_Code_Validation: item.To_SLoc_Val,
-      Plant_From_To_Material_Code_Validation: item.Material_Same_Plant_Val,
+      //Plant_From_To_Material_Code_Validation: item.Material_Same_Plant_Val,
       Plant_From_To_SLoc_Code_Validation: item.SLoc_Same_Plant_Val,
       
       Movement_Code_Validation: item.Movement_Val,
@@ -968,20 +996,15 @@ const columns = [
 
 
 
-const handleEditUploadData = () => {
-  // Add validation and upload logic here
-  console.log("Re-uploading edited data...");
-  // Possibly send API request with the selected file
-};
+// const handleEditUploadData = () => {
+//   // Add validation and upload logic here
+//   console.log("Re-uploading edited data...");
+//   // Possibly send API request with the selected file
+// };
 
 const handleEditFileUpload = (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    // handle file upload logic here
-    console.log("Selected file:", file);
-    // e.g., upload it or save it in state
-  }
-};
+  setUploadedFile(event.target.files[0]);
+  };
 
 
   const handleOpenViewStatusModal = async (rowData) => {
@@ -1799,7 +1822,7 @@ const handleEditFileUpload = (event) => {
 
             <Button
               variant="contained"
-              onClick={handleEditUploadData}
+              onClick={handleReUploadData}
               disabled={editIsUploading}
               style={{ marginTop: "10px", width: "25%", color: "white", backgroundColor: "blue" }}
             >

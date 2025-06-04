@@ -8,6 +8,13 @@ export const Movement309 = async (data) => {
     return response;
 };
 
+export const Movement309ReUpload = async (data) => {
+    console.log(data)
+    const response = await axios.post(`${api}/transaction/FileReupload`, data);
+    return response;
+};
+
+
 export const getdetails=async (user)=>{
     const response = await axios.get(`${api}/transaction/get_details?userid=${user}`);
     return response.data;
