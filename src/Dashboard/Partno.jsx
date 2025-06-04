@@ -14,6 +14,7 @@ import {
 import { FaDownload } from "react-icons/fa";
 import { deepPurple } from '@mui/material/colors';
 import { FormControl, Select, MenuItem } from '@mui/material';
+import { decryptSessionData } from "../controller/StorageUtils"
 
 import EditIcon from '@mui/icons-material/Edit';
 
@@ -34,13 +35,16 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from 'sheetjs-style';
+import InfoIcon from '@mui/icons-material/Info';
+
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 
 
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { IoMdDownload } from "react-icons/io";
 import { getTransactionData, Movement309 } from "../controller/transactionapiservice";
 import { api } from "../controller/constants";
-import { getdetails, getresubmit, getCancel, getAdd, getPlants, getMaterial, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
+import { getdetails,DownloadAllExcel, getresubmit, getCancel, getAdd, getPlants, getMaterial, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
 const Partno = () => {
 
 
@@ -110,6 +114,14 @@ const Partno = () => {
   const [NetDifferentPrice, setNetDifferentPrice] = useState("");
   const [ApprovalStatus, setApprovalStatus] = useState([]);
 
+  const [openResubmitModal, setOpenResubmitModal] = useState(false);
+  const [openCancelModal, setOpenCancelModal] = useState(false);
+
+  const [User_Level, setUser_Level] = useState("");
+  const [editSelectedFile, setEditSelectedFile] = React.useState(null);
+  const [editUploadStatus, setEditUploadStatus] = React.useState("");
+  const [editIsUploading, setEditIsUploading] = React.useState(false);
+  const [editUploadProgress, setEditUploadProgress] = React.useState(0);
 
   //[View_PartnoApproval_Status]
   const handleViewStatus = async (docId) => {
@@ -128,15 +140,6 @@ const Partno = () => {
 
 
 
-
-
-  const handleOpenViewStatusModal = async (rowData) => {
-    const docId = rowData?.Doc_ID; // ✅ Get only Doc_ID
-    console.log("Opening View Status Modal for Doc_ID:", rowData);
-
-    setOpenViewStatusModal(true);
-    await handleViewStatus(docId); // ✅ Pass only Doc_ID to API call
-  };
 
 
   const handleCloseAddModal = () => setOpenAddModal(false);
@@ -161,6 +164,19 @@ const Partno = () => {
     // getViewData();
 
   }, []);
+
+  useEffect(() => {
+    getData();
+    const encryptedData = sessionStorage.getItem('userData');
+    if (encryptedData) {
+      const decryptedData = decryptSessionData(encryptedData);
+
+
+      setUser_Level(decryptedData.UserLevelName)
+      console.log("userlevel", decryptedData.UserLevelName)
+    }
+  }, []);
+
 
 
   const get_Plant = async () => {
@@ -265,7 +281,7 @@ const Partno = () => {
     const wb = XLSX.utils.book_new();
 
     // Column headers for Error Records
-    const ErrorColumns = ['Plant_Code', 'From_Material_Code',
+    const ErrorColumns = ['Plant_Code', 'Movement_Code','From_Material_Code',
       'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
       'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
       'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
@@ -275,7 +291,7 @@ const Partno = () => {
     ];
 
     // Column headers for New Records (based on your columns array)
-    const newRecordsColumns = ['Plant_Code', 'From_Material_Code',
+    const newRecordsColumns = ['Plant_Code', 'Movement_Code','From_Material_Code',
       'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
       'From_Batch', 'From_Rate_Per_Unit',
       'To_Material_Code', 'To_Qty',
@@ -287,7 +303,7 @@ const Partno = () => {
     // Column headers for Duplicate Records
     const DuplicateColumns = [
 
-      'Plant_Code', 'From_Material_Code',
+      'Plant_Code', 'Movement_Code','From_Material_Code',
       'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
       'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
       'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
@@ -309,6 +325,7 @@ const Partno = () => {
     // Filter and map the data for Error Records
     const filteredError = errRecord.map(item => ({
       Plant_Code: item.Plant_Code,
+      Movement_Code : item.Movement_Code,
       From_Material_Code: item.From_Material_Code,
       From_Qty: item.From_Qty,
       From_Storage_Code: item.From_Storage_Code,
@@ -329,11 +346,17 @@ const Partno = () => {
       To_Material_Code_Validation: item.To_Mat_Val,
       From_SLoc_Code_Validation: item.From_SLoc_Val,
       To_SLoc_Code_Validation: item.To_SLoc_Val,
+      Plant_From_To_Material_Code_Validation: item.Material_Same_Plant_Val,
+      Plant_From_To_SLoc_Code_Validation: item.SLoc_Same_Plant_Val,
+      
+      Movement_Code_Validation: item.Movement_Val,
+      User_Plant_Validation:item.User_Plant_Val,
 
     }));
     // Filter and map the data for New Records
     const filteredNewData = newRecord.map(item => ({
       Plant_Code: item.Plant_Code,
+      Movement_Code : item.Movement_Code,
       From_Material_Code: item.From_Material_Code,
       From_Qty: item.From_Qty,
       From_Storage_Code: item.From_Storage_Code,
@@ -356,6 +379,7 @@ const Partno = () => {
     const filteredUpdate = DuplicateRecord.map(item => ({
 
       Plant_Code: item.Plant_Code,
+      Movement_Code : item.Movement_Code,
       From_Material_Code: item.From_Material_Code,
       From_Qty: item.From_Qty,
       From_Storage_Code: item.From_Storage_Code,
@@ -641,12 +665,84 @@ const Partno = () => {
   };
 
 
+  // Download the data from the trn sap table to particular date
+  const handleDownloadReportExcel = async () => {
+    if (!fromDate) {
+      alert('Select From Date');
+      return;
+    }
+    if (!toDate) {
+      alert('Select To Date');
+      return;
+    }
+
+    try {
+      // Call backend API with fromDate and toDate as query params
+      const response = await getTransactionData(fromDate, toDate);
+
+      if (response.status === 400) {
+        alert(`Error: ${response.data.message || 'Invalid input or date range.'}`);
+        return;
+      }
+
+      const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+      const fileExtension = ".xlsx";
+      const fileName = "Trn_201_Movement_List";
+
+      // Convert JSON response to worksheet
+      const ws = XLSX.utils.json_to_sheet(response.data);
+
+      // Style header row (row 0)
+      const headers = Object.keys(response.data[0] || {});
+      headers.forEach((_, colIdx) => {
+        const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+        if (ws[cellAddress]) {
+          ws[cellAddress].s = {
+            font: { bold: true, color: { rgb: "000000" } },
+            fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
+            alignment: { horizontal: "center" },
+          };
+        }
+      });
+
+      // Create workbook
+      const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+
+      // Write workbook to binary array
+      const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+
+      // Create Blob and trigger download
+      const data = new Blob([excelBuffer], { type: fileType });
+      const url = window.URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", fileName + fileExtension);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      alert("File downloaded successfully!");
+    } catch (error) {
+      console.error("Download failed:", error);
+      if (error.response) {
+        alert(error.response.data.message || "Unknown error from backend");
+      } else if (error.request) {
+        alert("No response from server. Please try again later.");
+      } else {
+        alert(`Error: ${error.message}`);
+      }
+    }
+  };
+
+
+
   const handleEdit = (rowData) => {
     setSelectedRow(rowData);
     const status = (rowData.Approval_Status || "").toLowerCase();
     const editable = status === "rejected" || status === "under query";
     setIsEditable(editable);
-    setOpenModal(true);
+    setOpenEditModal(true)
   };
 
 
@@ -656,77 +752,77 @@ const Partno = () => {
   //   setOpenModal(true);
   // };
 
-  const handleResubmit = async () => {
-    if (!selectedRow) {
-      alert("No document selected for Resubmit.");
-      return;
-    }
-    const data = {
-      Doc_ID: selectedRow.Doc_ID,
-      Action: "Resubmit",
-      UserID: UserID,
+  // const handleResubmit = async () => {
+  //   if (!selectedRow) {
+  //     alert("No document selected for Resubmit.");
+  //     return;
+  //   }
+  //   const data = {
+  //     Doc_ID: selectedRow.Doc_ID,
+  //     Action: "Resubmit",
+  //     UserID: UserID,
 
-    };
+  //   };
 
-    console.log("Sending Resubmit data:", data);
+  //   console.log("Sending Resubmit data:", data);
 
-    try {
-      const response = await getresubmit(data);
-      console.log("Resubmit API response:", response);
+  //   try {
+  //     const response = await getresubmit(data);
+  //     console.log("Resubmit API response:", response);
 
-      const isSuccess = response?.data?.success ?? response?.success;
+  //     const isSuccess = response?.data?.success ?? response?.success;
 
-      if (isSuccess) {
-        alert("Document Resubmit!");
-        setOpenModal(false);
-        getData();
-      } else {
-        const message = response?.data?.message ?? response?.message ?? "Resubmit failed.";
-        alert(message);
-      }
-    } catch (error) {
-      console.error("Resubmit error:", error);
-      const errMsg = error.response?.data?.message || "An error occurred while Resubmit the document.";
-      alert(errMsg);
-    }
-  };
+  //     if (isSuccess) {
+  //       alert("Document Resubmit!");
+  //       setOpenModal(false);
+  //       getData();
+  //     } else {
+  //       const message = response?.data?.message ?? response?.message ?? "Resubmit failed.";
+  //       alert(message);
+  //     }
+  //   } catch (error) {
+  //     console.error("Resubmit error:", error);
+  //     const errMsg = error.response?.data?.message || "An error occurred while Resubmit the document.";
+  //     alert(errMsg);
+  //   }
+  // };
 
 
-  const handleCancel = async () => {
-    if (!selectedRow) {
-      alert("No document selected for Cancel.");
-      return;
-    }
-    const data = {
-      Doc_ID: selectedRow.Doc_ID,
-      Action: "Cancel",
-      UserID: UserID,
+  // const handleCancel = async () => {
+  //   if (!selectedRow) {
+  //     alert("No document selected for Cancel.");
+  //     return;
+  //   }
+  //   const data = {
+  //     Doc_ID: selectedRow.Doc_ID,
+  //     Action: "Cancel",
+  //     UserID: UserID,
 
-    };
+  //   };
 
-    console.log("Sending Cancel data:", data);
+  //   console.log("Sending Cancel data:", data);
 
-    try {
-      const response = await getCancel(data);
-      console.log("Cancel API response:", response);
+  //   try {
+  //     const response = await getCancel(data);
+  //     console.log("Cancel API response:", response);
 
-      const isSuccess = response?.data?.success ?? response?.success;
+  //     const isSuccess = response?.data?.success ?? response?.success;
 
-      if (isSuccess) {
-        alert("Document Cancelled!");
-        setOpenModal(false)
+  //     if (isSuccess) {
+  //       alert("Document Cancelled!");
+  //       setOpenModal(false)
 
-        getData();
-      } else {
-        const message = response?.data?.message ?? response?.message ?? "Cancel failed.";
-        alert(message);
-      }
-    } catch (error) {
-      console.error("Cancel error:", error);
-      const errMsg = error.response?.data?.message || "An error occurred while Cancel the document.";
-      alert(errMsg);
-    }
-  };
+  //       getData();
+  //     } else {
+  //       const message = response?.data?.message ?? response?.message ?? "Cancel failed.";
+  //       alert(message);
+  //     }
+  //   } catch (error) {
+  //     console.error("Cancel error:", error);
+  //     const errMsg = error.response?.data?.message || "An error occurred while Cancel the document.";
+  //     alert(errMsg);
+  //   }
+  // };
 
 
   const handleCloseEditModal = () => {
@@ -735,72 +831,240 @@ const Partno = () => {
   };
 
 
-  // const handleOpenViewModal = (row) => {
-  //   console.log('Viewing row:', row);
-  // };
 
   //✅ DataGrid Columns with Edit & Delete Buttons
-  const columns = [
-    { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
-    { field: "Doc_ID", headerName: "Doc ID ", flex: 1 },
-    { field: "Date", headerName: "Date", flex: 1 },
-    { field: "From_Material_Code", headerName: "From Mat Code", flex: 1 },
-    { field: "To_Material_Code", headerName: "To Mat Code", flex: 1 },
-    { field: "Net_Difference_Price", headerName: "Net Different Price", flex: 1 },
-    { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
+  // const columns = [
+  //   { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
+  //   { field: "Doc_ID", headerName: "Doc ID ", flex: 1 },
+  //   { field: "Date", headerName: "Date", flex: 1 },
+  //   { field: "From_Material_Code", headerName: "From Mat Code", flex: 1 },
+  //   { field: "To_Material_Code", headerName: "To Mat Code", flex: 1 },
+  //   { field: "Net_Difference_Price", headerName: "Net Different Price", flex: 1 },
+  //   { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
 
 
-    {
-      field: "actions",
-      headerName: "Actions",
-      flex: 1,
-      sortable: false,
-      renderCell: (params) => {
-        const approvalStatus = (params.row.Approval_Status || "").toLowerCase();
+  //   {
+  //     field: "actions",
+  //     headerName: "Actions",
+  //     flex: 1,
+  //     sortable: false,
+  //     renderCell: (params) => {
+  //       const approvalStatus = (params.row.Approval_Status || "").toLowerCase();
 
-        const isEditable =
-          approvalStatus === "rejected" || approvalStatus === "under query";
+  //       const isEditable =
+  //         approvalStatus === "rejected" || approvalStatus === "under query";
 
-        return (
-          <div style={{ display: "flex", gap: "10px" }}>
-            <IconButton
-              size="large"
-              color="primary"
-              onClick={() => handleOpenViewModal(params.row)}
-            >
-              <VisibilityIcon fontSize="small" />
-            </IconButton>
+  //       return (
+  //         <div style={{ display: "flex", gap: "10px" }}>
+  //           <IconButton
+  //             size="large"
+  //             color="primary"
+  //             onClick={() => handleOpenViewModal(params.row)}
+  //           >
+  //             <VisibilityIcon fontSize="small" />
+  //           </IconButton>
 
-            {isEditable && (
-              <IconButton
-                size="large"
-                sx={{
-                  color: "#6a0dad",
-                  '&:hover': {
-                    color: "#4b0082",
-                  },
-                }}
-                onClick={() => handleEdit(params.row)}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-            )}
-          </div>
-        );
-      }
-    }
+  //           {isEditable && (
+  //             <IconButton
+  //               size="large"
+  //               sx={{
+  //                 color: "#6a0dad",
+  //                 '&:hover': {
+  //                   color: "#4b0082",
+  //                 },
+  //               }}
+  //               onClick={() => handleEdit(params.row)}
+  //             >
+  //               <EditIcon fontSize="small" />
+  //             </IconButton>
+  //           )}
+  //         </div>
+  //       );
+  //     }
+  //   }
 
-  ];
+  // ];
+
+const columns = [
+  { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
+  { field: "Doc_ID", headerName: "Doc ID", flex: 1 },
+  { field: "Date", headerName: "Date", flex: 1 },
+  { field: "From_Material_Code", headerName: "From Mat Code", flex: 1 },
+  { field: "To_Material_Code", headerName: "To Mat Code", flex: 1 },
+  { field: "Net_Difference_Price", headerName: "Net Different Price", flex: 1 },
+  { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
+
+  {
+    field: "actions",
+    headerName: "Actions",
+    flex: 1,
+    sortable: false,
+ renderCell: (params) => {
+  const status = (params.row?.Approval_Status || "").toLowerCase().trim();
+  const isEditable = status === "rejected" || status === "under query";
+
+  return (
+    <div style={{ display: "flex", gap: "10px" }}>
+      {/* First View Button - always shown */}
+      <IconButton
+        size="small"
+        color="primary"
+        onClick={() => handleOpenViewModal(params.row)}
+        title="View Status"
+      >
+        <VisibilityIcon fontSize="small" />
+      </IconButton>
+
+      {/* Second View Button - always shown */}
+     <IconButton
+  size="small"
+  sx={{ color: "#008080" }} 
+  onClick={() => handleOpenViewStatusModal(params.row)}
+  title="View Details"
+>
+  <InfoIcon fontSize="small" />
+</IconButton>
 
 
-  const handleOpenViewStatus = (selectedRow) => {
-    // Do something with the selectedRow, then open the modal
-    setOpenViewStatus(true);
-  };
+
+      {/* Edit and Download Buttons - only when editable */}
+      {isEditable && (
+        <>
+          <IconButton
+            size="small"
+            sx={{
+              color: "#6a0dad",
+              "&:hover": {
+                color: "#4b0082",
+              },
+            }}
+            onClick={() => handleEdit(params.row)}
+            title="Edit"
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+
+          <IconButton
+            size="small"
+            color="success"
+            onClick={() => handleDownloadByDocId(params.row.Doc_ID)}
+            title="Download"
+          >
+            <CloudDownloadIcon fontSize="small" />
+          </IconButton>
+        </>
+      )}
+    </div>
+  );
+}
+
+
+  },
+];
 
   const handleCloseViewStatus = () => {
     setOpenViewStatus(false);
   };
+
+
+
+const handleEditUploadData = () => {
+  // Add validation and upload logic here
+  console.log("Re-uploading edited data...");
+  // Possibly send API request with the selected file
+};
+
+const handleEditFileUpload = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    // handle file upload logic here
+    console.log("Selected file:", file);
+    // e.g., upload it or save it in state
+  }
+};
+
+
+  const handleOpenViewStatusModal = async (rowData) => {
+    const docId = rowData?.Doc_ID;
+    setSelectedRow(rowData); // sets selected row for conditional UI logic
+    setOpenViewStatusModal(true); // opens the modal
+    console.log("Selected Doc ID:", docId);
+
+    try {
+      const response = await get309ApprovalView(docId);
+      console.log("Approval View Response:", response); // fetches status history
+      setViewStatusData(response);
+
+    } catch (error) {
+      console.error("Error fetching approval status:", error);
+      setViewStatusData([]); // fallback to empty state
+    }
+  };
+
+
+
+  //view detail for Particular DocID Details ... downloa
+
+ const handleDownloadByDocId = async (docId) => {
+     try {
+       if (!docId) {
+         alert("Doc_ID is missing.");
+         return;
+       }
+       console.log("Calling download with Doc_ID:", docId);
+
+       const response = await DownloadAllExcel(docId);
+
+       const data = response.data;
+ 
+       if (!data || data.length === 0) {
+         alert("No data found for this Doc_ID.");
+         return;
+       }
+ 
+       const ws = XLSX.utils.json_to_sheet(data);
+ 
+       // Style headers
+       const headers = Object.keys(data[0]);
+       headers.forEach((_, colIdx) => {
+         const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+         if (ws[cellAddress]) {
+           ws[cellAddress].s = {
+             font: { bold: true, color: { rgb: "000000" } },
+             fill: { fgColor: { rgb: "FFFF00" } },
+             alignment: { horizontal: "center" },
+           };
+         }
+       });
+ 
+       const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+       const excelBuffer = XLSX.write(wb, {
+         bookType: "xlsx",
+         type: "array",
+         cellStyles: true,
+       });
+ 
+       const fileType =
+         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+       const blob = new Blob([excelBuffer], { type: fileType });
+       const url = URL.createObjectURL(blob);
+       const link = document.createElement("a");
+       link.href = url;
+       link.setAttribute("download", `Trn309_DocID_${docId}.xlsx`);
+       document.body.appendChild(link);
+       link.click();
+       link.remove();
+       URL.revokeObjectURL(url);
+ 
+       alert(`Downloaded data for Doc_ID: ${docId}`);
+     } catch (error) {
+       console.error("Download failed:", error);
+       alert("Error downloading file. See console for details.");
+     }
+   };
+
+
+
 
   // ✅ Custom Toolbar
   const CustomToolbar = () => (
@@ -1244,7 +1508,7 @@ const Partno = () => {
 
       { /*View modal*/}
 
-      {/* Modal Component */}
+      {/* Modal Component download */}
 
       <Modal open={openViewModal} onClose={handleCloseViewModal}>
         <Box
@@ -1342,10 +1606,6 @@ const Partno = () => {
         </Box>
       </Modal>
 
-
-
-
-
       {/* ExcelDownload Modal */}
 
       <Modal
@@ -1425,202 +1685,282 @@ const Partno = () => {
         </Box>
       </Modal>
 
-
-
+{/*........................................*/}
 
       {/* ✅ Modal with Resubmit and Cancel */}
 
+      {/*🟩 Edit Modal*/}
 
-      <Modal open={openModal} onClose={handleCloseEditModal}>
+      <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
         <Box
           sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 250,
-            height: 150,
-            fontSize: 12,
-            bgcolor: 'background.paper',
+            width: 400,
+            bgcolor: "background.paper",
             borderRadius: 2,
-            //boxShadow: 24,
+            boxShadow: 24,
             p: 4,
+            margin: "auto",
+            marginTop: "10%",
+            textAlign: "center",
           }}
         >
-          <h2>Edit Document </h2>
-          <Box sx={{ position: 'absolute', top: 15, right: 8 }}>
-            <IconButton
-              aria-label="close"
-              onClick={() => setOpenModal(false)} // ✅ Closes the Edit Document modal
-              sx={{
-                color: '#dc3545',
-                '&:hover': {
-                  backgroundColor: '#f8d7da',
-                },
+          <h3
+            style={{
+              textAlign: "center",
+              marginBottom: "20px",
+              color: "#2e59d9",
+              textDecoration: "underline",
+              textDecorationColor: "#88c57a",
+              textDecorationThickness: "3px",
+            }}
+          >
+            Upload Excel File to Edit Document
+          </h3>
+
+          <Button
+            variant="contained"
+            style={{ marginBottom: "10px", backgroundColor: deepPurple[500], color: "white" }}
+          >
+            <a
+              style={{ textDecoration: "none", color: "white" }}
+              href={`${api}/transaction/Template/ReUpload309Movt.xlsx`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
+            </a>
+          </Button>
+
+          <input
+            type="file"
+            accept=".xlsx, .xls"
+            onChange={handleEditFileUpload}
+            style={{
+              padding: "8px",
+              backgroundColor: "white",
+              color: "black",
+              border: "1px solid black",
+              borderRadius: "5px",
+              cursor: "pointer",
+              width: "240px",
+              marginTop: "10px",
+            }}
+          />
+
+          {editUploadStatus && (
+            <p
+              style={{
+                textAlign: "center",
+                color: editUploadStatus.includes("success") ? "green" : "red",
               }}
             >
-              <CloseIcon />
-            </IconButton>
-          </Box>
+              {editUploadStatus}
+            </p>
+          )}
 
-          <Box>
-            {/* View Details Button */}
+          {editIsUploading && (
             <Box
               sx={{
-                height: '100px',
-                width: '250px',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '20vh',
-
-              }}
-            >
-              <Button
-                variant="contained"
-                onClick={() => handleOpenViewStatusModal(selectedRow)}
-                sx={{
-
-                  backgroundColor: '#DB7093',
-                  '&:hover': {
-                    backgroundColor: '#C71585',
-                  },
-                  // padding: '10px 20px',
-                  fontSize: '12px',
-                  height: '30px',
-                  width: '150px',
-                  borderRadius: '8px',
-                  marginTop: "-90px",
-                  marginBottom: "20px",
-                }}
-              >
-                ViewpprovalStatus
-              </Button>
-
-            </Box>
-
-          </Box>
-
-          {/* View Details Modal */}
-          <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
-            <Box
-              sx={{
-                width: 610,
-                bgcolor: "background.paper",
+                width: "100%",
+                bgcolor: "#f5f5f5",
                 borderRadius: 2,
-                boxShadow: 24,
-                p: 3,
-                margin: "auto",
-                marginTop: "10%",
-                position: "relative",
+                height: "8px",
+                marginTop: "10px",
               }}
             >
-              {/* Modal Title */}
-              <Typography
-                variant="h6"
-                align="center"
+              <Box
                 sx={{
-                  mb: 2,
-                  fontWeight: "bold",
-                  color: "#1565c0",
-                  textDecoration: "underline",
-                  textDecorationColor: "limegreen",
-                  textDecorationThickness: "3px",
+                  width: `${editUploadProgress}%`,
+                  bgcolor: editUploadProgress === 100 ? "#4caf50" : "#2196f3",
+                  height: "100%",
+                  borderRadius: 2,
+                  transition: "width 0.4s ease-in-out",
                 }}
-              >
-                Approval Status Details
-              </Typography>
+              />
+            </Box>
+          )}
 
-              {/* Data Table */}
-              <Table size="small">
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              gap: "10px",
+              marginTop: "15px",
+            }}
+          >
+            <Button
+              variant="contained"
+              color="error"
+              onClick={() => setOpenEditModal(false)}
+              style={{ marginTop: "10px", width: "25%" }}
+            >
+              Close
+            </Button>
+
+            <Button
+              variant="contained"
+              onClick={handleEditUploadData}
+              disabled={editIsUploading}
+              style={{ marginTop: "10px", width: "25%", color: "white", backgroundColor: "blue" }}
+            >
+              ReUpload
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
+
+      {/* 🟨 View Status Modal */}
+      <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
+        <Box sx={{
+          position: 'relative',
+          p: 4,
+          width: { xs: '90%', sm: 900 },
+          mx: 'auto',
+          mt: '5%',
+          bgcolor: 'background.paper',
+          borderRadius: 3,
+          boxShadow: 24
+        }}>
+          {/* ❌ Close Button */}
+          <IconButton
+            aria-label="close"
+            onClick={() => setOpenViewStatusModal(false)}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              color: '#f44336',
+              '&:hover': { color: '#d32f2f' },
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+
+          {/* 🔷 Title */}
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{
+                color: '#1976d2',
+                borderBottom: '2px solid limegreen',
+                display: 'inline-block',
+              }}
+            >
+              Approval Status
+            </Typography>
+          </Box>
+
+          {/* 🧾 Status Table */}
+          
+            <>
+              <Table size="small" sx={{ borderCollapse: 'collapse' }}>
                 <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Date</TableCell>
-                    <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Role</TableCell>
-                    <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Name</TableCell>
-                    <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Comment</TableCell>
-                    <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Status</TableCell>
+                  <TableRow sx={{ bgcolor: '#bdbdbd' }}>
+                    <TableCell sx={{ border: '1px solid #555555' }}>Date</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>Role</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>Name</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>Comment</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>Status</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {viewStatusData?.length > 0 ? (
-                    viewStatusData.map((row, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{row.Date}</TableCell>
-                        <TableCell>{row.Role}</TableCell>
-                        <TableCell>{row.Modified_By}</TableCell>
-                        <TableCell>{row.Approver_Comment || "—"}</TableCell>
-                        <TableCell>{row.Status}</TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={4} align="center">
-                        No data available
-                      </TableCell>
+                  {viewStatusData.map((row, idx) => (
+                    <TableRow key={idx} sx={{ border: '1px solid #555555' }}>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_Date}</TableCell>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Role}</TableCell>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_By}</TableCell>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Approver_Comment || '—'}</TableCell>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Status} - {User_Level}</TableCell>
+                    
+                    
                     </TableRow>
-                  )}
+                  ))}
+
                 </TableBody>
               </Table>
 
-              {/* Cancel Button inside View Details Modal */}
-              <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
-                <IconButton
-                  aria-label="close"
-                  onClick={() => setOpenViewStatusModal(false)} // Close the View Details modal
-                  sx={{
-                    color: '#dc3545',
-                    '&:hover': {
-                      backgroundColor: '#f8d7da',  // '#e2e3e5'Lighter gray for hover effect
-                    },
-                  }}
-                >
-                  <CloseIcon />
-                </IconButton>
-              </Box>
+              
+            </>    
+        </Box>
+      </Modal>
 
-            </Box>
-          </Modal>
+ {/* ExcelDownload Modal */}
 
-          {/* Bottom Buttons in Edit Document Modal */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '-100px' }}>
-            <Button
-              variant="contained"
-              onClick={handleResubmit}
-              sx={{
-                backgroundColor: '#1976d2',
-                '&:hover': {
-                  backgroundColor: '#115293',
-                },
-                fontSize: '14px',
-                height: '35px',
-                width: '130px',
-                borderRadius: '8px',
-                textTransform: 'none',
-              }}
-            >
-              Resubmit
-            </Button>
+      <Modal
+        open={openExcelDownloadModal}
+        onClose={handleCloseModal}  // Use the custom handleCloseModal function
+      >
+        <Box
+          sx={{
+            width: 400,
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            margin: 'auto',
+            marginTop: '10%',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '15px',
+          }}
+        >
+          <h3
+            style={{
+              gridColumn: 'span 2',
+              textAlign: 'center',
+              marginBottom: '15px',
+              color: 'blue',
+              textDecoration: 'underline',
+              textDecorationColor: 'limegreen',
+              textDecorationThickness: '3px',
+            }}
+          >
+            Excel Download
+          </h3>
 
-            <Button
-              variant="contained"
-              onClick={handleCancel}
-              sx={{
-                backgroundColor: '#6c757d',
-                '&:hover': {
-                  backgroundColor: '#5a6268',
-                },
-                fontSize: '14px',
-                height: '35px',
-                width: '130px',
-                borderRadius: '8px',
-                textTransform: 'none',
-              }}
-            >
+          <TextField
+            label="From Date"
+            name="FromDate"
+            type="date"
+            InputLabelProps={{ shrink: true }}
+            fullWidth
+            required
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+          />
+          <TextField
+            label="To Date"
+            name="ToDate"
+            type="date"
+            InputLabelProps={{ shrink: true }}
+            fullWidth
+            required
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+          />
+
+          <Box
+            sx={{
+              gridColumn: 'span 2',
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '10px',
+              marginTop: '15px',
+            }}
+          >
+            <Button variant="contained" color="error" onClick={handleCloseModal}>
               Cancel
             </Button>
-          </div>
-
+            <Button
+              style={{ width: '90px' }}
+              variant="contained"
+              color="primary"
+              onClick={handleDownloadReportExcel}
+            >
+              Download
+            </Button>
+          </Box>
         </Box>
       </Modal>
 

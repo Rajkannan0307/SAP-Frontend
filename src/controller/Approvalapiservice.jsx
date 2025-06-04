@@ -49,14 +49,16 @@ export const HandleApprovalAction = async (data) => {
   }
 };
 
-
+export const get_detailsApproval=async (Plant, role,Role,Doc_ID)=>{
+    const response = await axios.get(`${api}/Approval/get_detailsApproval?Plant=${Plant}&role=${role}&Role=${Role}`);
+    return response.data; 
+   }; 
 
 export const get309ApprovalView = async (docId) => {
   const response = await axios.get(`${api}/Approval/View309ApprovalStatus?Doc_ID=${docId}`);
   
   return response.data;
 };
-
 
 
 export const resubmitAction = async (docId) => {
@@ -67,4 +69,8 @@ export const resubmitAction = async (docId) => {
 
 
 
-  
+  export const DownloadAllExcel = async (DocID)=>{
+  console.log('Calling API with docId:', DocID); 
+  const response = await axios.get(`${api}/Approval/download_data?Doc_ID=${DocID}`);
+    return response;
+};

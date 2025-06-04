@@ -49,6 +49,8 @@ export const get309ApprovalView = async (docId) => {
 };
 
 
+
+
 export const getresubmit = async (data) => {
   const response = await axios.post(`${api}/transaction/HandleResubmitAction`, data);
   
@@ -61,3 +63,16 @@ export const getCancel = async (data) => {
   
   return response.data;
 };
+
+export const DownloadAllExcel = async (docId) => {
+  if (!docId) {
+    throw new Error("DocID is required");
+  }
+
+  const response = await axios.get(
+    `${api}/transaction/download?docId=${encodeURIComponent(docId)}`
+  );
+
+  return response;
+};
+
