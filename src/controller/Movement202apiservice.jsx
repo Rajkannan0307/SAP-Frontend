@@ -1,10 +1,13 @@
 import { api } from "./constants";
 import axios from "axios";
 
-
-
 export const Movement202 = async (data) => {
     const response = await axios.post(`${api}/Movement202/File`, data);
+    return response;
+};
+
+export const Movement202ReUpload = async (data) => {
+    const response = await axios.post(`${api}/Movement202/FileReupload`, data);
     return response;
 };
 

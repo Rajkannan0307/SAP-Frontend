@@ -7,6 +7,10 @@ export const Movement201 = async (data) => {
     const response = await axios.post(`${api}/Movement201/File`, data);
     return response;
 };
+export const Movement201Reupload = async (data,docId) => {
+    const response = await axios.post(`${api}/Movement201/FileReupload?Doc_ID=${docId}`, data);
+    return response;
+};
 
 export const getdetails=async (user)=>{
     const response = await axios.get(`${api}/Movement201/get_details?userid=${user}`);

@@ -37,7 +37,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from 'sheetjs-style';
-import { Movement202, getdetails, get202ApprovalView } from "../controller/Movement202apiservice";
+import { Movement202, getdetails, get202ApprovalView, Movement202ReUpload } from "../controller/Movement202apiservice";
 import { getresubmit, getCancel, DownloadAllExcel, getTransactionData } from '../controller/Movement202apiservice';
 
 
@@ -429,20 +429,22 @@ const Stock202 = () => {
 
 
 
- const handleEditUploadData = async () => {
+ // Upload handler
+const handleEditUploadData = async (docId) => {
   if (!editSelectedFile) {
     alert("Please select a file first.");
     return;
   }
 
   try {
-    const formData = new FormData();
-    formData.append("User_Add", editSelectedFile);  // verify 'User_Add' is correct key expected
-    formData.append("UserID", UserID);
+    const finalDocId = typeof docId === 'object' ? docId?.Doc_ID : docId;
 
-    // Make sure Movement202 does something like:
-    // return axios.post('http://10.51.10.115:3000/Movement202/File', formData);
-    const response = await Movement202(formData);
+    const formData = new FormData();
+    formData.append("User_Add", editSelectedFile);  // Ensure key matches backend
+    formData.append("UserID", UserID);
+    formData.append("Doc_ID", finalDocId); // Must be a primitive value (number or string of number)
+
+    const response = await Movement202ReUpload(formData); // Don't pass docId again if your function wraps it
     console.log('response', response.data);
     alert(response.data.message);
 
@@ -451,7 +453,11 @@ const Stock202 = () => {
       response.data.DuplicateRecords.length > 0 ||
       response.data.ErrorRecords.length > 0
     ) {
-      downloadExcel(response.data.NewRecord, response.data.DuplicateRecords, response.data.ErrorRecords);
+      downloadExcel(
+        response.data.NewRecord,
+        response.data.DuplicateRecords,
+        response.data.ErrorRecords
+      );
     }
   } catch (error) {
     if (error.response) {
@@ -459,15 +465,17 @@ const Stock202 = () => {
       alert(error.response.data.message || 'Upload failed');
     } 
   }
+
   getData();
-  setOpenEditModal(false)
+  setOpenEditModal(false);
+};
+
+// File input handler
+const handleEditFileUpload = (event) => {
+  setEditSelectedFile(event.target.files[0]);
 };
 
 
-  const handleEditFileUpload = (event) => {
-    setEditSelectedFile(event.target.files[0]);
-    
-  };
 
   //view detail for Particular DocID Details ... downloa
 
@@ -1225,7 +1233,8 @@ const renderActionButtons = (rowData) => {
 
             <Button
               variant="contained"
-              onClick={handleEditUploadData}
+             onClick={() => handleEditUploadData(selectedRow?.Doc_ID)}
+             
               disabled={editIsUploading}
               style={{ marginTop: "10px", width: "25%", color: "white", backgroundColor: "blue" }}
             >

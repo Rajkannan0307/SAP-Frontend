@@ -275,35 +275,50 @@ const Partno = () => {
   }
 
 
-
-  const handleReUploadData = async () => {
-    if (!uploadedFile) {
-      alert("Please select a file first.");
-      return;
-    }
-
-    else {
-      try {
-        const formData = new FormData();
-        console.log('file', uploadedFile)
-        formData.append("User_Add", uploadedFile);
-        formData.append("UserID", UserID);
-        const response = await Movement309ReUpload(formData)
-        console.log('response', response.data)
-        alert(response.data.message)
-        if (response.data.NewRecord.length > 0 || response.data.DuplicateRecords.length > 0 || response.data.ErrorRecords.length > 0) {
-          downloadExcel(response.data.NewRecord, response.data.DuplicateRecords, response.data.ErrorRecords);
-        }
-        getData();
-      } catch (error) {
-        if (error.response && error.response.status === 400) {
-          alert(error.response.data.message)
-        }
-      }
-    }
-    handleCloseUploadModal();
+const handleEditUploadData = async (docId) => {
+  if (!editSelectedFile) {
+    alert("Please select a file first.");
+    return;
   }
 
+  try {
+    const finalDocId = typeof docId === 'object' ? docId?.Doc_ID : docId;
+
+    const formData = new FormData();
+    formData.append("User_Add", editSelectedFile);  // Ensure key matches backend
+    formData.append("UserID", UserID);
+    formData.append("Doc_ID", finalDocId); // Must be a primitive value (number or string of number)
+
+    const response = await Movement309ReUpload(formData); // Don't pass docId again if your function wraps it
+    console.log('response', response.data);
+    alert(response.data.message);
+
+    if (
+      response.data.NewRecord.length > 0 ||
+      response.data.DuplicateRecords.length > 0 ||
+      response.data.ErrorRecords.length > 0
+    ) {
+      downloadExcel(
+        response.data.NewRecord,
+        response.data.DuplicateRecords,
+        response.data.ErrorRecords
+      );
+    }
+  } catch (error) {
+    if (error.response) {
+      console.error('Backend error:', error.response.data);
+      alert(error.response.data.message || 'Upload failed');
+    } 
+  }
+
+  getData();
+  setOpenEditModal(false);
+};
+
+// File input handler
+const handleEditFileUpload = (event) => {
+  setEditSelectedFile(event.target.files[0]);
+};
 
   const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
     const wb = XLSX.utils.book_new();
@@ -996,15 +1011,9 @@ const columns = [
 
 
 
-// const handleEditUploadData = () => {
-//   // Add validation and upload logic here
-//   console.log("Re-uploading edited data...");
-//   // Possibly send API request with the selected file
-// };
 
-const handleEditFileUpload = (event) => {
-  setUploadedFile(event.target.files[0]);
-  };
+
+
 
 
   const handleOpenViewStatusModal = async (rowData) => {
@@ -1822,7 +1831,7 @@ const handleEditFileUpload = (event) => {
 
             <Button
               variant="contained"
-              onClick={handleReUploadData}
+              onClick={() => handleEditUploadData(selectedRow?.Doc_ID)}
               disabled={editIsUploading}
               style={{ marginTop: "10px", width: "25%", color: "white", backgroundColor: "blue" }}
             >
