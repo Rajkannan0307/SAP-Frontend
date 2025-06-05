@@ -274,7 +274,6 @@ const Partno = () => {
     handleCloseUploadModal();
   }
 
-
 const handleEditUploadData = async (docId) => {
   if (!editSelectedFile) {
     alert("Please select a file first.");
@@ -287,33 +286,33 @@ const handleEditUploadData = async (docId) => {
     const formData = new FormData();
     formData.append("User_Add", editSelectedFile);  // Ensure key matches backend
     formData.append("UserID", UserID);
-    formData.append("Doc_ID", finalDocId); // Must be a primitive value (number or string of number)
+    formData.append("Doc_ID", finalDocId); // Must be primitive
 
-    const response = await Movement309ReUpload(formData); // Don't pass docId again if your function wraps it
+    const response = await Movement309ReUpload(formData);
     console.log('response', response.data);
     alert(response.data.message);
 
-    if (
-      response.data.NewRecord.length > 0 ||
-      response.data.DuplicateRecords.length > 0 ||
-      response.data.ErrorRecords.length > 0
-    ) {
-      downloadExcel(
-        response.data.NewRecord,
-        response.data.DuplicateRecords,
-        response.data.ErrorRecords
-      );
+    const reuploadData = response.data.ReUploadRecord || [];
+    const errorData = response.data.ErrorRecords || [];
+
+    console.log('ReUploadRecord:', reuploadData);
+    console.log('ErrorRecords:', errorData);
+
+    if (reuploadData.length > 0 || errorData.length > 0) {
+      downloadExcelReUpload(reuploadData, errorData);
+    } else {
+      console.log("No data to download.");
     }
+
   } catch (error) {
-    if (error.response) {
-      console.error('Backend error:', error.response.data);
-      alert(error.response.data.message || 'Upload failed');
-    } 
+    console.error('Upload failed:', error?.response?.data || error.message);
+    alert(error.response?.data?.message || 'Upload failed.');
   }
 
   getData();
   setOpenEditModal(false);
 };
+
 
 // File input handler
 const handleEditFileUpload = (event) => {
@@ -396,6 +395,7 @@ const handleEditFileUpload = (event) => {
       User_Plant_Validation:item.User_Plant_Val,
 
     }));
+
     // Filter and map the data for New Records
     const filteredNewData = newRecord.map(item => ({
       Plant_Code: item.Plant_Code,
@@ -415,8 +415,6 @@ const handleEditFileUpload = (event) => {
       Net_Different_Price: item.Net_Difference_Price,
       Remark: item.Remark,
     }));
-
-
 
     // Filter and map the data for Duplicate Record
     const filteredUpdate = DuplicateRecord.map(item => ({
@@ -564,6 +562,128 @@ const handleEditFileUpload = (event) => {
 
 
   };
+
+// reupload
+
+const downloadExcelReUpload = (updateRecord , errRecord ) => {
+  const wb = XLSX.utils.book_new();
+
+  const ErrorColumns = [
+    'Doc_ID', 'Plant_Code', 'Movement_Code', 'From_Material_Code',
+    'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
+    'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
+    'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
+    'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark',
+    'Plant_Code_Validation', 'From_Material_Code_Validation', 'To_Material_Code_Validation',
+    'From_SLoc_Code_Validation', 'To_SLoc_Code_Validation'
+  ];
+
+  const ReUploadColumns = [
+    'Doc_ID', 'Plant_Code', 'Movement_Code', 'From_Material_Code',
+    'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
+    'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
+    'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
+    'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark'
+  ];
+
+  const filteredError = errRecord.map(item => ({
+    Doc_ID: item.Doc_ID,
+    Plant_Code: item.Plant_Code,
+    Movement_Code: item.Movement_Code,
+    From_Material_Code: item.From_Material_Code,
+    From_Qty: item.From_Qty,
+    From_Storage_Code: item.From_Storage_Code,
+    From_Valuation_Type: item.From_Valuation_Type,
+    From_Batch: item.From_Batch,
+    From_Rate_Per_Unit: item.From_Rate_Per_Unit,
+    To_Material_Code: item.To_Material_Code,
+    To_Qty: item.To_Qty,
+    To_Storage_Code: item.To_Storage_Code,
+    To_Valuation_Type: item.To_Valuation_Type,
+    To_Batch: item.To_Batch,
+    To_Rate_Per_Unit: item.To_Rate_Per_Unit,
+    Net_Different_Price: item.Net_Different_Price,
+    Remark: item.Remark,
+    Plant_Code_Validation: item.Plant_Val,
+    From_Material_Code_Validation: item.From_Mat_Val,
+    To_Material_Code_Validation: item.To_Mat_Val,
+    From_SLoc_Code_Validation: item.From_SLoc_Val,
+    To_SLoc_Code_Validation: item.To_SLoc_Val,
+  }));
+
+  const filteredUpdate = updateRecord.map(item => ({
+    Doc_ID: item.Doc_ID,
+    Plant_Code: item.Plant_Code,
+    Movement_Code: item.Movement_Code,
+    From_Material_Code: item.From_Material_Code,
+    From_Qty: item.From_Qty,
+    From_Storage_Code: item.From_Storage_Code,
+    From_Valuation_Type: item.From_Valuation_Type,
+    From_Batch: item.From_Batch,
+    From_Rate_Per_Unit: item.From_Rate_Per_Unit,
+    To_Material_Code: item.To_Material_Code,
+    To_Qty: item.To_Qty,
+    To_Storage_Code: item.To_Storage_Code,
+    To_Valuation_Type: item.To_Valuation_Type,
+    To_Batch: item.To_Batch,
+    To_Rate_Per_Unit: item.To_Rate_Per_Unit,
+    Net_Different_Price: item.Net_Different_Price,
+    Remark: item.Remark
+  }));
+
+  const styleHeaders = (worksheet, columns) => {
+    columns.forEach((_, index) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+      if (worksheet[cellAddress]) {
+        worksheet[cellAddress].s = {
+          font: { bold: true, color: { rgb: '000000' } },
+          fill: { fgColor: { rgb: 'FFFF00' } },
+          alignment: { horizontal: 'center' },
+        };
+      }
+    });
+  };
+
+  const styleValidationColumns = (worksheet, columns, dataLength) => {
+    const validationCols = [
+      'Plant_Code_Validation', 'From_Material_Code_Validation',
+      'To_Material_Code_Validation', 'From_SLoc_Code_Validation',
+      'To_SLoc_Code_Validation'
+    ];
+
+    for (let row = 1; row <= dataLength; row++) {
+      validationCols.forEach(colName => {
+        const colIdx = columns.indexOf(colName);
+        if (colIdx === -1) return;
+        const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+        const cell = worksheet[cellAddress];
+        if (cell && typeof cell.v === 'string') {
+          const value = cell.v.trim().toLowerCase();
+          cell.s = {
+            font: {
+              color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' }
+            }
+          };
+        }
+      });
+    }
+  };
+
+  // Always add at least one row so the file is not empty
+  const wsError = XLSX.utils.json_to_sheet(filteredError.length ? filteredError : [{}], { header: ErrorColumns });
+  styleHeaders(wsError, ErrorColumns);
+  styleValidationColumns(wsError, ErrorColumns, filteredError.length);
+  XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
+
+  const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate.length ? filteredUpdate : [{}], { header: ReUploadColumns });
+  styleHeaders(wsUpdated, ReUploadColumns);
+  styleValidationColumns(wsUpdated, ReUploadColumns, filteredUpdate.length);
+  XLSX.utils.book_append_sheet(wb, wsUpdated, 'Updated Records');
+
+  const fileName = 'Trn309Movt ReuploadData Upload Log.xlsx';
+  console.log("Writing Excel file...");
+  XLSX.writeFile(wb, fileName);
+};
 
 
   // ✅ Open Add Modal

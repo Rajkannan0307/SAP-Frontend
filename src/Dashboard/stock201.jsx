@@ -159,7 +159,7 @@ const Stock201 = () => {
         console.log('response', response.data)
         alert(response.data.message)
         if (response.data.NewRecord.length > 0 || response.data.DuplicateRecords.length > 0 || response.data.ErrorRecords.length > 0) {
-         console.log('Calling downloadExcel...');
+        
 downloadExcel(response.data.NewRecord, response.data.DuplicateRecords, response.data.ErrorRecords);
   }
       } catch (error) {
@@ -452,22 +452,21 @@ const handleEditUploadData = async (docId) => {
     console.log('response', response.data);
     alert(response.data.message);
 
-    // if (
-    //   response.data.NewRecord.length > 0 ||
-    //   response.data.DuplicateRecords.length > 0 ||
-    //   response.data.ErrorRecords.length > 0
-    // ) {
-    //   downloadExcel(
-    //     response.data.NewRecord,
-    //     response.data.DuplicateRecords,
-    //     response.data.ErrorRecords
-    //   );
-    // }
+      const reuploadData = response.data.ReUploadRecord || [];
+    const errorData = response.data.ErrorRecords || [];
+
+    console.log('ReUploadRecord:', reuploadData);
+    console.log('ErrorRecords:', errorData);
+
+    if (reuploadData.length > 0 || errorData.length > 0) {
+      downloadExcelReUpload(reuploadData, errorData);
+    } else {
+      console.log("No data to download.");
+    }
+
   } catch (error) {
-    if (error.response) {
-      console.error('Backend error:', error.response.data);
-      alert(error.response.data.message || 'Upload failed');
-    } 
+    console.error('Upload failed:', error?.response?.data || error.message);
+    alert(error.response?.data?.message || 'Upload failed.');
   }
 
   getData();
@@ -479,6 +478,141 @@ const handleEditFileUpload = (event) => {
   setEditSelectedFile(event.target.files[0]);
 };
 
+
+ const downloadExcelReUpload = (updateRecord , errRecord ) => {
+   const wb = XLSX.utils.book_new();
+    // Column headers for Error Records
+    const ErrorColumns = ['Doc_ID','Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
+
+    ];
+
+   
+
+    // Column headers for Duplicate Records
+    const ReUploadColumns = ['Doc_ID','Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
+    ];
+
+
+    // Filter and map the data for Error Records
+    const filteredError = errRecord.map(item => ({
+      Doc_ID: item.Doc_ID || '',
+      Plant_Code: item.Plant_Code || '',
+      Material_Code: item.Material_Code || '',
+      Quantity: item.Quantity || '',
+      SLoc_Code: item.SLoc_Code || '',
+      CostCenter_Code: item.CostCenter_Code || '',
+      Movement_Code: item.Movement_Code || '',
+      Valuation_Type: item.Valuation_Type || '',
+      Batch: item.Batch || '',
+      Rate_Unit: item.Rate_Per_Unit || '',
+      Remark: item.Reason_For_Movt || '',
+      //User_Code: item.User_ID || '',
+      // Approval_Status: item.Approval_Status || '',
+      // SAP_Transaction_Status: item.SAP_Transaction_Status || '',
+
+      Plant_Code_Validation: item.Plant_Val,
+      Plant_Material_Code_Validation: item.Material_Val,
+      SLoc_Code_Validation: item.SLoc_Val,
+      CostCenter_Code_Validation: item.CostCenter_Val,
+
+      Plant_SLoc_Val_Validation: item.Plant_SLoc_Val,
+      Plant_CostCenter_Val_Validation: item.Plant_CostCenter_Val,
+      Movt_Validation: item.Reason_Val,
+      Mst_Valuation_Val: item.Valuation_Val,
+      User_Plant_Val: item.User_Plant_Val,
+
+    }));
+
+
+    
+    // Filter and map the data for New Records
+    const filteredUpdate = updateRecord.map(item => ({
+       Doc_ID: item.Doc_ID || '',
+      Plant_Code: item.Plant_Code || '',
+      Material_Code: item.Material_Code || '',
+      Quantity: item.Quantity || '',
+      SLoc_Code: item.SLoc_Code || '',
+      CostCenter_Code: item.CostCenter_Code || '',
+      Movement_Code: item.Movement_Code || '',
+      Valuation_Type: item.Valuation_Type || '',
+      Batch: item.Batch || '',
+      Rate_Unit: item.Rate_Per_Unit || '',
+      Remark: item.Reason_For_Movt || '',
+      //User_Code: selectedRow.User_Code || '',
+      //Approval_Status: selectedRow.Approval_Status || '',
+      //  SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
+
+    }));
+
+
+
+   
+
+
+    // 🔹 Helper to style header cells
+    const styleHeaders = (worksheet, columns) => {
+      columns.forEach((_, index) => {
+        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+        if (worksheet[cellAddress]) {
+          worksheet[cellAddress].s = {
+            font: { bold: true, color: { rgb: '000000' } },
+            fill: { fgColor: { rgb: 'FFFF00' } }, // Yellow background
+            alignment: { horizontal: 'center' },
+          };
+        }
+      });
+    };
+
+
+    // 🔴 Style red text for validation columns only
+    const styleValidationColumns = (worksheet, columns, dataLength) => {
+      const validationCols = ['Plant_Val', 'Material_Val',
+        'SLoc_Val', 'CostCenter_Val', 'Plant_SLoc_Val',
+        'Plant_CostCenter_Val', 'Reason_Val',
+        'Valuation_Val', 'User_Plant_Val',]
+
+      for (let row = 1; row <= dataLength; row++) {
+        validationCols.forEach(colName => {
+          const colIdx = columns.indexOf(colName);
+          if (colIdx === -1) return;
+
+          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+          const cell = worksheet[cellAddress];
+
+          if (cell && typeof cell.v === 'string') {
+            const value = cell.v.trim().toLowerCase();
+
+            // Apply green if value is "valid", otherwise red
+            cell.s = {
+              font: {
+                color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' } // green or red
+              }
+            };
+          }
+        });
+      }
+    };
+
+
+
+     // Always add at least one row so the file is not empty
+      const wsError = XLSX.utils.json_to_sheet(filteredError.length ? filteredError : [{}], { header: ErrorColumns });
+      styleHeaders(wsError, ErrorColumns);
+      styleValidationColumns(wsError, ErrorColumns, filteredError.length);
+      XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
+    
+      const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate.length ? filteredUpdate : [{}], { header: ReUploadColumns });
+      styleHeaders(wsUpdated, ReUploadColumns);
+      styleValidationColumns(wsUpdated, ReUploadColumns, filteredUpdate.length);
+      XLSX.utils.book_append_sheet(wb, wsUpdated, 'Updated Records');
+    
+      const fileName = 'Trn201Movt ReuploadData Upload Log.xlsx';
+      console.log("Writing Excel file...");
+      XLSX.writeFile(wb, fileName);
+    };
+    
 
 
   
