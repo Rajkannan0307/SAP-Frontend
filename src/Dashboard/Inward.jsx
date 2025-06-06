@@ -8,6 +8,8 @@ import {
   IconButton,
   Select,
   Switch,
+   Radio,
+  RadioGroup,
 } from "@mui/material";
 import {
   DataGrid,
@@ -38,7 +40,7 @@ const Inward = () => {
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const UserID = localStorage.getItem('UserID');
-
+const [VendorCode, setVendorCode] = useState("");
  
   // const [newRecord] = useState([]);
   // const [updateRecord] = useState([]);
@@ -59,7 +61,7 @@ const Inward = () => {
   const [Rate, setRate] = useState("");
   const [ActiveStatus, setActiveStatus] = useState(false);
   const [PlantTable, setPlantTable] = useState([]);
-  const [MaterialTable, setMaterialTable] = useState([])
+  const [VendorTable, setVendorTable] = useState([])
   // const [userID, setUserID] = useState("");
 
 
@@ -68,37 +70,17 @@ const Inward = () => {
     { field: "Vendor_Code", headerName: "Vendor Code ", flex: 1 },
     { field: "Vendor_Name", headerName: "Vendor Name ", flex: 1 },
     { field: "Purchase_Order", headerName: "Purchase Order", flex: 1 },
-    { field: "Part_no", headerName: "Part No", flex: 2 },
+    { field: "Part_no", headerName: "Part No", flex: 1},
 
-    { field: "Monthly_Scheduled_Qty", headerName: "Rate", flex: 1 },
-     { field: "Current_Stock", headerName: "Rate", flex: 1 },
-    
-    {
-      field: "ActiveStatus",
-      headerName: "Active Status",
-      flex: 1,
-      renderCell: (params) => {
-        const isActive = params.row.Active_Status;  // Assuming Active_Status is a boolean
-        return (
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isActive} // Use the boolean value directly
-                color="default"  // Neutral color for default theme
-                sx={{
-                  '& .MuiSwitch-track': {
-                    backgroundColor: isActive ? '#2e7d32' : '#d32f2f', // Green when active, Red when inactive
-                  },
-                  '& .MuiSwitch-thumb': {
-                    backgroundColor: isActive ? '#2e7d32' : '#d32f2f', // Green when active, Red when inactive
-                  },
-                }}
-              />
-            }
-          />
-        );
-      },
-    },
+    { field: "Monthly_Scheduled_Qty", headerName: "Monthly_Scheduled_Qty", flex: 1 },
+     { field: "Current_Stock", headerName: "Current_Stock", flex: 1 },
+      { field: "Invoice_No", headerName: "Invoice_No", flex: 1 },
+       { field: "Invoice_date", headerName: "Invoice_date", flex: 1 },
+        { field: "Invoice_Qty", headerName: "Invoice Quantity", flex: 1 },
+          { field: "Invoice_Value", headerName: "Invoice Value", flex: 1 },
+     { field: "Reason_For_Delay", headerName: "Reason For Delay", flex: 1 },
+      { field: "Remarks", headerName: "Remarks", flex: 1 },
+ 
 
 
 
@@ -137,7 +119,7 @@ const Inward = () => {
   const get_Material_Type = async () => {
     try {
       const response = await getMaterialType();
-      setMaterialTable(response.data);
+      setVendorTable(response.data);
     } catch (error) {
       console.error("Error updating user:", error);
     }
@@ -668,25 +650,38 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
           <h3 style={{ gridColumn: "span 2", textAlign: "center", color: "#2e59d9", textDecoration: "underline", textDecorationColor: "#88c57a", textDecorationThickness: "3px" }}>
             Add Inward
           </h3>
-          <FormControl fullWidth>
-            <InputLabel>Plant Code</InputLabel>
-            <Select
-              label="Plant Code"
-              name="PlantCode"
-              value={PlantCode}
-              onChange={(e) => setPlantCode(e.target.value)}
-              required
+            <Box
+            sx={{
+              gridColumn: "span 2",
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+          <RadioGroup
+              row
+             // value={}
+              onChange={(e) => {
+                const selected = e.target.value;
+               
+              }}
             >
-              {PlantTable.map((item, index) => (
-                <MenuItem key={index} value={item.Plant_Id}>{item.Plant_Code}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
+              <FormControlLabel
+                value=""
+                control={<Radio />}
+                label="Purchase Invoices"
+              />
+              <FormControlLabel
+                value=""
+                control={<Radio />}
+                label="Service Invoices"
+              />
+            </RadioGroup>
+</Box>
           <FormControl fullWidth>
-            <InputLabel>Material Type</InputLabel>
-            <Select label="Material Type" name="MaterialType" value={MaterialType} onChange={(e) => setMaterialType(e.target.value)} required>
-              {MaterialTable.map((item) => (
+            <InputLabel>Vendor Code</InputLabel>
+            <Select label="Vendor Code" name="Vendor Code" value={VendorCode} onChange={(e) => setVendorCode(e.target.value)} required>
+              {VendorTable.map((item) => (
                 <MenuItem key={item.Mat_Id} value={item.Mat_Type}>{item.Mat_Type}</MenuItem>
               ))}
             </Select>
