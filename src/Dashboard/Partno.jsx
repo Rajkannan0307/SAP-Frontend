@@ -273,8 +273,7 @@ const Partno = () => {
     }
     handleCloseUploadModal();
   }
-
-const handleEditUploadData = async (docId) => {
+const handleEditUploadData = async ({ docId, trnSapId }) => {
   if (!editSelectedFile) {
     alert("Please select a file first.");
     return;
@@ -286,7 +285,8 @@ const handleEditUploadData = async (docId) => {
     const formData = new FormData();
     formData.append("User_Add", editSelectedFile);  // Ensure key matches backend
     formData.append("UserID", UserID);
-    formData.append("Doc_ID", finalDocId); // Must be primitive
+    formData.append("Doc_ID", finalDocId);
+    formData.append("Trn_Sap_ID", trnSapId);
 
     const response = await Movement309ReUpload(formData);
     console.log('response', response.data);
@@ -569,7 +569,7 @@ const downloadExcelReUpload = (updateRecord , errRecord ) => {
   const wb = XLSX.utils.book_new();
 
   const ErrorColumns = [
-    'Doc_ID', 'Plant_Code', 'Movement_Code', 'From_Material_Code',
+    'Doc_ID', 'Trn_Sap_ID', 'Plant_Code', 'Movement_Code', 'From_Material_Code',
     'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
     'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
     'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
@@ -579,7 +579,7 @@ const downloadExcelReUpload = (updateRecord , errRecord ) => {
   ];
 
   const ReUploadColumns = [
-    'Doc_ID', 'Plant_Code', 'Movement_Code', 'From_Material_Code',
+    'Doc_ID', 'Trn_Sap_ID', 'Plant_Code', 'Movement_Code', 'From_Material_Code',
     'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
     'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
     'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
@@ -588,6 +588,7 @@ const downloadExcelReUpload = (updateRecord , errRecord ) => {
 
   const filteredError = errRecord.map(item => ({
     Doc_ID: item.Doc_ID,
+    Trn_Sap_ID: item.Trn_Sap_ID,
     Plant_Code: item.Plant_Code,
     Movement_Code: item.Movement_Code,
     From_Material_Code: item.From_Material_Code,
@@ -613,6 +614,7 @@ const downloadExcelReUpload = (updateRecord , errRecord ) => {
 
   const filteredUpdate = updateRecord.map(item => ({
     Doc_ID: item.Doc_ID,
+    Trn_Sap_ID: item.Trn_Sap_ID,
     Plant_Code: item.Plant_Code,
     Movement_Code: item.Movement_Code,
     From_Material_Code: item.From_Material_Code,
@@ -1949,14 +1951,28 @@ const columns = [
               Close
             </Button>
 
-            <Button
-              variant="contained"
-              onClick={() => handleEditUploadData(selectedRow?.Doc_ID)}
-              disabled={editIsUploading}
-              style={{ marginTop: "10px", width: "25%", color: "white", backgroundColor: "blue" }}
-            >
-              ReUpload
-            </Button>
+           <Button
+  variant="contained"
+  onClick={() =>
+    handleEditUploadData({
+      docId: selectedRow?.Doc_ID,
+      trnSapId: selectedRow?.Trn_Sap_ID,
+    })
+  }
+  disabled={editIsUploading}
+  sx={{
+    mt: 2,
+    width: '25%',
+    color: '#ffffff',
+    backgroundColor: '#1976d2', // MUI Blue 700
+    '&:hover': {
+      backgroundColor: '#115293', // Darker blue on hover
+    },
+  }}
+>
+  ReUpload
+</Button>
+
           </Box>
         </Box>
       </Modal>

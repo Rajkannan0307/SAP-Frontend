@@ -743,23 +743,23 @@ const handleOpenViewStatusModal = async (rowData) => {
     </Box>
 
     {/* ✅ Fixed View Button */}
-    <Button
-      variant="outlined"
-      color="secondary"
-      onClick={() => handleOpenViewStatusModal(selectedRow)} // ✅ Using selectedRow instead of params
-      sx={{
-        mt: 2,
-        color: '#4a148c',
-        borderColor: '#4a148c',
-        '&:hover': {
-          backgroundColor: '#4a148c',
-          color: '#ffffff',
-          borderColor: '#4a148c',
-        },
-      }}
-    >
-      View Approval Status
-    </Button>
+   <Button
+  variant="outlined"
+  color="secondary"
+  onClick={() => handleOpenViewStatusModal(selectedRow)}
+  sx={{
+    mt: 2,
+    color: '#7b1fa2', // Light purple
+    borderColor: '#7b1fa2',
+    '&:hover': {
+      backgroundColor: '#4a148c', // Dark purple on hover
+      color: '#ffffff',
+      borderColor: '#4a148c',
+    },
+  }}
+>
+  View Approval Status
+</Button>
 
     {/* Cancel Button */}
     <Button
@@ -822,24 +822,24 @@ const handleOpenViewStatusModal = async (rowData) => {
     </Typography>
 
     {/* 📋 Table */}
-    <Table size="small">
-      <TableHead>
-        <TableRow>
-          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Date</TableCell>
-          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Role</TableCell> 
-          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Name</TableCell>
-          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Comment</TableCell>
-          <TableCell sx={{ backgroundColor: "blue", color: "white" }}>Status</TableCell>   
+    <Table size="small" sx={{ borderCollapse: 'collapse' }}>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: '#bdbdbd' }}>
+          <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Date</TableCell>
+          <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Role</TableCell> 
+          <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Name</TableCell>
+          <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Comment</TableCell>
+          <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Status</TableCell>   
         </TableRow>
       </TableHead>
     <TableBody>
   {viewStatusData.map((item, index) => (
     <TableRow key={index}>
-      <TableCell>{item.Date}</TableCell>
-      <TableCell>{item.Role}</TableCell>
-      <TableCell>{item.Modified_By}</TableCell>
-      <TableCell>{item.Approver_Comment}</TableCell>
-      <TableCell>{item.Status}</TableCell>
+      <TableCell sx={{ border: '1px solid #555555' }}>{item.Date}</TableCell>
+      <TableCell sx={{ border: '1px solid #555555' }}>{item.Role}</TableCell>
+      <TableCell sx={{ border: '1px solid #555555' }}>{item.Modified_By}</TableCell>
+      <TableCell sx={{ border: '1px solid #555555' }}>{item.Approver_Comment}</TableCell>
+      <TableCell sx={{ border: '1px solid #555555' }}>{item.Status}</TableCell>
     </TableRow>
   ))}
 </TableBody>
