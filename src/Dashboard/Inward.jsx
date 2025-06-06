@@ -67,10 +67,12 @@ const Inward = () => {
   const columns = [
     { field: "Vendor_Code", headerName: "Vendor Code ", flex: 1 },
     { field: "Vendor_Name", headerName: "Vendor Name ", flex: 1 },
-    { field: "Purchase", headerName: "Material Code", flex: 1 },
-    { field: "Description", headerName: "Description", flex: 2 },
+    { field: "Purchase_Order", headerName: "Purchase Order", flex: 1 },
+    { field: "Part_no", headerName: "Part No", flex: 2 },
 
-    { field: "Rate", headerName: "Rate", flex: 1 },
+    { field: "Monthly_Scheduled_Qty", headerName: "Rate", flex: 1 },
+     { field: "Current_Stock", headerName: "Rate", flex: 1 },
+    
     {
       field: "ActiveStatus",
       headerName: "Active Status",
