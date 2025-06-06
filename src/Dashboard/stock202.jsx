@@ -430,7 +430,7 @@ const Stock202 = () => {
 
 
  // Upload handler
-const handleEditUploadData = async (docId) => {
+const handleEditUploadData = async (docId,trnSapId) => {
   if (!editSelectedFile) {
     alert("Please select a file first.");
     return;
@@ -443,7 +443,7 @@ const handleEditUploadData = async (docId) => {
     formData.append("User_Add", editSelectedFile);  // Ensure key matches backend
     formData.append("UserID", UserID);
     formData.append("Doc_ID", finalDocId); // Must be a primitive value (number or string of number)
-
+    formData.append("Trn_Sap_ID", trnSapId);
     const response = await Movement202ReUpload(formData); // Don't pass docId again if your function wraps it
     console.log('response', response.data);
     alert(response.data.message);
@@ -1365,14 +1365,25 @@ const renderActionButtons = (rowData) => {
             </Button>
 
             <Button
-              variant="contained"
-             onClick={() => handleEditUploadData(selectedRow?.Doc_ID)}
-             
-              disabled={editIsUploading}
-              style={{ marginTop: "10px", width: "25%", color: "white", backgroundColor: "blue" }}
-            >
-              ReUpload
-            </Button>
+  variant="contained"
+  onClick={() =>
+    handleEditUploadData(selectedRow?.Doc_ID, selectedRow?.Trn_Sap_ID)
+  }
+  disabled={editIsUploading}
+  sx={{
+    mt: 2,
+    width: '25%',
+    color: '#ffffff',
+    backgroundColor: '#1976d2',
+    '&:hover': {
+      backgroundColor: '#115293',
+    },
+  }}
+>
+  ReUpload
+</Button>
+
+          
           </Box>
         </Box>
       </Modal>
