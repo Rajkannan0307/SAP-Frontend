@@ -29,7 +29,7 @@ import axios from 'axios';
 
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { getdetails, getApprovalView, HandleApprovalAction, getPlants, getRole,get309ApprovalView } from '../controller/Approvalapiservice';
+import { getdetails, getApprovalView, HandleApprovalAction, getPlants, getRole, get309ApprovalView } from '../controller/Approvalapiservice';
 import { decryptSessionData } from "../controller/StorageUtils"
 
 
@@ -85,7 +85,7 @@ const Approval = () => {
   const [ToMatCode, setToMatCode] = useState("");
   const [NetDifferentPrice, setNetDifferentPrice] = useState("");
   const [ApprovalStatus, setApprovalStatus] = useState([]);
- const [Doc_ID, setDoc_ID] = useState(null);
+  const [Doc_ID, setDoc_ID] = useState(null);
 
   //ApprovalListView
   const [Role, setRole] = useState('');
@@ -98,8 +98,8 @@ const Approval = () => {
   console.log('pl', Plant_ID)
 
   //ApprovalListView (View approver status)
-const [openViewStatusModal, setOpenViewStatusModal] = useState(false);
-const [viewStatusData, setViewStatusData] = useState([]);
+  const [openViewStatusModal, setOpenViewStatusModal] = useState(false);
+  const [viewStatusData, setViewStatusData] = useState([]);
 
 
   useEffect(() => {
@@ -114,28 +114,28 @@ const [viewStatusData, setViewStatusData] = useState([]);
 
 
   const handleViewStatus = async (docId) => {
-  console.log("Fetching approval status for Doc_ID:", docId);
-  try {
-    const response = await get309ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
-    console.log("API Response:", response);
-    setViewStatusData(response);  // Update your state with the fetched data
-  } catch (error) {
-    console.error("❌ Error fetching grouped records:", error);
-    setViewStatusData([]);  // Handle errors and reset data
-  }
-};
+    console.log("Fetching approval status for Doc_ID:", docId);
+    try {
+      const response = await get309ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
+      console.log("API Response:", response);
+      setViewStatusData(response);  // Update your state with the fetched data
+    } catch (error) {
+      console.error("❌ Error fetching grouped records:", error);
+      setViewStatusData([]);  // Handle errors and reset data
+    }
+  };
 
 
 
 
 
-const handleOpenViewStatusModal = async (rowData) => {
-  const docId = rowData?.Doc_ID; // ✅ Get only Doc_ID
-  console.log("Opening View Status Modal for Doc_ID:", docId);
+  const handleOpenViewStatusModal = async (rowData) => {
+    const docId = rowData?.Doc_ID; // ✅ Get only Doc_ID
+    console.log("Opening View Status Modal for Doc_ID:", docId);
 
-  setOpenViewStatusModal(true);
-  await handleViewStatus(docId); // ✅ Pass only Doc_ID to API call
-};
+    setOpenViewStatusModal(true);
+    await handleViewStatus(docId); // ✅ Pass only Doc_ID to API call
+  };
 
 
 
@@ -293,10 +293,10 @@ const handleOpenViewStatusModal = async (rowData) => {
 
     // Prepare the data object to send for approval
     const data = {
-      Doc_ID: selectedRow.Doc_ID, 
-      Approver_Comment: Comment, 
-      Action: "Approved", 
-      UserID: UserID,  
+      Doc_ID: selectedRow.Doc_ID,
+      Approver_Comment: Comment,
+      Action: "Approved",
+      UserID: UserID,
       Approval_Level: Role,  // Current approval level
     };
 
@@ -637,7 +637,7 @@ const handleOpenViewStatusModal = async (rowData) => {
                             <TableCell colSpan={5} sx={{ textAlign: "right", fontWeight: "bold" }}>
                               Total
                             </TableCell>
-                            <TableCell sx={{ textAlign: "right",  fontWeight: "bold" }}>
+                            <TableCell sx={{ textAlign: "right", fontWeight: "bold" }}>
                               {totalNetDifference} {/* Display total sum here */}
                             </TableCell>
                           </TableRow>
@@ -671,185 +671,195 @@ const handleOpenViewStatusModal = async (rowData) => {
         </Box>
       </Modal>
 
-    
-
-     {/* Action modal  */}
-<Modal open={openActionModal} onClose={handleCancel}>
-  <Box
-    sx={{
-      width: 400,
-      bgcolor: "background.paper",
-      borderRadius: 2,
-      boxShadow: 24,
-      p: 4,
-      margin: "auto",
-      marginTop: "10%",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-    }}
-  >
-    <Typography
-      variant="h5"
-      sx={{
-        color: "#1565c0",
-        mb: 3,
-        textAlign: "center",
-        fontWeight: "bold",
-        textDecoration: "underline",
-        textDecorationColor: "limegreen",
-        textDecorationThickness: "3px",
-      }}
-    >
-      309 Approval
-    </Typography>
-
-    <TextField
-      label="Enter your comment"
-      multiline
-      rows={4}
-      variant="outlined"
-      fullWidth
-      margin="normal"
-      onChange={(e) => setComment(e.target.value)}
-    />
-
-    {/* Action Buttons */}
-    <Box display="flex" justifyContent="space-between" width="100%" mt={2}>
-      <Button
-        variant="contained"
-        color="success"
-        onClick={handleApprove}
-        startIcon={<CheckCircleIcon />}
-      >
-        Approve
-      </Button>
-      <Button
-        variant="contained"
-        color="error"
-        onClick={handleReject}
-        startIcon={<CloseIcon />}
-      >
-        Reject
-      </Button>
-      <Button
-        variant="contained"
-        color="warning"
-        onClick={handleQuery}
-        startIcon={<QueryBuilderIcon />}
-      >
-        Query
-      </Button>
-    </Box>
-
-    {/* ✅ Fixed View Button */}
-   <Button
-  variant="outlined"
-  color="secondary"
-  onClick={() => handleOpenViewStatusModal(selectedRow)}
-  sx={{
-    mt: 2,
-    color: '#7b1fa2', // Light purple
-    borderColor: '#7b1fa2',
-    '&:hover': {
-      backgroundColor: '#4a148c', // Dark purple on hover
-      color: '#ffffff',
-      borderColor: '#4a148c',
-    },
-  }}
->
-  View Approval Status
-</Button>
-
-    {/* Cancel Button */}
-    <Button
-      variant="outlined"
-      onClick={handleCancel}
-      sx={{
-        marginTop: "20px",
-        backgroundColor: "gray",
-        color: "black",
-        borderColor: "black",
-        '&:hover': {
-          borderColor: "black",
-          backgroundColor: "#e0e0e0",
-        },
-      }}
-    >
-      Cancel
-    </Button>
-  </Box>
-</Modal>
 
 
+      {/* Action modal  */}
+      <Modal open={openActionModal} onClose={handleCancel}>
+        <Box
+          sx={{
+            width: 380,
+            height: '330px',
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            margin: "auto",
+            marginTop: "10%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <Typography
+            variant="h5"
+            sx={{
+              color: "#1565c0",
+              mb: 3,
+              textAlign: "center",
+              fontWeight: "bold",
+              borderBottom: "3px solid limegreen",  // underline with control
+              paddingBottom: "1px",                  // space between text and underline
+              display: "inline-block",               // shrink width to text only
+              textUnderlineOffset: "px",
+            }}
+          >
+            309 Approval
+          </Typography>
 
-<Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
-  <Box
-    sx={{
-      width: 610,
-      bgcolor: "background.paper",
-      borderRadius: 2,
-      boxShadow: 24,
-      // fontSize: 12,
-      p: 3,
-      margin: "auto",
-      marginTop: "10%",
-      position: "relative", // to position X button
-    }}
-  >
-    {/* ❌ Top-right close (X) button */}
-    <IconButton
-      onClick={() => setOpenViewStatusModal(false)}
-      sx={{ position: "absolute", top: 8, right: 8 }}
-    >
-      <CloseIcon />
-    </IconButton>
+          <TextField
+            label="Enter your comment"
+            multiline
+            rows={3}
+            variant="outlined"
+            fullWidth
+            margin="normal"
+            onChange={(e) => setComment(e.target.value)}
+          />
 
-    {/* 📝 Modal Title */}
-    <Typography
-      variant="h6"
-      align="center"
-      sx={{
-        mb: 2,
-        fontWeight: "bold",
-        color: "#1565c0",
-        textDecoration: "underline",
-        textDecorationColor: "limegreen",
-        textDecorationThickness: "3px",
-      }}
-    >
-      Approval Status Details
-    </Typography>
+          {/* Action Buttons */}
+          <Box display="flex" justifyContent="space-between" width="100%" mt={2}>
+            <Button
+              variant="contained"
+              color="success"
+              onClick={handleApprove}
+              startIcon={<CheckCircleIcon />}
+            >
+              Approve
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleReject}
+              startIcon={<CloseIcon />}
+              sx={{
+                bgcolor: '#d32f2f', // default red (MUI error.main)
+                '&:hover': {
+                  bgcolor: '#9a0007', // darker red on hover (MUI error.dark)
+                },
+              }}
+            >
+              Reject
+            </Button>
+            <Button
+              variant="contained"
+              color="warning"
+              onClick={handleQuery}
+              startIcon={<QueryBuilderIcon />}
+            >
+              Query
+            </Button>
 
-    {/* 📋 Table */}
-    <Table size="small" sx={{ borderCollapse: 'collapse' }}>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: '#bdbdbd' }}>
-          <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Date</TableCell>
-          <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Role</TableCell> 
-          <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Name</TableCell>
-          <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Comment</TableCell>
-          <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Status</TableCell>   
-        </TableRow>
-      </TableHead>
-    <TableBody>
-  {viewStatusData.map((item, index) => (
-    <TableRow key={index}>
-      <TableCell sx={{ border: '1px solid #555555' }}>{item.Date}</TableCell>
-      <TableCell sx={{ border: '1px solid #555555' }}>{item.Role}</TableCell>
-      <TableCell sx={{ border: '1px solid #555555' }}>{item.Modified_By}</TableCell>
-      <TableCell sx={{ border: '1px solid #555555' }}>{item.Approver_Comment}</TableCell>
-      <TableCell sx={{ border: '1px solid #555555' }}>{item.Status}</TableCell>
-    </TableRow>
-  ))}
-</TableBody>
+          </Box>
+
+          {/* ✅ Fixed View Button */}
+          <Button
+            variant="outlined"
+            color="secondary"
+            onClick={() => handleOpenViewStatusModal(selectedRow)}
+            sx={{
+              mt: 2,
+              color: '#ffffff',           //  purple text
+              borderColor: '#6a1b9a',     // purple border
+              bgcolor: '#6a1b9a',         // light purple background
+              '&:hover': {
+                bgcolor: '#4a148c',       // dark purple background on hover
+                color: '#ffffff',         // white text on hover
+                borderColor: '#4a148c',   // dark purple border on hover
+              },
+            }}
+          >
+            View Approval Status
+          </Button>
+
+          {/* Cancel Button */}
+          <Button
+            variant="outlined"
+            onClick={handleCancel}
+            sx={{
+              marginTop: "20px",
+              backgroundColor: "gray",
+              color: "black",
+              borderColor: "black",
+              '&:hover': {
+                borderColor: "black",
+                backgroundColor: "#e0e0e0",
+              },
+            }}
+          >
+            Cancel
+          </Button>
+        </Box>
+      </Modal>
 
 
 
+      <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
+        <Box
+          sx={{
+            width: 1000,
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            // fontSize: 12,
+            p: 3,
+            margin: "auto",
+            marginTop: "10%",
+            position: "relative", // to position X button
+          }}
+        >
+          {/* ❌ Top-right close (X) button */}
+          <IconButton
+            onClick={() => setOpenViewStatusModal(false)}
+            sx={{ position: "absolute", top: 8, right: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
 
-    </Table>
-  </Box>
-</Modal>
+          {/* 📝 Modal Title */}
+          <Typography
+            variant="h6"
+            align="center"
+            sx={{
+              mb: 2,
+              fontWeight: "bold",
+              color: "#1565c0",
+              textDecoration: "underline",
+              textDecorationColor: "limegreen",
+              textDecorationThickness: "3px",
+            }}
+          >
+            Approval Status Details
+          </Typography>
+
+          {/* 📋 Table */}
+          <Table size="small" sx={{ borderCollapse: 'collapse' }}>
+            <TableHead>
+              <TableRow sx={{ bgcolor: '#bdbdbd' }}>
+                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Date</TableCell>
+                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Role</TableCell>
+                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Name</TableCell>
+                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Comment</TableCell>
+                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Status</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {viewStatusData.map((item, index) => (
+                <TableRow key={index}>
+                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Date}</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Role}</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Modified_By}</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Approver_Comment}</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Status}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+
+
+
+
+          </Table>
+        </Box>
+      </Modal>
 
     </div>
   );
