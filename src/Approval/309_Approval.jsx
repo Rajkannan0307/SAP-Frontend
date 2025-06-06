@@ -23,13 +23,14 @@ import {
 
 } from '@mui/material';
 
+import * as XLSX from 'sheetjs-style';
 import CloseIcon from '@mui/icons-material/Close'; // For CloseIcon
 import QueryBuilderIcon from '@mui/icons-material/QueryBuilder'; // For QueryBuilderIcon
 import axios from 'axios';
-
+import DownloadIcon from '@mui/icons-material/Download';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { getdetails, getApprovalView, HandleApprovalAction, getPlants, getRole, get309ApprovalView } from '../controller/Approvalapiservice';
+import { getdetails, getApprovalView, HandleApprovalAction, getPlants,DownloadDocumentAllExcel, getRole, get309ApprovalView } from '../controller/Approvalapiservice';
 import { decryptSessionData } from "../controller/StorageUtils"
 
 
@@ -208,6 +209,16 @@ const Approval = () => {
           >
             <CheckCircleIcon fontSize="small" />
           </IconButton>
+
+           {/* Download Button */}
+        <IconButton
+  size="large"
+  color="primary"
+  onClick={() => DownloadDocumentAllExcel(params.row.Doc_ID)} // ✅ only pass the docId
+  title="Download"
+>
+  <DownloadIcon fontSize="small" />
+</IconButton>
         </div>
       ),
     },
@@ -225,6 +236,67 @@ const Approval = () => {
     </GridToolbarContainer>
   );
 
+
+const DownloadDocumentAllExcel = async (DocID) => {
+  try {
+    const response = await DownloadDocumentAllExcel(DocID);
+    console.log('Data from API:', response.data);
+
+    if (!response.data || response.data.length === 0) {
+      alert('No data available to download.');
+      return;
+    }
+
+    const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+    const fileExtension = ".xlsx";
+    const fileName = "Trn 201 Movement List";
+
+    // Create worksheet from JSON data
+    const ws = XLSX.utils.json_to_sheet(response.data);
+
+    // Style headers - row 0
+    const headers = Object.keys(response.data[0] || {});
+    headers.forEach((_, colIdx) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+      if (ws[cellAddress]) {
+        ws[cellAddress].s = {
+          font: { bold: true, color: { rgb: "000000" } },
+          fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
+          alignment: { horizontal: "center" },
+        };
+      }
+    });
+
+    // Create workbook and add worksheet
+    const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+
+    // Generate Excel file buffer
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+
+    // Create Blob and trigger download
+    const data = new Blob([excelBuffer], { type: fileType });
+    const url = window.URL.createObjectURL(data);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", fileName + fileExtension);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    alert("File downloaded successfully! View The Particular DocID Details ...");
+  } catch (error) {
+    console.error("Download failed:", error);
+
+    if (error.response) {
+      alert(`Error: ${error.response.data.message || 'Unknown backend error'}`);
+    } else if (error.request) {
+      alert('No response from server. Please try again later.');
+    } else {
+      alert(`Error: ${error.message}`);
+    }
+  }
+};
 
   const get_Plant = async () => {
     try {

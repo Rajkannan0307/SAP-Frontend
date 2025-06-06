@@ -747,46 +747,6 @@ const handleEditFileUpload = (event) => {
   };
 
 
-
-  // const handleDownloadAllRowsExcel = () => {
-  //   if (!data || data.length === 0) {
-  //     alert("No data to download");
-  //     return;
-  //   }
-
-  //   const ws = XLSX.utils.json_to_sheet(data);
-  //   const headers = Object.keys(data[0] || {});
-  //   headers.forEach((_, colIdx) => {
-  //     const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
-  //     if (ws[cellAddress]) {
-  //       ws[cellAddress].s = {
-  //         font: { bold: true, color: { rgb: "000000" } },
-  //         fill: { fgColor: { rgb: "FFFF00" } },
-  //         alignment: { horizontal: "center" }
-  //       };
-  //     }
-  //   });
-
-  //   const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
-  //   const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-  //   const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-  //   const fileExtension = ".xlsx";
-  //   const fileName = "Trn201_All_Documents" + fileExtension;
-
-  //   const blob = new Blob([excelBuffer], { type: fileType });
-  //   const url = window.URL.createObjectURL(blob);
-  //   const link = document.createElement("a");
-  //   link.href = url;
-  //   link.setAttribute("download", fileName);
-  //   document.body.appendChild(link);
-  //   link.click();
-  //   link.remove();
-  //   window.URL.revokeObjectURL(url);
-
-  //   alert("Downloaded all rows as Excel.");
-  // };
-
-
   //✅ DataGrid Columns with Edit & Delete Buttons
 
   const columns = [
