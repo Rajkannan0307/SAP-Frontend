@@ -78,6 +78,13 @@ export const resubmitAction = async (docId) => {
 
 export const DownloadDocumentAllExcel = async (DocID)=>{
   console.log('Calling API with docId:', DocID); 
-  const response = await axios.get(`${api}/Approval201/download_Alldata?Doc_ID=${DocID}`);
+  const response = await axios.get(`${api}/Approval/download_AllRow_Docdata?Doc_ID=${DocID}`);
     return response;
+};
+
+
+// src/api/approval.js or a similar file
+export const fetchDocumentExcelData = async (DocID) => {
+  const response = await axios.get(`${api}/Approval/download_AllRow_Docdata?Doc_ID=${DocID}`);
+  return response;
 };

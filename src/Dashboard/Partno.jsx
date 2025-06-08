@@ -15,6 +15,7 @@ import { FaDownload } from "react-icons/fa";
 import { deepPurple } from '@mui/material/colors';
 import { FormControl, Select, MenuItem } from '@mui/material';
 import { decryptSessionData } from "../controller/StorageUtils"
+import axios from "axios";
 
 import EditIcon from '@mui/icons-material/Edit';
 
@@ -44,7 +45,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { IoMdDownload } from "react-icons/io";
 import { getTransactionData, Movement309, Movement309ReUpload } from "../controller/transactionapiservice";
 import { api } from "../controller/constants";
-import { getdetails,DownloadAllExcel, getresubmit, getCancel, getAdd, getPlants, getMaterial, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
+import { getdetails,DownloadAllExcel, getresubmit, Edit309Record,  getCancel, getAdd, getPlants, getMaterial, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
 const Partno = () => {
 
 
@@ -56,7 +57,7 @@ const Partno = () => {
 
   const [isEditable, setIsEditable] = useState(false);
 
-
+ const[openRowEditModal,setOpenRowEditModal]=useState(false);
   const [openViewStatus, setOpenViewStatus] = useState(false);
 
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -138,8 +139,23 @@ const Partno = () => {
 
 
 
-
-
+const handleOpenEditModal = (record) => {
+  setFromMatCode(record.FromMatCode);
+  setToMatCode(record.ToMatCode);
+  //setFromDescription(record.FromDescription);
+  //setToDescription(record.ToDescription);
+  setFromQty(record.FromQty);
+  setToQty(record.ToQty);
+  setFromSLocID(record.FromSLocID);
+  setToSLocID(record.ToSLocID);
+  setFromPrice(record.FromPrice);
+  setToPrice(record.ToPrice);
+  setFromValuationType(record.FromValuationType);
+  setToValuationType(record.ToValuationType);
+  setFromBatch(record.FromBatch);
+  setToBatch(record.ToBatch);
+  setOpenEditModal(true);
+};
 
 
   const handleCloseAddModal = () => setOpenAddModal(false);
@@ -911,144 +927,20 @@ const downloadExcelReUpload = (updateRecord , errRecord ) => {
   };
 
 
-  // 👇 DEFINE THESE FUNCTIONS HERE
-  // const handleEdit = (rowData) => {
-  //   setSelectedRow(rowData);
-  //   setOpenModal(true);
-  // };
-
-  // const handleResubmit = async () => {
-  //   if (!selectedRow) {
-  //     alert("No document selected for Resubmit.");
-  //     return;
-  //   }
-  //   const data = {
-  //     Doc_ID: selectedRow.Doc_ID,
-  //     Action: "Resubmit",
-  //     UserID: UserID,
-
-  //   };
-
-  //   console.log("Sending Resubmit data:", data);
-
-  //   try {
-  //     const response = await getresubmit(data);
-  //     console.log("Resubmit API response:", response);
-
-  //     const isSuccess = response?.data?.success ?? response?.success;
-
-  //     if (isSuccess) {
-  //       alert("Document Resubmit!");
-  //       setOpenModal(false);
-  //       getData();
-  //     } else {
-  //       const message = response?.data?.message ?? response?.message ?? "Resubmit failed.";
-  //       alert(message);
-  //     }
-  //   } catch (error) {
-  //     console.error("Resubmit error:", error);
-  //     const errMsg = error.response?.data?.message || "An error occurred while Resubmit the document.";
-  //     alert(errMsg);
-  //   }
-  // };
 
 
-  // const handleCancel = async () => {
-  //   if (!selectedRow) {
-  //     alert("No document selected for Cancel.");
-  //     return;
-  //   }
-  //   const data = {
-  //     Doc_ID: selectedRow.Doc_ID,
-  //     Action: "Cancel",
-  //     UserID: UserID,
-
-  //   };
-
-  //   console.log("Sending Cancel data:", data);
-
-  //   try {
-  //     const response = await getCancel(data);
-  //     console.log("Cancel API response:", response);
-
-  //     const isSuccess = response?.data?.success ?? response?.success;
-
-  //     if (isSuccess) {
-  //       alert("Document Cancelled!");
-  //       setOpenModal(false)
-
-  //       getData();
-  //     } else {
-  //       const message = response?.data?.message ?? response?.message ?? "Cancel failed.";
-  //       alert(message);
-  //     }
-  //   } catch (error) {
-  //     console.error("Cancel error:", error);
-  //     const errMsg = error.response?.data?.message || "An error occurred while Cancel the document.";
-  //     alert(errMsg);
-  //   }
-  // };
-
-
-  const handleCloseEditModal = () => {
-    setOpenEditModal(false);
-    setSelectedRow(null); // optionally reset selected data
+  const handleCloseEditRowModal = () => {
+   setOpenRowEditModal(false);
+  
   };
 
+  const handleRowClick = (params) => {
+   setPlantCode(params.row.Plant_Code);
+  setDocID(params.row.Doc_ID);
 
+    setOpenRowEditModal(true); // Open the modal
+  };
 
-  //✅ DataGrid Columns with Edit & Delete Buttons
-  // const columns = [
-  //   { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
-  //   { field: "Doc_ID", headerName: "Doc ID ", flex: 1 },
-  //   { field: "Date", headerName: "Date", flex: 1 },
-  //   { field: "From_Material_Code", headerName: "From Mat Code", flex: 1 },
-  //   { field: "To_Material_Code", headerName: "To Mat Code", flex: 1 },
-  //   { field: "Net_Difference_Price", headerName: "Net Different Price", flex: 1 },
-  //   { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
-
-
-  //   {
-  //     field: "actions",
-  //     headerName: "Actions",
-  //     flex: 1,
-  //     sortable: false,
-  //     renderCell: (params) => {
-  //       const approvalStatus = (params.row.Approval_Status || "").toLowerCase();
-
-  //       const isEditable =
-  //         approvalStatus === "rejected" || approvalStatus === "under query";
-
-  //       return (
-  //         <div style={{ display: "flex", gap: "10px" }}>
-  //           <IconButton
-  //             size="large"
-  //             color="primary"
-  //             onClick={() => handleOpenViewModal(params.row)}
-  //           >
-  //             <VisibilityIcon fontSize="small" />
-  //           </IconButton>
-
-  //           {isEditable && (
-  //             <IconButton
-  //               size="large"
-  //               sx={{
-  //                 color: "#6a0dad",
-  //                 '&:hover': {
-  //                   color: "#4b0082",
-  //                 },
-  //               }}
-  //               onClick={() => handleEdit(params.row)}
-  //             >
-  //               <EditIcon fontSize="small" />
-  //             </IconButton>
-  //           )}
-  //         </div>
-  //       );
-  //     }
-  //   }
-
-  // ];
 
 const columns = [
   { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
@@ -1123,19 +1015,12 @@ const columns = [
   );
 }
 
-
   },
 ];
 
   const handleCloseViewStatus = () => {
     setOpenViewStatus(false);
   };
-
-
-
-
-
-
 
 
   const handleOpenViewStatusModal = async (rowData) => {
@@ -1154,8 +1039,6 @@ const columns = [
       setViewStatusData([]); // fallback to empty state
     }
   };
-
-
 
   //view detail for Particular DocID Details ... downloa
 
@@ -1217,8 +1100,53 @@ const columns = [
      }
    };
 
+const handleCloseEditModal = () => {
+  setOpenEditModal(false);
+};
 
+   
+const handleUpdate = async () => {
+  const updatedData = {
+    DocID,
+    FromMatCode,
+    ToMatCode,
+    FromDescription,
+    ToDescription,
+    FromQty,
+    ToQty,
+    FromSLocID,
+    ToSLocID,
+    FromPrice,
+    ToPrice,
+    FromValuationType,
+    ToValuationType,
+    FromBatch,
+    ToBatch,
+  };
 
+  try {
+    await axios.post("/api/Edit309Record", updatedData);
+    alert("Record updated successfully.");
+    setOpenEditModal(false);
+    fetchData(); // Ensure fetchData is also defined
+  } catch (error) {
+    console.error("Update failed", error);
+    alert("Failed to update record.");
+  }
+};
+
+const fetchData = async () => {
+  try {
+    const response = await axios.get("/Edit309Record");
+    setData(response.data);
+  } catch (error) {
+    console.error("Failed to fetch data", error);
+  }
+};
+
+useEffect(() => {
+  fetchData();
+}, []);
 
   // ✅ Custom Toolbar
   const CustomToolbar = () => (
@@ -1363,6 +1291,7 @@ const columns = [
           pageSize={5}
           getRowId={(row) => row.Trn_Sap_ID} // Ensure Trn_309_ID is unique and exists
           rowsPerPageOptions={[5]}
+          onRowClick={handleRowClick}
           disableSelectionOnClick
           slots={{ toolbar: CustomToolbar }}
           sx={{
@@ -2132,8 +2061,291 @@ const columns = [
         </Box>
       </Modal>
 
+    {/* ✅ Edit Modal */}
+              <Modal open={openRowEditModal} onClose={() => setOpenRowEditModal(false)}>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, 1fr)",
+                    width: 400,
+                    bgcolor: "background.paper",
+                    borderRadius: 2,
+                    boxShadow: 24,
+                    p: 4,
+                    margin: "auto",
+                    marginTop: "10%",
+                    gap: "15px",
+                  }}
+                >
+                  <h3
+                    style={{
+                      gridColumn: "span 2",
+                      textAlign: "center",
+                      color: "#2e59d9",
+                      textDecoration: "underline",
+                      textDecorationColor: "#88c57a",
+                      textDecorationThickness: "3px",
+                    }}
+                  >
+                    Edit Storage Location
+                  </h3>
+                
+                  <Box
+                    sx={{
+                      gridColumn: "span 2",
+                      display: "flex",
+                      justifyContent: "center",
+                      gap: "10px",
+                      marginTop: "15px",
+                    }}
+                  >
+                    <Button
+                      variant="contained"
+                      color="error"
+                      onClick={handleCloseEditRowModal}
+                    >
+                      Cancel
+                    </Button>
+                    <Button variant="contained" color="primary" >
+                      Update
+                    </Button>
+                  </Box>
+                </Box>
+              </Modal>
+
+{/*edit modal*/}
+<Modal open={openRowEditModal} onClose={() => setOpenRowEditModal(false)}>
+  <Box
+    sx={{
+      display: "grid",
+      gridTemplateColumns: "repeat(2, 1fr)",
+      width: 500,
+      height:600,
+      bgcolor: "background.paper",
+      borderRadius: 2,
+      boxShadow: 24,
+      p: 4,
+      margin: "auto",
+      marginTop: "5%",
+      gap: "15px",
+    }}
+  >
+    <h3
+      style={{
+        gridColumn: "span 2",
+        textAlign: "center",
+        color: "#2e59d9",
+        textDecoration: "underline",
+        textDecorationColor: "#88c57a",
+        textDecorationThickness: "3px",
+      }}
+    >
+      Edit 309 Record
+    </h3>
+
+    {/* Plant Code - Read Only */}
+    <TextField
+      label="Plant"
+      value={PlantCode}
+      fullWidth
+      InputProps={{ readOnly: true }}
+    />
+
+ 
+    {/* Plant Code - Read Only */}
+    <TextField
+      label="DocID"
+      value={DocID}
+      fullWidth
+      InputProps={{ readOnly: true }}
+    />
+
+    {/* Material Code */}
+    <TextField
+      label="From Material Code"
+      value={FromMatCode}
+      onChange={(e) => setFromMatCode(e.target.value)}
+      fullWidth
+    />
+    <TextField
+      label="To Material Code"
+      value={ToMatCode}
+      onChange={(e) => setToMatCode(e.target.value)}
+      fullWidth
+    />
+
+
+
+    {/* Quantity */}
+    <TextField
+      label="From Quantity"
+      type="number"
+      value={FromQty}
+      onChange={(e) => setFromQty(Number(e.target.value))}
+      fullWidth
+    />
+    <TextField
+      label="To Quantity"
+      type="number"
+      value={ToQty}
+      onChange={(e) => setToQty(Number(e.target.value))}
+      fullWidth
+    />
+
+    {/* SLoc ID */}
+    <TextField
+      label="From SLoc ID"
+      value={FromSLocID}
+      onChange={(e) => setFromSLocID(e.target.value)}
+      fullWidth
+    />
+    <TextField
+      label="To SLoc ID"
+      value={ToSLocID}
+      onChange={(e) => setToSLocID(e.target.value)}
+      fullWidth
+    />
+
+    {/* Price */}
+    <TextField
+      label="From Price"
+      type="number"
+      value={FromPrice}
+      onChange={(e) => setFromPrice(Number(e.target.value))}
+      fullWidth
+    />
+    <TextField
+      label="To Price"
+      type="number"
+      value={ToPrice}
+      onChange={(e) => setToPrice(Number(e.target.value))}
+      fullWidth
+    />
+
+    {/* Valuation Type */}
+    <TextField
+      label="From Valuation Type"
+      value={FromValuationType}
+      onChange={(e) => setFromValuationType(e.target.value)}
+      fullWidth
+    />
+    <TextField
+      label="To Valuation Type"
+      value={ToValuationType}
+      onChange={(e) => setToValuationType(e.target.value)}
+      fullWidth
+    />
+
+    {/* Batch */}
+    <TextField
+      label="From Batch"
+      value={FromBatch}
+      onChange={(e) => setFromBatch(e.target.value)}
+      fullWidth
+    />
+    <TextField
+      label="To Batch"
+      value={ToBatch}
+      onChange={(e) => setToBatch(e.target.value)}
+      fullWidth
+    />
+
+
+
+    {/* Buttons */}
+    <Box
+      sx={{
+        gridColumn: "span 2",
+        display: "flex",
+        justifyContent: "center",
+        gap: "10px",
+        marginTop: "15px",
+      }}
+    >
+      <Button variant="contained" color="error" onClick={handleCloseEditModal}>
+        Cancel
+      </Button>
+      <Button variant="contained" color="primary" onClick={handleUpdate}>
+        Update
+      </Button>
+    </Box>
+  </Box>
+</Modal>
+
     </div>
   );
 };
 
 export default Partno;
+
+//<Modal open={openRowEditModal} onClose={() => setOpenRowEditModal(false)}>
+//   <Box
+//     sx={{
+//       display: "grid",
+//       gridTemplateColumns: "repeat(2, 1fr)",
+//       width: 400,
+//       height: "auto",
+//       bgcolor: "background.paper",
+//       borderRadius: 2,
+//       boxShadow: 24,
+//       p: 2,
+//       margin: "auto",
+//       marginTop: "8%",
+//       gap: "10px",
+//     }}
+//   >
+//     <h3
+//       style={{
+//         gridColumn: "span 2",
+//         textAlign: "center",
+//         color: "#2e59d9",
+//         fontSize: "18px",
+//         marginBottom: "10px",
+//         textDecoration: "underline",
+//         textDecorationColor: "#88c57a",
+//         textDecorationThickness: "2px",
+//       }}
+//     >
+//       Edit 309 Record
+//     </h3>
+
+//     <TextField label="Plant" value={PlantCode} fullWidth size="small" InputProps={{ readOnly: true }} />
+//     <TextField label="DocID" value={DocID} fullWidth size="small" InputProps={{ readOnly: true }} />
+
+//     <TextField label="From Material Code" value={FromMatCode} onChange={(e) => setFromMatCode(e.target.value)} fullWidth size="small" />
+//     <TextField label="To Material Code" value={ToMatCode} onChange={(e) => setToMatCode(e.target.value)} fullWidth size="small" />
+
+//     <TextField label="From Quantity" type="number" value={FromQty} onChange={(e) => setFromQty(Number(e.target.value))} fullWidth size="small" />
+//     <TextField label="To Quantity" type="number" value={ToQty} onChange={(e) => setToQty(Number(e.target.value))} fullWidth size="small" />
+
+//     <TextField label="From SLoc ID" value={FromSLocID} onChange={(e) => setFromSLocID(e.target.value)} fullWidth size="small" />
+//     <TextField label="To SLoc ID" value={ToSLocID} onChange={(e) => setToSLocID(e.target.value)} fullWidth size="small" />
+
+//     <TextField label="From Price" type="number" value={FromPrice} onChange={(e) => setFromPrice(Number(e.target.value))} fullWidth size="small" />
+//     <TextField label="To Price" type="number" value={ToPrice} onChange={(e) => setToPrice(Number(e.target.value))} fullWidth size="small" />
+
+//     <TextField label="From Valuation Type" value={FromValuationType} onChange={(e) => setFromValuationType(e.target.value)} fullWidth size="small" />
+//     <TextField label="To Valuation Type" value={ToValuationType} onChange={(e) => setToValuationType(e.target.value)} fullWidth size="small" />
+
+//     <TextField label="From Batch" value={FromBatch} onChange={(e) => setFromBatch(e.target.value)} fullWidth size="small" />
+//     <TextField label="To Batch" value={ToBatch} onChange={(e) => setToBatch(e.target.value)} fullWidth size="small" />
+
+//     <Box
+//       sx={{
+//         gridColumn: "span 2",
+//         display: "flex",
+//         justifyContent: "center",
+//         gap: "10px",
+//         mt: 2,
+//       }}
+//     >
+//       <Button variant="contained" color="error" size="small" onClick={handleCloseEditModal}>
+//         Cancel
+//       </Button>
+//       <Button variant="contained" color="primary" size="small" onClick={handleUpdate}>
+//         Update
+//       </Button>
+//     </Box>
+//   </Box>
+// </Modal>
+

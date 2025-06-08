@@ -30,7 +30,7 @@ import axios from 'axios';
 import DownloadIcon from '@mui/icons-material/Download';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { getdetails, getApprovalView, HandleApprovalAction, getPlants,DownloadDocumentAllExcel, getRole, get309ApprovalView } from '../controller/Approvalapiservice';
+import { getdetails, getApprovalView, HandleApprovalAction, getPlants,DownloadDocumentAllExcel,fetchDocumentExcelData, getRole, get309ApprovalView } from '../controller/Approvalapiservice';
 import { decryptSessionData } from "../controller/StorageUtils"
 
 
@@ -239,62 +239,46 @@ const Approval = () => {
 
 const DownloadDocumentAllExcel = async (DocID) => {
   try {
-    const response = await DownloadDocumentAllExcel(DocID);
-    console.log('Data from API:', response.data);
+    const response = await fetchDocumentExcelData(DocID);
+    const data = response.data;
 
-    if (!response.data || response.data.length === 0) {
+    if (!data || data.length === 0) {
       alert('No data available to download.');
       return;
     }
 
-    const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-    const fileExtension = ".xlsx";
-    const fileName = "Trn 201 Movement List";
+    const ws = XLSX.utils.json_to_sheet(data);
+    const headers = Object.keys(data[0]);
 
-    // Create worksheet from JSON data
-    const ws = XLSX.utils.json_to_sheet(response.data);
-
-    // Style headers - row 0
-    const headers = Object.keys(response.data[0] || {});
     headers.forEach((_, colIdx) => {
       const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
       if (ws[cellAddress]) {
         ws[cellAddress].s = {
-          font: { bold: true, color: { rgb: "000000" } },
-          fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
+          font: { bold: true },
+          fill: { fgColor: { rgb: "FFFF00" } },
           alignment: { horizontal: "center" },
         };
       }
     });
 
-    // Create workbook and add worksheet
     const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
-
-    // Generate Excel file buffer
     const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
 
-    // Create Blob and trigger download
-    const data = new Blob([excelBuffer], { type: fileType });
-    const url = window.URL.createObjectURL(data);
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
     const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", fileName + fileExtension);
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", `Trn309_Movement_List_${DocID}.xlsx`);
     document.body.appendChild(link);
     link.click();
     link.remove();
-    window.URL.revokeObjectURL(url);
 
-    alert("File downloaded successfully! View The Particular DocID Details ...");
+    alert("File downloaded successfully!");
   } catch (error) {
     console.error("Download failed:", error);
-
-    if (error.response) {
-      alert(`Error: ${error.response.data.message || 'Unknown backend error'}`);
-    } else if (error.request) {
-      alert('No response from server. Please try again later.');
-    } else {
-      alert(`Error: ${error.message}`);
-    }
+    alert(`Error downloading: ${error.message}`);
   }
 };
 

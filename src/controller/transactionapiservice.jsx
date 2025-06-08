@@ -83,3 +83,7 @@ export const DownloadAllExcel = async (docId) => {
   return response;
 };
 
+export const Edit309Record = async (data) => {
+  const response = await axios.post(`${api}/transaction/Edit309Record`, data);
+  return response.data;
+};
