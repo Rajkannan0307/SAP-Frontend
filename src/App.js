@@ -45,6 +45,8 @@ import Home from "./components/pages/Home";
 import ApproverHome from "./components/pages/ApproverHome";
 import SAP from"./Sap User Access/Sap"
 import ValuationType from "./Masters/ValuationType";
+import Service from"./Dashboard/service";
+import Purchase from "./Dashboard/Purchase";
 const App = () => {
   return (
     <Router>
@@ -90,7 +92,10 @@ const App = () => {
             <Route path="Location" element={<ProtectedRoute><Location /></ProtectedRoute>} />
              <Route path="SAP" element={<ProtectedRoute screenId={18}><SAP  /></ProtectedRoute>} />
               <Route path="ValuationType" element={<ProtectedRoute screenId={21}><ValuationType  /></ProtectedRoute>} />
-            <Route path="Home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+            <Route path="Purchase" element={<ProtectedRoute><Purchase/></ProtectedRoute>} />
+            <Route path="Service" element={<ProtectedRoute><Service/></ProtectedRoute>} />
+
+             <Route path="Home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
              <Route path="HomePage" element={<ProtectedRoute><ApproverHome /></ProtectedRoute>} />
             {/* Role Management */}
             <Route path="Role/:roleId" element={<ProtectedRoute screenId={6}><Admin /></ProtectedRoute>} />
