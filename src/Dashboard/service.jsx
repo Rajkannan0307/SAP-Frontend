@@ -8,7 +8,7 @@ import {
   IconButton,
   Select,
   Switch,
-  Radio,
+  Checkbox,
   RadioGroup,
 } from "@mui/material";
 import {
@@ -30,7 +30,7 @@ import { MaterialMaster } from "../controller/Masterapiservice";
 import { FaDownload } from "react-icons/fa";
 import { deepPurple } from "@mui/material/colors";
 import { api } from "../controller/constants";
-import { getdetails, getVendor,getAdd,getUpdates } from '../controller/Inwardtransactionapiservice';
+import { getdetailsService, getVendor,getAddService,getUpdates } from '../controller/Inwardtransactionapiservice';
 
 const Service = () => {
   const [searchText, setSearchText] = useState("");
@@ -41,6 +41,12 @@ const Service = () => {
   const [openEditModal, setOpenEditModal] = useState(false);
   const UserID = localStorage.getItem("UserID");
   const [VendorCode, setVendorCode] = useState("");
+const [VendorID, setVendorID] = useState('');
+const [InvoiceDate, setInvoiceDate] = useState('');
+const [InvoiceNo, setInvoiceNo] = useState('');
+const [InvoiceValue, setInvoiceValue] = useState('');
+const [PurchaseOrder, setPurchaseOrder] = useState('');
+const [ReasonForDelay, setReasonForDelay] = useState('');
 
   // const [newRecord] = useState([]);
   // const [updateRecord] = useState([]);
@@ -61,32 +67,45 @@ const Service = () => {
   const [ActiveStatus, setActiveStatus] = useState(false);
   const [PlantTable, setPlantTable] = useState([]);
   const [VendorTable, setVendorTable] = useState([]);
+  const [selectedRows, setSelectedRows] = useState([]);
+
   // const [userID, setUserID] = useState("");
 
   const columns = [
     { field: "Vendor_Code", headerName: "Vendor Code ", flex: 1 },
     { field: "Vendor_Name", headerName: "Vendor Name ", flex: 1 },
     { field: "Invoice_No", headerName: "Invoice No", flex: 1 },
-    { field: "Invoice_date", headerName: "Invoice Date", flex: 1 },
+    { field: "Invoice_Date", headerName: "Invoice Date", flex: 1 },
 
     { field: "Invoice_Value", headerName: "Invoice Value", flex: 1 },
     { field: "Purchase_Order", headerName: "Purchase Order", flex: 1 },
     { field: "Reason_For_Delay", headerName: "Reason For Delay", flex: 1 },
-    { field: "Remarks", headerName: "Remarks", flex: 1 },
+    {
+  field: "Action",
+  headerName: "Action",
+  flex: 1,
+  renderCell: (params) => (
+    <Checkbox
+      checked={selectedRows.includes(params.row)}
+      onChange={() => handleCheckboxChange(params.row)}
+    />
+  )
+}
+
   ];
   const getData = async () => {
-    // try {
-    //   const response = await getdetails();
-    //   console.log(response);  // Check the structure of response
-    //   setData(response);  // Ensure that this is correctly setting the data
-    //   setOriginalRows(response); // for reference during search
-    // setRows(response);
-    // } catch (error) {
-    //   console.error(error);
-    //   setData([]);  // Handle error by setting empty data
-    //   setOriginalRows([]); // handle error case
-    //  setRows([]);
-    // }
+    try {
+      const response = await getdetailsService();
+      console.log(response);  // Check the structure of response
+      setData(response);  // Ensure that this is correctly setting the data
+      setOriginalRows(response); // for reference during search
+    setRows(response);
+    } catch (error) {
+      console.error(error);
+      setData([]);  // Handle error by setting empty data
+      setOriginalRows([]); // handle error case
+     setRows([]);
+    }
   };
 
   useEffect(() => {
@@ -112,6 +131,17 @@ const Service = () => {
       <GridToolbarExport />
     </GridToolbarContainer>
   );
+  const handleCheckboxChange = (row) => {
+  setSelectedRows((prevSelected) => {
+    const isSelected = prevSelected.some((item) => item.Inward_ID === row.Inward_ID);
+    if (isSelected) {
+      return prevSelected.filter((item) => item.Inward_ID !== row.Inward_ID);
+    } else {
+      return [...prevSelected, row];
+    }
+  });
+};
+
 
   // ✅ Handle Add Modal
   const handleOpenAddModal = (item) => {
@@ -353,60 +383,62 @@ const Service = () => {
 
   // ✅ Handle Add Material
   const handleAdd = async () => {
-    console.log("Data being sent to the server:", {
-      PlantCode,
-      MaterialType,
-      MaterialCode,
-      Description,
-      Rate,
-      ActiveStatus,
-      UserID,
-    });
-    console.log("Add button clicked");
+  console.log("Data being sent to the server:", {
+    VendorID,
+    InvoiceDate,
+    InvoiceNo,
+    InvoiceValue,
+    PurchaseOrder,
+    ReasonForDelay,
+    UserID,
+  });
+
+  // // Validation
+  // if (
+  //   VendorID === "" ||
+  //   InvoiceDate === "" ||
+  //   InvoiceNo === "" ||
+  //   InvoiceValue === "" ||
+  //   PurchaseOrder === ""
+  // ) {
+  //   alert("Please fill in all required fields");
+  //   return;
+  // }
+
+  try {
+    const data = {
+      Vendor_ID: VendorCode,
+      Invoice_Date: InvoiceDate,
+      Invoice_No: InvoiceNo,
+      Invoice_Value: InvoiceValue,
+      Purchase_Order: PurchaseOrder,
+      Reason_For_Delay: ReasonForDelay,
+      UserID: UserID,
+    };
+
+    const response = await getAddService(data); // make sure this calls your /Get_Add API for services
+
+    if (response.data.success) {
+      alert("Service invoice added successfully!");
+      getData(); // refresh list
+      handleCloseAddModal(); // close modal
+    } else {
+      alert(response.data.message || "Failed to add invoice.");
+    }
+  } catch (error) {
+    console.error("Error in adding invoice:", error);
     if (
-      PlantCode === "" ||
-      MaterialType === "" ||
-      MaterialCode === "" ||
-      Description === "" ||
-      Rate === ""
+      error.response &&
+      error.response.data &&
+      error.response.data.message
     ) {
-      alert("Please fill in all required fields");
-      return; // Exit the function if validation fails
+      alert(error.response.data.message);
+    } else {
+      alert("An error occurred while adding the invoice.");
     }
+  }
+};
 
-    try {
-      const data = {
-        UserID: UserID,
-        Plant_Code: PlantCode,
-        Material_Type: MaterialType,
-        Material_Code: MaterialCode,
-        Description: Description,
-        Rate: Rate,
-        Active_Status: ActiveStatus,
-      };
-      const response = await getAdd(data);
-      if (response.data.success) {
-        alert("Material added successfully!");
-        getData(); // refresh UI (e.g. user list)
-        handleCloseAddModal(); // close the modal
-      } else {
-        alert(response.data.message || "Failed to add material.");
-      }
-    } catch (error) {
-      console.error("Error in adding Material:", error);
-
-      // Step 4: Show error from server (like Employee_ID already exists)
-      if (
-        error.response &&
-        error.response.data &&
-        error.response.data.message
-      ) {
-        alert(error.response.data.message);
-      } else {
-        alert("An error occurred while adding the Material.");
-      }
-    }
-  };
   const handleUpdate = async () => {
     try {
       const data = {
@@ -617,7 +649,7 @@ const Service = () => {
           columns={columns}
           pageSize={5} // Set the number of rows per page to 8
           rowsPerPageOptions={[5]}
-          getRowId={(row) => row.Material_ID} // Specify a custom id field
+          getRowId={(row) => row.Inward_ID} // Specify a custom id field
           onRowClick={handleRowClick}
           disableSelectionOnClick
           slots={{ toolbar: CustomToolbar }}
@@ -652,101 +684,127 @@ const Service = () => {
       </div>
 
       <Modal open={openAddModal} onClose={() => setOpenAddModal(false)}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            width: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            gap: "15px",
-          }}
-        >
-          <h3
-            style={{
-              gridColumn: "span 2",
-              textAlign: "center",
-              color: "#2e59d9",
-              textDecoration: "underline",
-              textDecorationColor: "#88c57a",
-              textDecorationThickness: "3px",
-            }}
-          >
-            Add Inward
-          </h3>
+  <Box
+    sx={{
+      display: "grid",
+      gridTemplateColumns: "repeat(2, 1fr)",
+      width: 500,
+      bgcolor: "background.paper",
+      borderRadius: 2,
+      boxShadow: 24,
+      p: 4,
+      margin: "auto",
+      marginTop: "5%",
+      gap: "15px",
+    }}
+  >
+    <h3
+      style={{
+        gridColumn: "span 2",
+        textAlign: "center",
+        color: "#2e59d9",
+        textDecoration: "underline",
+        textDecorationColor: "#88c57a",
+        textDecorationThickness: "3px",
+      }}
+    >
+      Add Inward
+    </h3>
 
-          <FormControl fullWidth>
-            <InputLabel>Vendor Code</InputLabel>
-            <Select
-              label="Vendor Code"
-              name="Vendor Code"
-              value={VendorCode}
-              onChange={(e) => setVendorCode(e.target.value)}
-              required
-            >
-              {VendorTable.map((item) => (
-                <MenuItem key={item.Vendor_ID} value={item.Vendor_Code}>
-                  {item.Vendor_Code}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+    {/* Vendor Code */}
+    <FormControl fullWidth>
+      <InputLabel>Vendor Code</InputLabel>
+      <Select
+        label="Vendor Code"
+        name="Vendor Code"
+        value={VendorCode}
+        onChange={(e) => setVendorCode(e.target.value)}
+        required
+      >
+        {VendorTable.map((item) => (
+          <MenuItem key={item.Vendor_ID} value={item.Vendor_ID}>
+            {item.Vendor_Code}-{item.Vendor_Name}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
 
-          <TextField
-            label="Invoice Date"
-            name="Invoice Date"
-            value={MaterialCode}
-            onChange={(e) => setMaterialCode(e.target.value)}
-            required
-          />
-          <TextField
-            label="Invoice No"
-            name="Invoice No"
-            value={Description}
-            onChange={(e) => setDescription(e.target.value)}
-            required
-          />
+    {/* Purchase Order */}
+    <TextField
+      label="Purchase Order"
+      name="PurchaseOrder"
+      value={PurchaseOrder}
+      onChange={(e) => setPurchaseOrder(e.target.value)}
+      required
+    />
 
-          <TextField
-            label="Invoice Value"
-            name="Invoice Value"
-            type="number"
-            value={Rate}
-            onChange={(e) => setRate(e.target.value)}
-            required
-          />
+    {/* Invoice Date */}
+    <TextField
+      label="Invoice Date"
+      name="InvoiceDate"
+      type="date"
+      value={InvoiceDate}
+      onChange={(e) => setInvoiceDate(e.target.value)}
+      InputLabelProps={{ shrink: true }}
+      required
+    />
 
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            <Button
-              variant="contained"
-              color="error"
-              onClick={() => handleCloseAddModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              style={{ width: "90px" }}
-              variant="contained"
-              color="primary"
-              onClick={handleAdd}
-            >
-              Add
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+    {/* Invoice No */}
+    <TextField
+      label="Invoice No"
+      name="InvoiceNo"
+      value={InvoiceNo}
+      onChange={(e) => setInvoiceNo(e.target.value)}
+      required
+    />
+   
+   
+
+   
+     {/* Invoice Value */}
+    <TextField
+      label="Invoice Value"
+      name="InvoiceValue"
+      type="number"
+      value={InvoiceValue}
+      onChange={(e) => setInvoiceValue(e.target.value)}
+      required
+    />
+   
+   
+
+   
+
+   
+
+    {/* Reason For Delay */}
+    <TextField
+      label="Reason For Delay"
+      name="ReasonForDelay"
+    
+      value={ReasonForDelay}
+      onChange={(e) => setReasonForDelay(e.target.value)}
+    />
+
+    {/* Buttons */}
+    <Box
+      sx={{
+        gridColumn: "span 2",
+        display: "flex",
+        justifyContent: "center",
+        gap: "10px",
+        marginTop: "15px",
+      }}
+    >
+      <Button variant="contained" color="error" onClick={() => setOpenAddModal(false)}>
+        Cancel
+      </Button>
+      <Button variant="contained" color="primary" onClick={handleAdd}>
+        Add
+      </Button>
+    </Box>
+  </Box>
+</Modal>
       {/* ✅ Edit Modal */}
       <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
         <Box
