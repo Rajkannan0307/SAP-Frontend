@@ -134,7 +134,7 @@ const Topbar = () => {
               borderRadius: "6px",
             }}
           />
-          <h1 style={{ fontSize: "30px", color: "white" }}>SAP APPROVAL WORK FLOW</h1>
+          <h1 style={{ fontSize: "30px", color: "white" }}>SAP APPROVAL WORKFLOW</h1>
         </div>
 
         <div

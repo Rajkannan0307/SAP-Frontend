@@ -941,7 +941,8 @@ const Partno = () => {
     setNetDifferentPrice(params.row.Net_Difference_Price);
     setFromMatCode(params.row.From_Material_Code);
     setToMatCode(params.row.To_Material_Code);
-
+  setFromQty(params.row.From_Qty);
+  setToQty(params.row.To_Qty)
     setFromPrice(params.row.From_Rate_Per_Unit);
     setToPrice(params.row.To_Rate_Per_Unit);
     setFromSLocID(params.row.From_SLoc_Code);
@@ -1175,14 +1176,14 @@ const handleUpdate = async () => {
       FromValuationType: FromValuationType,
       ToValuationType: ToValuationType,
       FromBatch: FromBatch,
-      ToBatch: ToBatch
+      ToBatch: ToBatch,TrnSapID:TrnSapID
     };
 
     const response = await Edit309Record(data);
 
     if (response.data.success) {
       alert(response.data.message);
-      fetchData(); // Refresh table
+      getData(); // Refresh table
       handleCloseRowEditModal(); // Close modal
     } else {
       alert(response.data.message); // Show backend error
@@ -1196,6 +1197,7 @@ const handleUpdate = async () => {
 
   useEffect(() => {
     fetchData();
+    getData();
   }, []);
 
   // ✅ Custom Toolbar
