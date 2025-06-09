@@ -45,7 +45,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { IoMdDownload } from "react-icons/io";
 import { getTransactionData, Movement309, Movement309ReUpload } from "../controller/transactionapiservice";
 import { api } from "../controller/constants";
-import { getdetails,DownloadAllExcel, getresubmit, Edit309Record,  getCancel, getAdd, getPlants, getMaterial, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
+import { getdetails, DownloadAllExcel, getresubmit, fetchData, Edit309Record, getCancel, getAdd, getPlants, getMaterial, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
 const Partno = () => {
 
 
@@ -57,7 +57,7 @@ const Partno = () => {
 
   const [isEditable, setIsEditable] = useState(false);
 
- const[openRowEditModal,setOpenRowEditModal]=useState(false);
+  const [openRowEditModal, setOpenRowEditModal] = useState(false);
   const [openViewStatus, setOpenViewStatus] = useState(false);
 
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -83,10 +83,11 @@ const Partno = () => {
 
   const [PlantTable, setPlantTable] = useState([])
   const [MaterialTable, setMaterialTable] = useState([])
+  const [items, setItems] = useState([]);
 
   const [openViewModal, setOpenViewModal] = useState(false);
 
-  const [Trn309ID, setTrn309ID] = useState("");
+  const [TrnSapID, setTrnSapID] = useState("");
   const [DocID, setDocID] = useState("");
   const [PlantID, setPlantID] = useState("");
   const [MovementID, setMovementID] = useState("");
@@ -137,25 +138,24 @@ const Partno = () => {
     }
   };
 
-
-
-const handleOpenEditModal = (record) => {
-  setFromMatCode(record.FromMatCode);
-  setToMatCode(record.ToMatCode);
-  //setFromDescription(record.FromDescription);
-  //setToDescription(record.ToDescription);
-  setFromQty(record.FromQty);
-  setToQty(record.ToQty);
-  setFromSLocID(record.FromSLocID);
-  setToSLocID(record.ToSLocID);
-  setFromPrice(record.FromPrice);
-  setToPrice(record.ToPrice);
-  setFromValuationType(record.FromValuationType);
-  setToValuationType(record.ToValuationType);
-  setFromBatch(record.FromBatch);
-  setToBatch(record.ToBatch);
-  setOpenEditModal(true);
-};
+  const handleOpenEditModal = (record) => {
+    setFromMatCode(record.FromMatCode);
+    setToMatCode(record.ToMatCode);
+    setTrnSapID(record.TrnSapID);
+    //setFromDescription(record.FromDescription);
+    //setToDescription(record.ToDescription);
+    setFromQty(record.FromQty);
+    setToQty(record.ToQty);
+    setFromSLocID(record.FromSLocID);
+    setToSLocID(record.ToSLocID);
+    setToSLocID(record.FromPrice);
+    setToPrice(record.ToPrice);
+    setFromValuationType(record.FromValuationType);
+    setToValuationType(record.ToValuationType);
+    setFromBatch(record.FromBatch);
+    setToBatch(record.ToBatch);
+    setOpenEditModal(true);
+  };
 
 
   const handleCloseAddModal = () => setOpenAddModal(false);
@@ -289,57 +289,57 @@ const handleOpenEditModal = (record) => {
     }
     handleCloseUploadModal();
   }
-const handleEditUploadData = async ({ docId, trnSapId }) => {
-  if (!editSelectedFile) {
-    alert("Please select a file first.");
-    return;
-  }
-
-  try {
-    const finalDocId = typeof docId === 'object' ? docId?.Doc_ID : docId;
-
-    const formData = new FormData();
-    formData.append("User_Add", editSelectedFile);  // Ensure key matches backend
-    formData.append("UserID", UserID);
-    formData.append("Doc_ID", finalDocId);
-    formData.append("Trn_Sap_ID", trnSapId);
-
-    const response = await Movement309ReUpload(formData);
-    console.log('response', response.data);
-    alert(response.data.message);
-
-    const reuploadData = response.data.ReUploadRecord || [];
-    const errorData = response.data.ErrorRecords || [];
-
-    console.log('ReUploadRecord:', reuploadData);
-    console.log('ErrorRecords:', errorData);
-
-    if (reuploadData.length > 0 || errorData.length > 0) {
-      downloadExcelReUpload(reuploadData, errorData);
-    } else {
-      console.log("No data to download.");
+  const handleEditUploadData = async ({ docId, trnSapId }) => {
+    if (!editSelectedFile) {
+      alert("Please select a file first.");
+      return;
     }
 
-  } catch (error) {
-    console.error('Upload failed:', error?.response?.data || error.message);
-    alert(error.response?.data?.message || 'Upload failed.');
-  }
+    try {
+      const finalDocId = typeof docId === 'object' ? docId?.Doc_ID : docId;
 
-  getData();
-  setOpenEditModal(false);
-};
+      const formData = new FormData();
+      formData.append("User_Add", editSelectedFile);  // Ensure key matches backend
+      formData.append("UserID", UserID);
+      formData.append("Doc_ID", finalDocId);
+      formData.append("Trn_Sap_ID", trnSapId);
+
+      const response = await Movement309ReUpload(formData);
+      console.log('response', response.data);
+      alert(response.data.message);
+
+      const reuploadData = response.data.ReUploadRecord || [];
+      const errorData = response.data.ErrorRecords || [];
+
+      console.log('ReUploadRecord:', reuploadData);
+      console.log('ErrorRecords:', errorData);
+
+      if (reuploadData.length > 0 || errorData.length > 0) {
+        downloadExcelReUpload(reuploadData, errorData);
+      } else {
+        console.log("No data to download.");
+      }
+
+    } catch (error) {
+      console.error('Upload failed:', error?.response?.data || error.message);
+      alert(error.response?.data?.message || 'Upload failed.');
+    }
+
+    getData();
+    setOpenEditModal(false);
+  };
 
 
-// File input handler
-const handleEditFileUpload = (event) => {
-  setEditSelectedFile(event.target.files[0]);
-};
+  // File input handler
+  const handleEditFileUpload = (event) => {
+    setEditSelectedFile(event.target.files[0]);
+  };
 
   const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
     const wb = XLSX.utils.book_new();
 
     // Column headers for Error Records
-    const ErrorColumns = ['Plant_Code', 'Movement_Code','From_Material_Code',
+    const ErrorColumns = ['Plant_Code', 'Movement_Code', 'From_Material_Code',
       'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
       'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
       'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
@@ -349,7 +349,7 @@ const handleEditFileUpload = (event) => {
     ];
 
     // Column headers for New Records (based on your columns array)
-    const newRecordsColumns = ['Plant_Code', 'Movement_Code','From_Material_Code',
+    const newRecordsColumns = ['Plant_Code', 'Movement_Code', 'From_Material_Code',
       'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
       'From_Batch', 'From_Rate_Per_Unit',
       'To_Material_Code', 'To_Qty',
@@ -361,7 +361,7 @@ const handleEditFileUpload = (event) => {
     // Column headers for Duplicate Records
     const DuplicateColumns = [
 
-      'Plant_Code', 'Movement_Code','From_Material_Code',
+      'Plant_Code', 'Movement_Code', 'From_Material_Code',
       'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
       'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
       'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
@@ -383,7 +383,7 @@ const handleEditFileUpload = (event) => {
     // Filter and map the data for Error Records
     const filteredError = errRecord.map(item => ({
       Plant_Code: item.Plant_Code,
-      Movement_Code : item.Movement_Code,
+      Movement_Code: item.Movement_Code,
       From_Material_Code: item.From_Material_Code,
       From_Qty: item.From_Qty,
       From_Storage_Code: item.From_Storage_Code,
@@ -406,16 +406,16 @@ const handleEditFileUpload = (event) => {
       To_SLoc_Code_Validation: item.To_SLoc_Val,
       //Plant_From_To_Material_Code_Validation: item.Material_Same_Plant_Val,
       Plant_From_To_SLoc_Code_Validation: item.SLoc_Same_Plant_Val,
-      
+
       Movement_Code_Validation: item.Movement_Val,
-      User_Plant_Validation:item.User_Plant_Val,
+      User_Plant_Validation: item.User_Plant_Val,
 
     }));
 
     // Filter and map the data for New Records
     const filteredNewData = newRecord.map(item => ({
       Plant_Code: item.Plant_Code,
-      Movement_Code : item.Movement_Code,
+      Movement_Code: item.Movement_Code,
       From_Material_Code: item.From_Material_Code,
       From_Qty: item.From_Qty,
       From_Storage_Code: item.From_Storage_Code,
@@ -436,7 +436,7 @@ const handleEditFileUpload = (event) => {
     const filteredUpdate = DuplicateRecord.map(item => ({
 
       Plant_Code: item.Plant_Code,
-      Movement_Code : item.Movement_Code,
+      Movement_Code: item.Movement_Code,
       From_Material_Code: item.From_Material_Code,
       From_Qty: item.From_Qty,
       From_Storage_Code: item.From_Storage_Code,
@@ -579,129 +579,129 @@ const handleEditFileUpload = (event) => {
 
   };
 
-// reupload
+  // reupload
 
-const downloadExcelReUpload = (updateRecord , errRecord ) => {
-  const wb = XLSX.utils.book_new();
+  const downloadExcelReUpload = (updateRecord, errRecord) => {
+    const wb = XLSX.utils.book_new();
 
-  const ErrorColumns = [
-    'Doc_ID', 'Trn_Sap_ID', 'Plant_Code', 'Movement_Code', 'From_Material_Code',
-    'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
-    'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
-    'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
-    'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark',
-    'Plant_Code_Validation', 'From_Material_Code_Validation', 'To_Material_Code_Validation',
-    'From_SLoc_Code_Validation', 'To_SLoc_Code_Validation'
-  ];
-
-  const ReUploadColumns = [
-    'Doc_ID', 'Trn_Sap_ID', 'Plant_Code', 'Movement_Code', 'From_Material_Code',
-    'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
-    'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
-    'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
-    'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark'
-  ];
-
-  const filteredError = errRecord.map(item => ({
-    Doc_ID: item.Doc_ID,
-    Trn_Sap_ID: item.Trn_Sap_ID,
-    Plant_Code: item.Plant_Code,
-    Movement_Code: item.Movement_Code,
-    From_Material_Code: item.From_Material_Code,
-    From_Qty: item.From_Qty,
-    From_Storage_Code: item.From_Storage_Code,
-    From_Valuation_Type: item.From_Valuation_Type,
-    From_Batch: item.From_Batch,
-    From_Rate_Per_Unit: item.From_Rate_Per_Unit,
-    To_Material_Code: item.To_Material_Code,
-    To_Qty: item.To_Qty,
-    To_Storage_Code: item.To_Storage_Code,
-    To_Valuation_Type: item.To_Valuation_Type,
-    To_Batch: item.To_Batch,
-    To_Rate_Per_Unit: item.To_Rate_Per_Unit,
-    Net_Different_Price: item.Net_Different_Price,
-    Remark: item.Remark,
-    Plant_Code_Validation: item.Plant_Val,
-    From_Material_Code_Validation: item.From_Mat_Val,
-    To_Material_Code_Validation: item.To_Mat_Val,
-    From_SLoc_Code_Validation: item.From_SLoc_Val,
-    To_SLoc_Code_Validation: item.To_SLoc_Val,
-  }));
-
-  const filteredUpdate = updateRecord.map(item => ({
-    Doc_ID: item.Doc_ID,
-    Trn_Sap_ID: item.Trn_Sap_ID,
-    Plant_Code: item.Plant_Code,
-    Movement_Code: item.Movement_Code,
-    From_Material_Code: item.From_Material_Code,
-    From_Qty: item.From_Qty,
-    From_Storage_Code: item.From_Storage_Code,
-    From_Valuation_Type: item.From_Valuation_Type,
-    From_Batch: item.From_Batch,
-    From_Rate_Per_Unit: item.From_Rate_Per_Unit,
-    To_Material_Code: item.To_Material_Code,
-    To_Qty: item.To_Qty,
-    To_Storage_Code: item.To_Storage_Code,
-    To_Valuation_Type: item.To_Valuation_Type,
-    To_Batch: item.To_Batch,
-    To_Rate_Per_Unit: item.To_Rate_Per_Unit,
-    Net_Different_Price: item.Net_Different_Price,
-    Remark: item.Remark
-  }));
-
-  const styleHeaders = (worksheet, columns) => {
-    columns.forEach((_, index) => {
-      const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-      if (worksheet[cellAddress]) {
-        worksheet[cellAddress].s = {
-          font: { bold: true, color: { rgb: '000000' } },
-          fill: { fgColor: { rgb: 'FFFF00' } },
-          alignment: { horizontal: 'center' },
-        };
-      }
-    });
-  };
-
-  const styleValidationColumns = (worksheet, columns, dataLength) => {
-    const validationCols = [
-      'Plant_Code_Validation', 'From_Material_Code_Validation',
-      'To_Material_Code_Validation', 'From_SLoc_Code_Validation',
-      'To_SLoc_Code_Validation'
+    const ErrorColumns = [
+      'Doc_ID', 'Trn_Sap_ID', 'Plant_Code', 'Movement_Code', 'From_Material_Code',
+      'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
+      'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
+      'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
+      'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark',
+      'Plant_Code_Validation', 'From_Material_Code_Validation', 'To_Material_Code_Validation',
+      'From_SLoc_Code_Validation', 'To_SLoc_Code_Validation'
     ];
 
-    for (let row = 1; row <= dataLength; row++) {
-      validationCols.forEach(colName => {
-        const colIdx = columns.indexOf(colName);
-        if (colIdx === -1) return;
-        const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-        const cell = worksheet[cellAddress];
-        if (cell && typeof cell.v === 'string') {
-          const value = cell.v.trim().toLowerCase();
-          cell.s = {
-            font: {
-              color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' }
-            }
+    const ReUploadColumns = [
+      'Doc_ID', 'Trn_Sap_ID', 'Plant_Code', 'Movement_Code', 'From_Material_Code',
+      'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
+      'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
+      'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
+      'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark'
+    ];
+
+    const filteredError = errRecord.map(item => ({
+      Doc_ID: item.Doc_ID,
+      Trn_Sap_ID: item.Trn_Sap_ID,
+      Plant_Code: item.Plant_Code,
+      Movement_Code: item.Movement_Code,
+      From_Material_Code: item.From_Material_Code,
+      From_Qty: item.From_Qty,
+      From_Storage_Code: item.From_Storage_Code,
+      From_Valuation_Type: item.From_Valuation_Type,
+      From_Batch: item.From_Batch,
+      From_Rate_Per_Unit: item.From_Rate_Per_Unit,
+      To_Material_Code: item.To_Material_Code,
+      To_Qty: item.To_Qty,
+      To_Storage_Code: item.To_Storage_Code,
+      To_Valuation_Type: item.To_Valuation_Type,
+      To_Batch: item.To_Batch,
+      To_Rate_Per_Unit: item.To_Rate_Per_Unit,
+      Net_Different_Price: item.Net_Different_Price,
+      Remark: item.Remark,
+      Plant_Code_Validation: item.Plant_Val,
+      From_Material_Code_Validation: item.From_Mat_Val,
+      To_Material_Code_Validation: item.To_Mat_Val,
+      From_SLoc_Code_Validation: item.From_SLoc_Val,
+      To_SLoc_Code_Validation: item.To_SLoc_Val,
+    }));
+
+    const filteredUpdate = updateRecord.map(item => ({
+      Doc_ID: item.Doc_ID,
+      Trn_Sap_ID: item.Trn_Sap_ID,
+      Plant_Code: item.Plant_Code,
+      Movement_Code: item.Movement_Code,
+      From_Material_Code: item.From_Material_Code,
+      From_Qty: item.From_Qty,
+      From_Storage_Code: item.From_Storage_Code,
+      From_Valuation_Type: item.From_Valuation_Type,
+      From_Batch: item.From_Batch,
+      From_Rate_Per_Unit: item.From_Rate_Per_Unit,
+      To_Material_Code: item.To_Material_Code,
+      To_Qty: item.To_Qty,
+      To_Storage_Code: item.To_Storage_Code,
+      To_Valuation_Type: item.To_Valuation_Type,
+      To_Batch: item.To_Batch,
+      To_Rate_Per_Unit: item.To_Rate_Per_Unit,
+      Net_Different_Price: item.Net_Different_Price,
+      Remark: item.Remark
+    }));
+
+    const styleHeaders = (worksheet, columns) => {
+      columns.forEach((_, index) => {
+        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+        if (worksheet[cellAddress]) {
+          worksheet[cellAddress].s = {
+            font: { bold: true, color: { rgb: '000000' } },
+            fill: { fgColor: { rgb: 'FFFF00' } },
+            alignment: { horizontal: 'center' },
           };
         }
       });
-    }
+    };
+
+    const styleValidationColumns = (worksheet, columns, dataLength) => {
+      const validationCols = [
+        'Plant_Code_Validation', 'From_Material_Code_Validation',
+        'To_Material_Code_Validation', 'From_SLoc_Code_Validation',
+        'To_SLoc_Code_Validation'
+      ];
+
+      for (let row = 1; row <= dataLength; row++) {
+        validationCols.forEach(colName => {
+          const colIdx = columns.indexOf(colName);
+          if (colIdx === -1) return;
+          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+          const cell = worksheet[cellAddress];
+          if (cell && typeof cell.v === 'string') {
+            const value = cell.v.trim().toLowerCase();
+            cell.s = {
+              font: {
+                color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' }
+              }
+            };
+          }
+        });
+      }
+    };
+
+    // Always add at least one row so the file is not empty
+    const wsError = XLSX.utils.json_to_sheet(filteredError.length ? filteredError : [{}], { header: ErrorColumns });
+    styleHeaders(wsError, ErrorColumns);
+    styleValidationColumns(wsError, ErrorColumns, filteredError.length);
+    XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
+
+    const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate.length ? filteredUpdate : [{}], { header: ReUploadColumns });
+    styleHeaders(wsUpdated, ReUploadColumns);
+    styleValidationColumns(wsUpdated, ReUploadColumns, filteredUpdate.length);
+    XLSX.utils.book_append_sheet(wb, wsUpdated, 'Updated Records');
+
+    const fileName = 'Trn309Movt ReuploadData Upload Log.xlsx';
+    console.log("Writing Excel file...");
+    XLSX.writeFile(wb, fileName);
   };
-
-  // Always add at least one row so the file is not empty
-  const wsError = XLSX.utils.json_to_sheet(filteredError.length ? filteredError : [{}], { header: ErrorColumns });
-  styleHeaders(wsError, ErrorColumns);
-  styleValidationColumns(wsError, ErrorColumns, filteredError.length);
-  XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
-
-  const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate.length ? filteredUpdate : [{}], { header: ReUploadColumns });
-  styleHeaders(wsUpdated, ReUploadColumns);
-  styleValidationColumns(wsUpdated, ReUploadColumns, filteredUpdate.length);
-  XLSX.utils.book_append_sheet(wb, wsUpdated, 'Updated Records');
-
-  const fileName = 'Trn309Movt ReuploadData Upload Log.xlsx';
-  console.log("Writing Excel file...");
-  XLSX.writeFile(wb, fileName);
-};
 
 
   // ✅ Open Add Modal
@@ -868,7 +868,7 @@ const downloadExcelReUpload = (updateRecord , errRecord ) => {
 
       const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
       const fileExtension = ".xlsx";
-      const fileName = "Trn_201_Movement_List";
+      const fileName = "Trn_309_Movement_List";
 
       // Convert JSON response to worksheet
       const ws = XLSX.utils.json_to_sheet(response.data);
@@ -930,93 +930,119 @@ const downloadExcelReUpload = (updateRecord , errRecord ) => {
 
 
   const handleCloseEditRowModal = () => {
-   setOpenRowEditModal(false);
-  
+    setOpenRowEditModal(false);
+
   };
 
   const handleRowClick = (params) => {
-   setPlantCode(params.row.Plant_Code);
-  setDocID(params.row.Doc_ID);
+    setPlantCode(params.row.Plant_Code);
+    setDocID(params.row.Doc_ID);
+    setTrnSapID(params.row.Trn_Sap_ID);
+    setNetDifferentPrice(params.row.Net_Difference_Price);
+    setFromMatCode(params.row.From_Material_Code);
+    setToMatCode(params.row.To_Material_Code);
 
+    setFromPrice(params.row.From_Rate_Per_Unit);
+    setToPrice(params.row.To_Rate_Per_Unit);
+    setFromSLocID(params.row.From_SLoc_Code);
+    setToSLocID(params.row.To_SLoc_Code);
+    setFromValuationType(params.row.From_Valuation_Type);
+    setToValuationType(params.row.To_Valuation_Type);
+    setFromBatch(params.row.From_Batch);
+    setToBatch(params.row.To_Batch);
     setOpenRowEditModal(true); // Open the modal
   };
 
 
-const columns = [
-  { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
-  { field: "Doc_ID", headerName: "Doc ID", flex: 1 },
-  { field: "Date", headerName: "Date", flex: 1 },
-  { field: "From_Material_Code", headerName: "From Mat Code", flex: 1 },
-  { field: "To_Material_Code", headerName: "To Mat Code", flex: 1 },
-  { field: "Net_Difference_Price", headerName: "Net Different Price", flex: 1 },
-  { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
+  const columns = [
+    { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
+    { field: "Doc_ID", headerName: "Doc ID", flex: 1 },
+    { field: "Date", headerName: "Date", flex: 1 },
+    { field: "From_Material_Code", headerName: "From Mat Code", flex: 1 },
+    { field: "To_Material_Code", headerName: "To Mat Code", flex: 1 },
+    { field: "Net_Difference_Price", headerName: "Net Different Price", flex: 1 },
+    { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
 
-  {
-    field: "actions",
-    headerName: "Actions",
-    flex: 1,
-    sortable: false,
- renderCell: (params) => {
-  const status = (params.row?.Approval_Status || "").toLowerCase().trim();
-  const isEditable = status === "rejected" || status === "under query";
+    {
+      field: "actions",
+      headerName: "Actions",
+      flex: 1,
+      sortable: false,
+      editable: false,
+      disableColumnMenu: true,
+      renderCell: (params) => {
+        const status = (params.row?.Approval_Status || "").toLowerCase().trim();
+        const isEditable = status === "rejected" || status === "under query";
 
-  return (
-    <div style={{ display: "flex", gap: "10px" }}>
-      {/* First View Button - always shown */}
-      <IconButton
-        size="small"
-        color="primary"
-        onClick={() => handleOpenViewModal(params.row)}
-        title="View Status"
-      >
-        <VisibilityIcon fontSize="small" />
-      </IconButton>
-
-      {/* Second View Button - always shown */}
-     <IconButton
-  size="small"
-  sx={{ color: "#008080" }} 
-  onClick={() => handleOpenViewStatusModal(params.row)}
-  title="View Details"
->
-  <InfoIcon fontSize="small" />
-</IconButton>
+        return (
+          <div style={{ display: "flex", gap: "10px" }}>
+            {/* View Button */}
+            <IconButton
+              size="medium"
+              sx={{ color: "#008080" }}
+              onClick={(event) => {
+                event.stopPropagation(); // ✅ Prevents row click
+                handleOpenViewStatusModal(params.row);
+              }}
+              title="View Details"
+            >
+              <InfoIcon fontSize="small" />
+            </IconButton>
 
 
+          </div>
+        );
+      },
+    }
 
-      {/* Edit and Download Buttons - only when editable */}
-      {isEditable && (
-        <>
-          <IconButton
-            size="small"
-            sx={{
-              color: "#6a0dad",
-              "&:hover": {
-                color: "#4b0082",
-              },
-            }}
-            onClick={() => handleEdit(params.row)}
-            title="Edit"
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
 
-          <IconButton
-            size="small"
-            color="success"
-            onClick={() => handleDownloadByDocId(params.row.Doc_ID)}
-            title="Download"
-          >
-            <CloudDownloadIcon fontSize="small" />
-          </IconButton>
-        </>
-      )}
-    </div>
-  );
-}
+  ];
 
-  },
-];
+
+  //  {/* First View Button */}
+  //         <IconButton
+  //           size="small"
+  //           color="primary"
+  //           onClick={(event) => {
+  //             event.stopPropagation(); // ✅ Prevent triggering edit/select
+  //             console.log(params.row);
+  //             handleOpenViewModal(params.row);
+  //           }}
+  //           title="View Status"
+  //         >
+  //           <VisibilityIcon fontSize="small" />
+  //         </IconButton>
+
+  // {/* Edit and Download Buttons - only when editable */}
+  // {isEditable && (
+  //   <>
+  //     <IconButton
+  //       size="small"
+  //       sx={{
+  //         color: "#6a0dad",
+  //         "&:hover": {
+  //           color: "#4b0082",
+  //         },
+  //       }}
+  //       onClick={() => handleEdit(params.row)}
+  //       title="Edit"
+  //     >
+  //       <EditIcon fontSize="small" />
+  //     </IconButton>
+
+  //     <IconButton
+  //       size="small"
+  //       color="success"
+  //       onClick={() => handleDownloadByDocId(params.row.Doc_ID)}
+  //       title="Download"
+  //     >
+  //       <CloudDownloadIcon fontSize="small" />
+  //     </IconButton>
+  //   </>
+  // )}
+
+
+
 
   const handleCloseViewStatus = () => {
     setOpenViewStatus(false);
@@ -1042,111 +1068,135 @@ const columns = [
 
   //view detail for Particular DocID Details ... downloa
 
- const handleDownloadByDocId = async (docId) => {
-     try {
-       if (!docId) {
-         alert("Doc_ID is missing.");
-         return;
-       }
-       console.log("Calling download with Doc_ID:", docId);
+  const handleDownloadByDocId = async (docId) => {
+    try {
+      if (!docId) {
+        alert("Doc_ID is missing.");
+        return;
+      }
+      console.log("Calling download with Doc_ID:", docId);
 
-       const response = await DownloadAllExcel(docId);
+      const response = await DownloadAllExcel(docId);
 
-       const data = response.data;
- 
-       if (!data || data.length === 0) {
-         alert("No data found for this Doc_ID.");
-         return;
-       }
- 
-       const ws = XLSX.utils.json_to_sheet(data);
- 
-       // Style headers
-       const headers = Object.keys(data[0]);
-       headers.forEach((_, colIdx) => {
-         const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
-         if (ws[cellAddress]) {
-           ws[cellAddress].s = {
-             font: { bold: true, color: { rgb: "000000" } },
-             fill: { fgColor: { rgb: "FFFF00" } },
-             alignment: { horizontal: "center" },
-           };
-         }
-       });
- 
-       const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
-       const excelBuffer = XLSX.write(wb, {
-         bookType: "xlsx",
-         type: "array",
-         cellStyles: true,
-       });
- 
-       const fileType =
-         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-       const blob = new Blob([excelBuffer], { type: fileType });
-       const url = URL.createObjectURL(blob);
-       const link = document.createElement("a");
-       link.href = url;
-       link.setAttribute("download", `Trn309_DocID_${docId}.xlsx`);
-       document.body.appendChild(link);
-       link.click();
-       link.remove();
-       URL.revokeObjectURL(url);
- 
-       alert(`Downloaded data for Doc_ID: ${docId}`);
-     } catch (error) {
-       console.error("Download failed:", error);
-       alert("Error downloading file. See console for details.");
-     }
-   };
+      const data = response.data;
 
-const handleCloseEditModal = () => {
-  setOpenEditModal(false);
-};
+      if (!data || data.length === 0) {
+        alert("No data found for this Doc_ID.");
+        return;
+      }
 
-   
-const handleUpdate = async () => {
-  const updatedData = {
-    DocID,
-    FromMatCode,
-    ToMatCode,
-    FromDescription,
-    ToDescription,
-    FromQty,
-    ToQty,
-    FromSLocID,
-    ToSLocID,
-    FromPrice,
-    ToPrice,
-    FromValuationType,
-    ToValuationType,
-    FromBatch,
-    ToBatch,
+      const ws = XLSX.utils.json_to_sheet(data);
+
+      // Style headers
+      const headers = Object.keys(data[0]);
+      headers.forEach((_, colIdx) => {
+        const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+        if (ws[cellAddress]) {
+          ws[cellAddress].s = {
+            font: { bold: true, color: { rgb: "000000" } },
+            fill: { fgColor: { rgb: "FFFF00" } },
+            alignment: { horizontal: "center" },
+          };
+        }
+      });
+
+      const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+      const excelBuffer = XLSX.write(wb, {
+        bookType: "xlsx",
+        type: "array",
+        cellStyles: true,
+      });
+
+      const fileType =
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+      const blob = new Blob([excelBuffer], { type: fileType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `Trn309_DocID_${docId}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      alert(`Downloaded data for Doc_ID: ${docId}`);
+    } catch (error) {
+      console.error("Download failed:", error);
+      alert("Error downloading file. See console for details.");
+    }
   };
 
+  const handleCloseRowEditModal = () => {
+    setOpenRowEditModal(false);
+  };
+
+
+
+  const [formData, setFormData] = useState({
+    DocID: '',
+    TrnSapId: '',
+    FromMatCode: '',
+    ToMatCode: '',
+    FromQty: '',
+    ToQty: '',
+    FromSLocID: '',
+    ToSLocID: '',
+    FromPrice: '',
+    ToPrice: '',
+    FromValuationType: '',
+    ToValuationType: '',
+    FromBatch: '',
+    ToBatch: ''
+  });
+
+
+  const fetchData = async () => {
+    try {
+      const response = await getTransactionData(); // use the actual function
+      setItems(response.data);
+      setItems(response.data); // Or however you're storing it
+    } catch (error) {
+      console.error('Error fetching transaction data:', error);
+    }
+  };
+const handleUpdate = async () => {
   try {
-    await axios.post("/api/Edit309Record", updatedData);
-    alert("Record updated successfully.");
-    setOpenEditModal(false);
-    fetchData(); // Ensure fetchData is also defined
+    const data = {
+       ModifiedBy: UserID,
+  DocID: String(DocID), 
+      FromMatCode: FromMatCode,
+      ToMatCode: ToMatCode,
+      FromQty: FromQty,
+      ToQty: ToQty,
+      FromSLocID: FromSLocID,
+      ToSLocID: ToSLocID,
+      FromPrice: FromPrice,
+      ToPrice: ToPrice,
+      FromValuationType: FromValuationType,
+      ToValuationType: ToValuationType,
+      FromBatch: FromBatch,
+      ToBatch: ToBatch
+    };
+
+    const response = await Edit309Record(data);
+
+    if (response.data.success) {
+      alert(response.data.message);
+      fetchData(); // Refresh table
+      handleCloseRowEditModal(); // Close modal
+    } else {
+      alert(response.data.message); // Show backend error
+    }
   } catch (error) {
-    console.error("Update failed", error);
-    alert("Failed to update record.");
+    console.error("Error details:", error.response?.data);
+    alert(error.response?.data?.message || "An error occurred while updating the record.");
   }
 };
 
-const fetchData = async () => {
-  try {
-    const response = await axios.get("/Edit309Record");
-    setData(response.data);
-  } catch (error) {
-    console.error("Failed to fetch data", error);
-  }
-};
 
-useEffect(() => {
-  fetchData();
-}, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   // ✅ Custom Toolbar
   const CustomToolbar = () => (
@@ -1294,12 +1344,17 @@ useEffect(() => {
           onRowClick={handleRowClick}
           disableSelectionOnClick
           slots={{ toolbar: CustomToolbar }}
+          onCellClick={(params, event) => {
+            if (params.field === "actions") {
+              event.stopPropagation();
+            }
+          }}
           sx={{
             // Header Style
             "& .MuiDataGrid-columnHeader": {
               backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
               color: "black"
-          
+
             },
             "& .MuiDataGrid-columnHeaderTitle": {
               fontSize: "16px",
@@ -1555,7 +1610,7 @@ useEffect(() => {
             </Box>
           )}
 
-      
+
           <Box
             sx={{
               gridColumn: "span 2",
@@ -1768,7 +1823,7 @@ useEffect(() => {
         </Box>
       </Modal>
 
-{/*........................................*/}
+      {/*........................................*/}
 
       {/* ✅ Modal with Resubmit and Cancel */}
 
@@ -1880,27 +1935,27 @@ useEffect(() => {
               Close
             </Button>
 
-           <Button
-  variant="contained"
-  onClick={() =>
-    handleEditUploadData({
-      docId: selectedRow?.Doc_ID,
-      trnSapId: selectedRow?.Trn_Sap_ID,
-    })
-  }
-  disabled={editIsUploading}
-  sx={{
-    mt: 2,
-    width: '25%',
-    color: '#ffffff',
-    backgroundColor: '#1976d2', // MUI Blue 700
-    '&:hover': {
-      backgroundColor: '#115293', // Darker blue on hover
-    },
-  }}
->
-  ReUpload
-</Button>
+            <Button
+              variant="contained"
+              onClick={() =>
+                handleEditUploadData({
+                  docId: selectedRow?.Doc_ID,
+                  trnSapId: selectedRow?.Trn_Sap_ID,
+                })
+              }
+              disabled={editIsUploading}
+              sx={{
+                mt: 2,
+                width: '25%',
+                color: '#ffffff',
+                backgroundColor: '#1976d2', // MUI Blue 700
+                '&:hover': {
+                  backgroundColor: '#115293', // Darker blue on hover
+                },
+              }}
+            >
+              ReUpload
+            </Button>
 
           </Box>
         </Box>
@@ -1949,40 +2004,40 @@ useEffect(() => {
           </Box>
 
           {/* 🧾 Status Table */}
-          
-            <>
-              <Table size="small" sx={{ borderCollapse: 'collapse' }}>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: '#bdbdbd' }}>
-                    <TableCell sx={{ border: '1px solid #555555' }}>Date</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>Role</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>Name</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>Comment</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>Status</TableCell>
+
+          <>
+            <Table size="small" sx={{ borderCollapse: 'collapse' }}>
+              <TableHead>
+                <TableRow sx={{ bgcolor: '#bdbdbd' }}>
+                  <TableCell sx={{ border: '1px solid #555555' }}>Date</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>Role</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>Name</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>Comment</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>Status</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {viewStatusData.map((row, idx) => (
+                  <TableRow key={idx} sx={{ border: '1px solid #555555' }}>
+                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_Date}</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Role}</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_By}</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Approver_Comment || '—'}</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Status} - {User_Level}</TableCell>
+
+
                   </TableRow>
-                </TableHead>
-                <TableBody>
-                  {viewStatusData.map((row, idx) => (
-                    <TableRow key={idx} sx={{ border: '1px solid #555555' }}>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_Date}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Role}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_By}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Approver_Comment || '—'}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Status} - {User_Level}</TableCell>
-                    
-                    
-                    </TableRow>
-                  ))}
+                ))}
 
-                </TableBody>
-              </Table>
+              </TableBody>
+            </Table>
 
-              
-            </>    
+
+          </>
         </Box>
       </Modal>
 
- {/* ExcelDownload Modal */}
+      {/* ExcelDownload Modal */}
 
       <Modal
         open={openExcelDownloadModal}
@@ -2061,216 +2116,233 @@ useEffect(() => {
         </Box>
       </Modal>
 
-    {/* ✅ Edit Modal */}
-              <Modal open={openRowEditModal} onClose={() => setOpenRowEditModal(false)}>
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(2, 1fr)",
-                    width: 400,
-                    bgcolor: "background.paper",
-                    borderRadius: 2,
-                    boxShadow: 24,
-                    p: 4,
-                    margin: "auto",
-                    marginTop: "10%",
-                    gap: "15px",
-                  }}
-                >
-                  <h3
-                    style={{
-                      gridColumn: "span 2",
-                      textAlign: "center",
-                      color: "#2e59d9",
-                      textDecoration: "underline",
-                      textDecorationColor: "#88c57a",
-                      textDecorationThickness: "3px",
-                    }}
-                  >
-                    Edit Storage Location
-                  </h3>
-                
-                  <Box
-                    sx={{
-                      gridColumn: "span 2",
-                      display: "flex",
-                      justifyContent: "center",
-                      gap: "10px",
-                      marginTop: "15px",
-                    }}
-                  >
-                    <Button
-                      variant="contained"
-                      color="error"
-                      onClick={handleCloseEditRowModal}
-                    >
-                      Cancel
-                    </Button>
-                    <Button variant="contained" color="primary" >
-                      Update
-                    </Button>
-                  </Box>
-                </Box>
-              </Modal>
+      {/* ✅ Edit Modal */}
+      <Modal open={openRowEditModal} onClose={() => setOpenRowEditModal(false)}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
+            width: 400,
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            margin: "auto",
+            marginTop: "10%",
+            gap: "15px",
+          }}
+        >
+          <h3
+            style={{
+              gridColumn: "span 2",
+              textAlign: "center",
+              color: "#2e59d9",
+              textDecoration: "underline",
+              textDecorationColor: "#88c57a",
+              textDecorationThickness: "3px",
+            }}
+          >
+            Edit Storage Location
+          </h3>
 
-{/*edit modal*/}
-<Modal open={openRowEditModal} onClose={() => setOpenRowEditModal(false)}>
-  <Box
-    sx={{
-      display: "grid",
-      gridTemplateColumns: "repeat(2, 1fr)",
-      width: 500,
-      height:600,
-      bgcolor: "background.paper",
-      borderRadius: 2,
-      boxShadow: 24,
-      p: 4,
-      margin: "auto",
-      marginTop: "5%",
-      gap: "15px",
-    }}
-  >
-    <h3
-      style={{
-        gridColumn: "span 2",
-        textAlign: "center",
-        color: "#2e59d9",
-        textDecoration: "underline",
-        textDecorationColor: "#88c57a",
-        textDecorationThickness: "3px",
-      }}
-    >
-      Edit 309 Record
-    </h3>
+          <Box
+            sx={{
+              gridColumn: "span 2",
+              display: "flex",
+              justifyContent: "center",
+              gap: "10px",
+              marginTop: "15px",
+            }}
+          >
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleCloseEditRowModal}
+            >
+              Cancel
+            </Button>
+            <Button variant="contained" color="primary" >
+              Update
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
 
-    {/* Plant Code - Read Only */}
-    <TextField
-      label="Plant"
-      value={PlantCode}
-      fullWidth
-      InputProps={{ readOnly: true }}
-    />
+      {/*Row edit modal*/}
+      <Modal open={openRowEditModal} onClose={() => setOpenRowEditModal(false)}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
+            width: 500,
+            height: 700,
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            margin: "auto",
+            marginTop: "5%",
+            gap: "15px",
+          }}
+        >
+          <h3
+            style={{
+              gridColumn: "span 2",
+              textAlign: "center",
+              color: "#2e59d9",
+              textDecoration: "underline",
+              textDecorationColor: "#88c57a",
+              textDecorationThickness: "3px",
+            }}
+          >
+            Edit 309 Record
+          </h3>
 
- 
-    {/* Plant Code - Read Only */}
-    <TextField
-      label="DocID"
-      value={DocID}
-      fullWidth
-      InputProps={{ readOnly: true }}
-    />
-
-    {/* Material Code */}
-    <TextField
-      label="From Material Code"
-      value={FromMatCode}
-      onChange={(e) => setFromMatCode(e.target.value)}
-      fullWidth
-    />
-    <TextField
-      label="To Material Code"
-      value={ToMatCode}
-      onChange={(e) => setToMatCode(e.target.value)}
-      fullWidth
-    />
+          {/* Plant Code - Read Only */}
+          <TextField
+            label="Plant"
+            value={PlantCode}
+            fullWidth
+            InputProps={{ readOnly: true }}
+          />
 
 
+          {/* DocID - Read Only */}
+          <TextField
+            label="DocID"
+            value={DocID}
+            fullWidth
+            InputProps={{ readOnly: true }}
+          />
 
-    {/* Quantity */}
-    <TextField
-      label="From Quantity"
-      type="number"
-      value={FromQty}
-      onChange={(e) => setFromQty(Number(e.target.value))}
-      fullWidth
-    />
-    <TextField
-      label="To Quantity"
-      type="number"
-      value={ToQty}
-      onChange={(e) => setToQty(Number(e.target.value))}
-      fullWidth
-    />
 
-    {/* SLoc ID */}
-    <TextField
-      label="From SLoc ID"
-      value={FromSLocID}
-      onChange={(e) => setFromSLocID(e.target.value)}
-      fullWidth
-    />
-    <TextField
-      label="To SLoc ID"
-      value={ToSLocID}
-      onChange={(e) => setToSLocID(e.target.value)}
-      fullWidth
-    />
+          {/* Trn_Sap_ID - Read Only */}
+          <TextField
+            label="Trn_Sap_ID"
+            value={TrnSapID}
+            fullWidth
+            InputProps={{ readOnly: true }}
+          />
 
-    {/* Price */}
-    <TextField
-      label="From Price"
-      type="number"
-      value={FromPrice}
-      onChange={(e) => setFromPrice(Number(e.target.value))}
-      fullWidth
-    />
-    <TextField
-      label="To Price"
-      type="number"
-      value={ToPrice}
-      onChange={(e) => setToPrice(Number(e.target.value))}
-      fullWidth
-    />
+  {/* NetDifferentPrice- Read Only */}
+          <TextField
+            label="Net_Difference_Price"
+            value={NetDifferentPrice}
+            fullWidth
+            InputProps={{ readOnly: true }}
+          />
 
-    {/* Valuation Type */}
-    <TextField
-      label="From Valuation Type"
-      value={FromValuationType}
-      onChange={(e) => setFromValuationType(e.target.value)}
-      fullWidth
-    />
-    <TextField
-      label="To Valuation Type"
-      value={ToValuationType}
-      onChange={(e) => setToValuationType(e.target.value)}
-      fullWidth
-    />
-
-    {/* Batch */}
-    <TextField
-      label="From Batch"
-      value={FromBatch}
-      onChange={(e) => setFromBatch(e.target.value)}
-      fullWidth
-    />
-    <TextField
-      label="To Batch"
-      value={ToBatch}
-      onChange={(e) => setToBatch(e.target.value)}
-      fullWidth
-    />
+          {/* Material Code */}
+          <TextField
+            label="From Material Code"
+            value={FromMatCode}
+            onChange={(e) => setFromMatCode(e.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="To Material Code"
+            value={ToMatCode}
+            onChange={(e) => setToMatCode(e.target.value)}
+            fullWidth
+          />
 
 
 
-    {/* Buttons */}
-    <Box
-      sx={{
-        gridColumn: "span 2",
-        display: "flex",
-        justifyContent: "center",
-        gap: "10px",
-        marginTop: "15px",
-      }}
-    >
-      <Button variant="contained" color="error" onClick={handleCloseEditModal}>
-        Cancel
-      </Button>
-      <Button variant="contained" color="primary" onClick={handleUpdate}>
-        Update
-      </Button>
-    </Box>
-  </Box>
-</Modal>
+          {/* Quantity */}
+          <TextField
+            label="From Quantity"
+            type="number"
+            value={FromQty}
+            onChange={(e) => setFromQty(Number(e.target.value))}
+            fullWidth
+          />
+          <TextField
+            label="To Quantity"
+            type="number"
+            value={ToQty}
+            onChange={(e) => setToQty(Number(e.target.value))}
+            fullWidth
+          />
+
+          {/* SLoc ID */}
+          <TextField
+            label="From SLoc ID"
+            value={FromSLocID}
+            onChange={(e) => setFromSLocID(e.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="To SLoc ID"
+            value={ToSLocID}
+            onChange={(e) => setToSLocID(e.target.value)}
+            fullWidth
+          />
+
+          {/* Price */}
+          <TextField
+            label="From Price"
+            type="number"
+            value={FromPrice}
+            onChange={(e) => setFromPrice(Number(e.target.value))}
+            fullWidth
+          />
+          <TextField
+            label="To Price"
+            type="number"
+            value={ToPrice}
+            onChange={(e) => setToPrice(Number(e.target.value))}
+            fullWidth
+          />
+
+          {/* Valuation Type */}
+          <TextField
+            label="From Valuation Type"
+            value={FromValuationType}
+            onChange={(e) => setFromValuationType(e.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="To Valuation Type"
+            value={ToValuationType}
+            onChange={(e) => setToValuationType(e.target.value)}
+            fullWidth
+          />
+
+          {/* Batch */}
+          <TextField
+            label="From Batch"
+            value={FromBatch}
+            onChange={(e) => setFromBatch(e.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="To Batch"
+            value={ToBatch}
+            onChange={(e) => setToBatch(e.target.value)}
+            fullWidth
+          />
+
+        
+
+          {/* Buttons */}
+          <Box
+            sx={{
+              gridColumn: "span 2",
+              display: "flex",
+              justifyContent: "center",
+              gap: "10px",
+              marginTop: "15px",
+            }}
+          >
+            <Button variant="contained" color="error" onClick={handleCloseRowEditModal}>
+              Cancel
+            </Button>
+            <Button variant="contained" color="primary" onClick={handleUpdate}>
+              Update
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
 
     </div>
   );
