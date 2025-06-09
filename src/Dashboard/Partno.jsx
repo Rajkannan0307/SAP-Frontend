@@ -48,6 +48,7 @@ import { api } from "../controller/constants";
 import { getdetails, DownloadAllExcel, getresubmit, fetchData, Edit309Record, getCancel, getAdd, getPlants, getMaterial, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
 const Partno = () => {
 
+const [isUpdating, setIsUpdating] = useState(false);
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
@@ -1132,7 +1133,7 @@ const Partno = () => {
   };
 
 
-
+////
   const [formData, setFormData] = useState({
     DocID: '',
     TrnSapId: '',
@@ -1150,49 +1151,60 @@ const Partno = () => {
     ToBatch: ''
   });
 
-
-  const fetchData = async () => {
-    try {
-      const response = await getTransactionData(); // use the actual function
-      setItems(response.data);
-      setItems(response.data); // Or however you're storing it
-    } catch (error) {
-      console.error('Error fetching transaction data:', error);
-    }
-  };
 const handleUpdate = async () => {
+  setIsUpdating(true);
   try {
     const data = {
-       ModifiedBy: UserID,
-  DocID: String(DocID), 
-      FromMatCode: FromMatCode,
-      ToMatCode: ToMatCode,
-      FromQty: FromQty,
-      ToQty: ToQty,
-      FromSLocID: FromSLocID,
-      ToSLocID: ToSLocID,
-      FromPrice: FromPrice,
-      ToPrice: ToPrice,
-      FromValuationType: FromValuationType,
-      ToValuationType: ToValuationType,
-      FromBatch: FromBatch,
-      ToBatch: ToBatch,TrnSapID:TrnSapID
+      ModifiedBy: UserID,
+      DocID: String(DocID),
+      FromMatCode,
+      ToMatCode,
+      FromQty,
+      ToQty,
+      FromSLocID,
+      ToSLocID,
+      FromPrice,
+      ToPrice,
+      FromValuationType,
+      ToValuationType,
+      FromBatch,
+      ToBatch,
+      TrnSapID
     };
 
     const response = await Edit309Record(data);
+    console.log("API response:", response);
 
-    if (response.data.success) {
-      alert(response.data.message);
-      getData(); // Refresh table
-      handleCloseRowEditModal(); // Close modal
+    if (response?.success === true) {
+      alert(response.message);
+      getData();
+      handleCloseRowEditModal();
     } else {
-      alert(response.data.message); // Show backend error
+      alert(response?.message || "Update failed. Please try again.");
     }
   } catch (error) {
-    console.error("Error details:", error.response?.data);
+    console.error("Error details:", error.response?.data || error);
     alert(error.response?.data?.message || "An error occurred while updating the record.");
+  } finally {
+    setIsUpdating(false);
   }
 };
+
+
+const fetchData = async () => {
+  try {
+    const response = await getTransactionData(); // this is the correct service call
+    setItems(response.data);
+  } catch (error) {
+    console.error('Error fetching transaction data:', error);
+  }
+};
+
+
+///
+
+
+
 
 
   useEffect(() => {
