@@ -36,7 +36,7 @@ import {
   getAddService,
   updateInwardInvoiceService,
 } from "../controller/Inwardtransactionapiservice";
-
+import { decryptSessionData } from "../controller/StorageUtils";
 const Service = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
@@ -44,7 +44,7 @@ const Service = () => {
   const [data, setData] = useState([]);
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
-  const UserID = localStorage.getItem("UserID");
+ // const UserID = localStorage.getItem("UserID");
   const [VendorCode, setVendorCode] = useState("");
   const [VendorID, setVendorID] = useState("");
   const [InvoiceDate, setInvoiceDate] = useState("");
@@ -56,7 +56,7 @@ const Service = () => {
   // const [newRecord] = useState([]);
   // const [updateRecord] = useState([]);
   // const [errRecord] = useState([]);
-
+ const [Plant_ID, setPlantID] = useState("");
   const [openUploadModal, setOpenUploadModal] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -73,7 +73,7 @@ const Service = () => {
   const [PlantTable, setPlantTable] = useState([]);
   const [VendorTable, setVendorTable] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
-
+ const [UserID, setUserID] = useState("");
   // const [userID, setUserID] = useState("");
 
   const columns = [
@@ -116,7 +116,16 @@ const Service = () => {
   useEffect(() => {
     getData();
   }, []);
-
+  useEffect(() => {
+    const encryptedData = sessionStorage.getItem("userData");
+    if (encryptedData) {
+      const decryptedData = decryptSessionData(encryptedData);
+      setUserID(decryptedData.UserID);
+      setPlantID(decryptedData.PlantID);
+      console.log("Service PlantID", decryptedData.PlantID)
+      console.log("Service userid", decryptedData.UserID);
+    }
+  }, []);
   const get_Vendor = async () => {
     try {
       const response = await getVendor();
@@ -429,6 +438,7 @@ const Service = () => {
     try {
       const data = {
         Vendor_ID: VendorCode,
+          Plant_ID:Plant_ID,
         Invoice_Date: InvoiceDate,
         Invoice_No: InvoiceNo,
         Invoice_Value: InvoiceValue,
@@ -637,7 +647,7 @@ const Service = () => {
         {/* Icons */}
         <div style={{ display: "flex", gap: "10px" }}>
           {/* Upload Button */}
-          <IconButton
+          {/* <IconButton
             onClick={handleOpenUploadModal}
             style={{
               borderRadius: "50%",
@@ -648,7 +658,7 @@ const Service = () => {
             }}
           >
             <CloudUploadIcon />
-          </IconButton>
+          </IconButton> */}
 
           {/* Download Button */}
           <IconButton
@@ -990,7 +1000,7 @@ const Service = () => {
       </Modal>
 
       {/* upload modal */}
-
+{/* 
       <Modal open={openUploadModal} onClose={handleCloseUploadModal}>
         <Box
           sx={{
@@ -1060,7 +1070,7 @@ const Service = () => {
             }}
           >
             {/* ✅ Close Button */}
-            <Button
+            {/* <Button
               variant="contained"
               color="error"
               onClick={handleCloseUploadModal}
@@ -1069,7 +1079,7 @@ const Service = () => {
               Close
             </Button>
             {/* ✅ Upload Button */}
-            <Button
+            {/* <Button
               variant="contained"
               onClick={handleUploadData}
               disabled={isUploading}
@@ -1084,7 +1094,7 @@ const Service = () => {
             </Button>
           </Box>
         </Box>
-      </Modal>
+      </Modal>  */}
     </div>
   );
 };

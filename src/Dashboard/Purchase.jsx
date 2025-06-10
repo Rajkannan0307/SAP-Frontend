@@ -37,7 +37,7 @@ import {
   updateInwardInvoicePurchase,
   getMaterial,
 } from "../controller/Inwardtransactionapiservice";
-
+import { decryptSessionData } from "../controller/StorageUtils";
 const Purchase = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
@@ -45,7 +45,7 @@ const Purchase = () => {
   const [data, setData] = useState([]);
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
-  const UserID = localStorage.getItem("UserID");
+ // const UserID = localStorage.getItem("UserID");
   const [VendorCode, setVendorCode] = useState("");
 
   const [PartNo, setPartNo] = useState("");
@@ -82,7 +82,8 @@ const Purchase = () => {
   const [PlantTable, setPlantTable] = useState([]);
   const [VendorTable, setVendorTable] = useState([]);
   const [MaterialTable, setMaterialTable] = useState([]);
-  // const [userID, setUserID] = useState("");
+  const [UserID, setUserID] = useState("");
+   const [Plant_ID, setPlantID] = useState("");
   const [selectedRows, setSelectedRows] = useState([]);
 
   const columns = [
@@ -175,6 +176,19 @@ const Purchase = () => {
       }
     });
   };
+
+
+
+   useEffect(() => {
+    const encryptedData = sessionStorage.getItem("userData");
+    if (encryptedData) {
+      const decryptedData = decryptSessionData(encryptedData);
+      setUserID(decryptedData.UserID);
+      setPlantID(decryptedData.PlantID);
+      console.log("Service Plantid", decryptedData.PlantID)
+      console.log("Service userid", decryptedData.UserID);
+    }
+  }, []);
 
   // ✅ Handle Add Modal
   const handleOpenAddModal = (item) => {
@@ -465,6 +479,7 @@ const Purchase = () => {
 
     const data = {
       Vendor_ID: VendorCode,
+      Plant_ID:Plant_ID,
       Invoice_Date: InvoiceDate,
       Invoice_No: InvoiceNo,
       Invoice_Qty: InvoiceQty,
@@ -687,7 +702,7 @@ const formattedInvoiceDate = getFormattedDate(InvoiceDate);
         {/* Icons */}
         <div style={{ display: "flex", gap: "10px" }}>
           {/* Upload Button */}
-          <IconButton
+          {/* <IconButton
             onClick={handleOpenUploadModal}
             style={{
               borderRadius: "50%",
@@ -698,7 +713,7 @@ const formattedInvoiceDate = getFormattedDate(InvoiceDate);
             }}
           >
             <CloudUploadIcon />
-          </IconButton>
+          </IconButton> */}
 
           {/* Download Button */}
           <IconButton
@@ -1190,7 +1205,7 @@ const formattedInvoiceDate = getFormattedDate(InvoiceDate);
       </Modal>
       {/* upload modal */}
 
-      <Modal open={openUploadModal} onClose={handleCloseUploadModal}>
+      {/* <Modal open={openUploadModal} onClose={handleCloseUploadModal}>
         <Box
           sx={{
             width: 400,
@@ -1258,7 +1273,7 @@ const formattedInvoiceDate = getFormattedDate(InvoiceDate);
               marginTop: "15px",
             }}
           >
-            {/* ✅ Close Button */}
+           
             <Button
               variant="contained"
               color="error"
@@ -1267,7 +1282,7 @@ const formattedInvoiceDate = getFormattedDate(InvoiceDate);
             >
               Close
             </Button>
-            {/* ✅ Upload Button */}
+           
             <Button
               variant="contained"
               onClick={handleUploadData}
@@ -1283,7 +1298,7 @@ const formattedInvoiceDate = getFormattedDate(InvoiceDate);
             </Button>
           </Box>
         </Box>
-      </Modal>
+      </Modal> */}
     </div>
   );
 };
