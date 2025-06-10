@@ -115,7 +115,7 @@ const [isUpdating, setIsUpdating] = useState(false);
   const [ToPrice, setToPrice] = useState("");
   const [PlantCode, setPlantCode] = useState('');
   const [Date, setDate] = useState("");
-  const [FromMatCode, setFromMatCode] = useState("");
+  const [FromMatCode, setFromMatCode] = useState('');
   const [ToMatCode, setToMatCode] = useState("");
   const [NetDifferentPrice, setNetDifferentPrice] = useState("");
   const [ApprovalStatus, setApprovalStatus] = useState([]);
@@ -142,6 +142,11 @@ const [isUpdating, setIsUpdating] = useState(false);
     }
   };
 
+  //  useEffect(() => {
+  //   console.log({ FromMatCode, ToMatCode });
+  //   console.log({ FromSLocID, ToSLocID });
+  //   console.log(MaterialTable.map(i => i.Material_Code), SLocTable.map(i => i.SLoc_Code));
+  // });
   const handleOpenEditModal = (record) => {
     setFromMatCode(record.FromMatCode);
     setToMatCode(record.ToMatCode);
@@ -222,6 +227,7 @@ const [isUpdating, setIsUpdating] = useState(false);
     try {
       const response = await getSLoc();
       setSLocTable(response.data);
+      console.log('Sloc Api  Sloc',response.data)
     } catch (error) {
       console.error("Error updating user:", error);
     }
@@ -953,6 +959,10 @@ const [isUpdating, setIsUpdating] = useState(false);
   //   setOpenEditModal(true)
   // };
 
+useEffect(() => {
+  console.log("FromMatCode:", FromMatCode);
+  console.log("Material options:", MaterialTable.map(i => i.Material_ID));
+}, [openRowEditModal]);
 
 const handleConditionalRowClick = (params) => {
   const rawStatus = params.row?.Approval_Status; 
@@ -966,27 +976,29 @@ const handleConditionalRowClick = (params) => {
 
   if (status === "REJECTED" || status === "UNDER QUERY") {
     // Set all needed states here (like in handleRowClick)
+      get_Material()
+    get_SLoc();
+    get_ValuationTypeTable();
     setPlantCode(params.row.Plant_Code);
     setDocID(params.row.Doc_ID);
     setTrnSapID(params.row.Trn_Sap_ID);
     setNetDifferentPrice(params.row.Net_Difference_Price);
-    setFromMatCode(params.row.From_Material_Code);
+  setFromMatCode(params.row.From_Material_Code);
+
     setToMatCode(params.row.To_Material_Code);
     setFromQty(params.row.From_Qty);
     setToQty(params.row.To_Qty);
     setFromPrice(params.row.From_Rate_Per_Unit);
     setToPrice(params.row.To_Rate_Per_Unit);
-    setFromSLocID(params.row.From_SLoc_Code);
-    setToSLocID(params.row.To_SLoc_Code);
+   setFromSLocID(params.row.From_SLoc_Code); // as string
+  setToSLocID(params.row.To_SLoc_Code);
     setFromValuationType(params.row.From_Valuation_Type);
     setToValuationType(params.row.To_Valuation_Type);
     setFromBatch(params.row.From_Batch);
     setToBatch(params.row.To_Batch);
 
     setSelectedRow(params.row);  // if needed
-    get_Material()
-    get_SLoc();
-    get_ValuationTypeTable();
+  
     setOpenRowEditModal(true);
   } else {
     console.log("Editing not allowed for this status:", status);
@@ -1001,26 +1013,39 @@ const handleConditionalRowClick = (params) => {
 
   };
 
-  const handleRowClick= (params) => {
-    setPlantCode(params.row.Plant_Code);
-    setDocID(params.row.Doc_ID);
-    setTrnSapID(params.row.Trn_Sap_ID);
-    setNetDifferentPrice(params.row.Net_Difference_Price);
-    setFromMatCode(params.row.From_Material_Code);
-    setToMatCode(params.row.To_Material_Code);
-  setFromQty(params.row.From_Qty);
-  setToQty(params.row.To_Qty)
-    setFromPrice(params.row.From_Rate_Per_Unit);
-    setToPrice(params.row.To_Rate_Per_Unit);
-    setFromSLocID(params.row.From_SLoc_Code);
-    setToSLocID(params.row.To_SLoc_Code);
-    setFromValuationType(params.row.From_Valuation_Type);
-    setToValuationType(params.row.To_Valuation_Type);
-    setFromBatch(params.row.From_Batch);
-    setToBatch(params.row.To_Batch);
-    setOpenRowEditModal(true); // Open the modal
-  };
+//   const handleRowClick= (params) => {
+//     setPlantCode(params.row.Plant_Code);
+//     setDocID(params.row.Doc_ID);
+//     setTrnSapID(params.row.Trn_Sap_ID);
+//     setNetDifferentPrice(params.row.Net_Difference_Price);
+   
+// setFromMatCode(params.row.From_Material_Code);
 
+//     setToMatCode(params.row.To_Material_Code);
+//   setFromQty(params.row.From_Qty);
+//   setToQty(params.row.To_Qty)
+//     setFromPrice(params.row.From_Rate_Per_Unit);
+//     setToPrice(params.row.To_Rate_Per_Unit);
+//     setFromSLocID(params.row.From_SLoc_Code);
+//     setToSLocID(params.row.To_SLoc_Code);
+//     setFromValuationType(params.row.From_Valuation_Type);
+//     setToValuationType(params.row.To_Valuation_Type);
+//     setFromBatch(params.row.From_Batch);
+//     setToBatch(params.row.To_Batch);
+//     setOpenRowEditModal(true); // Open the modal
+//   };
+
+// edit row click box- style
+  const compactFieldProps = {
+  size: "small",
+  sx: {
+    "& .MuiInputBase-input": {
+      fontSize: 13,
+      height: 30,
+      padding: "4px 8px"
+    }
+  }
+};
 
   const columns = [
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
@@ -1046,7 +1071,7 @@ const handleConditionalRowClick = (params) => {
           <div style={{ display: "flex", gap: "10px" }}>
             {/* View Button */}
             <IconButton
-              size="medium"
+              size="large"
               sx={{ color: "#008080" }}
               onClick={(event) => {
                 event.stopPropagation(); // ✅ Prevents row click
@@ -1268,6 +1293,8 @@ const fetchData = async () => {
   useEffect(() => {
     fetchData();
     getData();
+    get_SLoc();
+
   }, []);
 
   
@@ -2193,301 +2220,195 @@ const fetchData = async () => {
         </Box>
       </Modal>
 
-      {/* ✅ Edit Modal */}
-      <Modal open={openRowEditModal} onClose={() => setOpenRowEditModal(false)}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            width: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            gap: "15px",
-          }}
-        >
-          <h3
-            style={{
-              gridColumn: "span 2",
-              textAlign: "center",
-              color: "#2e59d9",
-              textDecoration: "underline",
-              textDecorationColor: "#88c57a",
-              textDecorationThickness: "3px",
-            }}
-          >
-            Edit Storage Location
-          </h3>
-
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleCloseEditRowModal}
-            >
-              Cancel
-            </Button>
-            <Button variant="contained" color="primary" >
-              Update
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+    
 
       {/*Row edit modal*/}
-       
-     {/*Row edit modal*/}
-      <Modal open={openRowEditModal} onClose={() => setOpenRowEditModal(false)}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            width: 500,
-            height: 700,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "5%",
-            gap: "15px",
-          }}
-        >
-          <h3
-            style={{
-              gridColumn: "span 2",
-              textAlign: "center",
-              color: "#2e59d9",
-              textDecoration: "underline",
-              textDecorationColor: "#88c57a",
-              textDecorationThickness: "3px",
-            }}
+   
+       {/*Row edit modal*/}
+     <Modal open={openRowEditModal} onClose={handleCloseRowEditModal}>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          width: 380,
+          maxHeight: "85vh",
+          bgcolor: "background.paper",
+          borderRadius: 2,
+          boxShadow: 3,
+          p: 2,
+          mt: 4,
+          mx: "auto",
+          gap: 1.5,
+          overflowY: "auto",
+          transition: 'all 0.3s ease'
+        }}
+      >
+        <h3 style={{
+          gridColumn: "span 2",
+          textAlign: "center",
+          color: "#2e59d9",
+          textDecoration: "underline",
+          textDecorationColor: "#88c57a",
+          textDecorationThickness: "3px",
+        }}>
+          Edit 309 Record
+        </h3>
+
+        {/* Read-only fields */}
+        {[
+          ["Plant Code", PlantCode],
+          ["Doc ID", DocID],
+          ["Trn ID", TrnSapID],
+          ["Net Difference Price", NetDifferentPrice]
+        ].map(([label, value]) => (
+          <TextField
+            key={label}
+            label={label}
+            value={value}
+            fullWidth
+            InputProps={{ readOnly: true }}
+            {...compactFieldProps}
+          />
+        ))}
+
+        {/* Select: Material */}
+       {/* From Mat Code */}
+<FormControl fullWidth size="small">
+  <InputLabel id="from-mat-label">From Mat Code</InputLabel>
+  <Select
+    labelId="from-mat-label"
+    label="From Mat Code"
+    value={FromMatCode}
+    onChange={e => setFromMatCode(e.target.value)}
+  >
+    {MaterialTable.map(item => (
+      <MenuItem key={item.Material_ID} value={item.Material_Code}>
+        {item.Material_Code}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+
+        <FormControl fullWidth size="small">
+          <InputLabel id="to-mat-label">To Mat Code</InputLabel>
+          <Select
+            labelId="to-mat-label"
+            label="To Mat Code"
+            value={ToMatCode}
+            onChange={e => setToMatCode(e.target.value)}
           >
-            Edit 309 Record
-          </h3>
+            {MaterialTable.map(item =>
+              <MenuItem key={item.Material_ID} value={item.Material_Code}>
+                {item.Material_Code}
+              </MenuItem>
+            )}
+          </Select>
+        </FormControl>
 
-          {/* Plant Code - Read Only */}
-          <TextField
-            label="Plant Code"
-            value={PlantCode}
-            fullWidth
-            InputProps={{ readOnly: true }}
-          />
+        {/* Quantities */}
+        <TextField
+          label="From Quantity"
+          type="number"
+          value={FromQty}
+          onChange={e => setFromQty(Number(e.target.value))}
+          fullWidth
+          {...compactFieldProps}
+        />
+        <TextField
+          label="To Quantity"
+          type="number"
+          value={ToQty}
+          onChange={e => setToQty(Number(e.target.value))}
+          fullWidth
+          {...compactFieldProps}
+        />
+
+        {/* SLoc */}
+      {[
+  ["From SLoc Code", FromSLocID, setFromSLocID],
+  ["To SLoc Code", ToSLocID, setToSLocID]
+].map(([label, value, setter]) => (
+  <FormControl fullWidth size="small" key={label}>
+    <InputLabel id={`${label}-label`}>{label}</InputLabel>
+    <Select
+      labelId={`${label}-label`}
+      label={label}
+      value={value}
+      onChange={e => setter(e.target.value)}
+    >
+      {SLocTable.map(item => (
+        <MenuItem key={item.SLoc_ID} value={item.Storage_Code}>
+          {item.Storage_Code}
+        </MenuItem>
+      ))}
+    </Select>
+  </FormControl>
+))}
 
 
-          {/* DocID - Read Only */}
-          <TextField
-            label="Doc ID"
-            value={DocID}
-            fullWidth
-            InputProps={{ readOnly: true }}
-          />
+        {/* Price */}
+        <TextField
+          label="From Price"
+          type="number"
+          value={FromPrice}
+          onChange={e => setFromPrice(Number(e.target.value))}
+          fullWidth
+          {...compactFieldProps}
+        />
+        <TextField
+          label="To Price"
+          type="number"
+          value={ToPrice}
+          onChange={e => setToPrice(Number(e.target.value))}
+          fullWidth
+          {...compactFieldProps}
+        />
 
-
-          {/* Trn_Sap_ID - Read Only */}
-          <TextField
-            label="Trn ID"
-            value={TrnSapID}
-            fullWidth
-            InputProps={{ readOnly: true }}
-          />
-
-  {/* NetDifferentPrice- Read Only */}
-          <TextField
-            label="Net Difference Price"
-            value={NetDifferentPrice}
-            fullWidth
-            InputProps={{ readOnly: true }}
-          />
-
-          {/* Material Code */}
-           {/* From Material Code */}
-    <FormControl fullWidth>
-            <InputLabel>FromMatCode</InputLabel> {/* Fix: Closing the InputLabel tag */}
+        {/* Valuation Type */}
+        {[
+          ["From Valuation Type", FromValuationType, setFromValuationType],
+          ["To Valuation Type", ToValuationType, setToValuationType]
+        ].map(([label, value, setter]) => (
+          <FormControl fullWidth size="small" key={label}>
+            <InputLabel id={`${label}-label`}>{label}</InputLabel>
             <Select
-              label="From Material Code"
-              name="From Material Code"
-              value={FromMatCode}
-              onChange={(e) => setFromMatCode(e.target.value)}
-              required
+              labelId={`${label}-label`}
+              label={label}
+              value={value}
+              onChange={e => setter(e.target.value)}
             >
-              {MaterialTable.map((item, index) => (
-                <MenuItem key={index} value={item.Material_ID}>{item.Material_Code}
+              {ValuationTypeTable.map(item =>
+                <MenuItem key={item.Valuation_ID} value={item.Valuation_Name}>
+                  {item.Valuation_Name}
                 </MenuItem>
+              )}
+            </Select>
+          </FormControl>
         ))}
-      </Select>
-    </FormControl>
 
-    {/* To Material Code */}
-    <FormControl fullWidth>
-      <InputLabel>To Material Code</InputLabel>
-      <Select
-  label="Material Code"
-  value={ToMatCode}
-  onChange={(e) => setToMatCode(e.target.value)}
-  required
->
-  {MaterialTable.map((item) => (
-    <MenuItem key={item.Material_ID} value={item.Material_Code}>
-      {item.Material_Code}
-    </MenuItem>
-  ))}
-</Select>
+        {/* Batch */}
+        <TextField
+          label="From Batch"
+          value={FromBatch}
+          onChange={e => setFromBatch(e.target.value)}
+          fullWidth
+          {...compactFieldProps}
+        />
+        <TextField
+          label="To Batch"
+          value={ToBatch}
+          onChange={e => setToBatch(e.target.value)}
+          fullWidth
+          {...compactFieldProps}
+        />
 
-    </FormControl>
-
-
-          {/* Quantity */}
-          <TextField
-            label="From Quantity"
-            type="number"
-            value={FromQty}
-            onChange={(e) => setFromQty(Number(e.target.value))}
-            fullWidth
-          />
-          <TextField
-            label="To Quantity"
-            type="number"
-            value={ToQty}
-            onChange={(e) => setToQty(Number(e.target.value))}
-            fullWidth
-          />
-
-          {/* SLoc ID */}
-
- 
-
-
-         <FormControl fullWidth>
-  <InputLabel>From SLoc Code</InputLabel>
-  <Select
-    label="From SLoc ID"
-    value={FromSLocID}
-    onChange={(e) => setFromSLocID(e.target.value)}
-    required
-  >
-    {SLocTable.map((item, index) => (
-      <MenuItem key={index} value={item.SLoc_ID}>
-        {item.SLoc_Name}
-      </MenuItem>
-    ))}
-  </Select>
-</FormControl>
-
-<FormControl fullWidth>
-  <InputLabel>To SLoc ID</InputLabel>
-  <Select
-    label="To SLoc Code"
-    value={ToSLocID}
-    onChange={(e) => setToSLocID(e.target.value)}
-    required
-  >
-    {SLocTable.map((item, index) => (
-      <MenuItem key={index} value={item.SLoc_ID}>
-        {item.SLoc_Name}
-      </MenuItem>
-    ))}
-  </Select>
-</FormControl>
-
-          {/* Price */}
-          <TextField
-            label="From Price"
-            type="number"
-            value={FromPrice}
-            onChange={(e) => setFromPrice(Number(e.target.value))}
-            fullWidth
-          />
-          <TextField
-            label="To Price"
-            type="number"
-            value={ToPrice}
-            onChange={(e) => setToPrice(Number(e.target.value))}
-            fullWidth
-          />
-
-          {/* Valuation Type */}
-              {/* From Valuation Type */}
-    <FormControl fullWidth>
-      <InputLabel>From Valuation Type</InputLabel>
-      <Select
-        label="From Valuation Type"
-        value={FromValuationType}
-        onChange={(e) => setFromValuationType(e.target.value)}
-        required
-      >
-        {ValuationTypeTable.map((item, index) => (
-          <MenuItem key={index} value={item.Valuation_Type_ID}>
-            {item.Valuation_Type_Name}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-
-    {/* To Valuation Type */}
-    <FormControl fullWidth>
-      <InputLabel>To Valuation Type</InputLabel>
-      <Select
-        label="To Valuation Type"
-        value={ToValuationType}
-        onChange={(e) => setToValuationType(e.target.value)}
-        required
-      >
-        {ValuationTypeTable.map((item, index) => (
-          <MenuItem key={index} value={item.Valuation_Type_ID}>
-            {item.Valuation_Type_Name}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-
-          {/* Batch */}
-          <TextField
-            label="From Batch"
-            value={FromBatch}
-            onChange={(e) => setFromBatch(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="To Batch"
-            value={ToBatch}
-            onChange={(e) => setToBatch(e.target.value)}
-            fullWidth
-          />
-
-        
-
-          {/* Buttons */}
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            <Button variant="contained" color="error" onClick={handleCloseRowEditModal}>
-              Cancel
-            </Button>
-            <Button variant="contained" color="primary" onClick={handleUpdate}>
-              Update
-            </Button>
-          </Box>
+        {/* Buttons */}
+        <Box sx={{ gridColumn: "span 2", display: "flex", justifyContent: "center", gap: 2, mt: 1 }}>
+          <Button size="small" variant="contained" color="error" onClick={handleCloseRowEditModal}>Cancel</Button>
+          <Button size="small" variant="contained" color="primary" onClick={handleUpdate}>Update</Button>
         </Box>
-      </Modal>
-
+      </Box>
+    </Modal>
 
 
     </div>
