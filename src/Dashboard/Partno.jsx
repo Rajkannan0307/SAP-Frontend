@@ -45,7 +45,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { IoMdDownload } from "react-icons/io";
 import { getTransactionData, Movement309, Movement309ReUpload } from "../controller/transactionapiservice";
 import { api } from "../controller/constants";
-import { getdetails, DownloadAllExcel, getresubmit, fetchData, Edit309Record, getCancel, getAdd, getPlants, getMaterial, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
+import { getdetails, DownloadAllExcel, getresubmit, fetchData, Edit309Record, getCancel, getAdd, getPlants, getMaterial,getSLoc, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
 const Partno = () => {
 
 const [isUpdating, setIsUpdating] = useState(false);
@@ -84,6 +84,9 @@ const [isUpdating, setIsUpdating] = useState(false);
 
   const [PlantTable, setPlantTable] = useState([])
   const [MaterialTable, setMaterialTable] = useState([])
+  
+  const [SLocTable, setSLocTable] = useState([])
+  const [ValuationTypeTable, setValuationTypeTable] = useState([])
   const [items, setItems] = useState([]);
 
   const [openViewModal, setOpenViewModal] = useState(false);
@@ -215,6 +218,14 @@ const [isUpdating, setIsUpdating] = useState(false);
     }
   };
 
+  const get_SLoc = async () => {
+    try {
+      const response = await getSLoc();
+      setSLocTable(response.data);
+    } catch (error) {
+      console.error("Error updating user:", error);
+    }
+  };
 
   // ✅ Handle Add Material
   const handleAdd = async () => {
@@ -919,13 +930,50 @@ const [isUpdating, setIsUpdating] = useState(false);
 
 
 
-  const handleEdit = (rowData) => {
-    setSelectedRow(rowData);
-    const status = (rowData.Approval_Status || "").toLowerCase();
-    const editable = status === "rejected" || status === "under query";
-    setIsEditable(editable);
-    setOpenEditModal(true)
-  };
+  // const handleEdit = (rowData) => {
+  //   setSelectedRow(rowData);
+  //   const status = (rowData.Approval_Status || "").toLowerCase();
+  //   const editable = status === "rejected" || status === "under query";
+  //   setIsEditable(editable);
+  //   setOpenEditModal(true)
+  // };
+
+
+const handleConditionalRowClick = (params) => {
+  const rawStatus = params.row?.Approval_Status; 
+
+  if (!rawStatus) {
+    console.warn("No status found in row:", params.row);
+    return; // Exit early if status is missing
+  }
+
+  const status = rawStatus.toUpperCase();
+
+  if (status === "REJECTED" || status === "UNDER QUERY") {
+    // Set all needed states here (like in handleRowClick)
+    setPlantCode(params.row.Plant_Code);
+    setDocID(params.row.Doc_ID);
+    setTrnSapID(params.row.Trn_Sap_ID);
+    setNetDifferentPrice(params.row.Net_Difference_Price);
+    setFromMatCode(params.row.From_Material_Code);
+    setToMatCode(params.row.To_Material_Code);
+    setFromQty(params.row.From_Qty);
+    setToQty(params.row.To_Qty);
+    setFromPrice(params.row.From_Rate_Per_Unit);
+    setToPrice(params.row.To_Rate_Per_Unit);
+    setFromSLocID(params.row.From_SLoc_Code);
+    setToSLocID(params.row.To_SLoc_Code);
+    setFromValuationType(params.row.From_Valuation_Type);
+    setToValuationType(params.row.To_Valuation_Type);
+    setFromBatch(params.row.From_Batch);
+    setToBatch(params.row.To_Batch);
+
+    setSelectedRow(params.row);  // if needed
+    setOpenRowEditModal(true);
+  } else {
+    console.log("Editing not allowed for this status:", status);
+  }
+};
 
 
 
@@ -935,7 +983,7 @@ const [isUpdating, setIsUpdating] = useState(false);
 
   };
 
-  const handleRowClick = (params) => {
+  const handleRowClick= (params) => {
     setPlantCode(params.row.Plant_Code);
     setDocID(params.row.Doc_ID);
     setTrnSapID(params.row.Trn_Sap_ID);
@@ -1133,7 +1181,6 @@ const [isUpdating, setIsUpdating] = useState(false);
   };
 
 
-////
   const [formData, setFormData] = useState({
     DocID: '',
     TrnSapId: '',
@@ -1200,18 +1247,12 @@ const fetchData = async () => {
   }
 };
 
-
-///
-
-
-
-
-
   useEffect(() => {
     fetchData();
     getData();
   }, []);
 
+  
   // ✅ Custom Toolbar
   const CustomToolbar = () => (
     <GridToolbarContainer>
@@ -1349,13 +1390,13 @@ const fetchData = async () => {
         }}
       >
 
-        <DataGrid
+         <DataGrid
           rows={rows}
           columns={columns}
           pageSize={5}
           getRowId={(row) => row.Trn_Sap_ID} // Ensure Trn_309_ID is unique and exists
           rowsPerPageOptions={[5]}
-          onRowClick={handleRowClick}
+          onRowClick={handleConditionalRowClick}
           disableSelectionOnClick
           slots={{ toolbar: CustomToolbar }}
           onCellClick={(params, event) => {
@@ -1390,7 +1431,11 @@ const fetchData = async () => {
               fontSize: "14px",
             },
           }}
-        />
+        /> 
+
+
+
+        
       </div>
 
       {/* Add modal */}
@@ -2183,6 +2228,7 @@ const fetchData = async () => {
       </Modal>
 
       {/*Row edit modal*/}
+       
       <Modal open={openRowEditModal} onClose={() => setOpenRowEditModal(false)}>
         <Box
           sx={{
@@ -2214,7 +2260,7 @@ const fetchData = async () => {
 
           {/* Plant Code - Read Only */}
           <TextField
-            label="Plant"
+            label="Plant Code"
             value={PlantCode}
             fullWidth
             InputProps={{ readOnly: true }}
@@ -2223,7 +2269,7 @@ const fetchData = async () => {
 
           {/* DocID - Read Only */}
           <TextField
-            label="DocID"
+            label="Doc ID"
             value={DocID}
             fullWidth
             InputProps={{ readOnly: true }}
@@ -2232,7 +2278,7 @@ const fetchData = async () => {
 
           {/* Trn_Sap_ID - Read Only */}
           <TextField
-            label="Trn_Sap_ID"
+            label="Trn ID"
             value={TrnSapID}
             fullWidth
             InputProps={{ readOnly: true }}
@@ -2240,7 +2286,7 @@ const fetchData = async () => {
 
   {/* NetDifferentPrice- Read Only */}
           <TextField
-            label="Net_Difference_Price"
+            label="Net Difference Price"
             value={NetDifferentPrice}
             fullWidth
             InputProps={{ readOnly: true }}
@@ -2358,80 +2404,11 @@ const fetchData = async () => {
         </Box>
       </Modal>
 
+
     </div>
   );
 };
 
 export default Partno;
 
-//<Modal open={openRowEditModal} onClose={() => setOpenRowEditModal(false)}>
-//   <Box
-//     sx={{
-//       display: "grid",
-//       gridTemplateColumns: "repeat(2, 1fr)",
-//       width: 400,
-//       height: "auto",
-//       bgcolor: "background.paper",
-//       borderRadius: 2,
-//       boxShadow: 24,
-//       p: 2,
-//       margin: "auto",
-//       marginTop: "8%",
-//       gap: "10px",
-//     }}
-//   >
-//     <h3
-//       style={{
-//         gridColumn: "span 2",
-//         textAlign: "center",
-//         color: "#2e59d9",
-//         fontSize: "18px",
-//         marginBottom: "10px",
-//         textDecoration: "underline",
-//         textDecorationColor: "#88c57a",
-//         textDecorationThickness: "2px",
-//       }}
-//     >
-//       Edit 309 Record
-//     </h3>
-
-//     <TextField label="Plant" value={PlantCode} fullWidth size="small" InputProps={{ readOnly: true }} />
-//     <TextField label="DocID" value={DocID} fullWidth size="small" InputProps={{ readOnly: true }} />
-
-//     <TextField label="From Material Code" value={FromMatCode} onChange={(e) => setFromMatCode(e.target.value)} fullWidth size="small" />
-//     <TextField label="To Material Code" value={ToMatCode} onChange={(e) => setToMatCode(e.target.value)} fullWidth size="small" />
-
-//     <TextField label="From Quantity" type="number" value={FromQty} onChange={(e) => setFromQty(Number(e.target.value))} fullWidth size="small" />
-//     <TextField label="To Quantity" type="number" value={ToQty} onChange={(e) => setToQty(Number(e.target.value))} fullWidth size="small" />
-
-//     <TextField label="From SLoc ID" value={FromSLocID} onChange={(e) => setFromSLocID(e.target.value)} fullWidth size="small" />
-//     <TextField label="To SLoc ID" value={ToSLocID} onChange={(e) => setToSLocID(e.target.value)} fullWidth size="small" />
-
-//     <TextField label="From Price" type="number" value={FromPrice} onChange={(e) => setFromPrice(Number(e.target.value))} fullWidth size="small" />
-//     <TextField label="To Price" type="number" value={ToPrice} onChange={(e) => setToPrice(Number(e.target.value))} fullWidth size="small" />
-
-//     <TextField label="From Valuation Type" value={FromValuationType} onChange={(e) => setFromValuationType(e.target.value)} fullWidth size="small" />
-//     <TextField label="To Valuation Type" value={ToValuationType} onChange={(e) => setToValuationType(e.target.value)} fullWidth size="small" />
-
-//     <TextField label="From Batch" value={FromBatch} onChange={(e) => setFromBatch(e.target.value)} fullWidth size="small" />
-//     <TextField label="To Batch" value={ToBatch} onChange={(e) => setToBatch(e.target.value)} fullWidth size="small" />
-
-//     <Box
-//       sx={{
-//         gridColumn: "span 2",
-//         display: "flex",
-//         justifyContent: "center",
-//         gap: "10px",
-//         mt: 2,
-//       }}
-//     >
-//       <Button variant="contained" color="error" size="small" onClick={handleCloseEditModal}>
-//         Cancel
-//       </Button>
-//       <Button variant="contained" color="primary" size="small" onClick={handleUpdate}>
-//         Update
-//       </Button>
-//     </Box>
-//   </Box>
-// </Modal>
 

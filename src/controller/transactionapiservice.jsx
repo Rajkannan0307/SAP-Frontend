@@ -34,10 +34,22 @@ export const getMaterial = async ()=>{
     const response = await axios.get(`${api}/transaction/Get_Material`);
     return response;
 };
+export const getSLoc = async ()=>{
+
+    const response = await axios.get(`${api}/transaction/Get_StorageLocation`);
+    return response;
+};
+
+export const getValuationType = async ()=>{
+
+    const response = await axios.get(`${api}/transaction/Get_ValuationType`);
+    return response;
+};
 export const getView=async ()=>{
     const response = await axios.get(`${api}/transaction/get_View`);
     return response.data;
 };
+
 // export const getExcelDownload = async (data)=>{
 //     const response = await axios.post(`${api}/transaction/download-excel`, data);
 //     return response;
