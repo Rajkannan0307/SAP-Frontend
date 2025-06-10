@@ -40,3 +40,12 @@ export const getMaterial = async ()=>{
   const response = await axios.get(`${api}/Inward/Get_Material`);
   return response;
 };
+
+export const updateInwardInvoicePurchase = async (data)=>{
+    const response = await axios.put(`${api}/Inward/update_Purchase`, data);
+    return response;
+  };
+  export const updateInwardInvoiceService = async (data)=>{
+    const response = await axios.put(`${api}/Inward/update_Service`, data);
+    return response;
+  };

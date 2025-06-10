@@ -47,20 +47,25 @@ const Inward = () => {
      <Tabs
   value={tabIndex}
   onChange={handleChange}
-  indicatorColor="primary"
-  textColor="primary"
+ TabIndicatorProps={{
+    style: {
+      backgroundColor: "#88c57a", // Green underline
+      height: 4,
+      borderRadius: 2,
+    },
+  }}
   style={{
     marginTop: "20px",
-    borderBottom: "2px solid #2e59d9",
   }}
 >
+
   <Tab
     label="Purchase Invoice"
     style={{
       fontWeight: "bold",
       textTransform: "none",
-      backgroundColor: tabIndex === 0 ? "#e0e0f8" : "#f5f5f5",
-      color: tabIndex === 0 ? "#2e59d9" : "#555",
+      backgroundColor: tabIndex === 0 ? "rgb(2, 94, 122)" : "#f5f5f5",
+      color: tabIndex === 0 ? "#fff" : "#555",
       marginRight: 8,
       borderRadius: "5px 5px 0 0",
       padding: "8px 20px",
@@ -71,8 +76,8 @@ const Inward = () => {
     style={{
       fontWeight: "bold",
       textTransform: "none",
-      backgroundColor: tabIndex === 1 ? "#e0e0f8" : "#f5f5f5",
-      color: tabIndex === 1 ? "#2e59d9" : "#555",
+      backgroundColor: tabIndex === 1 ? "rgb(2, 94, 122)" : "#f5f5f5",
+      color: tabIndex === 1 ? "#fff" : "#555",
       marginRight: 8,
       borderRadius: "5px 5px 0 0",
       padding: "8px 20px",

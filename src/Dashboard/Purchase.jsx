@@ -34,7 +34,8 @@ import {
   getdetailsPurchase,
   getVendor,
   getAdd,
-  getUpdates,getMaterial
+  updateInwardInvoicePurchase,
+  getMaterial,
 } from "../controller/Inwardtransactionapiservice";
 
 const Purchase = () => {
@@ -47,20 +48,19 @@ const Purchase = () => {
   const UserID = localStorage.getItem("UserID");
   const [VendorCode, setVendorCode] = useState("");
 
-const [PartNo, setPartNo] = useState("");
+  const [PartNo, setPartNo] = useState("");
+  const [InwardID, setInwardID] = useState("");
 
-const [VendorID, setVendorID] = useState("");
-const [InvoiceDate, setInvoiceDate] = useState("");
-const [InvoiceNo, setInvoiceNo] = useState("");
-const [InvoiceQty, setInvoiceQty] = useState("");
-const [InvoiceValue, setInvoiceValue] = useState("");
-const [PurchaseOrder, setPurchaseOrder] = useState("");
+  const [VendorID, setVendorID] = useState("");
+  const [InvoiceDate, setInvoiceDate] = useState("");
+  const [InvoiceNo, setInvoiceNo] = useState("");
+  const [InvoiceQty, setInvoiceQty] = useState("");
+  const [InvoiceValue, setInvoiceValue] = useState("");
+  const [PurchaseOrder, setPurchaseOrder] = useState("");
 
-const [MonthlyScheduledQty, setMonthlyScheduledQty] = useState("");
-const [CurrentStock, setCurrentStock] = useState("");
-const [ReasonForDelay, setReasonForDelay] = useState("");
-
-
+  const [MonthlyScheduledQty, setMonthlyScheduledQty] = useState("");
+  const [CurrentStock, setCurrentStock] = useState("");
+  const [ReasonForDelay, setReasonForDelay] = useState("");
 
   // const [newRecord] = useState([]);
   // const [updateRecord] = useState([]);
@@ -81,9 +81,9 @@ const [ReasonForDelay, setReasonForDelay] = useState("");
   const [ActiveStatus, setActiveStatus] = useState(false);
   const [PlantTable, setPlantTable] = useState([]);
   const [VendorTable, setVendorTable] = useState([]);
-   const [MaterialTable, setMaterialTable] = useState([]);
+  const [MaterialTable, setMaterialTable] = useState([]);
   // const [userID, setUserID] = useState("");
-const [selectedRows, setSelectedRows] = useState([]);
+  const [selectedRows, setSelectedRows] = useState([]);
 
   const columns = [
     { field: "Vendor_Code", headerName: "Vendor Code ", flex: 1 },
@@ -104,38 +104,37 @@ const [selectedRows, setSelectedRows] = useState([]);
     { field: "Current_Stock", headerName: "Current Stock", flex: 1 },
 
     { field: "Reason_For_Delay", headerName: "Reason For Delay", flex: 1 },
+    { field: "Status", headerName: "Status", flex: 1 },
     {
-  field: "Action",
-  headerName: "Send to SAP",
-  flex: 1,
-  renderCell: (params) => (
-    <Checkbox
-      checked={selectedRows.includes(params.row)}
-      onChange={() => handleCheckboxChange(params.row)}
-    />
-  )
-}
-
+      field: "Action",
+      headerName: "Action",
+      flex: 1,
+      renderCell: (params) => (
+        <Checkbox
+          checked={selectedRows.includes(params.row)}
+          onChange={() => handleCheckboxChange(params.row)}
+        />
+      ),
+    },
   ];
   const getData = async () => {
     try {
       const response = await getdetailsPurchase();
-      console.log(response);  // Check the structure of response
-      setData(response);  // Ensure that this is correctly setting the data
+      console.log(response); // Check the structure of response
+      setData(response); // Ensure that this is correctly setting the data
       setOriginalRows(response); // for reference during search
-    setRows(response);
+      setRows(response);
     } catch (error) {
       console.error(error);
-      setData([]);  // Handle error by setting empty data
+      setData([]); // Handle error by setting empty data
       setOriginalRows([]); // handle error case
-     setRows([]);
+      setRows([]);
     }
   };
 
   useEffect(() => {
     getData();
   }, []);
-
 
   const get_Material = async () => {
     try {
@@ -165,27 +164,32 @@ const [selectedRows, setSelectedRows] = useState([]);
   );
 
   const handleCheckboxChange = (row) => {
-  setSelectedRows((prevSelected) => {
-    const isSelected = prevSelected.some((item) => item.Inward_ID === row.Inward_ID);
-    if (isSelected) {
-      return prevSelected.filter((item) => item.Inward_ID !== row.Inward_ID);
-    } else {
-      return [...prevSelected, row];
-    }
-  });
-};
-
+    setSelectedRows((prevSelected) => {
+      const isSelected = prevSelected.some(
+        (item) => item.Inward_ID === row.Inward_ID
+      );
+      if (isSelected) {
+        return prevSelected.filter((item) => item.Inward_ID !== row.Inward_ID);
+      } else {
+        return [...prevSelected, row];
+      }
+    });
+  };
 
   // ✅ Handle Add Modal
   const handleOpenAddModal = (item) => {
-    setPlantCode("");
+    setVendorCode("");
+    setPurchaseOrder("");
+    setInvoiceNo("");
     setMaterialCode("");
-    setDescription("");
-    setMaterialType("");
-    setRate("");
-    setActiveStatus(true);
+    setInvoiceQty("");
+    setMonthlyScheduledQty("");
+    setCurrentStock("");
+    setInvoiceDate("");
+    setInvoiceValue("");
+    setReasonForDelay("");
     setOpenAddModal(true);
-get_Material();
+    get_Material();
     get_Vendor();
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
@@ -379,20 +383,37 @@ get_Material();
 
   // ✅ Handle Row Click for Edit
 
-  const handleRowClick = (params) => {
-    setPlantCode(params.row.Plant_Code);
-    setMaterialType(params.row.Material_Type);
-    setMaterialCode(params.row.Material_Code);
-    setDescription(params.row.Description);
-    setRate(params.row.Rate);
-    setActiveStatus(params.row.Active_Status);
-    setOpenEditModal(true); // Open the modal
-    setMaterialID(params.row.Material_ID);
-    // setUserID(params.User_ID);
-  };
+ const handleRowClick = (params) => {
+  get_Material();
+  get_Vendor();
 
-  // ✅ Search Functionality
-  const handleSearch = () => {
+  const rawDate = params.row.Invoice_Date; // e.g., "30-04-2025"
+  let formattedDate = rawDate;
+
+  // If date is in DD-MM-YYYY format, convert it
+  if (rawDate && rawDate.includes('-')) {
+    const [day, month, year] = rawDate.split('-');
+    if (day.length === 2 && month.length === 2 && year.length === 4) {
+      formattedDate = `${year}-${month}-${day}`; // -> "2025-04-30"
+    }
+  }
+
+  setInwardID(params.row.Inward_ID);
+  setVendorCode(params.row.Vendor_ID);
+  setInvoiceDate(formattedDate); // ✅ Correct format for date input
+  setInvoiceNo(params.row.Invoice_No);
+  setInvoiceQty(params.row.Invoice_Qty);
+  setInvoiceValue(params.row.Invoice_Value);
+  setPurchaseOrder(params.row.Purchase_Order);
+  setMaterialCode(params.row.Material_ID);
+  setMonthlyScheduledQty(params.row.Monthly_Scheduled_Qty);
+  setCurrentStock(params.row.Current_Stock);
+  setReasonForDelay(params.row.Reason_For_Delay);
+  setOpenEditModal(true);
+};
+
+
+   const handleSearch = () => {
     const text = searchText.trim().toLowerCase();
 
     if (!text) {
@@ -400,11 +421,18 @@ get_Material();
     } else {
       const filteredRows = originalRows.filter((row) =>
         [
-          "Plant_Code",
-          "Material_Type",
+          "Vendor_Code",
+          "Vendor_Name",
+         "Invoice_No",
+         "Invoice_Qty",
+          "Invoice_Date",
           "Material_Code",
-          "Description",
-          "Rate ",
+          "Invoice_Value",
+          "Purchase_Order",
+          "Monthly_Scheduled_Qty",
+          "Current_Stock",
+          "Reason_For_Delay",
+          "Status",
         ].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
@@ -415,158 +443,186 @@ get_Material();
   };
 
   // ✅ Handle Add Material
- const handleAdd = async () => {
-  // console.log("Add button clicked");
-  // const requiredFields = [
-  //   VendorID,
-  //   InvoiceDate,
-  //   InvoiceNo,
-  //   InvoiceQty,
-  //   InvoiceValue,
-  //   PurchaseOrder,
-  //   MaterialID,
-  //   MonthlyScheduledQty,
-  //   CurrentStock,
-  //   ReasonForDelay,
-    
-  // ];
+  const handleAdd = async () => {
+    console.log("Add button clicked");
+    const requiredFields = [
+      VendorCode,
+      InvoiceDate,
+      InvoiceNo,
+      InvoiceQty,
+      InvoiceValue,
+      PurchaseOrder,
+      MaterialCode,
+      MonthlyScheduledQty,
+      CurrentStock,
+      ReasonForDelay,
+    ];
 
-  // if (requiredFields.some((val) => val === "" || val === null)) {
-  //   alert("Please fill in all required fields");
-  //   return;
-  // }
-
-  const data = {
-    Vendor_ID: VendorCode,
-    Invoice_Date: InvoiceDate,
-    Invoice_No: InvoiceNo,
-    Invoice_Qty: InvoiceQty,
-    Invoice_Value: InvoiceValue,
-    Purchase_Order: PurchaseOrder,
-    Material_ID: MaterialCode,
-    Monthly_Scheduled_Qty: MonthlyScheduledQty,
-    Current_Stock: CurrentStock,
-    Reason_For_Delay: ReasonForDelay,
-   
-    UserID: UserID,
-  };
-
-  console.log("Data being sent to the server:", data);
-
-  try {
-    const response = await getAdd(data); // ⬅️ Ensure this hits `/Get_Add` correctly
-
-    if (response.data.success) {
-      alert("Inward Invoice added successfully!");
-      getData(); // refresh UI
-      handleCloseAddModal(); // close modal
-    } else {
-      alert(response.data.message || "Failed to add invoice.");
+    if (requiredFields.some((val) => val === "" || val === null)) {
+      alert("Please fill in all required fields");
+      return;
     }
-  } catch (error) {
-    console.error("Error in adding invoice:", error);
-    if (
-      error.response &&
-      error.response.data &&
-      error.response.data.message
-    ) {
-      alert(error.response.data.message);
-    } else {
-      alert("An error occurred while adding the invoice.");
-    }
-  }
-};
 
-  const handleUpdate = async () => {
+    const data = {
+      Vendor_ID: VendorCode,
+      Invoice_Date: InvoiceDate,
+      Invoice_No: InvoiceNo,
+      Invoice_Qty: InvoiceQty,
+      Invoice_Value: InvoiceValue,
+      Purchase_Order: PurchaseOrder,
+      Material_ID: MaterialCode,
+      Monthly_Scheduled_Qty: MonthlyScheduledQty,
+      Current_Stock: CurrentStock,
+      Reason_For_Delay: ReasonForDelay,
+
+      UserID: UserID,
+    };
+
+    console.log("Data being sent to the server:", data);
+
     try {
-      const data = {
-        UserID: UserID,
-        Material_ID: MaterialID,
-        Description: Description,
-        Rate: Rate,
-        Active_Status: ActiveStatus,
-        // UserID: userID,  // Ensure the UserID is also included
-      };
+      const response = await getAdd(data); // ⬅️ Ensure this hits `/Get_Add` correctly
 
-      console.log("Data being sent:", data); // Log data to verify it before sending
-
-      // Call the API
-      const response = await getUpdates(data);
-
-      // If success
       if (response.data.success) {
-        alert(response.data.message);
-        getData(); // Refresh data
-        handleCloseEditModal(); // Close modal
+        alert("Inward Invoice added successfully!");
+        getData(); // refresh UI
+        handleCloseAddModal(); // close modal
       } else {
-        // If success is false, show the backend message
-        alert(response.data.message);
+        alert(response.data.message || "Failed to add invoice.");
       }
     } catch (error) {
-      console.error("Error details:", error.response?.data);
+      console.error("Error in adding invoice:", error);
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        alert(error.response.data.message);
+      } else {
+        alert("An error occurred while adding the invoice.");
+      }
+    }
+  };
+const handleUpdate = async () => {
+    try {
+      // Format InvoiceDate to 'YYYY-MM-DD'
+const getFormattedDate = (dateStr) => {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  // If in DD-MM-YYYY format
+  if (parts.length === 3 && parts[0].length === 2) {
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  }
+  return dateStr; // already in correct format
+};
+
+const formattedInvoiceDate = getFormattedDate(InvoiceDate);
+
+      const data = {
+        Inward_ID: InwardID,
+        Vendor_ID: VendorCode,
+        Invoice_Date: formattedInvoiceDate,
+        Invoice_No: InvoiceNo,
+        Invoice_Qty: InvoiceQty,
+        Invoice_Value: InvoiceValue,
+        Purchase_Order: PurchaseOrder,
+        Material_ID: MaterialCode,
+        Monthly_Scheduled_Qty: MonthlyScheduledQty,
+        Current_Stock: CurrentStock,
+        Reason_For_Delay: ReasonForDelay,
+        Modified_By: UserID,
+      };
+
+      console.log("Update payload:", data);
+
+      const response = await updateInwardInvoicePurchase(data); // Make sure this calls your updated backend API
+
+      if (response.data.success) {
+        alert(response.data.message || "Invoice updated successfully!");
+        getData(); // Refresh table or grid
+        handleCloseEditModal(); // Close the modal
+      } else {
+        alert(response.data.message || "Failed to update invoice.");
+      }
+    } catch (error) {
+      console.error("Update error:", error);
 
       if (
         error.response &&
         error.response.data &&
         error.response.data.message
       ) {
-        alert(error.response.data.message); // Specific error from backend
+        alert(error.response.data.message);
       } else {
-        alert("An error occurred while updating the Vendor. Please try again.");
+        alert("An unexpected error occurred while updating the invoice.");
       }
     }
   };
+
   // excel download
   const handleDownloadExcel = () => {
-    if (data.length === 0) {
-      alert("No Data Found");
-      return;
-    }
+  if (data.length === 0) {
+    alert("No Data Found");
+    return;
+  }
 
-    const DataColumns = [
-      "Plant_Code",
-      "Material_Type",
-      "Material_Code",
-      "Description",
-      "Rate",
-      "ActiveStatus",
-    ];
+  const DataColumns = [
+    "Vendor_Code",
+    "Vendor_Name",
+    "Invoice_No",
+    "Invoice_Qty",
+    "Invoice_Date",
+    "Material_Code",
+    "Invoice_Value",
+    "Purchase_Order",
+    "Monthly_Scheduled_Qty",
+    "Current_Stock",
+    "Reason_For_Delay",
+    "Status",
+  ];
 
-    const filteredData = data.map((item) => ({
-      Plant_Code: item.Plant_Code,
-      Material_Type: item.Material_Type,
-      Material_Code: item.Material_Code,
-      Description: item.Description,
-      Rate: item.Rate,
-      ActiveStatus: item.Active_Status ? "Active" : "Inactive",
-    }));
+  const filteredData = data.map((item) => ({
+    Vendor_Code: item.Vendor_Code,
+    Vendor_Name: item.Vendor_Name,
+    Invoice_No: item.Invoice_No,
+    Invoice_Qty: item.Invoice_Qty,
+    Invoice_Date: item.Invoice_Date,
+    Material_Code: item.Material_Code,
+    Invoice_Value: item.Invoice_Value,
+    Purchase_Order: item.Purchase_Order,
+    Monthly_Scheduled_Qty: item.Monthly_Scheduled_Qty,
+    Current_Stock: item.Current_Stock,
+    Reason_For_Delay: item.Reason_For_Delay,
+    Status: item.Status,
+  }));
 
-    const worksheet = XLSX.utils.json_to_sheet(filteredData, {
-      header: DataColumns,
-    });
+  const worksheet = XLSX.utils.json_to_sheet(filteredData, {
+    header: DataColumns,
+  });
 
-    // Style header row
-    DataColumns.forEach((_, index) => {
-      const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-      if (!worksheet[cellAddress]) return;
-      worksheet[cellAddress].s = {
-        font: {
-          bold: true,
-          color: { rgb: "000000" },
-        },
-        fill: {
-          fgColor: { rgb: "FFFF00" },
-        },
-        alignment: {
-          horizontal: "center",
-        },
-      };
-    });
+  // Style header row
+  DataColumns.forEach((_, index) => {
+    const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+    if (!worksheet[cellAddress]) return;
+    worksheet[cellAddress].s = {
+      font: {
+        bold: true,
+        color: { rgb: "000000" },
+      },
+      fill: {
+        fgColor: { rgb: "FFFF00" },
+      },
+      alignment: {
+        horizontal: "center",
+      },
+    };
+  });
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Materials");
-    XLSX.writeFile(workbook, "Material_Data.xlsx");
-  };
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Old Inward Invoice  Purchase Data");
+  XLSX.writeFile(workbook, "Old Inward Invoice Purchase Data.xlsx");
+};
+
 
   return (
     <div
@@ -691,6 +747,11 @@ get_Material();
           rowsPerPageOptions={[5]}
           getRowId={(row) => row.Inward_ID} // Specify a custom id field
           onRowClick={handleRowClick}
+          onCellClick={(params, event) => {
+            if (params.field === "Action") {
+              event.stopPropagation();
+            }
+          }}
           disableSelectionOnClick
           slots={{ toolbar: CustomToolbar }}
           sx={{
@@ -724,169 +785,207 @@ get_Material();
       </div>
 
       <Modal open={openAddModal} onClose={() => setOpenAddModal(false)}>
-  <Box
-    sx={{
-      display: "grid",
-      gridTemplateColumns: "repeat(2, 1fr)",
-      width: 500,
-      bgcolor: "background.paper",
-      borderRadius: 2,
-      boxShadow: 24,
-      p: 4,
-      margin: "auto",
-      marginTop: "5%",
-      gap: "15px",
-    }}
-  >
-    <h3
-      style={{
-        gridColumn: "span 2",
-        textAlign: "center",
-        color: "#2e59d9",
-        textDecoration: "underline",
-        textDecorationColor: "#88c57a",
-        textDecorationThickness: "3px",
-      }}
-    >
-      Add Inward
-    </h3>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
+            width: 500,
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            margin: "auto",
+            marginTop: "5%",
+            gap: "15px",
+          }}
+        >
+          <h3
+            style={{
+              gridColumn: "span 2",
+              textAlign: "center",
+              color: "#2e59d9",
+              textDecoration: "underline",
+              textDecorationColor: "#88c57a",
+              textDecorationThickness: "3px",
+            }}
+          >
+            Add Inward
+          </h3>
 
-    {/* Vendor Code */}
-    <FormControl fullWidth>
-      <InputLabel>Vendor Code</InputLabel>
-      <Select
-        label="Vendor Code"
-        name="Vendor Code"
-        value={VendorCode}
-        onChange={(e) => setVendorCode(e.target.value)}
-        required
-      >
-        {VendorTable.map((item) => (
-          <MenuItem key={item.Vendor_ID} value={item.Vendor_ID}>
-            {item.Vendor_Code}-{item.Vendor_Name}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+          {/* Vendor Code */}
+          <FormControl fullWidth>
+            <InputLabel>Vendor Code</InputLabel>
+            <Select
+              label="Vendor Code"
+              name="Vendor Code"
+              value={VendorCode}
+              onChange={(e) => {
+                setVendorCode(e.target.value);
+              }}
+              required
+            >
+              {VendorTable.map((item) => (
+                <MenuItem key={item.Vendor_ID} value={item.Vendor_ID}>
+                  {item.Vendor_Code}-{item.Vendor_Name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-    {/* Purchase Order */}
-    <TextField
-      label="Purchase Order"
-      name="PurchaseOrder"
-      value={PurchaseOrder}
-      onChange={(e) => setPurchaseOrder(e.target.value)}
-      required
-    />
+          {/* Purchase Order */}
+          <TextField
+            label="Purchase Order"
+            name="PurchaseOrder"
+            value={PurchaseOrder}
+            onChange={(e) => setPurchaseOrder(e.target.value)}
+            required
+          />
 
-    {/* Invoice Date */}
-    <TextField
-      label="Invoice Date"
-      name="InvoiceDate"
-      type="date"
-      value={InvoiceDate}
-      onChange={(e) => setInvoiceDate(e.target.value)}
-      InputLabelProps={{ shrink: true }}
-      required
-    />
- {/* Part No */}
-   <FormControl fullWidth>
-      <InputLabel>Part No</InputLabel>
-      <Select
-        label="Material Code"
-        name="Material Code"
-        value={MaterialCode}
-        onChange={(e) => setMaterialCode(e.target.value)}
-        required
-      >
-        {MaterialTable.map((item) => (
-          <MenuItem key={item.Material_ID} value={item.Material_ID}>
-            {item.Material_Code}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-    {/* Invoice No */}
-    <TextField
-      label="Invoice No"
-      name="InvoiceNo"
-      value={InvoiceNo}
-      onChange={(e) => setInvoiceNo(e.target.value)}
-      required
-    />
-     {/* Monthly Scheduled Qty */}
-    <TextField
-      label="Monthly Scheduled Qty"
-      name="MonthlyScheduledQty"
-      type="number"
-      value={MonthlyScheduledQty}
-      onChange={(e) => setMonthlyScheduledQty(e.target.value)}
-      required
-    />
- {/* Invoice Quantity */}
-    <TextField
-      label="Invoice Qty"
-      name="InvoiceQty"
-      type="number"
-      value={InvoiceQty}
-      onChange={(e) => setInvoiceQty(e.target.value)}
-      required
-    />
-     {/* Current Stock */}
-    <TextField
-      label="Current Stock"
-      name="CurrentStock"
-      type="number"
-      value={CurrentStock}
-      onChange={(e) => setCurrentStock(e.target.value)}
-      required
-    />
+          {/* Invoice Date */}
+          <TextField
+            label="Invoice Date"
+            name="InvoiceDate"
+            type="date"
+            value={InvoiceDate}
+            onChange={(e) => setInvoiceDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            inputProps={{
+              max: new Date().toISOString().split("T")[0], // restrict future dates
+            }}
+            required
+          />
 
+          {/* Part No */}
+          <FormControl fullWidth>
+            <InputLabel>Part No</InputLabel>
+            <Select
+              label="Material Code"
+              name="Material Code"
+              value={MaterialCode}
+              onChange={(e) => setMaterialCode(e.target.value)}
+              required
+            >
+              {MaterialTable.map((item) => (
+                <MenuItem key={item.Material_ID} value={item.Material_ID}>
+                  {item.Material_Code}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {/* Invoice No */}
+          <TextField
+            label="Invoice No"
+            name="InvoiceNo"
+            value={InvoiceNo}
+            onChange={(e) => setInvoiceNo(e.target.value)}
+            required
+          />
+         {/* Monthly Scheduled Qty */}
+<TextField
+  label="Monthly Scheduled Qty"
+  type="text"
+  value={MonthlyScheduledQty}
+  onChange={(e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) {
+      setMonthlyScheduledQty(value);
+    }
+  }}
+  inputProps={{
+    inputMode: 'numeric',
+    pattern: '[0-9]*',
    
-     {/* Invoice Value */}
-    <TextField
-      label="Invoice Value"
-      name="InvoiceValue"
-      type="number"
-      value={InvoiceValue}
-      onChange={(e) => setInvoiceValue(e.target.value)}
-      required
-    />
-   
-   
+  }}
+  required
+/>
 
-   
+{/* Invoice Quantity */}
+<TextField
+  label="Invoice Qty"
+  type="text"
+  value={InvoiceQty}
+  onChange={(e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) {
+      setInvoiceQty(value);
+    }
+  }}
+  inputProps={{
+    inputMode: 'numeric',
+    pattern: '[0-9]*',
+  
+  }}
+  required
+/>
 
+{/* Current Stock */}
+<TextField
+  label="Current Stock"
+  type="text"
+  value={CurrentStock}
+  onChange={(e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) {
+      setCurrentStock(value);
+    }
+  }}
+  inputProps={{
+    inputMode: 'numeric',
+    pattern: '[0-9]*',
    
+  }}
+  required
+/>
 
-    {/* Reason For Delay */}
-    <TextField
-      label="Reason For Delay"
-      name="ReasonForDelay"
+{/* Invoice Value */}
+<TextField
+  label="Invoice Value"
+  type="text"
+  value={InvoiceValue}
+  onChange={(e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) {
+      setInvoiceValue(value);
+    }
+  }}
+  inputProps={{
+    inputMode: 'numeric',
+    pattern: '[0-9]*',
     
-      value={ReasonForDelay}
-      onChange={(e) => setReasonForDelay(e.target.value)}
-    />
+  }}
+  required
+/>
+          {/* Reason For Delay */}
+          <TextField
+            label="Reason For Delay"
+            name="ReasonForDelay"
+            value={ReasonForDelay}
+            onChange={(e) => setReasonForDelay(e.target.value)}
+          />
 
-    {/* Buttons */}
-    <Box
-      sx={{
-        gridColumn: "span 2",
-        display: "flex",
-        justifyContent: "center",
-        gap: "10px",
-        marginTop: "15px",
-      }}
-    >
-      <Button variant="contained" color="error" onClick={() => setOpenAddModal(false)}>
-        Cancel
-      </Button>
-      <Button variant="contained" color="primary" onClick={handleAdd}>
-        Add
-      </Button>
-    </Box>
-  </Box>
-</Modal>
-
+          {/* Buttons */}
+          <Box
+            sx={{
+              gridColumn: "span 2",
+              display: "flex",
+              justifyContent: "center",
+              gap: "10px",
+              marginTop: "15px",
+            }}
+          >
+            <Button
+              variant="contained"
+              color="error"
+              onClick={() => setOpenAddModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button variant="contained" color="primary" onClick={handleAdd}>
+              Add
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
 
       {/* ✅ Edit Modal */}
       <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
@@ -914,76 +1013,157 @@ get_Material();
               textDecorationThickness: "3px",
             }}
           >
-            Edit Material
+            Edit Inward
           </h3>
 
+          {/* Vendor Code */}
+          <FormControl fullWidth>
+            <InputLabel>Vendor Code</InputLabel>
+            <Select
+              label="Vendor Code"
+              name="Vendor Code"
+              value={VendorCode}
+              onChange={(e) => setVendorCode(e.target.value)}
+              required
+            >
+              {VendorTable.map((item) => (
+                <MenuItem key={item.Vendor_ID} value={item.Vendor_ID}>
+                  {item.Vendor_Code}-{item.Vendor_Name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Purchase Order */}
           <TextField
-            label="Plant Code"
-            name="Plant_Code"
-            value={PlantCode}
-            onChange={(e) => setPlantCode(e.target.value)}
-            InputProps={{
-              readOnly: true, // This makes the TextField read-only
-            }}
+            label="Purchase Order"
+            value={PurchaseOrder}
+            onChange={(e) => setPurchaseOrder(e.target.value)}
+            required
           />
 
+          {/* Invoice Date */}
           <TextField
-            label="Material Type"
-            name="Material_Type"
-            value={MaterialType}
-            onChange={(e) => setMaterialType(e.target.value)}
-            InputProps={{
-              readOnly: true, // This makes the TextField read-only
+            label="Invoice Date"
+            name="InvoiceDate"
+            type="date"
+            value={InvoiceDate}
+            onChange={(e) => setInvoiceDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            inputProps={{
+              max: new Date().toISOString().split("T")[0], // restrict future dates
             }}
+            required
           />
 
+
+          {/* Part No */}
+          <FormControl fullWidth>
+            <InputLabel>Part No</InputLabel>
+            <Select
+              label="Material Code"
+              name="Material Code"
+              value={MaterialCode}
+              onChange={(e) => setMaterialCode(e.target.value)}
+              required
+            >
+              {MaterialTable.map((item) => (
+                <MenuItem key={item.Material_ID} value={item.Material_ID}>
+                  {item.Material_Code}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Invoice No */}
           <TextField
-            label="Material Code"
-            name="Material_Code"
-            value={MaterialCode}
-            onChange={(e) => setMaterialCode(e.target.value)}
-            InputProps={{
-              readOnly: true, // This makes the TextField read-only
-            }}
-          />
-          <TextField
-            label="Description"
-            name="Description"
-            value={Description}
-            onChange={(e) => setDescription(e.target.value)}
+            label="Invoice No"
+            value={InvoiceNo}
+            onChange={(e) => setInvoiceNo(e.target.value)}
+            required
           />
 
+       {/* Monthly Scheduled Qty */}
+<TextField
+  label="Monthly Scheduled Qty"
+  type="text"
+  value={MonthlyScheduledQty}
+  onChange={(e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) {
+      setMonthlyScheduledQty(value);
+    }
+  }}
+  inputProps={{
+    inputMode: 'numeric',
+    pattern: '[0-9]*',
+   
+  }}
+  required
+/>
+
+{/* Invoice Quantity */}
+<TextField
+  label="Invoice Qty"
+  type="text"
+  value={InvoiceQty}
+  onChange={(e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) {
+      setInvoiceQty(value);
+    }
+  }}
+  inputProps={{
+    inputMode: 'numeric',
+    pattern: '[0-9]*',
+  
+  }}
+  required
+/>
+
+{/* Current Stock */}
+<TextField
+  label="Current Stock"
+  type="text"
+  value={CurrentStock}
+  onChange={(e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) {
+      setCurrentStock(value);
+    }
+  }}
+  inputProps={{
+    inputMode: 'numeric',
+    pattern: '[0-9]*',
+   
+  }}
+  required
+/>
+
+{/* Invoice Value */}
+<TextField
+  label="Invoice Value"
+  type="text"
+  value={InvoiceValue}
+  onChange={(e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) {
+      setInvoiceValue(value);
+    }
+  }}
+  inputProps={{
+    inputMode: 'numeric',
+    pattern: '[0-9]*',
+    
+  }}
+  required
+/>
+
+          {/* Reason For Delay */}
           <TextField
-            label="Rate"
-            type="number"
-            name="Rate"
-            value={Rate}
-            onChange={(e) => setRate(e.target.value)}
-          />
-          <FormControlLabel
-            control={
-              <Switch
-                checked={ActiveStatus}
-                onChange={(e) => setActiveStatus(e.target.checked)}
-                color="success" // Always use 'success' to keep the thumb green when active
-                sx={{
-                  "& .MuiSwitch-track": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                    backgroundImage: "none !important", // Disable background image
-                  },
-                  "& .MuiSwitch-thumb": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                    borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                  },
-                }}
-              />
-            }
-            label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-            labelPlacement="end"
-            style={{
-              color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-              fontWeight: "bold",
-            }}
+            label="Reason For Delay"
+            value={ReasonForDelay}
+            onChange={(e) => setReasonForDelay(e.target.value)}
           />
 
           <Box
@@ -1034,12 +1214,12 @@ get_Material();
               textDecorationThickness: "3px",
             }}
           >
-            Material Master Excel File Upload
+            Purchase  Excel File Upload
           </h3>
 
           <Button
             variant="contained"
-            style={{
+    style={{
               marginBottom: "10px",
               backgroundColor: deepPurple[500],
               color: "white",
