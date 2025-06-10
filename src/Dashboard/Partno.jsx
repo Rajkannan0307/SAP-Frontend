@@ -45,7 +45,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { IoMdDownload } from "react-icons/io";
 import { getTransactionData, Movement309, Movement309ReUpload } from "../controller/transactionapiservice";
 import { api } from "../controller/constants";
-import { getdetails, DownloadAllExcel, getresubmit, fetchData, Edit309Record, getCancel, getAdd, getPlants, getMaterial,getSLoc, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
+import { getdetails, DownloadAllExcel, getresubmit, fetchData, Edit309Record, getCancel, getAdd, getPlants, getMaterial,getSLoc,getValuationType, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
 const Partno = () => {
 
 const [isUpdating, setIsUpdating] = useState(false);
@@ -226,6 +226,16 @@ const [isUpdating, setIsUpdating] = useState(false);
       console.error("Error updating user:", error);
     }
   };
+
+    const get_ValuationTypeTable = async () => {
+    try {
+      const response = await getValuationType();
+      setValuationTypeTable(response.data);
+    } catch (error) {
+      console.error("Error updating user:", error);
+    }
+  };
+
 
   // ✅ Handle Add Material
   const handleAdd = async () => {
@@ -727,7 +737,9 @@ const [isUpdating, setIsUpdating] = useState(false);
     setOpenAddModal(true);
     get_Plant();
     get_Material();
+    get_SLoc();
   };
+
   const handleOpenViewModal = (item) => {
     setOpenViewModal(true);
     console.log(item);
@@ -753,6 +765,9 @@ const [isUpdating, setIsUpdating] = useState(false);
     setToValuationType(item.To_Valuation_Type);
     setToBatch(item.To_Batch);
     setApprovalStatus(item.Approval_Status);
+    get_Material();
+    get_SLoc();
+    get_ValuationTypeTable();
 
   }
 
@@ -969,6 +984,9 @@ const handleConditionalRowClick = (params) => {
     setToBatch(params.row.To_Batch);
 
     setSelectedRow(params.row);  // if needed
+    get_Material()
+    get_SLoc();
+    get_ValuationTypeTable();
     setOpenRowEditModal(true);
   } else {
     console.log("Editing not allowed for this status:", status);
@@ -2229,6 +2247,7 @@ const fetchData = async () => {
 
       {/*Row edit modal*/}
        
+     {/*Row edit modal*/}
       <Modal open={openRowEditModal} onClose={() => setOpenRowEditModal(false)}>
         <Box
           sx={{
@@ -2293,19 +2312,40 @@ const fetchData = async () => {
           />
 
           {/* Material Code */}
-          <TextField
-            label="From Material Code"
-            value={FromMatCode}
-            onChange={(e) => setFromMatCode(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="To Material Code"
-            value={ToMatCode}
-            onChange={(e) => setToMatCode(e.target.value)}
-            fullWidth
-          />
+           {/* From Material Code */}
+    <FormControl fullWidth>
+            <InputLabel>FromMatCode</InputLabel> {/* Fix: Closing the InputLabel tag */}
+            <Select
+              label="From Material Code"
+              name="From Material Code"
+              value={FromMatCode}
+              onChange={(e) => setFromMatCode(e.target.value)}
+              required
+            >
+              {MaterialTable.map((item, index) => (
+                <MenuItem key={index} value={item.Material_ID}>{item.Material_Code}
+                </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
 
+    {/* To Material Code */}
+    <FormControl fullWidth>
+      <InputLabel>To Material Code</InputLabel>
+      <Select
+  label="Material Code"
+  value={ToMatCode}
+  onChange={(e) => setToMatCode(e.target.value)}
+  required
+>
+  {MaterialTable.map((item) => (
+    <MenuItem key={item.Material_ID} value={item.Material_Code}>
+      {item.Material_Code}
+    </MenuItem>
+  ))}
+</Select>
+
+    </FormControl>
 
 
           {/* Quantity */}
@@ -2325,18 +2365,41 @@ const fetchData = async () => {
           />
 
           {/* SLoc ID */}
-          <TextField
-            label="From SLoc ID"
-            value={FromSLocID}
-            onChange={(e) => setFromSLocID(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="To SLoc ID"
-            value={ToSLocID}
-            onChange={(e) => setToSLocID(e.target.value)}
-            fullWidth
-          />
+
+ 
+
+
+         <FormControl fullWidth>
+  <InputLabel>From SLoc Code</InputLabel>
+  <Select
+    label="From SLoc ID"
+    value={FromSLocID}
+    onChange={(e) => setFromSLocID(e.target.value)}
+    required
+  >
+    {SLocTable.map((item, index) => (
+      <MenuItem key={index} value={item.SLoc_ID}>
+        {item.SLoc_Name}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+
+<FormControl fullWidth>
+  <InputLabel>To SLoc ID</InputLabel>
+  <Select
+    label="To SLoc Code"
+    value={ToSLocID}
+    onChange={(e) => setToSLocID(e.target.value)}
+    required
+  >
+    {SLocTable.map((item, index) => (
+      <MenuItem key={index} value={item.SLoc_ID}>
+        {item.SLoc_Name}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
 
           {/* Price */}
           <TextField
@@ -2355,18 +2418,39 @@ const fetchData = async () => {
           />
 
           {/* Valuation Type */}
-          <TextField
-            label="From Valuation Type"
-            value={FromValuationType}
-            onChange={(e) => setFromValuationType(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="To Valuation Type"
-            value={ToValuationType}
-            onChange={(e) => setToValuationType(e.target.value)}
-            fullWidth
-          />
+              {/* From Valuation Type */}
+    <FormControl fullWidth>
+      <InputLabel>From Valuation Type</InputLabel>
+      <Select
+        label="From Valuation Type"
+        value={FromValuationType}
+        onChange={(e) => setFromValuationType(e.target.value)}
+        required
+      >
+        {ValuationTypeTable.map((item, index) => (
+          <MenuItem key={index} value={item.Valuation_Type_ID}>
+            {item.Valuation_Type_Name}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+
+    {/* To Valuation Type */}
+    <FormControl fullWidth>
+      <InputLabel>To Valuation Type</InputLabel>
+      <Select
+        label="To Valuation Type"
+        value={ToValuationType}
+        onChange={(e) => setToValuationType(e.target.value)}
+        required
+      >
+        {ValuationTypeTable.map((item, index) => (
+          <MenuItem key={index} value={item.Valuation_Type_ID}>
+            {item.Valuation_Type_Name}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
 
           {/* Batch */}
           <TextField
@@ -2403,6 +2487,7 @@ const fetchData = async () => {
           </Box>
         </Box>
       </Modal>
+
 
 
     </div>
