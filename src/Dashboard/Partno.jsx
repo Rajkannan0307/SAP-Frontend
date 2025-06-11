@@ -133,83 +133,94 @@ const Partno = () => {
   //click resubmit
   const [openChickResubmitModal, setOpenCheckResubmitModal] = useState(false);
   const [selectedRows, setSelectedRows] = useState({}); // Store selected checkboxes by row ID
-  const [headerChecked, setHeaderChecked] = useState(false); // Store header checkbox state
+   // Store header checkbox state
   const [checked, setChecked] = useState(false);
-  const [selectedRowId, setSelectedRowId] = React.useState(null);
+ const [selectedRowIds, setSelectedRowIds] = useState([]);
+const [headerChecked, setHeaderChecked] = useState(false);
+
   // resubmit check boc to connect
  
   // Checkbox state change (not directly related to selection, but you had it)
 const handleChange = (event) => {
   setChecked(event.target.checked);
 };
-
-// Resubmit handler: validates and triggers resubmit API call
 const handleOpenCheckResubmitModal = async () => {
-  if (!selectedRowId) {
-    alert("Please select a row to resubmit.");
+  if (!selectedRowIds || selectedRowIds.length === 0) {
+    alert("Please select at least one row to resubmit.");
     return;
   }
 
-  const rowData = rows.find(row => row.id === selectedRowId);
+  const selectedRowsData = rows.filter(row =>
+    selectedRowIds.includes(row.Trn_Sap_ID)
+  );
 
-  if (!rowData) {
-    alert("Selected row data not found.");
-    return;
-  }
+  const resubmittableRows = selectedRowsData.filter(row => {
+    const status = (row.Approval_Status || "").toLowerCase().trim();
+    return status === "rejected" || status === "under query";
+  });
 
-  const status = (rowData.Approval_Status || "").toLowerCase().trim();
-  const editable = status === "rejected" || status === "under query";
-
-  if (!editable) {
-    alert(`Resubmit is only allowed for rows with status 'Rejected' or 'Under Query'. Current: '${status}'`);
+  if (resubmittableRows.length === 0) {
+    alert("No selected rows are eligible for resubmit (only 'Rejected' or 'Under Query' allowed).");
     return;
   }
 
   try {
-    const resubmitResponse = await getresubmit({
-      Doc_ID: rowData.id,
-      Action: "Resubmit",
-    });
+    for (const row of resubmittableRows) {
+      const resubmitResponse = await getresubmit({
+        Doc_ID: row.Doc_ID,
+        Action: "Resubmit",
+      });
 
-    if (resubmitResponse.success) {
-      alert("Document successfully resubmitted.");
-    } else {
-      alert("Resubmit failed. Please try again.");
+      if (!resubmitResponse.success) {
+        console.warn(`Resubmit failed for Doc_ID ${row.Doc_ID}`);
+      }
     }
+
+    alert("Eligible documents successfully resubmitted.");
+    getData();
   } catch (error) {
     console.error("Error during resubmit:", error);
-    alert("An error occurred while resubmitting. Please contact support.");
+    alert("An error occurred during resubmit. Please try again.");
   }
 
-  setSelectedRow(rowData);
-  setIsEditable(editable);
-  setOpenCheckResubmitModal(true);
+  setOpenCheckResubmitModal(true); // You can show a summary modal if needed
 };
 
 
-// Handlers
+
 const handleRowCheckboxChange = (id, checked) => {
   if (checked) {
-    setSelectedRowId(id);        // ✅ Select this one row
-    setHeaderChecked(false);     // ❌ Not a select-all action
+    setSelectedRowIds((prev) => {
+      const updated = [...prev, id];
+      // Auto-check header if all rows are now selected
+      if (updated.length === rows.length) {
+        setHeaderChecked(true);
+      }
+      return updated;
+    });
   } else {
-    setSelectedRowId(null);      // ❌ Unselect all rows
-    setHeaderChecked(false);
+    setSelectedRowIds((prev) => {
+      const updated = prev.filter((rowId) => rowId !== id);
+      setHeaderChecked(false); // uncheck header when any row is deselected
+      return updated;
+    });
   }
 };
-
 
 
 const handleHeaderCheckboxChange = (event) => {
   const checked = event.target.checked;
   setHeaderChecked(checked);
 
-  if (checked && rows.length > 0) {
-    setSelectedRowId(rows[0].id);
+  if (checked) {
+    const allIds = rows.map((row) => row.id);
+    setSelectedRowIds(allIds);
   } else {
-    setSelectedRowId(null);
+    setSelectedRowIds([]);
   }
 };
+
+
 
 
 
@@ -1116,39 +1127,44 @@ const handleHeaderCheckboxChange = (event) => {
   sortable: false,
   editable: false,
   disableColumnMenu: true,
-  renderHeader: () => (
-    <div
-      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}
-    >
-      <span style={{ fontWeight: 600, fontSize: 14 }}>Actions</span>
-      <Checkbox
-        checked={headerChecked}
-        onChange={handleHeaderCheckboxChange}
-        inputProps={{ "aria-label": "Select all rows" }}
-        onClick={(e) => e.stopPropagation()}
-      />
-    </div>
+ renderHeader: () => (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      width: "100%",
+    }}
+  >
+    <span style={{ fontWeight: 600, fontSize: 14 }}>Actions</span>
+    <Checkbox
+      checked={rows.length > 0 && selectedRowIds.length === rows.length}
+      indeterminate={
+        selectedRowIds.length > 0 &&
+        selectedRowIds.length < rows.length
+      }
+      onChange={handleHeaderCheckboxChange}
+      inputProps={{ "aria-label": "Select all rows" }}
+      onClick={(e) => e.stopPropagation()}
+    />
+  </div>
+
+
   ),
 // In renderCell:
 renderCell: (params) => {
-  const isChecked = selectedRowId === params.row.id;
+  const isChecked = selectedRowIds.includes(params.row.Trn_Sap_ID);
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
       <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
-          cursor: "pointer",
-          color: "#008080",
-        }}
         onClick={(e) => {
           e.stopPropagation();
           setSelectedRow(params.row);
           handleOpenViewStatusModal(params.row);
         }}
         title="View Details"
+        style={{ cursor: "pointer", color: "#008080" }}
       >
         <InfoIcon sx={{ fontSize: 24 }} />
       </div>
@@ -1157,12 +1173,13 @@ renderCell: (params) => {
         checked={isChecked}
         onChange={(e) => {
           e.stopPropagation();
-          handleRowCheckboxChange(params.row.id, e.target.checked);
+          handleRowCheckboxChange(params.row.Trn_Sap_ID, e.target.checked);
         }}
       />
     </div>
   );
-},
+}
+
 
 }
 
