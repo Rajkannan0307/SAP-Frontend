@@ -86,21 +86,21 @@ const Service = () => {
     { field: "Purchase_Order", headerName: "Purchase Order", flex: 1 },
     { field: "Reason_For_Delay", headerName: "Reason For Delay", flex: 1 },
     { field: "Status", headerName: "Status", flex: 1 },
-    {
-      field: "Action",
-      headerName: "Action",
-      flex: 1,
-      renderCell: (params) => (
-        <Checkbox
-          checked={selectedRows.includes(params.row)}
-          onChange={() => handleCheckboxChange(params.row)}
-        />
-      ),
-    },
+    // {
+    //   field: "Action",
+    //   headerName: "Action",
+    //   flex: 1,
+    //   renderCell: (params) => (
+    //     <Checkbox
+    //       checked={selectedRows.includes(params.row)}
+    //       onChange={() => handleCheckboxChange(params.row)}
+    //     />
+    //   ),
+    // },
   ];
   const getData = async () => {
     try {
-      const response = await getdetailsService();
+      const response = await getdetailsService(UserID);
       console.log(response); // Check the structure of response
       setData(response); // Ensure that this is correctly setting the data
       setOriginalRows(response); // for reference during search
@@ -112,11 +112,7 @@ const Service = () => {
       setRows([]);
     }
   };
-
-  useEffect(() => {
-    getData();
-  }, []);
-  useEffect(() => {
+ useEffect(() => {
     const encryptedData = sessionStorage.getItem("userData");
     if (encryptedData) {
       const decryptedData = decryptSessionData(encryptedData);
@@ -126,6 +122,13 @@ const Service = () => {
       console.log("Service userid", decryptedData.UserID);
     }
   }, []);
+  // Call getData only after UserID is set
+  useEffect(() => {
+    if (UserID) {
+      getData();
+    }
+  }, [UserID]);
+ 
   const get_Vendor = async () => {
     try {
       const response = await getVendor();
@@ -769,7 +772,7 @@ const Service = () => {
               textDecorationThickness: "3px",
             }}
           >
-            Add Inward
+            Add Service Inward old Invoice
           </h3>
 
           {/* Vendor Code */}
@@ -899,7 +902,7 @@ const Service = () => {
               textDecorationThickness: "3px",
             }}
           >
-            Edit Inward Entry
+            Edit Service Inward old Invoice
           </h3>
 
           {/* Vendor Code */}

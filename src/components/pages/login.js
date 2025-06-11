@@ -33,116 +33,109 @@ const Login = () => {
     setOpenError(false);
     setOpenSuccess(false);
   };
+const handleLogin = async (e) => {
+  e.preventDefault();
 
-  // src/components/pages/Login.js
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  if (!username || !password) {
+    setError("Enter Username and Password");
+    setOpenError(true);
+    return;
+  }
 
-    if (!username || !password) {
-      setError("Enter Username and Password");
-      setOpenError(true);
-      return;
-    }
+  try {
+    const response = await getLogin({
+      Employee_ID: username,
+      Password: password,
+    });
 
-    try {
-      const response = await getLogin({
-        Employee_ID: username,
-        Password: password,
-      });
+    if (response.data.message === "success") {
+      const data = response.data.resultLocalStorage[0];
+      if (data) {
+        localStorage.setItem("Active", data.Active_Status);
+        localStorage.setItem("DeptId", data.Dept_Id);
+        localStorage.setItem("UserName", data.User_Name);
+        localStorage.setItem("UserID", data.User_ID);
+        localStorage.setItem("Deptname", data.Dept_Name);
+        localStorage.setItem("PlantName", data.Plant_Name);
+        localStorage.setItem("Email", data.User_Email);
+        localStorage.setItem("Plantcode", data.Plant_Code);
+        localStorage.setItem("EmpId", data.Employee_ID);
+        localStorage.setItem("RoleID", data.Role_ID);
+        localStorage.setItem("Approval_Level", data.User_Level_ID);
+        localStorage.setItem("UserLevel", data.User_Level);
+        localStorage.setItem("Permission", data.Screen_Codes);
+        localStorage.setItem("Plant_ID", data.Plant_ID);
+        localStorage.setItem("CompanyId", data.Com_ID);
 
-      if (response.data.message === "success") {
-        const data = response.data.resultLocalStorage[0];
-        if (data) {
-          localStorage.setItem("Active", data.Active_Status);
-          localStorage.setItem("DeptId", data.Dept_Id);
+        const selectedData = {
+          Active: data.Active_Status,
+          DeptId: data.Dept_Id,
+          UserName: data.User_Name,
+          UserID: data.User_ID,
+          DeptName: data.Dept_Name,
+          PlantName: data.Plant_Name,
+          Email: data.User_Email,
+          PlantCode: data.Plant_Code,
+          EmpId: data.Employee_ID,
+          RoleId: data.Role_ID,
+          UserLevelName: data.User_Level_Name,
+          CompanyCode: data.Company_code,
+          CompanyName: data.Company_name,
+          CompanyId: data.Com_ID,
+          PlantID: data.Plant_ID,
+          UserLevel: data.User_Level,
+          Role: data.Role_Name,
+          Permissions: data.Screen_Codes,
+          login: true,
+        };
 
-          localStorage.setItem("UserName", data.User_Name);
-          localStorage.setItem("UserID", data.User_ID);
-          localStorage.setItem("Deptname", data.Dept_Name);
-          localStorage.setItem("PlantName", data.Plant_Name);
-          localStorage.setItem("Email", data.User_Email);
-          localStorage.setItem("Plantcode", data.Plant_Code);
-          localStorage.setItem("EmpId", data.Employee_ID);
-          localStorage.setItem("RoleID", data.Role_ID);
-          localStorage.setItem("Approval_Level", data.User_Level_ID);
-          localStorage.setItem("UserLevel", data.User_Level);
-          localStorage.setItem("Permission", data.Screen_Codes);
+        const encryptedData = encryptSessionData(selectedData);
+        sessionStorage.setItem("userData", encryptedData);
 
-          localStorage.setItem("Plant_ID", data.Plant_ID);
-          localStorage.setItem("CompanyId", data.Com_ID);
+        const encryptedUserData = sessionStorage.getItem("userData");
+        const decryptedUserData = decryptSessionData(encryptedUserData);
+        console.log("decrypted userdata:", decryptedUserData);
+        setSuccessMessage("Login successful!");
+        setOpenSuccess(true);
 
-          const selectedData = {
-            Active: data.Active_Status,
-            DeptId: data.Dept_Id,
-            UserName: data.User_Name,
-            UserID: data.User_ID,
-            DeptName: data.Dept_Name,
-            PlantName: data.Plant_Name,
-            Email: data.User_Email,
-            PlantCode: data.Plant_Code,
-            EmpId: data.Employee_ID,
-            RoleId: data.Role_ID,
-            UserLevelName: data.User_Level_Name,
-            CompanyCode: data.Company_code,
-            CompanyName: data.Company_name,
-            CompanyId: data.Com_ID,
-            PlantID: data.Plant_ID,
-            UserLevel: data.User_Level,
-            Role: data.Role_Name,
-            Permissions: data.Screen_Codes,
-            login: true,
-          };
-          const encryptedData = encryptSessionData(selectedData);
-          sessionStorage.setItem("userData", encryptedData);
-
-          const encryptedUserData = sessionStorage.getItem("userData");
-          const decryptedUserData = decryptSessionData(encryptedUserData);
-          console.log("decrypted userdata:", decryptedUserData);
-          setSuccessMessage("Login successful!");
-          setOpenSuccess(true);
-
-          // Role-based redirection
-          setTimeout(() => {
-            switch (data.Role_ID) {
-              case 2:
-                window.location.href = "/home/HomePage";
-                break;
-              case 3:
-                window.location.href = "/home/HomePage";
-                break;
-              case 4:
-                window.location.href = "/home/HomePage";
-                break;
-              case 5:
-                window.location.href = "/home/HomePage";
-                break;
-              case 6:
-                window.location.href = "/home/HomePage";
-                break;
-              case 7:
-                window.location.href = "/home/HomePage";
-                break;
-              case 8:
-                window.location.href = "/home/HomePage";
-                break;
-              case 1:
-              case 9:
-                window.location.href = "/home/Home";
-                break;
-              // default:
-              //   window.location.href = "/home/Home";
-            }
-          }, 100);
-        }
-      } else {
-        setError("Login failed. Please try again.");
-        setOpenError(true);
+        // Role-based redirection
+        setTimeout(() => {
+          switch (data.Role_ID) {
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+            case 8:
+              window.location.href = "/home/HomePage";
+              break;
+            case 1:
+            case 9:
+              window.location.href = "/home/Home";
+              break;
+          }
+        }, 100);
       }
-    } catch (error) {
-      setError("Something went wrong. Try again.");
+    } else {
+      setError(response.data.message || "Login failed. Please try again.");
       setOpenError(true);
     }
-  };
+  } catch (error) {
+    console.log("Error Logging in:", error);
+
+    if (error.response && error.response.status === 401) {
+      setError(error.response.data.message || "Invalid credentials.");
+    } else if (error.response && error.response.data && error.response.data.message) {
+      setError(error.response.data.message);
+    } else {
+      setError("Something went wrong. Try again.");
+    }
+
+    setOpenError(true);
+  }
+};
+
   useEffect(() => {
     const encryptedData = sessionStorage.getItem("userData");
     console.log("us", encryptedData);

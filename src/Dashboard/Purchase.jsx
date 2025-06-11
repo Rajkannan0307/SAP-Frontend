@@ -106,21 +106,32 @@ const Purchase = () => {
 
     { field: "Reason_For_Delay", headerName: "Reason For Delay", flex: 1 },
     { field: "Status", headerName: "Status", flex: 1 },
-    {
-      field: "Action",
-      headerName: "Action",
-      flex: 1,
-      renderCell: (params) => (
-        <Checkbox
-          checked={selectedRows.includes(params.row)}
-          onChange={() => handleCheckboxChange(params.row)}
-        />
-      ),
-    },
+    // {
+    //   field: "Action",
+    //   headerName: "Action",
+    //   flex: 1,
+    //   renderCell: (params) => (
+    //     <Checkbox
+    //       checked={selectedRows.includes(params.row)}
+    //       onChange={() => handleCheckboxChange(params.row)}
+    //     />
+    //   ),
+    // },
   ];
+   useEffect(() => {
+    const encryptedData = sessionStorage.getItem("userData");
+    if (encryptedData) {
+      const decryptedData = decryptSessionData(encryptedData);
+      setUserID(decryptedData.UserID);
+      setPlantID(decryptedData.PlantID);
+      console.log("Service Plantid", decryptedData.PlantID)
+      console.log("Service userid", decryptedData.UserID);
+    }
+  }, []);
+
   const getData = async () => {
     try {
-      const response = await getdetailsPurchase();
+      const response = await getdetailsPurchase(UserID);
       console.log(response); // Check the structure of response
       setData(response); // Ensure that this is correctly setting the data
       setOriginalRows(response); // for reference during search
@@ -133,10 +144,12 @@ const Purchase = () => {
     }
   };
 
-  useEffect(() => {
-    getData();
-  }, []);
-
+ // Call getData only after UserID is set
+ useEffect(() => {
+   if (UserID) {
+     getData();
+   }
+ }, [UserID]);
   const get_Material = async () => {
     try {
       const response = await getMaterial();
@@ -179,16 +192,7 @@ const Purchase = () => {
 
 
 
-   useEffect(() => {
-    const encryptedData = sessionStorage.getItem("userData");
-    if (encryptedData) {
-      const decryptedData = decryptSessionData(encryptedData);
-      setUserID(decryptedData.UserID);
-      setPlantID(decryptedData.PlantID);
-      console.log("Service Plantid", decryptedData.PlantID)
-      console.log("Service userid", decryptedData.UserID);
-    }
-  }, []);
+  
 
   // ✅ Handle Add Modal
   const handleOpenAddModal = (item) => {
@@ -499,7 +503,7 @@ const Purchase = () => {
       const response = await getAdd(data); // ⬅️ Ensure this hits `/Get_Add` correctly
 
       if (response.data.success) {
-        alert("Inward Invoice added successfully!");
+        alert("Purchase Invoice added successfully!");
         getData(); // refresh UI
         handleCloseAddModal(); // close modal
       } else {
@@ -824,7 +828,7 @@ const formattedInvoiceDate = getFormattedDate(InvoiceDate);
               textDecorationThickness: "3px",
             }}
           >
-            Add Inward
+            Add Purchase Inward old Invoice
           </h3>
 
           {/* Vendor Code */}
@@ -1028,7 +1032,7 @@ const formattedInvoiceDate = getFormattedDate(InvoiceDate);
               textDecorationThickness: "3px",
             }}
           >
-            Edit Inward
+            Edit Purchase Inward old Invoice
           </h3>
 
           {/* Vendor Code */}

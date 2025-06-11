@@ -31,11 +31,12 @@ import { FaDownload } from "react-icons/fa";
 import { deepPurple } from "@mui/material/colors";
 import { api } from "../controller/constants";
 import {
-  getdetailsService,
+  getdetails,
   getVendor,
-  getAddService,
-  updateInwardInvoiceService,
-} from "../controller/Inwardtransactionapiservice";
+  getAdd,
+  getUpdates,
+
+} from "../controller/EmergencyProcurementservice";
 import { decryptSessionData } from "../controller/StorageUtils";
 const Emergency = () => {
   const [searchText, setSearchText] = useState("");
@@ -67,7 +68,7 @@ const Emergency = () => {
   const [MaterialType, setMaterialType] = useState([]);
   const [MaterialCode, setMaterialCode] = useState("");
   const [MaterialID, setMaterialID] = useState("");
-  const [Description, setDescription] = useState("");
+  const [MaterialDescription, setMaterialDescription] = useState("");
   const [Rate, setRate] = useState("");
   const [ActiveStatus, setActiveStatus] = useState(false);
   const [PlantTable, setPlantTable] = useState([]);
@@ -75,11 +76,11 @@ const Emergency = () => {
   const [selectedRows, setSelectedRows] = useState([]);
  const [UserID, setUserID] = useState("");
   // const [userID, setUserID] = useState("");
-
+ const [InvoiceQty, setInvoiceQty] = useState("");
   const columns = [
     { field: "Vendor_Code", headerName: "Vendor Code ", flex: 1 },
     { field: "Vendor_Name", headerName: "Vendor Name ", flex: 1 },
-    { field: "Material_Description", headerName: "Material Description ", flex: 1 },
+    { field: "Material_Description", headerName: "Material Description", flex: 1 },
     { field: "Invoice_Qty", headerName: "Quantity", flex: 1 },
 
     { field: "Invoice_Value", headerName: "Total Value", flex: 1 },
@@ -90,7 +91,7 @@ const Emergency = () => {
   ];
   const getData = async () => {
     try {
-      const response = await getdetailsService();
+      const response = await getdetails(UserID);
       console.log(response); // Check the structure of response
       setData(response); // Ensure that this is correctly setting the data
       setOriginalRows(response); // for reference during search
@@ -103,19 +104,24 @@ const Emergency = () => {
     }
   };
 
-  useEffect(() => {
+ useEffect(() => {
+  const encryptedData = sessionStorage.getItem("userData");
+  if (encryptedData) {
+    const decryptedData = decryptSessionData(encryptedData);
+    setUserID(decryptedData.UserID);
+    setPlantID(decryptedData.PlantID);
+    console.log("Emergency PlantID", decryptedData.PlantID);
+    console.log("Emergency userid", decryptedData.UserID);
+  }
+}, []);
+
+// Call getData only after UserID is set
+useEffect(() => {
+  if (UserID) {
     getData();
-  }, []);
-  useEffect(() => {
-    const encryptedData = sessionStorage.getItem("userData");
-    if (encryptedData) {
-      const decryptedData = decryptSessionData(encryptedData);
-      setUserID(decryptedData.UserID);
-      setPlantID(decryptedData.PlantID);
-      console.log("Service PlantID", decryptedData.PlantID)
-      console.log("Service userid", decryptedData.UserID);
-    }
-  }, []);
+  }
+}, [UserID]);
+
   const get_Vendor = async () => {
     try {
       const response = await getVendor();
@@ -133,240 +139,219 @@ const Emergency = () => {
       <GridToolbarExport />
     </GridToolbarContainer>
   );
-  const handleCheckboxChange = (row) => {
-    setSelectedRows((prevSelected) => {
-      const isSelected = prevSelected.some(
-        (item) => item.Inward_ID === row.Inward_ID
-      );
-      if (isSelected) {
-        return prevSelected.filter((item) => item.Inward_ID !== row.Inward_ID);
-      } else {
-        return [...prevSelected, row];
-      }
-    });
-  };
+ 
 
   const handleOpenAddModal = (item) => {
     setVendorCode("");
-    setPurchaseOrder("");
-    setInvoiceNo("");
+setPurchaseOrder("");
+setInvoiceNo("");
+setInvoiceQty("");
+setInvoiceValue("");
+setReasonForDelay("");
+setMaterialDescription("");
 
-    setInvoiceDate("");
-    setInvoiceValue("");
-    setReasonForDelay("");
-    setOpenAddModal(true);
-
+ setOpenAddModal(true);
     get_Vendor();
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
 
-  // ✅ Handle Upload Modal
-  const handleOpenUploadModal = () => setOpenUploadModal(true);
-  const handleCloseUploadModal = () => {
-    setOpenUploadModal(false);
-    setUploadStatus("");
-    setUploadedFile(null);
-    setUploadProgress(0);
-    setUploadedFileData(null);
-    setIsUploading(false);
-  };
+  // // ✅ Handle Upload Modal
+  // const handleOpenUploadModal = () => setOpenUploadModal(true);
+  // const handleCloseUploadModal = () => {
+  //   setOpenUploadModal(false);
+  //   setUploadStatus("");
+  //   setUploadedFile(null);
+  //   setUploadProgress(0);
+  //   setUploadedFileData(null);
+  //   setIsUploading(false);
+  // };
 
-  const handleFileUpload = (event) => {
-    setUploadedFile(event.target.files[0]);
-  };
+  // const handleFileUpload = (event) => {
+  //   setUploadedFile(event.target.files[0]);
+  // };
 
-  const handleUploadData = async () => {
-    if (!uploadedFile) {
-      alert("Please select a file first.");
-      return;
-    } else {
-      try {
-        const formData = new FormData();
-        console.log("file", uploadedFile);
-        formData.append("User_Add", uploadedFile);
-        formData.append("UserID", UserID);
-        const response = await MaterialMaster(formData);
-        console.log("response", response.data);
-        alert(response.data.message);
-        // console.log('response', response.data)
-        if (
-          response.data.NewRecord.length > 0 ||
-          response.data.UpdatedData.length > 0 ||
-          response.data.ErrorRecords.length > 0
-        ) {
-          downloadExcel(
-            response.data.NewRecord,
-            response.data.UpdatedData,
-            response.data.ErrorRecords
-          );
-        }
-        getData();
-      } catch (error) {
-        if (error.response && error.response.status === 400) {
-          alert(error.response.data.message);
-        }
-      }
-    }
-    handleCloseUploadModal();
-  };
+  // const handleUploadData = async () => {
+  //   if (!uploadedFile) {
+  //     alert("Please select a file first.");
+  //     return;
+  //   } else {
+  //     try {
+  //       const formData = new FormData();
+  //       console.log("file", uploadedFile);
+  //       formData.append("User_Add", uploadedFile);
+  //       formData.append("UserID", UserID);
+  //       const response = await MaterialMaster(formData);
+  //       console.log("response", response.data);
+  //       alert(response.data.message);
+  //       // console.log('response', response.data)
+  //       if (
+  //         response.data.NewRecord.length > 0 ||
+  //         response.data.UpdatedData.length > 0 ||
+  //         response.data.ErrorRecords.length > 0
+  //       ) {
+  //         downloadExcel(
+  //           response.data.NewRecord,
+  //           response.data.UpdatedData,
+  //           response.data.ErrorRecords
+  //         );
+  //       }
+  //       getData();
+  //     } catch (error) {
+  //       if (error.response && error.response.status === 400) {
+  //         alert(error.response.data.message);
+  //       }
+  //     }
+  //   }
+  //   handleCloseUploadModal();
+  // };
 
-  const downloadExcel = (newRecord, updateRecord, errRecord) => {
-    const wb = XLSX.utils.book_new();
+  // const downloadExcel = (newRecord, updateRecord, errRecord) => {
+  //   const wb = XLSX.utils.book_new();
 
-    const newRecordsColumns = [
-      "Plant_Code",
-      "Material_Type",
-      "Material_Code",
-      "Description",
-      "Rate",
-      "ActiveStatus",
-      "Status",
-    ];
-    const UpdatedColumns = [
-      "Plant_Code",
-      "Material_Type",
-      "Material_Code",
-      "Description",
-      "Rate",
-      "ActiveStatus",
-      "Status",
-    ];
-    const ErrorColumns = [
-      "Plant_Code",
-      "Material_Type",
-      "Material_Code",
-      "Description",
-      "Rate",
-      "ActiveStatus",
-      "PlantCode_Validation",
-      "Material_Type_Validation",
-    ];
+  //   const newRecordsColumns = [
+  //     "Plant_Code",
+  //     "Material_Type",
+  //     "Material_Code",
+  //     "Description",
+  //     "Rate",
+  //     "ActiveStatus",
+  //     "Status",
+  //   ];
+  //   const UpdatedColumns = [
+  //     "Plant_Code",
+  //     "Material_Type",
+  //     "Material_Code",
+  //     "Description",
+  //     "Rate",
+  //     "ActiveStatus",
+  //     "Status",
+  //   ];
+  //   const ErrorColumns = [
+  //     "Plant_Code",
+  //     "Material_Type",
+  //     "Material_Code",
+  //     "Description",
+  //     "Rate",
+  //     "ActiveStatus",
+  //     "PlantCode_Validation",
+  //     "Material_Type_Validation",
+  //   ];
 
-    const filteredNewData = newRecord.map((item) => ({
-      Plant_Code: item.Plant_Code,
-      Material_Type: item.Material_Type,
-      Material_Code: item.Material_Code,
-      Description: item.Description,
-      Rate: item.Rate,
-      ActiveStatus: item.Active_Status,
-      Status: item.Status,
-    }));
+  //   const filteredNewData = newRecord.map((item) => ({
+  //     Plant_Code: item.Plant_Code,
+  //     Material_Type: item.Material_Type,
+  //     Material_Code: item.Material_Code,
+  //     Description: item.Description,
+  //     Rate: item.Rate,
+  //     ActiveStatus: item.Active_Status,
+  //     Status: item.Status,
+  //   }));
 
-    const filteredUpdate = updateRecord.map((item) => ({
-      Plant_Code: item.Plant_Code,
-      Material_Type: item.Material_Type,
-      Material_Code: item.Material_Code,
-      Description: item.Description,
-      Rate: item.Rate,
-      ActiveStatus: item.Active_Status,
-      Status: item.Status,
-    }));
+  //   const filteredUpdate = updateRecord.map((item) => ({
+  //     Plant_Code: item.Plant_Code,
+  //     Material_Type: item.Material_Type,
+  //     Material_Code: item.Material_Code,
+  //     Description: item.Description,
+  //     Rate: item.Rate,
+  //     ActiveStatus: item.Active_Status,
+  //     Status: item.Status,
+  //   }));
 
-    const filteredError = errRecord.map((item) => ({
-      Plant_Code: item.Plant_Code,
-      Material_Type: item.Material_Type,
-      Material_Code: item.Material_Code,
-      Description: item.Description,
-      Rate: item.Rate,
-      ActiveStatus: item.Active_Status,
-      PlantCode_Validation: item.Plant_Val,
-      Material_Type_Validation: item.Material_Val,
-    }));
+  //   const filteredError = errRecord.map((item) => ({
+  //     Plant_Code: item.Plant_Code,
+  //     Material_Type: item.Material_Type,
+  //     Material_Code: item.Material_Code,
+  //     Description: item.Description,
+  //     Rate: item.Rate,
+  //     ActiveStatus: item.Active_Status,
+  //     PlantCode_Validation: item.Plant_Val,
+  //     Material_Type_Validation: item.Material_Val,
+  //   }));
 
-    // 🔹 Helper to style header cells
-    const styleHeaders = (worksheet, columns) => {
-      columns.forEach((_, index) => {
-        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-        if (worksheet[cellAddress]) {
-          worksheet[cellAddress].s = {
-            font: { bold: true, color: { rgb: "000000" } },
-            fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
-            alignment: { horizontal: "center" },
-          };
-        }
-      });
-    };
+  //   // 🔹 Helper to style header cells
+  //   const styleHeaders = (worksheet, columns) => {
+  //     columns.forEach((_, index) => {
+  //       const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+  //       if (worksheet[cellAddress]) {
+  //         worksheet[cellAddress].s = {
+  //           font: { bold: true, color: { rgb: "000000" } },
+  //           fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
+  //           alignment: { horizontal: "center" },
+  //         };
+  //       }
+  //     });
+  //   };
 
-    // 🔴 Style red text for validation columns only
-    const styleValidationColumns = (worksheet, columns, dataLength) => {
-      const validationCols = [
-        "PlantCode_Validation",
-        "Material_Type_Validation",
-      ];
+  //   // 🔴 Style red text for validation columns only
+  //   const styleValidationColumns = (worksheet, columns, dataLength) => {
+  //     const validationCols = [
+  //       "PlantCode_Validation",
+  //       "Material_Type_Validation",
+  //     ];
 
-      for (let row = 1; row <= dataLength; row++) {
-        validationCols.forEach((colName) => {
-          const colIdx = columns.indexOf(colName);
-          if (colIdx === -1) return;
+  //     for (let row = 1; row <= dataLength; row++) {
+  //       validationCols.forEach((colName) => {
+  //         const colIdx = columns.indexOf(colName);
+  //         if (colIdx === -1) return;
 
-          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-          const cell = worksheet[cellAddress];
+  //         const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+  //         const cell = worksheet[cellAddress];
 
-          if (cell && typeof cell.v === "string") {
-            const value = cell.v.trim().toLowerCase();
+  //         if (cell && typeof cell.v === "string") {
+  //           const value = cell.v.trim().toLowerCase();
 
-            // Apply green if value is "valid", otherwise red
-            cell.s = {
-              font: {
-                color: { rgb: value === "valid" ? "2e7d32" : "FF0000" }, // green or red
-              },
-            };
-          }
-        });
-      }
-    };
+  //           // Apply green if value is "valid", otherwise red
+  //           cell.s = {
+  //             font: {
+  //               color: { rgb: value === "valid" ? "2e7d32" : "FF0000" }, // green or red
+  //             },
+  //           };
+  //         }
+  //       });
+  //     }
+  //   };
 
-    // 📄 New Records Sheet
-    if (filteredNewData.length === 0) filteredNewData.push({});
-    const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, {
-      header: newRecordsColumns,
-    });
-    styleHeaders(wsNewRecords, newRecordsColumns);
-    XLSX.utils.book_append_sheet(wb, wsNewRecords, "New Records");
+  //   // 📄 New Records Sheet
+  //   if (filteredNewData.length === 0) filteredNewData.push({});
+  //   const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, {
+  //     header: newRecordsColumns,
+  //   });
+  //   styleHeaders(wsNewRecords, newRecordsColumns);
+  //   XLSX.utils.book_append_sheet(wb, wsNewRecords, "New Records");
 
-    // 📄 Updated Records Sheet
-    if (filteredUpdate.length === 0) filteredUpdate.push({});
-    const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, {
-      header: UpdatedColumns,
-    });
-    styleHeaders(wsUpdated, UpdatedColumns);
-    XLSX.utils.book_append_sheet(wb, wsUpdated, "Updated Records");
+  //   // 📄 Updated Records Sheet
+  //   if (filteredUpdate.length === 0) filteredUpdate.push({});
+  //   const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, {
+  //     header: UpdatedColumns,
+  //   });
+  //   styleHeaders(wsUpdated, UpdatedColumns);
+  //   XLSX.utils.book_append_sheet(wb, wsUpdated, "Updated Records");
 
-    // 📄 Error Records Sheet
-    if (filteredError.length === 0) filteredError.push({});
-    const wsError = XLSX.utils.json_to_sheet(filteredError, {
-      header: ErrorColumns,
-    });
-    styleHeaders(wsError, ErrorColumns);
-    styleValidationColumns(wsError, ErrorColumns, filteredError.length);
-    XLSX.utils.book_append_sheet(wb, wsError, "Error Records");
+  //   // 📄 Error Records Sheet
+  //   if (filteredError.length === 0) filteredError.push({});
+  //   const wsError = XLSX.utils.json_to_sheet(filteredError, {
+  //     header: ErrorColumns,
+  //   });
+  //   styleHeaders(wsError, ErrorColumns);
+  //   styleValidationColumns(wsError, ErrorColumns, filteredError.length);
+  //   XLSX.utils.book_append_sheet(wb, wsError, "Error Records");
 
-    // 📦 Export the Excel file
-    const fileName = "Material Data Upload Log.xlsx";
-    XLSX.writeFile(wb, fileName);
-  };
+  //   // 📦 Export the Excel file
+  //   const fileName = "Material Data Upload Log.xlsx";
+  //   XLSX.writeFile(wb, fileName);
+  // };
 
   // ✅ Handle Row Click for Edit
 
   const handleRowClick = (params) => {
     get_Vendor();
 
-    const rawDate = params.row.Invoice_Date; // e.g., "30-04-2025"
-    let formattedDate = rawDate;
-
-    // If date is in DD-MM-YYYY format, convert it
-    if (rawDate && rawDate.includes("-")) {
-      const [day, month, year] = rawDate.split("-");
-      if (day.length === 2 && month.length === 2 && year.length === 4) {
-        formattedDate = `${year}-${month}-${day}`; // -> "2025-04-30"
-      }
-    }
 
     setInwardID(params.row.Inward_ID);
     setVendorCode(params.row.Vendor_ID);
-    setInvoiceDate(formattedDate); // ✅ Correct format for date input
-    setInvoiceNo(params.row.Invoice_No);
+    setInvoiceQty(params.row.Invoice_Qty); // ✅ Correct format for date input
+   setMaterialDescription(params.row.Material_Description)
 
     setInvoiceValue(params.row.Invoice_Value);
     setPurchaseOrder(params.row.Purchase_Order);
@@ -386,8 +371,8 @@ const Emergency = () => {
         [
           "Vendor_Code",
           "Vendor_Name",
-          "Invoice_No",
-          "Invoice_Date",
+          "Material_Description",
+          "Invoice_Qty",
           "Invoice_Value",
           "Purchase_Order",
           "Reason_For_Delay",
@@ -401,96 +386,83 @@ const Emergency = () => {
     }
   };
 
-  // ✅ Handle Add Material
-  const handleAdd = async () => {
-    console.log("Data being sent to the server:", {
-      VendorCode,
-      InvoiceDate,
-      InvoiceNo,
-      InvoiceValue,
-      PurchaseOrder,
-      ReasonForDelay,
-      UserID,
-    });
+    // ✅ Handle Add Material
+    const handleAdd = async () => {
+      console.log("Add button clicked");
+      // ✅ Log for debug
 
-    // // Validation
-    if (
-      VendorCode === "" ||
-      InvoiceDate === "" ||
-      InvoiceNo === "" ||
-      InvoiceValue === "" ||
-      PurchaseOrder === ""
-    ) {
-      alert("Please fill in all required fields");
-      return;
-    }
 
-    try {
-      const data = {
-        Vendor_ID: VendorCode,
-          Plant_ID:Plant_ID,
-        Invoice_Date: InvoiceDate,
-        Invoice_No: InvoiceNo,
-        Invoice_Value: InvoiceValue,
-        Purchase_Order: PurchaseOrder,
-        Reason_For_Delay: ReasonForDelay,
-        UserID: UserID,
-      };
+  if (
+    !VendorCode ||
+    !InvoiceQty ||
+    !ReasonForDelay ||
+    !Plant_ID ||
+    !MaterialDescription
+  ) {
+    alert("Please fill all required fields.");
+    return;
+  }
+  
+    const data = {
+      Vendor_ID: VendorCode,
+      Invoice_Qty: InvoiceQty,
+      Reason_For_Delay: ReasonForDelay,
+      Invoice_Value:InvoiceValue,
+      Purchase_Order:PurchaseOrder,
+      Plant_ID: Plant_ID,
+      Material_Description: MaterialDescription,
+      UserID: UserID,
+    };
+  
+      console.log("Data being sent to the server:", data);
+  
+      try {
+        const response = await getAdd(data); // ⬅️ Ensure this hits `/Get_Add` correctly
+  console.log("API Response:", response.data);
 
-      const response = await getAddService(data); // make sure this calls your /Get_Add API for services
-
-      if (response.data.success) {
-        alert("Service invoice added successfully!");
-        getData(); // refresh list
-        handleCloseAddModal(); // close modal
-      } else {
-        alert(response.data.message || "Failed to add invoice.");
+       if (response.data.success) {
+  alert("Emergency Procurement added successfully!");
+  
+  handleCloseAddModal(); // should close it
+  getData(); // refresh
+}else {
+          alert(response.data.message || "Failed to add Emergency Procurement.");
+        }
+      } catch (error) {
+        console.error("Error in adding Emergency Procurement:", error);
+        if (
+          error.response &&
+          error.response.data &&
+          error.response.data.message
+        ) {
+          alert(error.response.data.message);
+        } else {
+          alert("An error occurred while adding the invoice.");
+        }
       }
-    } catch (error) {
-      console.error("Error in adding invoice:", error);
-      if (
-        error.response &&
-        error.response.data &&
-        error.response.data.message
-      ) {
-        alert(error.response.data.message);
-      } else {
-        alert("An error occurred while adding the invoice.");
-      }
-    }
-  };
+    };
 
   const handleUpdate = async () => {
     try {
-      // Format InvoiceDate to 'YYYY-MM-DD'
-      const getFormattedDate = (dateStr) => {
-        if (!dateStr) return "";
-        const parts = dateStr.split("-");
-        // If in DD-MM-YYYY format
-        if (parts.length === 3 && parts[0].length === 2) {
-          return `${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
-        return dateStr; // already in correct format
-      };
+     
 
-      const formattedInvoiceDate = getFormattedDate(InvoiceDate);
-
+    
       const data = {
         Inward_ID: InwardID,
         Vendor_ID: VendorCode,
-        Invoice_Date: formattedInvoiceDate,
-        Invoice_No: InvoiceNo,
+        Invoice_Qty: InvoiceQty,
+       
 
         Invoice_Value: InvoiceValue,
         Purchase_Order: PurchaseOrder,
-
+      Material_Description: MaterialDescription,
         Reason_For_Delay: ReasonForDelay,
         Modified_By: UserID,
       };
 
       console.log("Update payload:", data);
 
-      const response = await updateInwardInvoiceService(data); // Make sure this calls your updated backend API
+      const response = await getUpdates(data); // Make sure this calls your updated backend API
 
       if (response.data.success) {
         alert(response.data.message || "Invoice updated successfully!");
@@ -523,11 +495,11 @@ const Emergency = () => {
    const DataColumns = [
      "Vendor_Code",
      "Vendor_Name",
-     "Invoice_No",
+      "Material_Description",
+    "Quantity",
     
-     "Invoice_Date",
      
-     "Invoice_Value",
+     "Total_Value",
      "Purchase_Order",
     
      
@@ -538,11 +510,10 @@ const Emergency = () => {
    const filteredData = data.map((item) => ({
      Vendor_Code: item.Vendor_Code,
      Vendor_Name: item.Vendor_Name,
-     Invoice_No: item.Invoice_No,
-    
-     Invoice_Date: item.Invoice_Date,
-  
-     Invoice_Value: item.Invoice_Value,
+     Material_Description: item.Material_Description,
+    Quantity:item.Invoice_Qty,
+     
+     Total_Value: item.Invoice_Value,
      Purchase_Order: item.Purchase_Order,
     
      Reason_For_Delay: item.Reason_For_Delay,
@@ -572,8 +543,8 @@ const Emergency = () => {
    });
  
    const workbook = XLSX.utils.book_new();
-   XLSX.utils.book_append_sheet(workbook, worksheet, "Old Inward Invoice Service Data");
-   XLSX.writeFile(workbook, "Old Inward Invoice Service Data.xlsx");
+   XLSX.utils.book_append_sheet(workbook, worksheet, "Emergency Procurement Data");
+   XLSX.writeFile(workbook, "Emergency Procurement Data.xlsx");
  };
 
   return (
@@ -780,7 +751,7 @@ const Emergency = () => {
               textDecorationThickness: "3px",
             }}
           >
-            Add Inward
+            Add Emergency Procurement
           </h3>
 
           {/* Vendor Code */}
@@ -803,33 +774,37 @@ const Emergency = () => {
 
         
 
-          {/* Invoice Date */}
-          <TextField
-            label="Invoice Date"
-            name="InvoiceDate"
-            type="date"
-            value={InvoiceDate}
-            onChange={(e) => setInvoiceDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            inputProps={{
-              max: new Date().toISOString().split("T")[0], // restrict future dates
-            }}
-            required
-          />
-
+        
           {/* Invoice No */}
           <TextField
-            label="Invoice No"
-            name="InvoiceNo"
-            value={InvoiceNo}
-            onChange={(e) => setInvoiceNo(e.target.value)}
+            label="Material Description"
+            name="Material Description"
+            value={MaterialDescription}
+            onChange={(e) => setMaterialDescription(e.target.value)}
             required
           />
 
+         <TextField
+           label="Quantity"
+           type="text"
+           value={InvoiceQty}
+           onChange={(e) => {
+             const value = e.target.value;
+             if (/^\d*$/.test(value)) {
+               setInvoiceQty(value);
+             }
+           }}
+           inputProps={{
+             inputMode: 'numeric',
+             pattern: '[0-9]*',
+           
+           }}
+           required
+         />
          
          {/* Invoice Value */}
          <TextField
-           label="Invoice Value"
+           label="Total Value"
            type="text"
            value={InvoiceValue}
            onChange={(e) => {
@@ -845,14 +820,7 @@ const Emergency = () => {
            }}
            required
          />
-           {/* Purchase Order */}
-          <TextField
-            label="Purchase Order"
-            name="PurchaseOrder"
-            value={PurchaseOrder}
-            onChange={(e) => setPurchaseOrder(e.target.value)}
-            required
-          />
+           
           {/* Reason For Delay */}
           <TextField
             label="Reason For Delay"
@@ -860,7 +828,14 @@ const Emergency = () => {
             value={ReasonForDelay}
             onChange={(e) => setReasonForDelay(e.target.value)}
           />
-
+          {/* Purchase Order */}
+          <TextField
+            label="Purchase Order"
+            name="PurchaseOrder"
+            value={PurchaseOrder}
+            onChange={(e) => setPurchaseOrder(e.target.value)}
+           
+          />
           {/* Buttons */}
           <Box
             sx={{
@@ -910,10 +885,10 @@ const Emergency = () => {
               textDecorationThickness: "3px",
             }}
           >
-            Edit Inward Entry
+            Edit Emergency Procurement
           </h3>
 
-          {/* Vendor Code */}
+           {/* Vendor Code */}
           <FormControl fullWidth>
             <InputLabel>Vendor Code</InputLabel>
             <Select
@@ -931,62 +906,70 @@ const Emergency = () => {
             </Select>
           </FormControl>
 
-          {/* Invoice Date */}
-          <TextField
-            label="Invoice Date"
-            name="InvoiceDate"
-            type="date"
-            value={InvoiceDate}
-            onChange={(e) => setInvoiceDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            inputProps={{
-              max: new Date().toISOString().split("T")[0], // restrict future dates
-            }}
-            required
-          />
-          
+        
+
+        
           {/* Invoice No */}
           <TextField
-            label="Invoice No"
-            value={InvoiceNo}
-            onChange={(e) => setInvoiceNo(e.target.value)}
+            label="Material Description"
+            name="Material Description"
+            value={MaterialDescription}
+            onChange={(e) => setMaterialDescription(e.target.value)}
             required
           />
- {/* Invoice Value */}
-          <TextField
-            label="Invoice Value"
-            type="text"
-            value={InvoiceValue}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (/^\d*$/.test(value)) {
-                setInvoiceValue(value);
-              }
-            }}
-            inputProps={{
-              inputMode: 'numeric',
-              pattern: '[0-9]*',
-              
-            }}
-            required
-          />
-          
+
+         <TextField
+           label="Quantity"
+           type="text"
+           value={InvoiceQty}
+           onChange={(e) => {
+             const value = e.target.value;
+             if (/^\d*$/.test(value)) {
+               setInvoiceQty(value);
+             }
+           }}
+           inputProps={{
+             inputMode: 'numeric',
+             pattern: '[0-9]*',
+           
+           }}
+           required
+         />
          
-
-          <TextField
-            label="Purchase Order"
-            name="Purchase_Order"
-            value={PurchaseOrder}
-            onChange={(e) => setPurchaseOrder(e.target.value)}
-          />
-
+         {/* Invoice Value */}
+         <TextField
+           label="Total Value"
+           type="text"
+           value={InvoiceValue}
+           onChange={(e) => {
+             const value = e.target.value;
+             if (/^\d*$/.test(value)) {
+               setInvoiceValue(value);
+             }
+           }}
+           inputProps={{
+             inputMode: 'numeric',
+             pattern: '[0-9]*',
+             
+           }}
+           required
+         />
+           
           {/* Reason For Delay */}
           <TextField
             label="Reason For Delay"
+            name="ReasonForDelay"
             value={ReasonForDelay}
             onChange={(e) => setReasonForDelay(e.target.value)}
           />
-
+          {/* Purchase Order */}
+          <TextField
+            label="Purchase Order"
+            name="PurchaseOrder"
+            value={PurchaseOrder}
+            onChange={(e) => setPurchaseOrder(e.target.value)}
+           
+          />
           <Box
             sx={{
               gridColumn: "span 2",

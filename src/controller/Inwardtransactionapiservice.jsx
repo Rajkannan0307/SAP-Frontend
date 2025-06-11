@@ -2,8 +2,8 @@ import { api } from "./constants";
 import axios from "axios";
 
 
-export const getdetailsPurchase=async ()=>{
-    const response = await axios.get(`${api}/Inward/get_Purchasedetails`);
+export const getdetailsPurchase=async (UserID)=>{
+    const response = await axios.get(`${api}/Inward/get_Purchasedetails?UserID=${UserID}`);
     return response.data;
 };
 export const getAdd = async (data) => {
@@ -24,9 +24,9 @@ export const getAdd = async (data) => {
     const response = await axios.post(`${api}/Inward/File`, data);
     return response;
 };
-export const getdetailsService = async ()=>{
+export const getdetailsService = async (UserID)=>{
 
-    const response = await axios.get(`${api}/Inward/get_Servicedetails`);
+    const response = await axios.get(`${api}/Inward/get_Servicedetails?UserID=${UserID}`);
     return response.data;
 };
 
