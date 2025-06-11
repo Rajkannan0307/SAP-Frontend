@@ -133,18 +133,31 @@ const Partno = () => {
   //click resubmit
   const [openChickResubmitModal, setOpenCheckResubmitModal] = useState(false);
   const [selectedRows, setSelectedRows] = useState({}); // Store selected checkboxes by row ID
-   // Store header checkbox state
+  // Store header checkbox state
   const [checked, setChecked] = useState(false);
- const [selectedRowIds, setSelectedRowIds] = useState([]);
-const [headerChecked, setHeaderChecked] = useState(false);
+  const [selectedRowIds, setSelectedRowIds] = useState([]);
+  const [headerChecked, setHeaderChecked] = useState(false);
 
   // resubmit check boc to connect
- 
+
   // Checkbox state change (not directly related to selection, but you had it)
-const handleChange = (event) => {
-  setChecked(event.target.checked);
+  const handleChange = (event) => {
+    setChecked(event.target.checked);
+  };
+
+
+  const handleHeaderCheckboxChange = (event) => {
+  const checked = event.target.checked;
+
+  if (checked) {
+    const allIds = rows.map((row) => row.Trn_Sap_ID); // ✅ use correct ID field
+    setSelectedRowIds(allIds);
+  } else {
+    setSelectedRowIds([]);
+  }
 };
-const handleOpenCheckResubmitModal = async () => {
+
+ const handleOpenCheckResubmitModal = async () => {
   if (!selectedRowIds || selectedRowIds.length === 0) {
     alert("Please select at least one row to resubmit.");
     return;
@@ -168,8 +181,11 @@ const handleOpenCheckResubmitModal = async () => {
     for (const row of resubmittableRows) {
       const resubmitResponse = await getresubmit({
         Doc_ID: row.Doc_ID,
+        Trn_Sap_ID: row.Trn_Sap_ID,
+        UserID: UserID,
         Action: "Resubmit",
       });
+      console.log("Resubmit data:", data);
 
       if (!resubmitResponse.success) {
         console.warn(`Resubmit failed for Doc_ID ${row.Doc_ID}`);
@@ -178,49 +194,53 @@ const handleOpenCheckResubmitModal = async () => {
 
     alert("Eligible documents successfully resubmitted.");
     getData();
+
+    // **Clear all selections after resubmit**
+    setSelectedRowIds([]);
+    setHeaderChecked(false);
+
   } catch (error) {
     console.error("Error during resubmit:", error);
     alert("An error occurred during resubmit. Please try again.");
   }
 
-  setOpenCheckResubmitModal(true); // You can show a summary modal if needed
+  setOpenCheckResubmitModal(true);
 };
 
 
 
-const handleRowCheckboxChange = (id, checked) => {
-  if (checked) {
-    setSelectedRowIds((prev) => {
-      const updated = [...prev, id];
-      // Auto-check header if all rows are now selected
-      if (updated.length === rows.length) {
-        setHeaderChecked(true);
-      }
-      return updated;
-    });
-  } else {
-    setSelectedRowIds((prev) => {
-      const updated = prev.filter((rowId) => rowId !== id);
-      setHeaderChecked(false); // uncheck header when any row is deselected
-      return updated;
-    });
-  }
+
+  const handleRowCheckboxChange = (id, checked) => {
+    if (checked) {
+      setSelectedRowIds((prev) => {
+        const updated = [...prev, id];
+        // Auto-check header if all rows are now selected
+        if (updated.length === rows.length) {
+          setHeaderChecked(true);
+        }
+        return updated;
+      });
+    } else {
+      setSelectedRowIds((prev) => {
+        const updated = prev.filter((rowId) => rowId !== id);
+        setHeaderChecked(false); // uncheck header when any row is deselected
+        return updated;
+      });
+    }
+  };
+
+
+  const handleAnotherFunction = (rows) => {
+  rows.forEach(row => {
+    const status = (row.Approval_Status || "").toLowerCase().trim();
+    if (status === "rejected" || status === "under query") {
+      console.log("Eligible for resubmit:", row);
+      // do your logic here for each eligible row
+    } else {
+      console.log("Not eligible:", row);
+    }
+  });
 };
-
-
-const handleHeaderCheckboxChange = (event) => {
-  const checked = event.target.checked;
-  setHeaderChecked(checked);
-
-  if (checked) {
-    const allIds = rows.map((row) => row.id);
-    setSelectedRowIds(allIds);
-  } else {
-    setSelectedRowIds([]);
-  }
-};
-
-
 
 
 
@@ -273,6 +293,9 @@ const handleHeaderCheckboxChange = (event) => {
       setRows([]);
     }
   };
+  const status = Array.isArray(data) ? data[0]?.Approval_Status?.toLowerCase() : data?.Approval_Status?.toLowerCase();
+console.log("viiii",status)
+  // resubmit check boc to connect
 
   useEffect(() => {
     getData();
@@ -1120,7 +1143,7 @@ const handleHeaderCheckboxChange = (event) => {
     { field: "Net_Difference_Price", headerName: "Net Different Price", flex: 1 },
     { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
 
-{
+   {
   field: "actions",
   headerName: "Actions",
   flex: 1,
@@ -1137,16 +1160,15 @@ const handleHeaderCheckboxChange = (event) => {
     }}
   >
     <span style={{ fontWeight: 600, fontSize: 14 }}>Actions</span>
-    <Checkbox
-      checked={rows.length > 0 && selectedRowIds.length === rows.length}
-      indeterminate={
-        selectedRowIds.length > 0 &&
-        selectedRowIds.length < rows.length
-      }
-      onChange={handleHeaderCheckboxChange}
-      inputProps={{ "aria-label": "Select all rows" }}
-      onClick={(e) => e.stopPropagation()}
-    />
+   <Checkbox
+  checked={rows.length > 0 && selectedRowIds.length === rows.length}
+  indeterminate={selectedRowIds.length > 0 && selectedRowIds.length < rows.length}
+  onChange={handleHeaderCheckboxChange}
+  inputProps={{ "aria-label": "Select all rows" }}
+  onClick={(e) => e.stopPropagation()}
+/>
+
+
   </div>
 
 
@@ -1180,9 +1202,7 @@ renderCell: (params) => {
   );
 }
 
-
-}
-
+   }
   ];
 
   const handleCloseViewStatus = () => {
@@ -1427,29 +1447,35 @@ renderCell: (params) => {
 
         {/* Icons Section */}
         <div style={{ display: "flex", gap: "10px" }}>
+{(status === 'rejected' || status === 'under query') && (
+  <Button
+    variant="contained"
+    onClick={() => {
+      handleOpenCheckResubmitModal();
+      // handleAnotherFunction(selectedRows);
+    }}
+    startIcon={<PiUploadDuotone size={20} />}
+    sx={{
+      borderRadius: 1,
+      backgroundColor: "#E1BEE7",
+      color: "white",
+      padding: "8px 16px",
+      textTransform: "none",
+      fontWeight: 600,
+      transition: "background-color 0.3s ease",
+      '&:hover': {
+        backgroundColor: '#B3E5FC',
+      },
+      '&:active': {
+        backgroundColor: "#0288D1",
+      },
+    }}
+  >
+    Resubmit
+  </Button>
+)}
 
-          <Button
-            variant="contained"
-            onClick={handleOpenCheckResubmitModal}
-            startIcon={<PiUploadDuotone size={20} />}
-            sx={{
-              borderRadius: 1,
-              backgroundColor: "#E1BEE7",    
-              color: "white",
-              padding: "8px 16px",
-              textTransform: "none",
-              fontWeight: 600,
-              transition: "background-color 0.3s ease",
-              '&:hover': {
-                backgroundColor: '#B3E5FC',  
-              },
-              '&:active': {
-                backgroundColor: "#0288D1",  
-              },
-            }}
-          >
-            Resubmit
-          </Button>
+
 
           {/* Upload Button */}
           <IconButton
