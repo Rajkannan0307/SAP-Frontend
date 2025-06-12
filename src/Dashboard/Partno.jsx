@@ -4,26 +4,17 @@ import {
   Button,
   Modal,
   Box,
-  Divider,
-  IconButton, LinearProgress,
+  IconButton,
   Typography,
   InputLabel,
-
-  FromControl
 } from "@mui/material";
 import { FaDownload } from "react-icons/fa";
 import { deepPurple } from '@mui/material/colors';
 import { FormControl, Select, MenuItem } from '@mui/material';
 import { decryptSessionData } from "../controller/StorageUtils"
-import axios from "axios";
-
-
 import Checkbox from "@mui/material/Checkbox";
-
 import { Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-
-
 import {
   DataGrid,
   GridToolbarContainer,
@@ -31,43 +22,41 @@ import {
   GridToolbarFilterButton,
   GridToolbarExport,
 } from "@mui/x-data-grid";
-import VisibilityIcon from "@mui/icons-material/Visibility";
 import SearchIcon from "@mui/icons-material/Search";
-import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from 'sheetjs-style';
 import InfoIcon from '@mui/icons-material/Info';
-
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import { PiUploadDuotone } from "react-icons/pi";
 
 
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { IoMdDownload } from "react-icons/io";
 import { getTransactionData, Movement309, Movement309ReUpload } from "../controller/transactionapiservice";
 import { api } from "../controller/constants";
-import { getdetails, DownloadAllExcel, getresubmit, fetchData, Edit309Record, getCancel, getAdd, getPlants, getMaterial, getSLoc, getValuationType, getView, getExcelDownload, get309ApprovalView } from '../controller/transactionapiservice';
+import {
+  getdetails, DownloadAllExcel, getresubmit,
+  Edit309Record, getAdd, getPlants, getMaterial,
+  getSLoc, getValuationType, get309ApprovalView
+} from '../controller/transactionapiservice';
+
+
 const Partno = () => {
 
   const [isUpdating, setIsUpdating] = useState(false);
-
   const [openModal, setOpenModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
 
   const [openViewStatusModal, setOpenViewStatusModal] = useState(false);
   const [viewStatusData, setViewStatusData] = useState([]);
 
-  const [isEditable, setIsEditable] = useState(false);
-
   const [openRowEditModal, setOpenRowEditModal] = useState(false);
   const [openViewStatus, setOpenViewStatus] = useState(false);
 
   const [openEditModal, setOpenEditModal] = useState(false);
-  const [openStatusModal, setOpenStatusModal] = useState(false); // rename to avoid confusion
+  const [openStatusModal, setOpenStatusModal] = useState(false);
 
 
   const [searchText, setSearchText] = useState("");
-  const [rows, setRows] = useState([]); // ✅ Initial empty rows
+  const [rows, setRows] = useState([]);
   const [originalRows, setOriginalRows] = useState([]);
   const UserID = localStorage.getItem('UserID');
   const [openAddModal, setOpenAddModal] = useState(false);
@@ -79,7 +68,7 @@ const Partno = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState(""); // Track upload status
+  const [uploadStatus, setUploadStatus] = useState("");
   const [uploadedFileData, setUploadedFileData] = useState(null);
   const [data, setData] = useState([]);
 
@@ -121,14 +110,9 @@ const Partno = () => {
   const [NetDifferentPrice, setNetDifferentPrice] = useState("");
   const [ApprovalStatus, setApprovalStatus] = useState([]);
 
-  const [openResubmitModal, setOpenResubmitModal] = useState(false);
-  const [openCancelModal, setOpenCancelModal] = useState(false);
 
   const [User_Level, setUser_Level] = useState("");
   const [editSelectedFile, setEditSelectedFile] = React.useState(null);
-  const [editUploadStatus, setEditUploadStatus] = React.useState("");
-  const [editIsUploading, setEditIsUploading] = React.useState(false);
-  const [editUploadProgress, setEditUploadProgress] = React.useState(0);
 
   //click resubmit
   const [openChickResubmitModal, setOpenCheckResubmitModal] = useState(false);
@@ -138,15 +122,15 @@ const Partno = () => {
   const [selectedRowIds, setSelectedRowIds] = useState([]);
   const [headerChecked, setHeaderChecked] = useState(false);
 
-  // resubmit check boc to connect
+ //// resubmit check box to connect
 
   // Checkbox state change (not directly related to selection, but you had it)
   const handleChange = (event) => {
     setChecked(event.target.checked);
   };
 
-
- const handleHeaderCheckboxChange = (event) => {
+  //check box funcation for header and row 
+  const handleHeaderCheckboxChange = (event) => {
     const checked = event.target.checked;
 
     const selectableRows = rows.filter((row) => {
@@ -185,80 +169,81 @@ const Partno = () => {
     }
   };
 
-
-
-const handleOpenCheckResubmitModal = async () => {
-  if (!selectedRowIds || selectedRowIds.length === 0) {
-    alert("Please select at least one row to resubmit.");
-    return;
-  }
-
-  const selectedRowsData = rows.filter(row =>
-    selectedRowIds.includes(row.Trn_Sap_ID)
-  );
-
-  const resubmittableRows = selectedRowsData.filter(row => {
-    const status = (row.Approval_Status || "").toLowerCase().trim();
-    return status === "rejected" || status === "under query";
-  });
-
-  if (resubmittableRows.length === 0) {
-    alert("No selected rows are eligible for resubmit (only 'Rejected' or 'Under Query' allowed).");
-    return;
-  }
-
-  try {
-    for (const row of resubmittableRows) {
-      const resubmitResponse = await getresubmit({
-        Doc_ID: row.Doc_ID,
-        Trn_Sap_ID: row.Trn_Sap_ID,
-        UserID: UserID,
-        Action: "Resubmit",
-      });
-
-      if (!resubmitResponse.success) {
-        console.warn(`Resubmit failed for Doc_ID ${row.Doc_ID}`);
-      }
+  const handleOpenCheckResubmitModal = async () => {
+    if (!selectedRowIds || selectedRowIds.length === 0) {
+      alert("Please select at least one row to resubmit.");
+      return;
     }
 
-    alert( "The selected document has been resubmitted successfully.");
-    getData();
+    const selectedRowsData = rows.filter(row =>
+      selectedRowIds.includes(row.Trn_Sap_ID)
+    );
 
-    // Clear all selections after resubmit
-    setSelectedRowIds([]);
-    setHeaderChecked(false);
+    const resubmittableRows = selectedRowsData.filter(row => {
+      const status = (row.Approval_Status || "").toLowerCase().trim();
+      return status === "rejected" || status === "under query";
+    });
 
-  } catch (error) {
-    console.error("Error during resubmit:", error);
-    alert("An error occurred during resubmit. Please try again.");
-  }
+    if (resubmittableRows.length === 0) {
+      alert("No selected rows are eligible for resubmit (only 'Rejected' or 'Under Query' allowed).");
+      return;
+    }
 
-  setOpenCheckResubmitModal(true);
-};
-
-// ✅ Logic to check if the Resubmit button should be shown
-const resubmittableSelectedRows = rows.filter(row =>
-  selectedRowIds.includes(row.Trn_Sap_ID) &&
-  ["rejected", "under query"].includes((row.Approval_Status || "").toLowerCase().trim())
-);
-
-const showResubmitButton = resubmittableSelectedRows.length > 0;
-
-
-  //[View_PartnoApproval_Status]
-  const handleViewStatus = async (docId) => {
-    console.log("Fetching approval status for Doc_ID:", docId);
     try {
-      const response = await get309ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
-      console.log("API Response:", response);
-      setViewStatusData(response);  // Update your state with the fetched data
+      for (const row of resubmittableRows) {
+        const resubmitResponse = await getresubmit({
+          Doc_ID: row.Doc_ID,
+          Trn_Sap_ID: row.Trn_Sap_ID,
+          UserID: UserID,
+          Action: "Resubmit",
+        });
+
+        if (!resubmitResponse.success) {
+          console.warn(`Resubmit failed for Doc_ID ${row.Doc_ID}`);
+        }
+      }
+
+      alert("The selected document has been resubmitted successfully.");
+      getData();
+
+      // Clear all selections after resubmit
+      setSelectedRowIds([]);
+      setHeaderChecked(false);
+
     } catch (error) {
-      console.error("❌ Error fetching grouped records:", error);
-      setViewStatusData([]);  // Handle errors and reset data
+      console.error("Error during resubmit:", error);
+      alert("An error occurred during resubmit. Please try again.");
     }
+
+    setOpenCheckResubmitModal(true);
   };
 
+  // ✅ Logic to check if the Resubmit button should be shown
+  const resubmittableSelectedRows = rows.filter(row =>
+    selectedRowIds.includes(row.Trn_Sap_ID) &&
+    ["rejected", "under query"].includes((row.Approval_Status || "").toLowerCase().trim())
+  );
 
+  const showResubmitButton = resubmittableSelectedRows.length > 0;
+
+  // resubmit check box to connect
+
+  useEffect(() => {
+  getData();
+  }, []);
+
+  // //[View_PartnoApproval_Status]
+  // const handleViewStatus = async (docId) => {
+  //   console.log("Fetching approval status for Doc_ID:", docId);
+  //   try {
+  //     const response = await get309ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
+  //     console.log("API Response:", response);
+  //     setViewStatusData(response);  // Update your state with the fetched data
+  //   } catch (error) {
+  //     console.error("❌ Error fetching grouped records:", error);
+  //     setViewStatusData([]);  // Handle errors and reset data
+  //   }
+  // };
 
   const handleOpenEditModal = (record) => {
     setFromMatCode(record.FromMatCode);
@@ -276,8 +261,6 @@ const showResubmitButton = resubmittableSelectedRows.length > 0;
     setToBatch(record.ToBatch);
     setOpenEditModal(true);
   };
-
-
   const handleCloseAddModal = () => setOpenAddModal(false);
 
   const getData = async () => {
@@ -294,16 +277,11 @@ const showResubmitButton = resubmittableSelectedRows.length > 0;
       setRows([]);
     }
   };
+
   const status = Array.isArray(data) ? data[0]?.Approval_Status?.toLowerCase() : data?.Approval_Status?.toLowerCase();
-console.log("viiii",status)
-  // resubmit check boc to connect
+  console.log("viiii", status)
 
-  useEffect(() => {
-    getData();
-    // getViewData();
-
-  }, []);
-
+  //decryptedData.UserLevelName
   useEffect(() => {
     getData();
     const encryptedData = sessionStorage.getItem('userData');
@@ -316,8 +294,7 @@ console.log("viiii",status)
     }
   }, []);
 
-
-
+  // Backend cpnnect to -(get) plant, storage location, material, valuvation
   const get_Plant = async () => {
     try {
       const response = await getPlants();
@@ -326,8 +303,6 @@ console.log("viiii",status)
       console.error("Error updating user:", error);
     }
   };
-
-
   const get_Material = async () => {
     try {
       const response = await getMaterial();
@@ -336,7 +311,6 @@ console.log("viiii",status)
       console.error("Error updating user:", error);
     }
   };
-
   const get_SLoc = async () => {
     try {
       const response = await getSLoc();
@@ -346,7 +320,6 @@ console.log("viiii",status)
       console.error("Error updating user:", error);
     }
   };
-
   const get_ValuationTypeTable = async () => {
     try {
       const response = await getValuationType();
@@ -356,33 +329,6 @@ console.log("viiii",status)
     }
   };
 
-
-  // ✅ Handle Add Material
-  const handleAdd = async () => {
-
-    console.log("Add button clicked")
-    if (PlantCode === '' || Date === '' || FromMatCode === '' || ToMatCode === '' || NetDifferentPrice === '' || ApprovalStatus === '') {
-      alert("Please fill in all required fields");
-      return;  // Exit the function if validation fails
-    }
-    try {
-      const data = {
-        UserID: UserID,
-        Plant_Code: PlantCode,
-        Date: Date,
-        From_Mat_Code: FromMatCode,
-        To_Mat_Code: ToMatCode,
-        Net_Different_Price: NetDifferentPrice,
-        Approval_Status: ApprovalStatus,
-      }
-      const response = await getAdd(data);
-      alert(response.data.message);
-      getData();
-      handleCloseAddModal();
-    } catch (error) {
-      console.error(error)
-    }
-  };
 
   const handleCloseViewModal = () => {
     setOpenViewModal(false);
@@ -431,51 +377,6 @@ console.log("viiii",status)
     }
     handleCloseUploadModal();
   }
-  const handleEditUploadData = async ({ docId, trnSapId }) => {
-    if (!editSelectedFile) {
-      alert("Please select a file first.");
-      return;
-    }
-
-    try {
-      const finalDocId = typeof docId === 'object' ? docId?.Doc_ID : docId;
-
-      const formData = new FormData();
-      formData.append("User_Add", editSelectedFile);  // Ensure key matches backend
-      formData.append("UserID", UserID);
-      formData.append("Doc_ID", finalDocId);
-      formData.append("Trn_Sap_ID", trnSapId);
-
-      const response = await Movement309ReUpload(formData);
-      console.log('response', response.data);
-      alert(response.data.message);
-
-      const reuploadData = response.data.ReUploadRecord || [];
-      const errorData = response.data.ErrorRecords || [];
-
-      console.log('ReUploadRecord:', reuploadData);
-      console.log('ErrorRecords:', errorData);
-
-      if (reuploadData.length > 0 || errorData.length > 0) {
-        downloadExcelReUpload(reuploadData, errorData);
-      } else {
-        console.log("No data to download.");
-      }
-
-    } catch (error) {
-      console.error('Upload failed:', error?.response?.data || error.message);
-      alert(error.response?.data?.message || 'Upload failed.');
-    }
-
-    getData();
-    setOpenEditModal(false);
-  };
-
-
-  // File input handler
-  const handleEditFileUpload = (event) => {
-    setEditSelectedFile(event.target.files[0]);
-  };
 
   const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
     const wb = XLSX.utils.book_new();
@@ -499,10 +400,8 @@ console.log("viiii",status)
       'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark'
     ];
 
-
     // Column headers for Duplicate Records
     const DuplicateColumns = [
-
       'Plant_Code', 'Movement_Code', 'From_Material_Code',
       'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
       'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
@@ -512,15 +411,6 @@ console.log("viiii",status)
       'From_Material_Code_Duplicate',
       'From_Qty_Duplicate',
     ];
-    // // Column headers for Updated Records
-    // const UpdatedColumns = ['Plant_Code', 'From_Material_Code',
-    //   'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
-    //   'From_Batch', 'From_Rate_Per_Unit',
-    //   'To_Material_Code', 'To_Qty',
-    //   'To_Storage_Code', 'To_Valuation_Type',
-    //   'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price','Remark'
-    // ];
-
 
     // Filter and map the data for Error Records
     const filteredError = errRecord.map(item => ({
@@ -599,26 +489,7 @@ console.log("viiii",status)
       From_Qty_Duplicate: item.From_Qty,
     }));
 
-    // // Filter and map the data for Updated Records
-    // const filteredUpdate = updateRecord.map(item => ({
-    //   Plant_Code: item.Plant_Code,
-    //   From_Material_Code: item.From_Material_Code,
-    //   From_Qty: item.From_Qty,
-    //   From_Storage_Code: item.From_Storage_Code,
-    //   From_Valuation_Type: item.From_Valuation_Type,
-    //   From_Batch: item.From_Batch,
-    //   From_Rate_Per_Unit: item.From_Rate_Per_Unit,
-    //   To_Material_Code: item.To_Material_Code,
-    //   To_Qty: item.To_Qty,
-    //   To_Storage_Code: item.To_Storage_Code,
-    //   To_Valuation_Type: item.To_Valuation_Type,
-    //   To_Batch: item.To_Batch,
-    //   To_Rate_Per_Unit: item.To_Rate_Per_Unit,
-    //   Net_Different_Price:item.Net_Difference_Price,
-    //   Remark: item.Remark,
-
-    // }));
-    // 🔹 Helper to style header cells
+    // work sheet styyle
     const styleHeaders = (worksheet, columns) => {
       columns.forEach((_, index) => {
         const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
@@ -631,9 +502,7 @@ console.log("viiii",status)
         }
       });
     };
-
-
-    // 🔴 Style red text for validation columns only
+    // // 🔴 Style red text for validation columns only
     const styleValidationColumns = (worksheet, columns, dataLength) => {
       const validationCols = ['Plant_Code_Validation', 'From_Material_Code_Validation',
         'To_Material_Code_Validation', 'From_SLoc_Code_Validation',
@@ -660,212 +529,59 @@ console.log("viiii",status)
         });
       }
     };
-
-
-
     // ✅ Style only specific duplicate columns in gray
-    const styleDuplicateRecords = (worksheet, columns, dataLength) => {
-      const duplicateCols = ['Plant_Code', 'From_Material_Code', 'To_Material_Code', 'From_SLoc_Code', 'To_SLoc_Code']; // 👈 update with actual duplicate column names
+const styleDuplicateRecords = (worksheet, columns, dataLength) => {
+  const duplicateCols = ['Plant_Code', 'From_Material_Code', 'To_Material_Code', 'From_SLoc_Code', 'To_SLoc_Code'];
 
-      for (let row = 1; row <= dataLength; row++) {
-        duplicateCols.forEach(colName => {
-          const colIdx = columns.indexOf(colName);
-          if (colIdx === -1) return; // skip if not found
+  for (let row = 0; row <= dataLength; row++) {
+    columns.forEach((colName, colIdx) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+      const cell = worksheet[cellAddress];
+      if (!cell) return;
 
-          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-          const cell = worksheet[cellAddress];
-
-          if (cell) {
-            cell.s = {
-              font: { color: { rgb: '808080' } }, // Gray text
-              // fill: { fgColor: { rgb: 'E0E0E0' } } // optional background
-            };
-          }
-        });
+      if (row === 0) {
+        // ✅ Header styling
+        cell.s = {
+          font: { bold: true, color: { rgb: '000000' } }, // black text
+          fill: { fgColor: { rgb: 'FFFF00' } }, // yellow background
+          alignment: { horizontal: 'center' }
+        };
+      } else if (duplicateCols.includes(colName)) {
+        // ✅ Duplicate column value styling
+        cell.s = {
+          font: { color: { rgb: '808080' } }, // gray text
+          fill: { fgColor: { rgb: 'FFCCCC' } } // light red background
+        };
       }
-    };
-
+    });
+  }
+};
 
     // Add New Records sheet even if empty data is available
     if (filteredNewData.length === 0) filteredNewData.push({});
     const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, { header: newRecordsColumns });
     styleHeaders(wsNewRecords, newRecordsColumns);
     XLSX.utils.book_append_sheet(wb, wsNewRecords, 'New Records');
-
-
     // Add Error Records sheet  even if empty data is available
     if (filteredError.length === 0) filteredError.push({});
     const wsError = XLSX.utils.json_to_sheet(filteredError, { header: ErrorColumns });
     styleHeaders(wsError, ErrorColumns);
     styleValidationColumns(wsError, ErrorColumns, filteredError.length);
     XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
-
     // Add     Duplicate Records sheet even if empty data is available
     if (filteredUpdate.length === 0) filteredUpdate.push({});
     const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, { header: DuplicateColumns });
     styleDuplicateRecords(wsUpdated, DuplicateColumns, filteredUpdate.length);
     XLSX.utils.book_append_sheet(wb, wsUpdated, 'DuplicateRecords');
-
-    // // Add Updated Records sheet even if empty data is available
-    // if (filteredUpdate.length === 0) filteredUpdate.push({});
-    // const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, { header: UpdatedColumns });
-    // styleHeaders(wsUpdated, UpdatedColumns);
-    // XLSX.utils.book_append_sheet(wb, wsUpdated, 'Updated Records');
-
-
-
     // Set the file name and download the Excel file
-    const fileName = 'Trn309Movt Data Upload Log.xlsx';
+    const fileName = 'Trn309Movt Upload DataLog.xlsx';
     XLSX.writeFile(wb, fileName);
-
-
-  };
-
-  // reupload
-
-  const downloadExcelReUpload = (updateRecord, errRecord) => {
-    const wb = XLSX.utils.book_new();
-
-    const ErrorColumns = [
-      'Doc_ID', 'Trn_Sap_ID', 'Plant_Code', 'Movement_Code', 'From_Material_Code',
-      'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
-      'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
-      'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
-      'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark',
-      'Plant_Code_Validation', 'From_Material_Code_Validation', 'To_Material_Code_Validation',
-      'From_SLoc_Code_Validation', 'To_SLoc_Code_Validation'
-    ];
-
-    const ReUploadColumns = [
-      'Doc_ID', 'Trn_Sap_ID', 'Plant_Code', 'Movement_Code', 'From_Material_Code',
-      'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
-      'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
-      'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
-      'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark'
-    ];
-
-    const filteredError = errRecord.map(item => ({
-      Doc_ID: item.Doc_ID,
-      Trn_Sap_ID: item.Trn_Sap_ID,
-      Plant_Code: item.Plant_Code,
-      Movement_Code: item.Movement_Code,
-      From_Material_Code: item.From_Material_Code,
-      From_Qty: item.From_Qty,
-      From_Storage_Code: item.From_Storage_Code,
-      From_Valuation_Type: item.From_Valuation_Type,
-      From_Batch: item.From_Batch,
-      From_Rate_Per_Unit: item.From_Rate_Per_Unit,
-      To_Material_Code: item.To_Material_Code,
-      To_Qty: item.To_Qty,
-      To_Storage_Code: item.To_Storage_Code,
-      To_Valuation_Type: item.To_Valuation_Type,
-      To_Batch: item.To_Batch,
-      To_Rate_Per_Unit: item.To_Rate_Per_Unit,
-      Net_Different_Price: item.Net_Different_Price,
-      Remark: item.Remark,
-      Plant_Code_Validation: item.Plant_Val,
-      From_Material_Code_Validation: item.From_Mat_Val,
-      To_Material_Code_Validation: item.To_Mat_Val,
-      From_SLoc_Code_Validation: item.From_SLoc_Val,
-      To_SLoc_Code_Validation: item.To_SLoc_Val,
-    }));
-
-    const filteredUpdate = updateRecord.map(item => ({
-      Doc_ID: item.Doc_ID,
-      Trn_Sap_ID: item.Trn_Sap_ID,
-      Plant_Code: item.Plant_Code,
-      Movement_Code: item.Movement_Code,
-      From_Material_Code: item.From_Material_Code,
-      From_Qty: item.From_Qty,
-      From_Storage_Code: item.From_Storage_Code,
-      From_Valuation_Type: item.From_Valuation_Type,
-      From_Batch: item.From_Batch,
-      From_Rate_Per_Unit: item.From_Rate_Per_Unit,
-      To_Material_Code: item.To_Material_Code,
-      To_Qty: item.To_Qty,
-      To_Storage_Code: item.To_Storage_Code,
-      To_Valuation_Type: item.To_Valuation_Type,
-      To_Batch: item.To_Batch,
-      To_Rate_Per_Unit: item.To_Rate_Per_Unit,
-      Net_Different_Price: item.Net_Different_Price,
-      Remark: item.Remark
-    }));
-
-    const styleHeaders = (worksheet, columns) => {
-      columns.forEach((_, index) => {
-        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-        if (worksheet[cellAddress]) {
-          worksheet[cellAddress].s = {
-            font: { bold: true, color: { rgb: '000000' } },
-            fill: { fgColor: { rgb: 'FFFF00' } },
-            alignment: { horizontal: 'center' },
-          };
-        }
-      });
-    };
-
-    const styleValidationColumns = (worksheet, columns, dataLength) => {
-      const validationCols = [
-        'Plant_Code_Validation', 'From_Material_Code_Validation',
-        'To_Material_Code_Validation', 'From_SLoc_Code_Validation',
-        'To_SLoc_Code_Validation'
-      ];
-
-      for (let row = 1; row <= dataLength; row++) {
-        validationCols.forEach(colName => {
-          const colIdx = columns.indexOf(colName);
-          if (colIdx === -1) return;
-          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-          const cell = worksheet[cellAddress];
-          if (cell && typeof cell.v === 'string') {
-            const value = cell.v.trim().toLowerCase();
-            cell.s = {
-              font: {
-                color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' }
-              }
-            };
-          }
-        });
-      }
-    };
-
-    // Always add at least one row so the file is not empty
-    const wsError = XLSX.utils.json_to_sheet(filteredError.length ? filteredError : [{}], { header: ErrorColumns });
-    styleHeaders(wsError, ErrorColumns);
-    styleValidationColumns(wsError, ErrorColumns, filteredError.length);
-    XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
-
-    const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate.length ? filteredUpdate : [{}], { header: ReUploadColumns });
-    styleHeaders(wsUpdated, ReUploadColumns);
-    styleValidationColumns(wsUpdated, ReUploadColumns, filteredUpdate.length);
-    XLSX.utils.book_append_sheet(wb, wsUpdated, 'Updated Records');
-
-    const fileName = 'Trn309Movt ReuploadData Upload Log.xlsx';
-    console.log("Writing Excel file...");
-    XLSX.writeFile(wb, fileName);
-  };
-
-
-  // ✅ Open Add Modal
-  const handleOpenAddModal = (item) => {
-    setPlantCode("");
-    setDocID("");
-    setFromMatCode("");
-    setToMatCode("");
-    setNetDifferentPrice("");
-    setApprovalStatus("");
-    setOpenAddModal(true);
-    get_Plant();
-    get_Material();
-    get_SLoc();
   };
 
   const handleOpenViewModal = (item) => {
     setOpenViewModal(true);
     console.log(item);
 
-    // getViewData();
-    // handleView();
     setPlantCode(item.Plant_Code);
     setDocID(item.Doc_ID);
     setDate(item.Date);
@@ -886,6 +602,7 @@ console.log("viiii",status)
     setToBatch(item.To_Batch);
     setApprovalStatus(item.Approval_Status);
     get_Material();
+    get_Plant();
     get_SLoc();
     get_ValuationTypeTable();
 
@@ -907,7 +624,6 @@ console.log("viiii",status)
       setRows(filteredRows);
     }
   };
-
 
   const handleOpenModal = () => {
     setOpenExcelDownloadModal(true);
@@ -991,8 +707,6 @@ console.log("viiii",status)
       }
     }
   };
-
-
   // Download the data from the trn sap table to particular date
   const handleDownloadReportExcel = async () => {
     if (!fromDate) {
@@ -1063,7 +777,6 @@ console.log("viiii",status)
     }
   };
 
-
   useEffect(() => {
     console.log("FromMatCode:", FromMatCode);
     console.log("Material options:", MaterialTable.map(i => i.Material_ID));
@@ -1111,7 +824,6 @@ console.log("viiii",status)
   };
 
 
-
   useEffect(() => {
     console.log("MaterialTable:", MaterialTable);
   }, [MaterialTable]);
@@ -1121,7 +833,7 @@ console.log("viiii",status)
 
   };
 
-
+  // edit box style
   const compactFieldProps = {
     size: "small",
     sx: {
@@ -1134,7 +846,7 @@ console.log("viiii",status)
     }
   };
 
-
+  // requester page header 
   const columns = [
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
     { field: "Doc_ID", headerName: "Doc ID", flex: 1 },
@@ -1144,13 +856,13 @@ console.log("viiii",status)
     { field: "Net_Difference_Price", headerName: "Net Different Price", flex: 1 },
     { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
 
-   {
-  field: "actions",
-  headerName: "Actions",
-  flex: 1,
-  sortable: false,
-  editable: false,
-  disableColumnMenu: true,
+    {
+      field: "actions",
+      headerName: "Actions",
+      flex: 1,
+      sortable: false,
+      editable: false,
+      disableColumnMenu: true,
       renderHeader: () => {
         const selectableRows = rows.filter((row) => {
           const status = row.Approval_Status?.toLowerCase().trim();
@@ -1173,7 +885,14 @@ console.log("viiii",status)
               width: "100%",
             }}
           >
-            <span style={{ fontWeight: 600, fontSize: 14 }}>Actions</span>
+
+            <span sx={{
+              fontWeight: 600, fontSize: 20, color: '#333', // optional
+            }}
+            >
+              Actions
+            </span>
+
             {selectableRows.length > 0 && (
               <Checkbox
                 checked={allSelected}
@@ -1186,10 +905,8 @@ console.log("viiii",status)
           </div>
         );
       },
-
-
-// In renderCell:
- renderCell: (params) => {
+      // In renderCell:
+      renderCell: (params) => {
         const row = params.row;
         const status = row.Approval_Status?.toLowerCase().trim();
         const isSelectable = status === "rejected" || status === "under query";
@@ -1225,13 +942,12 @@ console.log("viiii",status)
         );
       },
 
-   }
+    }
   ];
 
   const handleCloseViewStatus = () => {
     setOpenViewStatus(false);
   };
-
 
   const handleOpenViewStatusModal = async (rowData) => {
     const docId = rowData?.Doc_ID;
@@ -1251,7 +967,6 @@ console.log("viiii",status)
   };
 
   //view detail for Particular DocID Details ... downloa
-
   const handleDownloadByDocId = async (docId) => {
     try {
       if (!docId) {
@@ -1314,7 +1029,6 @@ console.log("viiii",status)
     setOpenRowEditModal(false);
   };
 
-
   const [formData, setFormData] = useState({
     DocID: '',
     TrnSapId: '',
@@ -1371,7 +1085,6 @@ console.log("viiii",status)
     }
   };
 
-
   const fetchData = async () => {
     try {
       const response = await getTransactionData(); // this is the correct service call
@@ -1387,7 +1100,6 @@ console.log("viiii",status)
     get_SLoc();
 
   }, []);
-
 
   // ✅ Custom Toolbar
   const CustomToolbar = () => (
@@ -1410,7 +1122,7 @@ console.log("viiii",status)
       }}
     >
 
-      {/* Header Section */}
+      {/* Header Section  - requester Tital*/}
       <div
         style={{
           marginBottom: 20,
@@ -1442,7 +1154,7 @@ console.log("viiii",status)
           marginBottom: 10,
         }}
       >
-        {/* Search Box */}
+        {/* Search Box - requester */}
         <div style={{ display: "flex", gap: "10px" }}>
           <TextField
             size="small"
@@ -1468,36 +1180,33 @@ console.log("viiii",status)
           </Button>
         </div>
 
+        {/* Resubmit Button (rejected/under query -->>*only show* ) - requester */}
         <div style={{ display: "flex", gap: "10px" }}>
-      {showResubmitButton && (
-        <Button
-          variant="contained"
-          onClick={handleOpenCheckResubmitModal}
-          startIcon={<PiUploadDuotone size={20} />}
-          sx={{
-            borderRadius: 1,
-            backgroundColor: "#E1BEE7",
-            color: "white",
-            padding: "8px 16px",
-            textTransform: "none",
-            fontWeight: 600,
-            transition: "background-color 0.3s ease",
-            '&:hover': {
-              backgroundColor: '#B3E5FC',
-            },
-            '&:active': {
-              backgroundColor: "#0288D1",
-            },
-          }}
-        >
-          Resubmit
-        </Button>
-      )}
- 
+          {showResubmitButton && (
+            <Button
+              variant="contained"
+              onClick={handleOpenCheckResubmitModal}
+              startIcon={<PiUploadDuotone size={20} />}
+              sx={{
+                borderRadius: 1,
+                backgroundColor: "#BA68C8",
+                color: "white",
+                padding: "8px 16px",
+                textTransform: "none",
+                fontWeight: 600,
+                '&:hover': {
+                  backgroundColor: '#B3E5FC',
+                },
+                '&:active': {
+                  backgroundColor: "#0288D1",
+                },
+              }}
+            >
+              Resubmit
+            </Button>
+          )}
 
-
-
-          {/* Upload Button */}
+          {/* Upload Button  - requester */}
           <IconButton
             component="span"
             onClick={() => setOpenUploadModal(true)}
@@ -1512,7 +1221,7 @@ console.log("viiii",status)
             <CloudUploadIcon />
           </IconButton>
 
-          {/* ✅ Download Template */}
+          {/* ✅ Download Template - requester template*/}
           <IconButton
             onClick={handleOpenModal}
             style={{
@@ -1526,23 +1235,11 @@ console.log("viiii",status)
             <FaFileExcel size={18} />
           </IconButton>
 
-          {/* ✅ Add Button */}
-          <IconButton
-            color="primary"
-            onClick={handleOpenAddModal}
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#0099FF",
-              color: "white",
-              width: "40px",
-              height: "40px",
-            }}
-          >
-            <AddIcon />
-          </IconButton>
+
         </div>
       </div>
-      {/* ✅ DataGrid */}
+
+      {/* ✅ DataGrid  requester page table , edit action*/}
       <div
         style={{
           flexGrow: 1,  // Ensures it grows to fill the remaining space
@@ -1551,9 +1248,7 @@ console.log("viiii",status)
           boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
           height: "500px"
         }}
-      >
-
-        <DataGrid
+      ><DataGrid
           rows={rows}
           columns={columns}
           pageSize={5}
@@ -1595,152 +1290,9 @@ console.log("viiii",status)
             },
           }}
         />
-
-
-
-
       </div>
 
-      {/* Add modal */}
-      <Modal open={openAddModal} onClose={() => setOpenAddModal(false)}>
-        <Box
-          sx={{
-            width: 400,
-            bgcolor: 'background.paper',
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: 'auto',
-            marginTop: '10%',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: '15px',
-          }}
-        ><h3
-          style={{
-            gridColumn: 'span 2',
-            textAlign: 'center',
-            marginBottom: '15px',
-            color: 'blue',
-            textDecoration: 'underline',
-            textDecorationColor: 'limegreen',
-            textDecorationThickness: '3px',
-          }}
-        >
-            Add New Record
-          </h3>
-          <FormControl fullWidth>
-            <InputLabel>Plant Code</InputLabel>
-            <Select
-              label="Plant Code"
-              name="PlantCode"
-              value={PlantCode}
-              onChange={(e) => setPlantCode(e.target.value)}
-            >
-              {PlantTable.map((item, index) => (
-                <MenuItem key={index} value={item.Plant_Id}>{item.Plant_Code}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <TextField
-            label="Date"
-            name="Date"
-            type="date"
-            InputLabelProps={{ shrink: true }}
-            value={Date}
-            onChange={(e) => setDate(e.target.value)}
-            fullWidth
-            required
-          />
-          <FormControl fullWidth>
-            <InputLabel>FromMatCode</InputLabel> {/* Fix: Closing the InputLabel tag */}
-            <Select
-              label="FromMatCode"
-              name="FromMatCode"
-              value={FromMatCode}
-              onChange={(e) => setFromMatCode(e.target.value)}
-              required
-            >
-              {MaterialTable.map((item, index) => (
-                <MenuItem key={index} value={item.Material_ID}>{item.Material_Code}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl fullWidth>
-            <InputLabel>ToMatCode</InputLabel> {/* Fix: Closing the InputLabel tag */}
-            <Select
-              label="ToMatCode"
-              name="ToMatCode"
-              value={ToMatCode}
-              onChange={(e) => setToMatCode(e.target.value)}
-              required
-            >
-              {MaterialTable.map((item, index) => (
-                <MenuItem key={index} value={item.Material_ID}>{item.Material_Code}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <TextField
-            label="Net Different Price"
-            name="NetDifferentPrice"
-            value={NetDifferentPrice}
-            onChange={(e) => setNetDifferentPrice(e.target.value)}
-            required
-            fullWidth
-          />
-          <FormControl fullWidth>
-            <InputLabel>Approval Status</InputLabel>
-            <Select
-              label="Approval Status"
-              name="ApprovalStatus"
-              value={ApprovalStatus}
-              onChange={(e) => setApprovalStatus(e.target.value)}
-              required
-            >
-              {/* Check if `data` is an array and has items */}
-              {Array.isArray(data) && data.length > 0 ? (
-                data.map((item) => (
-                  <MenuItem key={item.Plant_Code} value={item.Approval_Status}>
-                    {item.Approval_Status}
-                  </MenuItem>
-                ))
-              ) : (
-                <MenuItem disabled>No approval statuses available</MenuItem>
-              )}
-            </Select>
-          </FormControl>
-
-          <Box
-            sx={{
-              gridColumn: 'span 2',
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '10px',
-              marginTop: '15px',
-            }}
-          >
-            <Button variant="contained" color="error" onClick={() => setOpenAddModal(false)}>
-              Cancel
-            </Button>
-            <Button
-              style={{ width: '90px' }}
-              variant="contained"
-              color="primary"
-              onClick={handleAdd}
-            >
-              Add
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
-
-
-      {/* upload modal */}
+      {/* upload modal  Requester page file upload with template*/}
       <Modal open={openUploadModal} onClose={handleCloseUploadModal}>
         <Box
           sx={{
@@ -1865,325 +1417,7 @@ console.log("viiii",status)
         </Box>
       </Modal>
 
-
-      { /*View modal*/}
-
-      {/* Modal Component download */}
-
-      <Modal open={openViewModal} onClose={handleCloseViewModal}>
-        <Box
-          sx={{
-            width: 600,
-            height: 350,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 2,
-            margin: "auto",
-            marginTop: "10%",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          {/* Modal Header */}
-          <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-            <h3 style={{
-              textAlign: "center", color: "blue", textDecoration: "underline",
-              textDecorationColor: "limegreen", textDecorationThickness: "3px",
-              fontSize: "20px", fontWeight: "bold", margin: 0, padding: 0, width: "100%"
-            }}>
-              309 Movement Record
-            </h3>
-            <button
-              onClick={handleCloseViewModal}
-              style={{
-                backgroundColor: "#FF3333", color: "white",
-                border: "none", fontSize: "18px", cursor: "pointer", width: "30px", height: "30px", borderRadius: "5px",
-              }}
-            >
-              &times;
-            </button>
-          </Box>
-
-          {/* Plant and Document Info Section */}
-          <Box sx={{ width: "100%", marginTop: "10px", marginBottom: "5px", display: 'flex', justifyContent: 'space-between' }}>
-            <div>
-              <strong>Plant Code:</strong> {PlantCode}
-            </div>
-            <div>
-              <strong>Document:</strong> {DocID}
-            </div>
-          </Box>
-
-          {/* Content Table */}
-          <Box sx={{ width: "100%", marginTop: "10px" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", border: "1px solid black" }}>
-              <thead>
-                <tr>
-                  {/* Table Header with Blue Background */}
-                  <th style={{
-                    textAlign: "left", padding: "5px", backgroundColor: "#696969", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
-                  }}>Content</th>
-                  <th style={{
-                    textAlign: "left", padding: "5px", backgroundColor: "#696969", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
-                  }}>From</th>
-                  <th style={{
-                    textAlign: "left", padding: "5px", backgroundColor: "#696969", color: "white", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black"
-                  }}>To</th>
-                </tr>
-
-              </thead>
-              <tbody>
-                {[
-                  ["Material Code", FromMatCode, ToMatCode],
-                  ["Description", FromDescription, ToDescription],
-                  ["Qty", FromQty, ToQty],
-                  ["SLoc ID", FromSLocID, ToSLocID],
-                  ["Price", FromPrice, ToPrice],
-                  ["Valuation Type", FromValuationType, ToValuationType],
-                  ["Batch", FromBatch, ToBatch],
-                ].map(([label, fromValue, toValue], index) => (
-                  <tr key={label}>
-                    <td style={{ padding: "5px", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black", fontWeight: "bold" }}>{label}</td>
-                    <td style={{ padding: "5px", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black" }}>{fromValue || " "}</td>
-                    <td style={{ padding: "5px", borderBottom: "1px solid gray", borderLeft: "1px solid black", borderRight: "1px solid black" }}>{toValue || " "}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Box>
-
-          {/* Net Different Price and Approval Status Section */}
-          <Box sx={{ width: "100%", marginTop: "10px", display: 'flex', justifyContent: 'space-between' }}>
-            <div>
-              <strong>Net Different Price:</strong> {NetDifferentPrice}
-            </div>
-            <div>
-              <strong>Approval Status:</strong> {ApprovalStatus}
-            </div>
-          </Box>
-        </Box>
-      </Modal>
-
-      {/* ExcelDownload Modal */}
-
-      <Modal
-        open={openExcelDownloadModal}
-        onClose={handleCloseModal}  // Use the custom handleCloseModal function
-      >
-        <Box
-          sx={{
-            width: 400,
-            bgcolor: 'background.paper',
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: 'auto',
-            marginTop: '10%',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: '15px',
-          }}
-        >
-          <h3
-            style={{
-              gridColumn: 'span 2',
-              textAlign: 'center',
-              marginBottom: '15px',
-              color: 'blue',
-              textDecoration: 'underline',
-              textDecorationColor: 'limegreen',
-              textDecorationThickness: '3px',
-            }}
-          >
-            Excel Download
-          </h3>
-
-          <TextField
-            label="From Date"
-            name="FromDate"
-            type="date"
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            required
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-          />
-          <TextField
-            label="To Date"
-            name="ToDate"
-            type="date"
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            required
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-          />
-
-          <Box
-            sx={{
-              gridColumn: 'span 2',
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '10px',
-              marginTop: '15px',
-            }}
-          >
-            <Button variant="contained" color="error" onClick={handleCloseModal}>
-              Cancel
-            </Button>
-            <Button
-              style={{ width: '90px' }}
-              variant="contained"
-              color="primary"
-              onClick={handleDownloadExcel}
-            >
-              Download
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
-
-      {/*........................................*/}
-
-      {/* ✅ Modal with Resubmit and Cancel */}
-
-      {/*🟩 Edit Modal*/}
-
-      <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
-        <Box
-          sx={{
-            width: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            textAlign: "center",
-          }}
-        >
-          <h3
-            style={{
-              textAlign: "center",
-              marginBottom: "20px",
-              color: "#2e59d9",
-              textDecoration: "underline",
-              textDecorationColor: "#88c57a",
-              textDecorationThickness: "3px",
-            }}
-          >
-            Upload Excel File to Edit Document
-          </h3>
-
-          <Button
-            variant="contained"
-            style={{ marginBottom: "10px", backgroundColor: deepPurple[500], color: "white" }}
-          >
-            <a
-              style={{ textDecoration: "none", color: "white" }}
-              href={`${api}/transaction/Template/ReUpload309Movt.xlsx`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
-            </a>
-          </Button>
-
-          <input
-            type="file"
-            accept=".xlsx, .xls"
-            onChange={handleEditFileUpload}
-            style={{
-              padding: "8px",
-              backgroundColor: "white",
-              color: "black",
-              border: "1px solid black",
-              borderRadius: "5px",
-              cursor: "pointer",
-              width: "240px",
-              marginTop: "10px",
-            }}
-          />
-
-          {editUploadStatus && (
-            <p
-              style={{
-                textAlign: "center",
-                color: editUploadStatus.includes("success") ? "green" : "red",
-              }}
-            >
-              {editUploadStatus}
-            </p>
-          )}
-
-          {editIsUploading && (
-            <Box
-              sx={{
-                width: "100%",
-                bgcolor: "#f5f5f5",
-                borderRadius: 2,
-                height: "8px",
-                marginTop: "10px",
-              }}
-            >
-              <Box
-                sx={{
-                  width: `${editUploadProgress}%`,
-                  bgcolor: editUploadProgress === 100 ? "#4caf50" : "#2196f3",
-                  height: "100%",
-                  borderRadius: 2,
-                  transition: "width 0.4s ease-in-out",
-                }}
-              />
-            </Box>
-          )}
-
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            <Button
-              variant="contained"
-              color="error"
-              onClick={() => setOpenEditModal(false)}
-              style={{ marginTop: "10px", width: "25%" }}
-            >
-              Close
-            </Button>
-
-            <Button
-              variant="contained"
-              onClick={() =>
-                handleEditUploadData({
-                  docId: selectedRow?.Doc_ID,
-                  trnSapId: selectedRow?.Trn_Sap_ID,
-                })
-              }
-              disabled={editIsUploading}
-              sx={{
-                mt: 2,
-                width: '25%',
-                color: '#ffffff',
-                backgroundColor: '#1976d2', // MUI Blue 700
-                '&:hover': {
-                  backgroundColor: '#115293', // Darker blue on hover
-                },
-              }}
-            >
-              ReUpload
-            </Button>
-
-          </Box>
-        </Box>
-      </Modal>
-
-      {/* 🟨 View Status Modal */}
+      {/* 🟨  Info Icon  View Status Modal */}
       <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
         <Box sx={{
           position: 'relative',
@@ -2224,10 +1458,8 @@ console.log("viiii",status)
               Approval Status
             </Typography>
           </Box>
-
-          {/* 🧾 Status Table */}
-
           <>
+            {/* 🧾 Status Table */}
             <Table size="small" sx={{ borderCollapse: 'collapse' }}>
               <TableHead>
                 <TableRow sx={{ bgcolor: '#bdbdbd' }}>
@@ -2253,14 +1485,11 @@ console.log("viiii",status)
 
               </TableBody>
             </Table>
-
-
           </>
         </Box>
       </Modal>
 
-      {/* ExcelDownload Modal */}
-
+      {/* ExcelDownload From & To Date Modal */}
       <Modal
         open={openExcelDownloadModal}
         onClose={handleCloseModal}  // Use the custom handleCloseModal function
@@ -2338,9 +1567,6 @@ console.log("viiii",status)
         </Box>
       </Modal>
 
-
-
-      {/*Row edit modal*/}
 
       {/*Row edit modal*/}
       <Modal open={openRowEditModal} onClose={handleCloseRowEditModal}>
@@ -2521,11 +1747,8 @@ console.log("viiii",status)
         </Box>
       </Modal>
 
-
     </div>
   );
 };
 
 export default Partno;
-
-
