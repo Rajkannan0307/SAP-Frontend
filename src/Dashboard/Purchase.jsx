@@ -87,22 +87,22 @@ const Purchase = () => {
   const [selectedRows, setSelectedRows] = useState([]);
 
  const columns = [
-  { field: "Vendor_Code", headerName: "Vendor Code", width: 130 },
-  { field: "Vendor_Name", headerName: "Vendor Name", width: 150 },
-  { field: "Invoice_Date", headerName: "Invoice Date", width: 120 },
-  { field: "Invoice_No", headerName: "Invoice No", width: 160 },
-  { field: "Invoice_Qty", headerName: "Invoice Quantity", width: 130 },
-  { field: "Invoice_Value", headerName: "Invoice Value", width: 140 },
-  { field: "Purchase_Order", headerName: "Purchase Order", width: 180 },
-  { field: "Material_Code", headerName: "Part No", width: 160 },
-  {
-    field: "Monthly_Scheduled_Qty",
-    headerName: "Monthly Scheduled Qty",
-    width: 190,
-  },
-  { field: "Current_Stock", headerName: "Current Stock", width: 140 },
-  { field: "Reason_For_Delay", headerName: "Reason For Delay", width: 180 },
-  { field: "Status", headerName: "Status", width: 114 },
+  { field: "Vendor_Code", headerName: "Vendor Code", flex: 1 },
+    { field: "Vendor_Name", headerName: "Vendor Name", flex: 1 },
+    { field: "Invoice_Date", headerName: "Invoice Date", flex: 1 },
+    { field: "Invoice_No", headerName: "Invoice No", flex: 1 },
+    { field: "Invoice_Qty", headerName: "Invoice Quantity", flex: 1 },
+    { field: "Invoice_Value", headerName: "Invoice Value", flex: 1 },
+    { field: "Purchase_Order", headerName: "Purchase Order", flex: 1.2 },
+    { field: "Material_Code", headerName: "Part No", flex: 1 },
+    {
+      field: "Monthly_Scheduled_Qty",
+      headerName: "Monthly Scheduled Qty",
+      flex: 1.5,
+    },
+    { field: "Current_Stock", headerName: "Current Stock", flex: 1 },
+    { field: "Reason_For_Delay", headerName: "Reason For Delay", flex: 1.3 },
+  { field: "Status", headerName: "Status",  flex: 1, },
 ];
    useEffect(() => {
     const encryptedData = sessionStorage.getItem("userData");

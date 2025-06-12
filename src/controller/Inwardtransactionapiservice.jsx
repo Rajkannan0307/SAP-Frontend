@@ -15,10 +15,6 @@ export const getAdd = async (data) => {
     return response;
   };
 
-  export const getUpdates = async (data)=>{
-    const response = await axios.put(`${api}/Inward/get_Updates`, data);
-    return response;
-  };
   export const Inward = async (data) => {
     console.log(data)
     const response = await axios.post(`${api}/Inward/File`, data);

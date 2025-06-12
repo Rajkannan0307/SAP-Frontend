@@ -48,6 +48,7 @@ import ValuationType from "./Masters/ValuationType";
 import Service from"./Dashboard/service";
 import Purchase from "./Dashboard/Purchase";
 import InwardApproval from "./Approval/InwardApproval"
+import EmergencyApproval from "./Approval/EmergencyProcurementAprroval"
 const App = () => {
   return (
     <Router>
@@ -95,7 +96,8 @@ const App = () => {
               <Route path="ValuationType" element={<ProtectedRoute screenId={21}><ValuationType  /></ProtectedRoute>} />
             <Route path="Purchase" element={<ProtectedRoute><Purchase/></ProtectedRoute>} />
             <Route path="Service" element={<ProtectedRoute><Service/></ProtectedRoute>} />
-  <Route path="InwardApproval" element={<ProtectedRoute screenId={21}><InwardApproval /></ProtectedRoute>} />
+  <Route path="InwardApproval" element={<ProtectedRoute screenId={22}><InwardApproval /></ProtectedRoute>} />
+   <Route path="EmergencyApproval" element={<ProtectedRoute screenId={23}><EmergencyApproval /></ProtectedRoute>} />
              <Route path="Home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
              <Route path="HomePage" element={<ProtectedRoute><ApproverHome /></ProtectedRoute>} />
             {/* Role Management */}

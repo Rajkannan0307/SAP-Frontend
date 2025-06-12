@@ -307,10 +307,12 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "309 Approval", path: "/home/Approval_309", icon: <MdOutlineApproval style={{ fontSize: "20px", marginRight: "3px", color: "rgb(233, 127, 228)" }} />, code: 'Approval_309' },
             { name: "201 Approval", path: "/home/Approval_201", icon: <BsFillSignpostFill style={{ fontSize: "20px", marginRight: "3px", color: "rgb(52, 188, 252)" }} />, code: 'Approval_201' },
             { name: "202 Approval", path: "/home/Approval_202", icon: <BsFillSignpostFill style={{ fontSize: "20px", marginRight: "3px", color: "rgb(52, 188, 252)" }} />, code: 'Approval_202' },
+            { name: "Inward of Old Invoice Approval", path: "/home/InwardApproval", icon: <BsFillSignpostFill style={{ fontSize: "20px", marginRight: "3px", color: "rgb(52, 188, 252)" }} />, code: 'InwardApproval' },
+           { name: "Emergency Procurement Approval", path: "/home/EmergencyApproval", icon: <BsFillSignpostFill style={{ fontSize: "20px", marginRight: "3px", color: "rgb(52, 188, 252)" }} />, code: 'EmergencyApproval' },
 
           ]}
           codeList={[
-            'Approval_309', 'Approval_201','Approval_202'
+            'Approval_309', 'Approval_201','Approval_202','InwardApproval','EmergencyApproval'
           ]}
         />
 
