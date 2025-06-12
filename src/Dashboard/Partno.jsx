@@ -146,16 +146,45 @@ const Partno = () => {
   };
 
 
-  const handleHeaderCheckboxChange = (event) => {
-  const checked = event.target.checked;
+ const handleHeaderCheckboxChange = (event) => {
+    const checked = event.target.checked;
 
-  if (checked) {
-    const allIds = rows.map((row) => row.Trn_Sap_ID); // ✅ use correct ID field
-    setSelectedRowIds(allIds);
-  } else {
-    setSelectedRowIds([]);
-  }
-};
+    const selectableRows = rows.filter((row) => {
+      const status = row.Approval_Status?.toLowerCase().trim();
+      return status === "rejected" || status === "under query";
+    });
+
+    if (checked) {
+      const allIds = selectableRows.map((row) => row.Trn_Sap_ID);
+      setSelectedRowIds(allIds);
+    } else {
+      setSelectedRowIds([]);
+    }
+  };
+  const handleRowCheckboxChange = (id, checked) => {
+    if (checked) {
+      setSelectedRowIds((prev) => {
+        const updated = [...prev, id];
+        if (
+          updated.length ===
+          rows.filter((row) => {
+            const status = row.Approval_Status?.toLowerCase().trim();
+            return status === "rejected" || status === "under query";
+          }).length
+        ) {
+          setHeaderChecked(true);
+        }
+        return updated;
+      });
+    } else {
+      setSelectedRowIds((prev) => {
+        const updated = prev.filter((rowId) => rowId !== id);
+        setHeaderChecked(false);
+        return updated;
+      });
+    }
+  };
+
 
 
 const handleOpenCheckResubmitModal = async () => {
@@ -192,7 +221,7 @@ const handleOpenCheckResubmitModal = async () => {
       }
     }
 
-    alert("Eligible documents successfully resubmitted.");
+    alert( "The selected document has been resubmitted successfully.");
     getData();
 
     // Clear all selections after resubmit
@@ -214,42 +243,6 @@ const resubmittableSelectedRows = rows.filter(row =>
 );
 
 const showResubmitButton = resubmittableSelectedRows.length > 0;
-
-
-
-
-  const handleRowCheckboxChange = (id, checked) => {
-    if (checked) {
-      setSelectedRowIds((prev) => {
-        const updated = [...prev, id];
-        // Auto-check header if all rows are now selected
-        if (updated.length === rows.length) {
-          setHeaderChecked(true);
-        }
-        return updated;
-      });
-    } else {
-      setSelectedRowIds((prev) => {
-        const updated = prev.filter((rowId) => rowId !== id);
-        setHeaderChecked(false); // uncheck header when any row is deselected
-        return updated;
-      });
-    }
-  };
-
-
-  const handleAnotherFunction = (rows) => {
-  rows.forEach(row => {
-    const status = (row.Approval_Status || "").toLowerCase().trim();
-    if (status === "rejected" || status === "under query") {
-      console.log("Eligible for resubmit:", row);
-      // do your logic here for each eligible row
-    } else {
-      console.log("Not eligible:", row);
-    }
-  });
-};
-
 
 
   //[View_PartnoApproval_Status]
@@ -1158,57 +1151,79 @@ console.log("viiii",status)
   sortable: false,
   editable: false,
   disableColumnMenu: true,
- renderHeader: () => (
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      width: "100%",
-    }}
-  >
-    <span style={{ fontWeight: 600, fontSize: 14 }}>Actions</span>
-   <Checkbox
-  checked={rows.length > 0 && selectedRowIds.length === rows.length}
-  indeterminate={selectedRowIds.length > 0 && selectedRowIds.length < rows.length}
-  onChange={handleHeaderCheckboxChange}
-  inputProps={{ "aria-label": "Select all rows" }}
-  onClick={(e) => e.stopPropagation()}
-/>
+      renderHeader: () => {
+        const selectableRows = rows.filter((row) => {
+          const status = row.Approval_Status?.toLowerCase().trim();
+          return status === "rejected" || status === "under query";
+        });
+
+        const allSelected =
+          selectableRows.length > 0 &&
+          selectedRowIds.length === selectableRows.length;
+        const isIndeterminate =
+          selectedRowIds.length > 0 &&
+          selectedRowIds.length < selectableRows.length;
+
+        return (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%",
+            }}
+          >
+            <span style={{ fontWeight: 600, fontSize: 14 }}>Actions</span>
+            {selectableRows.length > 0 && (
+              <Checkbox
+                checked={allSelected}
+                indeterminate={isIndeterminate}
+                onChange={handleHeaderCheckboxChange}
+                inputProps={{ "aria-label": "Select all rows" }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
+          </div>
+        );
+      },
 
 
-  </div>
-
-
-  ),
 // In renderCell:
-renderCell: (params) => {
-  const isChecked = selectedRowIds.includes(params.row.Trn_Sap_ID);
+ renderCell: (params) => {
+        const row = params.row;
+        const status = row.Approval_Status?.toLowerCase().trim();
+        const isSelectable = status === "rejected" || status === "under query";
 
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      <div
-        onClick={(e) => {
-          e.stopPropagation();
-          setSelectedRow(params.row);
-          handleOpenViewStatusModal(params.row);
-        }}
-        title="View Details"
-        style={{ cursor: "pointer", color: "#008080" }}
-      >
-        <InfoIcon sx={{ fontSize: 24 }} />
-      </div>
+        const isChecked = selectedRowIds.includes(row.Trn_Sap_ID);
 
-      <Checkbox
-        checked={isChecked}
-        onChange={(e) => {
-          e.stopPropagation();
-          handleRowCheckboxChange(params.row.Trn_Sap_ID, e.target.checked);
-        }}
-      />
-    </div>
-  );
-}
+        console.log("Approval_Status:", row.Approval_Status); // 👈 Debug
+
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedRow(row);
+                handleOpenViewStatusModal(row);
+              }}
+              title="View Details"
+              style={{ cursor: "pointer", color: "#008080" }}
+            >
+              <InfoIcon sx={{ fontSize: 24 }} />
+            </div>
+
+            {isSelectable && (
+              <Checkbox
+                checked={isChecked}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  handleRowCheckboxChange(row.Trn_Sap_ID, e.target.checked);
+                }}
+              />
+            )}
+          </div>
+        );
+      },
 
    }
   ];
