@@ -157,7 +157,8 @@ const Partno = () => {
   }
 };
 
- const handleOpenCheckResubmitModal = async () => {
+
+const handleOpenCheckResubmitModal = async () => {
   if (!selectedRowIds || selectedRowIds.length === 0) {
     alert("Please select at least one row to resubmit.");
     return;
@@ -185,7 +186,6 @@ const Partno = () => {
         UserID: UserID,
         Action: "Resubmit",
       });
-      console.log("Resubmit data:", data);
 
       if (!resubmitResponse.success) {
         console.warn(`Resubmit failed for Doc_ID ${row.Doc_ID}`);
@@ -195,7 +195,7 @@ const Partno = () => {
     alert("Eligible documents successfully resubmitted.");
     getData();
 
-    // **Clear all selections after resubmit**
+    // Clear all selections after resubmit
     setSelectedRowIds([]);
     setHeaderChecked(false);
 
@@ -206,6 +206,14 @@ const Partno = () => {
 
   setOpenCheckResubmitModal(true);
 };
+
+// ✅ Logic to check if the Resubmit button should be shown
+const resubmittableSelectedRows = rows.filter(row =>
+  selectedRowIds.includes(row.Trn_Sap_ID) &&
+  ["rejected", "under query"].includes((row.Approval_Status || "").toLowerCase().trim())
+);
+
+const showResubmitButton = resubmittableSelectedRows.length > 0;
 
 
 
@@ -1445,35 +1453,32 @@ renderCell: (params) => {
           </Button>
         </div>
 
-        {/* Icons Section */}
         <div style={{ display: "flex", gap: "10px" }}>
-{(status === 'rejected' || status === 'under query') && (
-  <Button
-    variant="contained"
-    onClick={() => {
-      handleOpenCheckResubmitModal();
-      // handleAnotherFunction(selectedRows);
-    }}
-    startIcon={<PiUploadDuotone size={20} />}
-    sx={{
-      borderRadius: 1,
-      backgroundColor: "#E1BEE7",
-      color: "white",
-      padding: "8px 16px",
-      textTransform: "none",
-      fontWeight: 600,
-      transition: "background-color 0.3s ease",
-      '&:hover': {
-        backgroundColor: '#B3E5FC',
-      },
-      '&:active': {
-        backgroundColor: "#0288D1",
-      },
-    }}
-  >
-    Resubmit
-  </Button>
-)}
+      {showResubmitButton && (
+        <Button
+          variant="contained"
+          onClick={handleOpenCheckResubmitModal}
+          startIcon={<PiUploadDuotone size={20} />}
+          sx={{
+            borderRadius: 1,
+            backgroundColor: "#E1BEE7",
+            color: "white",
+            padding: "8px 16px",
+            textTransform: "none",
+            fontWeight: 600,
+            transition: "background-color 0.3s ease",
+            '&:hover': {
+              backgroundColor: '#B3E5FC',
+            },
+            '&:active': {
+              backgroundColor: "#0288D1",
+            },
+          }}
+        >
+          Resubmit
+        </Button>
+      )}
+ 
 
 
 

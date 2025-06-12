@@ -103,6 +103,17 @@ const Purchase = () => {
   { field: "Current_Stock", headerName: "Current Stock", width: 140 },
   { field: "Reason_For_Delay", headerName: "Reason For Delay", width: 180 },
   { field: "Status", headerName: "Status", width: 114 },
+   {
+      field: "Action",
+      headerName: "Action",
+      flex: 1,
+      renderCell: (params) => (
+        <Checkbox
+          checked={selectedRows.includes(params.row)}
+          onChange={() => handleCheckboxChange(params.row)}
+        />
+      ),
+    },
 ];
    useEffect(() => {
     const encryptedData = sessionStorage.getItem("userData");

@@ -85,7 +85,7 @@ const Emergency = () => {
 
     { field: "Invoice_Value", headerName: "Total Value", flex: 1 },
   
-    { field: "Reason_For_Delay", headerName: "Reason For Delay", flex: 1 },
+    { field: "Reason_For_Delay", headerName: "Reason", flex: 1 },
     { field: "Status", headerName: "Status", flex: 1 },
     { field: "Purchase_Order", headerName: "Purchase Order", flex: 1 },
   ];

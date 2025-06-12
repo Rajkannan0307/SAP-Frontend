@@ -47,6 +47,7 @@ import SAP from"./Sap User Access/Sap"
 import ValuationType from "./Masters/ValuationType";
 import Service from"./Dashboard/service";
 import Purchase from "./Dashboard/Purchase";
+import InwardApproval from "./Approval/InwardApproval"
 const App = () => {
   return (
     <Router>
@@ -94,7 +95,7 @@ const App = () => {
               <Route path="ValuationType" element={<ProtectedRoute screenId={21}><ValuationType  /></ProtectedRoute>} />
             <Route path="Purchase" element={<ProtectedRoute><Purchase/></ProtectedRoute>} />
             <Route path="Service" element={<ProtectedRoute><Service/></ProtectedRoute>} />
-
+  <Route path="InwardApproval" element={<ProtectedRoute screenId={21}><InwardApproval /></ProtectedRoute>} />
              <Route path="Home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
              <Route path="HomePage" element={<ProtectedRoute><ApproverHome /></ProtectedRoute>} />
             {/* Role Management */}
