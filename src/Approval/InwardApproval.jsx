@@ -22,7 +22,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
 import { decryptSessionData } from "../controller/StorageUtils";
-import { getdetails, getUpdates } from "../controller/InwardApprovalservice";
+import { getdetails, getUpdates ,getRejected,getEmployee} from "../controller/InwardApprovalservice";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 const InwardApproval = () => {
   const [searchText, setSearchText] = useState("");
@@ -31,6 +31,8 @@ const InwardApproval = () => {
   const [data, setData] = useState([]);
   const [UserID, setUserID] = useState("");
   const [PlantID, setPlantID] = useState("");
+  const[EmployeeID,setEmployeeID]=useState("")
+  const[Employee,setEmployee]=useState("")
    const [RoleID, setRoleID] = useState("");
   const [selectedRows, setSelectedRows] = useState([]);
  const [showSelect, setShowSelect] = useState(false);
@@ -39,7 +41,7 @@ const InwardApproval = () => {
   const [openModal, setOpenModal] = useState(false);
   const [InwardID, setInwardID] = useState("");
   const [selectedRow, setSelectedRow] = useState(null);
-
+const [EmployeeTable, setEmployeeTable] = useState([]);
   const columns = [
     { field: "Vendor_Code", headerName: "Vendor Code", flex: 1 },
     { field: "Vendor_Name", headerName: "Vendor Name", flex: 1 },
@@ -86,6 +88,7 @@ const InwardApproval = () => {
       setUserID(decryptedData.UserID);
       setPlantID(decryptedData.PlantID);
       setRoleID(decryptedData.RoleId)
+      setEmployeeID(decryptedData.EmpId);
     }
   }, []);
 console.log("inwardApproval role",RoleID)
@@ -105,11 +108,20 @@ console.log("inwardApproval role",RoleID)
   };
 
   useEffect(() => {
-    if (UserID,RoleID) {
+    if (UserID,RoleID,EmployeeID) {
       getData();
     }
-  }, [UserID,RoleID]);
+  }, [UserID,RoleID,EmployeeID]);
 
+
+    const get_Employee = async () => {
+      try {
+        const response = await getEmployee();
+        setEmployeeTable(response.data);
+      } catch (error) {
+        console.error("Error updating user:", error);
+      }
+    };
   const CustomToolbar = () => (
     <GridToolbarContainer>
       <GridToolbarColumnsButton />
@@ -159,77 +171,19 @@ console.log("inwardApproval role",RoleID)
     }
   };
 
-  const handleDownloadExcel = () => {
-    if (data.length === 0) {
-      alert("No Data Found");
-      return;
-    }
-
-    const DataColumns = [
-      "Vendor_Code",
-      "Vendor_Name",
-      "Invoice_No",
-      "Invoice_Qty",
-      "Invoice_Date",
-      "Material_Code",
-      "Invoice_Value",
-      "Purchase_Order",
-      "Monthly_Scheduled_Qty",
-      "Current_Stock",
-      "Reason_For_Delay",
-      "Status",
-    ];
-
-    const filteredData = data.map((item) => ({
-      Vendor_Code: item.Vendor_Code,
-      Vendor_Name: item.Vendor_Name,
-      Invoice_No: item.Invoice_No,
-      Invoice_Qty: item.Invoice_Qty,
-      Invoice_Date: item.Invoice_Date,
-      Material_Code: item.Material_Code,
-      Invoice_Value: item.Invoice_Value,
-      Purchase_Order: item.Purchase_Order,
-      Monthly_Scheduled_Qty: item.Monthly_Scheduled_Qty,
-      Current_Stock: item.Current_Stock,
-      Reason_For_Delay: item.Reason_For_Delay,
-      Status: item.Status,
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(filteredData, {
-      header: DataColumns,
-    });
-
-    DataColumns.forEach((_, index) => {
-      const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-      if (!worksheet[cellAddress]) return;
-      worksheet[cellAddress].s = {
-        font: {
-          bold: true,
-          color: { rgb: "000000" },
-        },
-        fill: {
-          fgColor: { rgb: "FFFF00" },
-        },
-        alignment: {
-          horizontal: "center",
-        },
-      };
-    });
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Inward Data");
-    XLSX.writeFile(workbook, "Inward_Invoice_Purchase_Data.xlsx");
-  };
+  
 const handleopenApproveModal = (row) => {
   setComment("");
   setInwardID(row.Inward_ID); // ✅ corrected
   setSelectedRow(row);        // Optional: store selected row data
   setOpenModal(true);
+  get_Employee();
 };
 
  const handleCloseModal = () => setOpenModal(false);
   const handleL2Click = () => {
     setShowSelect(true);
+    get_Employee();
   };
 
 const handleApprove = async () => {
@@ -242,6 +196,7 @@ const handleApprove = async () => {
     const data = {
       Inward_ID: InwardID,
       RoleID: RoleID,
+       Approver:EmployeeID,
       Approver_Comment: comment,
       Modified_By: UserID,
     };
@@ -266,10 +221,40 @@ const handleApprove = async () => {
   }
 };
 
-
-  const handleReject = () => {
-    console.log('Rejected:', comment);
-  };
+const handleReject = async () => {
+      if (!InwardID) {
+        alert("No row selected. Please open the modal from a row.");
+        return;
+      }
+    
+      try {
+        const data = {
+          Inward_ID: InwardID,
+          RoleID: RoleID,
+          Approver:EmployeeID,
+          Approver_Comment: comment,
+          Modified_By: UserID,
+        };
+    
+        console.log("Update payload:", data);
+    
+        const response = await getRejected(data);
+    
+        if (response.data.success) {
+          alert(response.data.message);
+          getData(); // Refresh table
+          handleCloseModal(); // Close modal
+        } else {
+          alert(response.data.message);
+        }
+      } catch (error) {
+        console.error("Update error:", error);
+        alert(
+          error.response?.data?.message ||
+            "An unexpected error occurred while Approving the invoice."
+        );
+      }
+    };
 
   const handleSelectChange = (event) => {
     setSelectedL2(event.target.value);
@@ -354,18 +339,7 @@ const handleApprove = async () => {
           </Button>
         </div>
 
-        <IconButton
-          onClick={handleDownloadExcel}
-          style={{
-            borderRadius: "50%",
-            backgroundColor: "#339900",
-            color: "white",
-            width: "40px",
-            height: "40px",
-          }}
-        >
-          <FaFileExcel size={18} />
-        </IconButton>
+       
       </div>
 
       {/* DataGrid */}
@@ -462,18 +436,23 @@ const handleApprove = async () => {
         {/* Conditional L2 Approver Select Box */}
         {showSelect && (
           <FormControl fullWidth>
-            <InputLabel id="l2-approver-label">Select L2 Approver</InputLabel>
-            <Select
-              labelId="l2-approver-label"
-              value={selectedL2}
-              label="Select L2 Approver"
-              onChange={handleSelectChange}
-            >
-              <MenuItem value="L2_1">L2 Approver 1</MenuItem>
-              <MenuItem value="L2_2">L2 Approver 2</MenuItem>
-              <MenuItem value="L2_3">L2 Approver 3</MenuItem>
-            </Select>
-          </FormControl>
+                      <InputLabel>EmployeeID</InputLabel>
+                      <Select
+                        label="Vendor Code"
+                        name="Vendor Code"
+                        value={Employee}
+                        onChange={(e) => {
+                          setEmployee(e.target.value);
+                        }}
+                        required
+                      >
+                        {EmployeeTable.map((item) => (
+                          <MenuItem key={item.Employee_ID} value={item.Employee_ID}>
+                            {item.Employee_ID}-{item.USER_NAME}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
         )}
       </Box>
     </Modal>
