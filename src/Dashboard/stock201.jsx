@@ -37,7 +37,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from 'sheetjs-style';
-import { Movement201,Movement201Reupload, getdetails, get201ApprovalView } from "../controller/Movement201apiservice";
+import { Movement201, Movement201Reupload, getdetails, get201ApprovalView } from "../controller/Movement201apiservice";
 import { getresubmit, getCancel, DownloadAllExcel, getTransactionData } from '../controller/Movement201apiservice';
 
 
@@ -159,9 +159,9 @@ const Stock201 = () => {
         console.log('response', response.data)
         alert(response.data.message)
         if (response.data.NewRecord.length > 0 || response.data.DuplicateRecords.length > 0 || response.data.ErrorRecords.length > 0) {
-        
-downloadExcel(response.data.NewRecord, response.data.DuplicateRecords, response.data.ErrorRecords);
-  }
+
+          downloadExcel(response.data.NewRecord, response.data.DuplicateRecords, response.data.ErrorRecords);
+        }
       } catch (error) {
         if (error.response && error.response.status === 400) {
           alert(error.response.data.message)
@@ -224,7 +224,7 @@ downloadExcel(response.data.NewRecord, response.data.DuplicateRecords, response.
     }));
 
 
-    
+
     // Filter and map the data for New Records
     const filteredNewData = newRecord.map(item => ({
       // Doc_ID: selectedRow.Doc_ID || '',
@@ -433,64 +433,64 @@ downloadExcel(response.data.NewRecord, response.data.DuplicateRecords, response.
 
 
 
- // Upload handler
-const handleEditUploadData = async (docId,trnSapId) => {
-  if (!editSelectedFile) {
-    alert("Please select a file first.");
-    return;
-  }
-
-  try {
-    const finalDocId = typeof docId === 'object' ? docId?.Doc_ID : docId;
-
-    const formData = new FormData();
-    formData.append("User_Add", editSelectedFile);  // Ensure key matches backend
-    formData.append("UserID", UserID);
-    formData.append("Doc_ID", finalDocId); // Must be a primitive value (number or string of number)
-   formData.append("Trn_Sap_ID", trnSapId);
-    const response = await Movement201Reupload(formData); // Don't pass docId again if your function wraps it
-    console.log('response', response.data);
-    alert(response.data.message);
-
-      const reuploadData = response.data.ReUploadRecord || [];
-    const errorData = response.data.ErrorRecords || [];
-
-    console.log('ReUploadRecord:', reuploadData);
-    console.log('ErrorRecords:', errorData);
-
-    if (reuploadData.length > 0 || errorData.length > 0) {
-      downloadExcelReUpload(reuploadData, errorData);
-    } else {
-      console.log("No data to download.");
+  // Upload handler
+  const handleEditUploadData = async (docId, trnSapId) => {
+    if (!editSelectedFile) {
+      alert("Please select a file first.");
+      return;
     }
 
-  } catch (error) {
-    console.error('Upload failed:', error?.response?.data || error.message);
-    alert(error.response?.data?.message || 'Upload failed.');
-  }
+    try {
+      const finalDocId = typeof docId === 'object' ? docId?.Doc_ID : docId;
 
-  getData();
-  setOpenEditModal(false);
-};
+      const formData = new FormData();
+      formData.append("User_Add", editSelectedFile);  // Ensure key matches backend
+      formData.append("UserID", UserID);
+      formData.append("Doc_ID", finalDocId); // Must be a primitive value (number or string of number)
+      formData.append("Trn_Sap_ID", trnSapId);
+      const response = await Movement201Reupload(formData); // Don't pass docId again if your function wraps it
+      console.log('response', response.data);
+      alert(response.data.message);
 
-// File input handler
-const handleEditFileUpload = (event) => {
-  setEditSelectedFile(event.target.files[0]);
-};
+      const reuploadData = response.data.ReUploadRecord || [];
+      const errorData = response.data.ErrorRecords || [];
+
+      console.log('ReUploadRecord:', reuploadData);
+      console.log('ErrorRecords:', errorData);
+
+      if (reuploadData.length > 0 || errorData.length > 0) {
+        downloadExcelReUpload(reuploadData, errorData);
+      } else {
+        console.log("No data to download.");
+      }
+
+    } catch (error) {
+      console.error('Upload failed:', error?.response?.data || error.message);
+      alert(error.response?.data?.message || 'Upload failed.');
+    }
+
+    getData();
+    setOpenEditModal(false);
+  };
+
+  // File input handler
+  const handleEditFileUpload = (event) => {
+    setEditSelectedFile(event.target.files[0]);
+  };
 
 
- const downloadExcelReUpload = (updateRecord , errRecord ) => {
-   const wb = XLSX.utils.book_new();
+  const downloadExcelReUpload = (updateRecord, errRecord) => {
+    const wb = XLSX.utils.book_new();
     // Column headers for Error Records
-    const ErrorColumns = ['Doc_ID','Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+    const ErrorColumns = ['Doc_ID', 'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
       'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
 
     ];
 
-   
+
 
     // Column headers for Duplicate Records
-    const ReUploadColumns = ['Doc_ID','Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+    const ReUploadColumns = ['Doc_ID', 'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
       'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
     ];
 
@@ -526,10 +526,10 @@ const handleEditFileUpload = (event) => {
     }));
 
 
-    
+
     // Filter and map the data for New Records
     const filteredUpdate = updateRecord.map(item => ({
-       Doc_ID: item.Doc_ID || '',
+      Doc_ID: item.Doc_ID || '',
       Plant_Code: item.Plant_Code || '',
       Material_Code: item.Material_Code || '',
       Quantity: item.Quantity || '',
@@ -548,7 +548,7 @@ const handleEditFileUpload = (event) => {
 
 
 
-   
+
 
 
     // 🔹 Helper to style header cells
@@ -597,25 +597,25 @@ const handleEditFileUpload = (event) => {
 
 
 
-     // Always add at least one row so the file is not empty
-      const wsError = XLSX.utils.json_to_sheet(filteredError.length ? filteredError : [{}], { header: ErrorColumns });
-      styleHeaders(wsError, ErrorColumns);
-      styleValidationColumns(wsError, ErrorColumns, filteredError.length);
-      XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
-    
-      const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate.length ? filteredUpdate : [{}], { header: ReUploadColumns });
-      styleHeaders(wsUpdated, ReUploadColumns);
-      styleValidationColumns(wsUpdated, ReUploadColumns, filteredUpdate.length);
-      XLSX.utils.book_append_sheet(wb, wsUpdated, 'Updated Records');
-    
-      const fileName = 'Trn201Movt ReuploadData Upload Log.xlsx';
-      console.log("Writing Excel file...");
-      XLSX.writeFile(wb, fileName);
-    };
-    
+    // Always add at least one row so the file is not empty
+    const wsError = XLSX.utils.json_to_sheet(filteredError.length ? filteredError : [{}], { header: ErrorColumns });
+    styleHeaders(wsError, ErrorColumns);
+    styleValidationColumns(wsError, ErrorColumns, filteredError.length);
+    XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
+
+    const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate.length ? filteredUpdate : [{}], { header: ReUploadColumns });
+    styleHeaders(wsUpdated, ReUploadColumns);
+    styleValidationColumns(wsUpdated, ReUploadColumns, filteredUpdate.length);
+    XLSX.utils.book_append_sheet(wb, wsUpdated, 'Updated Records');
+
+    const fileName = 'Trn201Movt ReuploadData Upload Log.xlsx';
+    console.log("Writing Excel file...");
+    XLSX.writeFile(wb, fileName);
+  };
 
 
-  
+
+
 
   //view detail for Particular DocID Details ... downloa
 
@@ -758,55 +758,55 @@ const handleEditFileUpload = (event) => {
     { field: "Movement_Code", headerName: "Movement Type", flex: 1 },
     { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
 
-   {
-  field: "actions",
-  headerName: "Actions",
-  flex: 1,
-  sortable: false,
-  renderCell: (params) => {
-    const status = (params.row?.Approval_Status || "").toLowerCase().trim();
-    const isEditable = status === "rejected" || status === "under query";
+    {
+      field: "actions",
+      headerName: "Actions",
+      flex: 1,
+      sortable: false,
+      renderCell: (params) => {
+        const status = (params.row?.Approval_Status || "").toLowerCase().trim();
+        const isEditable = status === "rejected" || status === "under query";
 
-    return (
-      <div style={{ display: "flex", gap: "10px" }}>
-        {/* View Button - always shown */}
-        <IconButton
-          size="small"
-          color="primary"
-          onClick={() => handleOpenViewStatusModal(params.row)}
-        >
-          <VisibilityIcon fontSize="small" />
-        </IconButton>
-
-        {/* Conditionally show Edit and Download only if editable */}
-        {isEditable && (
-          <>
+        return (
+          <div style={{ display: "flex", gap: "10px" }}>
+            {/* View Button - always shown */}
             <IconButton
               size="small"
-              sx={{
-                color: "#6a0dad",
-                "&:hover": {
-                  color: "#4b0082",
-                },
-              }}
-              onClick={() => handleEdit(params.row)}
+              color="primary"
+              onClick={() => handleOpenViewStatusModal(params.row)}
             >
-              <EditIcon fontSize="small" />
+              <VisibilityIcon fontSize="small" />
             </IconButton>
 
-            <IconButton
+            {/* Conditionally show Edit and Download only if editable */}
+            {isEditable && (
+              <>
+                <IconButton
+                  size="small"
+                  sx={{
+                    color: "#6a0dad",
+                    "&:hover": {
+                      color: "#4b0082",
+                    },
+                  }}
+                  onClick={() => handleEdit(params.row)}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+
+                {/* <IconButton
               size="small"
               color="success"
               onClick={() => handleDownloadByDocId(params.row.Doc_ID)}
             >
               <CloudDownloadIcon fontSize="small" />
-            </IconButton>
-          </>
-        )}
-      </div>
-    );
-  },
-}
+            </IconButton> */}
+              </>
+            )}
+          </div>
+        );
+      },
+    }
 
   ];
 
@@ -856,47 +856,47 @@ const handleEditFileUpload = (event) => {
   };
 
 
-const renderActionButtons = (rowData) => {
-  const status = (rowData?.Approval_Status || "").toLowerCase().trim();
-  const isEditable = status === "rejected" || status === "under query";
+  const renderActionButtons = (rowData) => {
+    const status = (rowData?.Approval_Status || "").toLowerCase().trim();
+    const isEditable = status === "rejected" || status === "under query";
 
-  return (
-    <>
-      <IconButton
-        size="small"
-        color="primary"
-        onClick={() => handleOpenViewStatusModal(rowData)}
-      >
-        <VisibilityIcon fontSize="small" />
-      </IconButton>
+    return (
+      <>
+        <IconButton
+          size="small"
+          color="primary"
+          onClick={() => handleOpenViewStatusModal(rowData)}
+        >
+          <VisibilityIcon fontSize="small" />
+        </IconButton>
 
-      {isEditable && (
-        <>
-          <IconButton
-            size="small"
-            sx={{
-              color: "#6a0dad",
-              "&:hover": {
-                color: "#4b0082",
-              },
-            }}
-            onClick={() => handleEdit(rowData)}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
+        {isEditable && (
+          <>
+            <IconButton
+              size="small"
+              sx={{
+                color: "#6a0dad",
+                "&:hover": {
+                  color: "#4b0082",
+                },
+              }}
+              onClick={() => handleEdit(rowData)}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
 
-          <IconButton
-            size="small"
-            color="success"
-            onClick={() => handleDownloadByDocId(rowData.Doc_ID)}
-          >
-            <CloudDownloadIcon fontSize="small" />
-          </IconButton>
-        </>
-      )}
-    </>
-  );
-};
+            <IconButton
+              size="small"
+              color="success"
+              onClick={() => handleDownloadByDocId(rowData.Doc_ID)}
+            >
+              <CloudDownloadIcon fontSize="small" />
+            </IconButton>
+          </>
+        )}
+      </>
+    );
+  };
 
 
   const handleOpenViewStatusModal = async (rowData) => {
@@ -1246,6 +1246,7 @@ const renderActionButtons = (rowData) => {
               textDecoration: "underline",
               textDecorationColor: "#88c57a",
               textDecorationThickness: "3px",
+                  textUnderlineOffset: "6px"  
             }}
           >
             Upload Excel File to Edit Document
@@ -1253,10 +1254,20 @@ const renderActionButtons = (rowData) => {
 
           <Button
             variant="contained"
-            style={{ marginBottom: "10px", backgroundColor: deepPurple[500], color: "white" }}
+            sx={{
+              mb: 2,
+              backgroundColor: deepPurple[400],
+              color: 'white',
+              '&:hover': {
+                backgroundColor: deepPurple[600],  // darker purple on hover
+              },
+              '&:active': {
+                backgroundColor: deepPurple[900],  // even darker when clicked
+              },
+            }}
           >
             <a
-              style={{ textDecoration: "none", color: "white" }}
+              style={{ textDecoration: 'none', color: 'white' }}
               href={`${api}/transaction/Template/ReUpload201Movt.xlsx`}
               target="_blank"
               rel="noopener noreferrer"
@@ -1265,6 +1276,7 @@ const renderActionButtons = (rowData) => {
             </a>
           </Button>
 
+
           <input
             type="file"
             accept=".xlsx, .xls"
@@ -1272,7 +1284,7 @@ const renderActionButtons = (rowData) => {
             style={{
               padding: "8px",
               backgroundColor: "white",
-              color: "black",
+              //color: "black",
               border: "1px solid black",
               borderRadius: "5px",
               cursor: "pointer",
@@ -1326,30 +1338,44 @@ const renderActionButtons = (rowData) => {
               variant="contained"
               color="error"
               onClick={() => setOpenEditModal(false)}
-              style={{ marginTop: "10px", width: "25%" }}
+              sx={{
+                mt: 2,
+                width: '25%',
+                height: '38px',
+                color: '#fff', // Text color
+                backgroundColor: '#d32f2f', // MUI error main color
+                '&:hover': {
+                  backgroundColor: '#9a0007', // MUI error dark color for hover
+                },
+                '&:active': {
+                  backgroundColor: '#7f0005', // Darker shade for click/active
+                },
+              }}
             >
               Close
             </Button>
 
-           
-                       <Button
-             variant="contained"
-             onClick={() =>
-               handleEditUploadData(selectedRow?.Doc_ID, selectedRow?.Trn_Sap_ID)
-             }
-             disabled={editIsUploading}
-             sx={{
-               mt: 2,
-               width: '25%',
-               color: '#ffffff',
-               backgroundColor: '#1976d2',
-               '&:hover': {
-                 backgroundColor: '#115293',
-               },
-             }}
-           >
-             ReUpload
-           </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleEditUploadData(selectedRow?.Doc_ID, selectedRow?.Trn_Sap_ID)}
+              disabled={editIsUploading}
+              sx={{
+                mt: 2,
+                width: '25%',
+                height: '38px',
+                color: '#ffffff',
+                backgroundColor: '#1976d2',
+                '&:hover': {
+                  backgroundColor: '#115293',
+                },
+                '&:active': {
+                  backgroundColor: '#0d3c6a', // darker blue for active/click
+                },
+              }}
+            >
+              ReUpload
+            </Button>
+
           </Box>
         </Box>
       </Modal>
@@ -1397,40 +1423,40 @@ const renderActionButtons = (rowData) => {
           </Box>
 
           {/* 🧾 Status Table */}
-          
-            <>
-              <Table size="small" sx={{ borderCollapse: 'collapse' }}>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: '#bdbdbd' }}>
-                    <TableCell sx={{ border: '1px solid #555555' }}>Date</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>Role</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>Name</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>Comment</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>Status</TableCell>
+
+          <>
+            <Table size="small" sx={{ borderCollapse: 'collapse' }}>
+              <TableHead>
+                <TableRow sx={{ bgcolor: '#bdbdbd' }}>
+                  <TableCell sx={{ border: '1px solid #555555' }}>Date</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>Role</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>Name</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>Comment</TableCell>
+                  <TableCell sx={{ border: '1px solid #555555' }}>Status</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {viewStatusData.map((row, idx) => (
+                  <TableRow key={idx} sx={{ border: '1px solid #555555' }}>
+                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_Date}</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Role}</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_By}</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Approver_Comment || '—'}</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Status} - {User_Level}</TableCell>
+
+
                   </TableRow>
-                </TableHead>
-                <TableBody>
-                  {viewStatusData.map((row, idx) => (
-                    <TableRow key={idx} sx={{ border: '1px solid #555555' }}>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_Date}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Role}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_By}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Approver_Comment || '—'}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Status} - {User_Level}</TableCell>
-                    
-                    
-                    </TableRow>
-                  ))}
+                ))}
 
-                </TableBody>
-              </Table>
+              </TableBody>
+            </Table>
 
-              
-            </>    
+
+          </>
         </Box>
       </Modal>
 
- {/* ExcelDownload Modal */}
+      {/* ExcelDownload Modal */}
 
       <Modal
         open={openExcelDownloadModal}
