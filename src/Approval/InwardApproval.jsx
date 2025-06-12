@@ -31,12 +31,15 @@ const InwardApproval = () => {
   const [data, setData] = useState([]);
   const [UserID, setUserID] = useState("");
   const [PlantID, setPlantID] = useState("");
+   const [RoleID, setRoleID] = useState("");
   const [selectedRows, setSelectedRows] = useState([]);
  const [showSelect, setShowSelect] = useState(false);
   const [comment, setComment] = useState('');
   const [selectedL2, setSelectedL2] = useState('');
   const [openModal, setOpenModal] = useState(false);
   const [InwardID, setInwardID] = useState("");
+  const [selectedRow, setSelectedRow] = useState(null);
+
   const columns = [
     { field: "Vendor_Code", headerName: "Vendor Code", flex: 1 },
     { field: "Vendor_Name", headerName: "Vendor Name", flex: 1 },
@@ -82,12 +85,14 @@ const InwardApproval = () => {
       const decryptedData = decryptSessionData(encryptedData);
       setUserID(decryptedData.UserID);
       setPlantID(decryptedData.PlantID);
+      setRoleID(decryptedData.RoleId)
     }
   }, []);
-
+console.log("inwardApproval role",RoleID)
   const getData = async () => {
     try {
-      const response = await getdetails(UserID);
+      const response = await getdetails(UserID,RoleID);
+      console.log('inward appoval data',response)
       setData(response);
       setOriginalRows(response);
       setRows(response);
@@ -100,10 +105,10 @@ const InwardApproval = () => {
   };
 
   useEffect(() => {
-    if (UserID) {
+    if (UserID,RoleID) {
       getData();
     }
-  }, [UserID]);
+  }, [UserID,RoleID]);
 
   const CustomToolbar = () => (
     <GridToolbarContainer>
@@ -215,53 +220,52 @@ const InwardApproval = () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Inward Data");
     XLSX.writeFile(workbook, "Inward_Invoice_Purchase_Data.xlsx");
   };
-const handleopenApproveModal=()=>{
+const handleopenApproveModal = (row) => {
   setComment("");
+  setInwardID(row.Inward_ID); // ✅ corrected
+  setSelectedRow(row);        // Optional: store selected row data
   setOpenModal(true);
-}
+};
+
  const handleCloseModal = () => setOpenModal(false);
   const handleL2Click = () => {
     setShowSelect(true);
   };
 
- const handleApprove= async () => {
-     try {
-     
- 
- 
- 
- 
-       const data = {
-         Inward_ID: InwardID,
-        Approver_Comment:comment,
-         Modified_By: UserID,
-       };
- 
-       console.log("Update payload:", data);
- 
-       const response = await getUpdates(data); // Make sure this calls your updated backend API
- 
-       if (response.data.success) {
-         alert(response.data.message );
-         getData(); // Refresh table or grid
-         handleCloseModal(); // Close the modal
-       } else {
-         alert(response.data.message );
-       }
-     } catch (error) {
-       console.error("Update error:", error);
- 
-       if (
-         error.response &&
-         error.response.data &&
-         error.response.data.message
-       ) {
-         alert(error.response.data.message);
-       } else {
-         alert("An unexpected error occurred while Approving the invoice.");
-       }
-     }
-   };
+const handleApprove = async () => {
+  if (!InwardID) {
+    alert("No row selected. Please open the modal from a row.");
+    return;
+  }
+
+  try {
+    const data = {
+      Inward_ID: InwardID,
+      RoleID: RoleID,
+      Approver_Comment: comment,
+      Modified_By: UserID,
+    };
+
+    console.log("Update payload:", data);
+
+    const response = await getUpdates(data);
+
+    if (response.data.success) {
+      alert(response.data.message);
+      getData(); // Refresh table
+      handleCloseModal(); // Close modal
+    } else {
+      alert(response.data.message);
+    }
+  } catch (error) {
+    console.error("Update error:", error);
+    alert(
+      error.response?.data?.message ||
+        "An unexpected error occurred while Approving the invoice."
+    );
+  }
+};
+
 
   const handleReject = () => {
     console.log('Rejected:', comment);

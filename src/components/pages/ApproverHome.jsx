@@ -32,7 +32,7 @@ const ApproverHome = () => {
   { id: "5", title: "Rs1 Conversion", path: "/approval/202", movementId: 5, icon: <FiCheckCircle /> },
   { id: "6", title: "ME38 Manual Schedule", path: "/approval/203", movementId: 6, icon: <FiCheckCircle /> },
   { id: "7", title: "RGP/NRGP ", path: "/approval/204", movementId: 7, icon: <FiCheckCircle /> },
-  { id: "8", title: "Inward of Old Invoices", path: "/approval/205", movementId: 8, icon: <FiCheckCircle /> },
+  { id: "8", title: "Inward of Old Invoices", path: "/home/InwardApproval", movementId: 8, icon: <FiCheckCircle /> },
   { id: "9", title: "Emergency Procurement", path: "/approval/206", movementId: 9, icon: <FiCheckCircle /> },
   { id: "10", title: "Production Order Aging Control Change", path: "/approval/207", movementId: 10, icon: <FiCheckCircle /> },
   { id: "11", title: "Phy Inventory Adjustment", path: "/approval/208", movementId: 11, icon: <FiCheckCircle /> },
