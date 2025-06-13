@@ -823,19 +823,19 @@ setMaterialDescription("");
            
           {/* Reason For Delay */}
           <TextField
-            label="Reason For Delay"
-            name="ReasonForDelay"
+            label="Reason "
+            name="Reason"
             value={ReasonForDelay}
             onChange={(e) => setReasonForDelay(e.target.value)}
           />
           {/* Purchase Order */}
-          <TextField
+          {/* <TextField
             label="Purchase Order"
             name="PurchaseOrder"
             value={PurchaseOrder}
             onChange={(e) => setPurchaseOrder(e.target.value)}
            
-          />
+          /> */}
           {/* Buttons */}
           <Box
             sx={{
@@ -957,8 +957,8 @@ setMaterialDescription("");
            
           {/* Reason For Delay */}
           <TextField
-            label="Reason For Delay"
-            name="ReasonForDelay"
+            label="Reason "
+            name="Reason"
             value={ReasonForDelay}
             onChange={(e) => setReasonForDelay(e.target.value)}
           />

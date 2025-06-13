@@ -60,7 +60,9 @@ const EmergencyApproval = () => {
   // const [newRecord] = useState([]);
   // const [updateRecord] = useState([]);
   // const [errRecord] = useState([]);
- const [Plant_ID, setPlantID] = useState("");
+   const [PlantID, setPlantID] = useState("");
+    const[EmployeeID,setEmployeeID]=useState("")
+ 
   const [openUploadModal, setOpenUploadModal] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -114,25 +116,38 @@ const EmergencyApproval = () => {
         },
   ];
   useEffect(() => {
-      const encryptedData = sessionStorage.getItem("userData");
-      if (encryptedData) {
-        const decryptedData = decryptSessionData(encryptedData);
-        setUserID(decryptedData.UserID);
-        setPlantID(decryptedData.PlantID);
-        setRoleID(decryptedData.RoleId)
-         console.log("Emergency PlantID", decryptedData.PlantID);
-    console.log("Emergency userid", decryptedData.UserID);
-   console.log("inwardApproval role:",RoleID)
-      }
-    }, []);
-  
-
-      useEffect(() => {
-        if (UserID,RoleID) {
-          getData();
-        }
-      }, [UserID,RoleID]);
-    
+     const encryptedData = sessionStorage.getItem("userData");
+     if (encryptedData) {
+       const decryptedData = decryptSessionData(encryptedData);
+       setUserID(decryptedData.UserID);
+       setPlantID(decryptedData.PlantID);
+       setRoleID(decryptedData.RoleId)
+       setEmployeeID(decryptedData.EmpId);
+     }
+   }, []);
+ console.log("EmergencyApproval role",RoleID)
+ console.log("EmergencyApproval Plant",PlantID)
+   const getData = async () => {
+     try {
+       const response = await getdetails(UserID,RoleID,PlantID);
+       console.log('inward appoval data',response)
+       setData(response);
+       setOriginalRows(response);
+       setRows(response);
+     } catch (error) {
+       console.error(error);
+       setData([]);
+       setOriginalRows([]);
+       setRows([]);
+     }
+   };
+ 
+   useEffect(() => {
+     if (UserID,RoleID,EmployeeID,PlantID) {
+       getData();
+     }
+   }, [UserID,RoleID,EmployeeID,PlantID]);
+ 
       const handleCheckboxChange = (row) => {
     setSelectedRows((prevSelected) => {
       const isSelected = prevSelected.some(
@@ -146,20 +161,7 @@ const EmergencyApproval = () => {
     });
   };
 
-  const getData = async () => {
-      try {
-        const response = await getdetails(UserID,RoleID);
-        console.log('inward appoval data',response)
-        setData(response);
-        setOriginalRows(response);
-        setRows(response);
-      } catch (error) {
-        console.error(error);
-        setData([]);
-        setOriginalRows([]);
-        setRows([]);
-      }
-    };
+  
 
 
 
