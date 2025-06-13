@@ -25,6 +25,42 @@ export const getPlants = async ()=>{
     const response = await axios.get(`${api}/Movement201/Get_Plants`);
     return response;
 };
+
+export const getMaterial = async ()=>{
+
+    const response = await axios.get(`${api}/Movement201/Get_Material`);
+    return response;
+};
+export const getSLoc = async ()=>{
+
+    const response = await axios.get(`${api}/Movement201/Get_StorageLocation`);
+    return response;
+};
+
+export const getValuationType = async ()=>{
+
+    const response = await axios.get(`${api}/Movement201/Get_ValuationType`);
+    return response;
+};
+
+
+export const getMovement = async ()=>{
+
+    const response = await axios.get(`${api}/Movement201/Get_MovementType`);
+    return response;
+};
+
+export const getReasonForMovement = async ()=>{
+
+    const response = await axios.get(`${api}/Movement201/Get_ReasonForMovementType`);
+    return response;
+};
+
+export const getCostCenter = async ()=>{
+
+    const response = await axios.get(`${api}/Movement201/Get_CostCenter`);
+    return response;
+};
 export const getView=async ()=>{
     const response = await axios.get(`${api}/Movement201/get_View`);
     return response.data;
@@ -36,21 +72,6 @@ export const get201ApprovalView = async (docId) => {
   
   return response.data;
 };
-
-
-export const getresubmit = async (data) => {
-  const response = await axios.post(`${api}/Movement201/HandleResubmitAction`, data);
-  
-  return response.data;
-};
-
-
-export const getCancel = async (data) => {
-  const response = await axios.post(`${api}/Movement201/HandleCancelAction?Doc_ID`,data);
-  
-  return response.data;
-};
-
 
 
 export const DownloadAllExcel = async (DocID) => {
@@ -71,4 +92,23 @@ export const getTransactionData = async (fromDate, toDate) => {
     }
   });
   return response;
+};
+
+export const Edit201Record = async (data) => {
+  const response = await axios.post(`${api}/transaction/Edit201Record`, data);
+  return response.data;
+};
+
+
+export const getresubmit = async (data) => {
+  const response = await axios.post(`${api}/Movement201/HandleResubmitAction201`, data);
+  
+  return response.data;
+};
+
+
+export const getCancel = async (data) => {
+  const response = await axios.post(`${api}/Movement201/HandleCancelAction201?Doc_ID`,data);
+  
+  return response.data;
 };

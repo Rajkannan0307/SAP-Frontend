@@ -34,7 +34,7 @@ import { getTransactionData, Movement309, Movement309ReUpload } from "../control
 import { api } from "../controller/constants";
 import {
   getdetails, DownloadAllExcel, getresubmit,
-  Edit309Record, getAdd, getPlants, getMaterial,
+  Edit309Record, getPlants, getMaterial,
   getSLoc, getValuationType, get309ApprovalView
 } from '../controller/transactionapiservice';
 
@@ -261,8 +261,6 @@ const Partno = () => {
     setToBatch(record.ToBatch);
     setOpenEditModal(true);
   };
-  const handleCloseAddModal = () => setOpenAddModal(false);
-
   const getData = async () => {
     try {
       const response = await getdetails(UserID);
@@ -330,9 +328,9 @@ const Partno = () => {
   };
 
 
-  const handleCloseViewModal = () => {
-    setOpenViewModal(false);
-  };
+  // const handleCloseViewModal = () => {
+  //   setOpenViewModal(false);
+  // };
 
   // ✅ Handle Upload Modal
 
