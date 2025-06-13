@@ -22,7 +22,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
 import { decryptSessionData } from "../controller/StorageUtils";
-import { getdetails, getUpdates ,getRejected,getEmployee} from "../controller/InwardApprovalservice";
+import { getdetails, getUpdates ,getRejected,getEmployee,UpdateL2Approver} from "../controller/InwardApprovalservice";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 const InwardApproval = () => {
   const [searchText, setSearchText] = useState("");
@@ -46,24 +46,25 @@ const [EmployeeTable, setEmployeeTable] = useState([]);
     { field: "Vendor_Code", headerName: "Vendor Code", flex: 1 },
     { field: "Vendor_Name", headerName: "Vendor Name", flex: 1 },
     { field: "Invoice_Date", headerName: "Invoice Date", flex: 1 },
-    { field: "Invoice_No", headerName: "Invoice No", flex: 1 },
-    { field: "Invoice_Qty", headerName: "Invoice Quantity", flex: 1 },
+    //{ field: "Invoice_No", headerName: "Invoice No", flex: 1 },
+    //{ field: "Invoice_Qty", headerName: "Invoice Quantity", flex: 1 },
     { field: "Invoice_Value", headerName: "Invoice Value", flex: 1 },
     { field: "Purchase_Order", headerName: "Purchase Order", flex: 1.2 },
-    { field: "Material_Code", headerName: "Part No", flex: 1 },
-    {
-      field: "Monthly_Scheduled_Qty",
-      headerName: "Monthly Scheduled Qty",
-      flex: 1.5,
-    },
-    { field: "Current_Stock", headerName: "Current Stock", flex: 1 },
+   // { field: "Material_Code", headerName: "Part No", flex: 1 },
+    // {
+    //   field: "Monthly_Scheduled_Qty",
+    //   headerName: "Monthly Scheduled Qty",
+    //   flex: 1.5,
+    // },
+   // { field: "Current_Stock", headerName: "Current Stock", flex: 1 },
     { field: "Reason_For_Delay", headerName: "Reason For Delay", flex: 1.3 },
+    { field: "Inward_Type", headerName: "Inward Type", flex: 1 },
     {
       field: "Action",
       headerName: "Action",
       flex: 1,
       renderCell: (params) => (
-         <div style={{ display: "flex", justifyContent: "center" }}>
+         <div style={{ display: "flex", justifyContent: "left" }}>
          <IconButton
                     size="large"
                     color="success"
@@ -92,9 +93,10 @@ const [EmployeeTable, setEmployeeTable] = useState([]);
     }
   }, []);
 console.log("inwardApproval role",RoleID)
+console.log("inwardApproval Plant",PlantID)
   const getData = async () => {
     try {
-      const response = await getdetails(UserID,RoleID);
+      const response = await getdetails(UserID,RoleID,PlantID,EmployeeID);
       console.log('inward appoval data',response)
       setData(response);
       setOriginalRows(response);
@@ -107,11 +109,11 @@ console.log("inwardApproval role",RoleID)
     }
   };
 
-  useEffect(() => {
-    if (UserID,RoleID,EmployeeID) {
-      getData();
-    }
-  }, [UserID,RoleID,EmployeeID]);
+ useEffect(() => {
+  if (UserID && RoleID && EmployeeID && PlantID) {
+    getData();
+  }
+}, [UserID, RoleID, EmployeeID, PlantID]);
 
 
     const get_Employee = async () => {
@@ -197,6 +199,7 @@ const handleApprove = async () => {
       Inward_ID: InwardID,
       RoleID: RoleID,
        Approver:EmployeeID,
+     
       Approver_Comment: comment,
       Modified_By: UserID,
     };
@@ -255,6 +258,43 @@ const handleReject = async () => {
         );
       }
     };
+
+const handleL2Submit = async () => {
+      if (!InwardID) {
+        alert("No row selected. Please open the modal from a row.");
+        return;
+      }
+    
+      try {
+        const data = {
+          Inward_ID: InwardID,
+          RoleID: RoleID,
+          Approver:EmployeeID,
+            Approver2:Employee,
+          Approver_Comment: comment,
+          Modified_By: UserID,
+        };
+    
+        console.log("Update payload:", data);
+    
+        const response = await UpdateL2Approver(data);
+    
+        if (response.data.success) {
+          alert(response.data.message);
+          getData(); // Refresh table
+          handleCloseModal(); // Close modal
+        } else {
+          alert(response.data.message);
+        }
+      } catch (error) {
+        console.error("Update error:", error);
+        alert(
+          error.response?.data?.message ||
+            "An unexpected error occurred while Approving the invoice."
+        );
+      }
+    };
+
 
   const handleSelectChange = (event) => {
     setSelectedL2(event.target.value);
@@ -428,32 +468,38 @@ const handleReject = async () => {
           <Button variant="contained" color="error" onClick={handleReject}>
             Reject
           </Button>
-          <Button variant="contained" color="primary" onClick={handleL2Click}>
-            L2 Approver
-          </Button>
+          {RoleID === 7 && selectedRow?.Inward_Type === "Purchase" && (
+    <Button variant="contained" color="primary" onClick={handleL2Click}>
+      L2 Approver
+    </Button>
+  )}
         </Box>
 
         {/* Conditional L2 Approver Select Box */}
-        {showSelect && (
-          <FormControl fullWidth>
-                      <InputLabel>EmployeeID</InputLabel>
-                      <Select
-                        label="Vendor Code"
-                        name="Vendor Code"
-                        value={Employee}
-                        onChange={(e) => {
-                          setEmployee(e.target.value);
-                        }}
-                        required
-                      >
-                        {EmployeeTable.map((item) => (
-                          <MenuItem key={item.Employee_ID} value={item.Employee_ID}>
-                            {item.Employee_ID}-{item.USER_NAME}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-        )}
+        {/* L2 Select and Submit */}
+      {showSelect && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <FormControl fullWidth required>
+            <InputLabel>EmployeeID</InputLabel>
+            <Select
+              label="EmployeeID"
+              name="EmployeeID"
+              value={Employee}
+              onChange={(e) => setEmployee(e.target.value)}
+            >
+              {EmployeeTable.map((item) => (
+                <MenuItem key={item.Employee_ID} value={item.Employee_ID}>
+                  {item.Employee_ID} - {item.USER_NAME}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Button variant="contained" color="secondary" onClick={handleL2Submit}>
+            Submit L2 Approval
+          </Button>
+        </Box>
+      )}
       </Box>
     </Modal>
     </div>
