@@ -95,7 +95,7 @@ export const getTransactionData = async (fromDate, toDate) => {
 };
 
 export const Edit201Record = async (data) => {
-  const response = await axios.post(`${api}/transaction/Edit201Record`, data);
+  const response = await axios.post(`${api}/Movement201/Edit201Record`, data);
   return response.data;
 };
 

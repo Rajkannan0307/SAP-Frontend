@@ -1408,7 +1408,6 @@ const styleDuplicateRecords = (worksheet, columns, dataLength) => {
               disabled={isUploading}
               style={{ marginTop: "10px", width: "25%", color: "white", backgroundColor: "blue" }}
             >
-              {/* {isUploading ? "Uploading..." : "Upload "} */}
               Upload
             </Button>
           </Box>
