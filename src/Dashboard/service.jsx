@@ -8,7 +8,7 @@ import {
   IconButton,
   Select,
   Switch,
-  Checkbox,
+  Typography,
   RadioGroup,
 } from "@mui/material";
 import {
@@ -26,28 +26,30 @@ import * as XLSX from "xlsx-js-style";
 
 import { MenuItem, InputLabel, FormControl } from "@mui/material";
 
-import { MaterialMaster } from "../controller/Masterapiservice";
-import { FaDownload } from "react-icons/fa";
-import { deepPurple } from "@mui/material/colors";
-import { api } from "../controller/constants";
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import ReplayIcon from '@mui/icons-material/Replay';
+import { Tooltip } from '@mui/material';
 import {
   getdetailsService,
   getVendor,
   getAddService,
   updateInwardInvoiceService,
-  getServiceData
+  getServiceData,Resubmit
 } from "../controller/Inwardtransactionapiservice";
 import { decryptSessionData } from "../controller/StorageUtils";
+import AutorenewIcon from '@mui/icons-material/Autorenew';
 const Service = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
   const [originalRows, setOriginalRows] = useState([]);
   const [data, setData] = useState([]);
   const [openAddModal, setOpenAddModal] = useState(false);
+   const [openResubmitModal, setOpenResubmitModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openExcelDownloadModal, setOpenExcelDownloadModal] = useState(false);
    const [fromDate, setFromDate] = useState('');
      const [toDate, setToDate] = useState('');
+      const [comment, setComment] = useState('');
  // const UserID = localStorage.getItem("UserID");
   const [VendorCode, setVendorCode] = useState("");
   const [VendorID, setVendorID] = useState("");
@@ -78,8 +80,10 @@ const Service = () => {
   const [VendorTable, setVendorTable] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
  const [UserID, setUserID] = useState("");
+ const [selectedRow, setSelectedRow] = useState(null);
+ const [viewModalOpen, setViewModalOpen] = useState(false);
   // const [userID, setUserID] = useState("");
-
+const [selectedInwardId, setSelectedInwardId] = useState(null);
   const columns = [
     { field: "Vendor_Code", headerName: "Vendor Code ", flex: 1 },
     { field: "Vendor_Name", headerName: "Vendor Name ", flex: 1 },
@@ -90,17 +94,44 @@ const Service = () => {
     { field: "Purchase_Order", headerName: "Purchase Order", flex: 1 },
     { field: "Reason_For_Delay", headerName: "Reason For Delay", flex: 1 },
     { field: "Status", headerName: "Status", flex: 1 },
-    // {
-    //   field: "Action",
-    //   headerName: "Action",
-    //   flex: 1,
-    //   renderCell: (params) => (
-    //     <Checkbox
-    //       checked={selectedRows.includes(params.row)}
-    //       onChange={() => handleCheckboxChange(params.row)}
-    //     />
-    //   ),
-    // },
+   {
+  field: "Action",
+  headerName: "Actions",
+  width: 120,
+  sortable: false,
+  filterable: false,
+  renderCell: (params) => {
+    const status = params.row.Status?.toLowerCase();
+
+    return (
+      <div style={{ display: "flex", gap: "8px" }}>
+        {/* View Button */}
+        <Tooltip title="View">
+          <IconButton
+            color="primary"
+            size="small"
+            onClick={() => handleOpenViewModal(params.row)}
+          >
+            <VisibilityIcon />
+          </IconButton>
+        </Tooltip>
+
+        {/* Conditionally Render Resubmit Button */}
+        {status?.includes("rejected") && (
+          <Tooltip title="Resubmit">
+            <IconButton
+              color="secondary"
+              size="small"
+              onClick={() => handleOpenResubmitModal(params.row.Inward_ID)}
+            >
+              <AutorenewIcon />
+            </IconButton>
+          </Tooltip>
+        )}
+      </div>
+    );
+  },
+}
   ];
   const getData = async () => {
     try {
@@ -181,8 +212,39 @@ const  handleOpenExcelModal=()=>{
   setToDate("");
  }
   
+ const handleOpenResubmitModal = (inwardId) => {
+  setSelectedInwardId(inwardId); // Store Inward ID
+  setOpenResubmitModal(true);
+};
+    const handleCloseResubmitModal=()=>setOpenResubmitModal(false);
 const handleCloseExcelModal=()=>setOpenExcelDownloadModal(false);
-   
+ const handleOpenViewModal = (row) => {
+  setSelectedRow(row);
+  setViewModalOpen(true);
+};
+
+const handleCloseViewModal = () => {
+  setSelectedRow(null);
+  setViewModalOpen(false);
+};
+const handleResubmit = async (InwardID) => {
+  try {
+   const data = {
+        Inward_ID: InwardID,
+        Comment: comment,
+        Modified_By: UserID,
+      };
+    const response = await Resubmit(data);
+ if (response.data.success) {
+    alert("Resubmission successful");
+    handleCloseResubmitModal();
+   getData()// Optionally reload data
+ }
+  } catch (error) {
+    console.error("Resubmission error:", error);
+    alert("Failed to resubmit. Please try again.");
+  }
+};
 const handleDownloadReportExcel = async () => {
       if (!fromDate) {
         alert('Select From Date');
@@ -424,68 +486,7 @@ const handleDownloadReportExcel = async () => {
       }
     }
   };
-  // excel download
-  const handleDownloadExcel = () => {
-   if (data.length === 0) {
-     alert("No Data Found");
-     return;
-   }
- 
-   const DataColumns = [
-     "Vendor_Code",
-     "Vendor_Name",
-     "Invoice_No",
-    
-     "Invoice_Date",
-     
-     "Invoice_Value",
-     "Purchase_Order",
-    
-     
-     "Reason_For_Delay",
-     "Status",
-   ];
- 
-   const filteredData = data.map((item) => ({
-     Vendor_Code: item.Vendor_Code,
-     Vendor_Name: item.Vendor_Name,
-     Invoice_No: item.Invoice_No,
-    
-     Invoice_Date: item.Invoice_Date,
-  
-     Invoice_Value: item.Invoice_Value,
-     Purchase_Order: item.Purchase_Order,
-    
-     Reason_For_Delay: item.Reason_For_Delay,
-     Status: item.Status,
-   }));
- 
-   const worksheet = XLSX.utils.json_to_sheet(filteredData, {
-     header: DataColumns,
-   });
- 
-   // Style header row
-   DataColumns.forEach((_, index) => {
-     const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-     if (!worksheet[cellAddress]) return;
-     worksheet[cellAddress].s = {
-       font: {
-         bold: true,
-         color: { rgb: "000000" },
-       },
-       fill: {
-         fgColor: { rgb: "FFFF00" },
-       },
-       alignment: {
-         horizontal: "center",
-       },
-     };
-   });
- 
-   const workbook = XLSX.utils.book_new();
-   XLSX.utils.book_append_sheet(workbook, worksheet, "Old Inward Invoice Service Data");
-   XLSX.writeFile(workbook, "Old Inward Invoice Service Data.xlsx");
- };
+
 
   return (
     <div
@@ -976,6 +977,124 @@ const handleDownloadReportExcel = async () => {
                     </Box>
                   </Box>
                 </Modal>
+ <Modal open={openResubmitModal} onClose={handleCloseResubmitModal}>
+  <Box
+    style={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: 400,
+      backgroundColor: "white",
+      borderRadius: "8px",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+      padding: "24px",
+      display: "flex",
+      flexDirection: "column",
+      gap: "16px",
+    }}
+  >
+    <Typography variant="h6" style={{ fontWeight: "bold" }}>
+      Add Comment
+    </Typography>
+
+    <TextField
+      multiline
+      rows={4}
+      placeholder="Enter your comment here..."
+      value={comment}
+      onChange={(e) => setComment(e.target.value)}
+      fullWidth
+    />
+
+    {/* Centered Buttons */}
+    <div style={{ display: "flex", justifyContent: "center", gap: "16px" }}>
+      <Button
+        onClick={handleCloseResubmitModal}
+        variant="outlined"
+        color="error"
+        style={{ textTransform: "none" }}
+      >
+        Cancel
+      </Button>
+      <Button
+        onClick={() => handleResubmit(selectedInwardId)}
+        variant="contained"
+        color="primary"
+        style={{ textTransform: "none" }}
+      >
+        Resubmit
+      </Button>
+    </div>
+  </Box>
+</Modal>
+   <Modal open={viewModalOpen} onClose={handleCloseViewModal}>
+  <Box
+    style={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: 500,
+      backgroundColor: "white",
+      borderRadius: "8px",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+      padding: "24px",
+    }}
+  >
+    <Typography variant="h6" style={{ fontWeight: "bold", marginBottom: "16px",  color:"#2e59d9", textDecoration: "underline",
+            textDecorationColor: "#88c57a", }}>
+      Approval Status
+    </Typography>
+
+    {selectedRow && (
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr style={{ backgroundColor: "#bdbdbd" }}>
+            <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Level</th>
+            <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Status</th>
+            <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Approver</th>
+            <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Comment</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 1</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approval1_Status || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver_1 || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver1_Comment || "-"}</td>
+          </tr>
+          <tr>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 2</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approval2_Status || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver_2 || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver2_Comment || "-"}</td>
+          </tr>
+          {/* Uncomment if Level 3 is required
+          <tr>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 3</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approval3_Status || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver_3 || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver3_Comment || "-"}</td>
+          </tr>
+          */}
+        </tbody>
+      </table>
+    )}
+
+    <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
+      <Button
+        onClick={handleCloseViewModal}
+        variant="contained"
+        style={{ textTransform: "none" }}
+      >
+        Close
+      </Button>
+    </div>
+  </Box>
+</Modal>
+
+    
     </div>
   );
 };

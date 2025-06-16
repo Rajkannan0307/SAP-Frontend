@@ -55,3 +55,7 @@ export const updateInwardInvoicePurchase = async (data)=>{
       const response = await axios.get(`${api}/Inward/downloadService?From=${from}&to=${to}&UserID=${UserID}`, );
       return response;
   };
+  export const Resubmit = async (data) => {
+  const response = await axios.post(`${api}/Inward/resubmit`, data);
+  return response;
+};

@@ -75,38 +75,43 @@ const Dashboard = () => {
         transition: "margin-left 0.3s ease",
         }}>
         {/* Button 1 */}
-        <div
+     <div
+  onClick={handleClickPart}
   style={{
     width: "180px",
     height: "120px",
     borderRadius: "12px",
-    backgroundColor: "#F5EEE6", // Updated to a darker shade of green
+    backgroundColor: "#F5EEE6",
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
     cursor: "pointer",
-   boxShadow: "0 8px 16px #2B7A78" 
-
+    boxShadow: "0 8px 16px #2B7A78",
+    overflow: "hidden",
+    userSelect: "none",
   }}
 >
   <div
     style={{
       width: "100%",
       height: "70%",
-      backgroundColor: "#1CDDDA", // Maintained yellow for contrast
+      backgroundColor: "#1CDDDA",
       borderTopLeftRadius: "12px",
       borderTopRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
     }}
-    onClick={handleClickPart}
   >
     <IoLibraryOutline style={{ height: "80px", width: "180px" }} />
   </div>
+
   <div
     style={{
-     width: "100%",
-      height: "40%", backgroundColor: "#FFFFFF",
-       
+      width: "100%",
+      height: "40%",
+      backgroundColor: "#FFFFFF",
       borderBottomLeftRadius: "12px",
       borderBottomRightRadius: "12px",
       display: "flex",
@@ -114,16 +119,19 @@ const Dashboard = () => {
       alignItems: "center",
       fontSize: "12px",
       fontWeight: "bold",
-      color: "#2e59d9", // Ensuring contrast with text
-      textAlign:"center"
+      color: "#2e59d9",
+      textAlign: "center",
+      padding: "4px",
     }}
   >
-   Part No Conversion-309 Movement
-
+    Part No Conversion - 309 Movement
   </div>
 </div>
+
+
 {/* Button 2 - Stock Posting */}
 <div
+  onClick={handleClickStock}
   style={{
     width: "180px",
     height: "120px",
@@ -134,7 +142,9 @@ const Dashboard = () => {
     alignItems: "center",
     cursor: "pointer",
     backgroundColor: "#F5EEE6",
-    boxShadow: "0 8px 16px #2B7A78"
+    boxShadow: "0 8px 16px #2B7A78",
+    overflow: "hidden", // Prevents visual flicker
+    userSelect: "none", // Prevents accidental text selection
   }}
 >
   <div
@@ -144,10 +154,12 @@ const Dashboard = () => {
       borderTopLeftRadius: "12px",
       borderTopRightRadius: "12px",
       backgroundColor: "#FFDDD8",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
     }}
-    onClick={handleClickStock}
   >
-    <AiOutlineStock style={{ height: "80px", width: "180px" }}/>
+    <AiOutlineStock style={{ height: "80px", width: "180px" }} />
   </div>
   <div
     style={{
@@ -163,13 +175,124 @@ const Dashboard = () => {
       fontWeight: "bold",
       color: "#2e59d9",
       textAlign: "center",
+      padding: "4px",
     }}
   >
     Stock Posting - 201 Movement
   </div>
 </div>
-{/* Button 2 - Stock Posting */}
+
+
+{/* Button 3 - Stock Posting */}
 <div
+  onClick={handleClickStock1}
+  style={{
+    width: "180px",
+    height: "120px",
+    borderRadius: "12px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    cursor: "pointer",
+    backgroundColor: "#F5EEE6",
+    boxShadow: "0 8px 16px #2B7A78",
+    overflow: "hidden",
+    userSelect: "none",
+  }}
+>
+  <div
+    style={{
+      width: "100%",
+      height: "70%",
+      backgroundColor: "rgb(219, 223, 190)",
+      borderTopLeftRadius: "12px",
+      borderTopRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+    <AiOutlineStock style={{ height: "80px", width: "180px" }} />
+  </div>
+  <div
+    style={{
+      width: "100%",
+      height: "40%",
+      backgroundColor: "#FFFFFF",
+      borderBottomLeftRadius: "12px",
+      borderBottomRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      fontSize: "12px",
+      fontWeight: "bold",
+      color: "#2e59d9",
+      textAlign: "center",
+      padding: "4px",
+    }}
+  >
+    Stock Posting - 202 Movement
+  </div>
+</div>
+
+
+{/* Button 3 - Scrap Disposal */}
+<div
+  onClick={handleClickScrap551}
+  style={{
+    width: "180px",
+    height: "120px",
+    borderRadius: "12px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    cursor: "pointer",
+    backgroundColor: "#F5EEE6",
+    boxShadow: "0 8px 16px #2B7A78",
+  }}
+>
+  <div
+    style={{
+      width: "100%",
+      height: "70%",
+      backgroundColor: "#B4C1C7",
+      borderTopLeftRadius: "12px",
+      borderTopRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+    <TbBuildingSkyscraper style={{ height: "80px", width: "180px" }} />
+  </div>
+  <div
+    style={{
+      width: "100%",
+      height: "40%",
+      backgroundColor: "#FFFFFF",
+      borderBottomLeftRadius: "12px",
+      borderBottomRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      fontSize: "12px",
+      fontWeight: "bold",
+      color: "#2e59d9",
+      textAlign: "center",
+      padding: "4px",
+    }}
+  >
+    Scrap - 551 Movement
+  </div>
+</div>
+
+
+
+{/* BUTTON 4 - Fully Clickable with Bottom Visually Different */}
+<div 
+  onClick={handleClickLocation}
   style={{
     width: "180px",
     height: "120px",
@@ -185,15 +308,68 @@ const Dashboard = () => {
 >
   <div
     style={{
+      width: "100%", 
+      height: "70%",
+      backgroundColor: "#AEE0FF",  
+      borderTopLeftRadius: "12px", 
+      borderTopRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center"
+    }}
+  >
+    <GrManual style={{ height: "80px", width: "180px", marginTop: "2px" }} />
+  </div>
+  <div
+    style={{
+      width: "100%",
+      height: "40%",
+      backgroundColor: "#FFFFFF", 
+      borderBottomLeftRadius: "12px", 
+      borderBottomRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center", 
+      alignItems: "center",
+      fontSize: "12px", 
+      fontWeight: "bold", 
+      color: "#2e59d9",
+      textAlign: "center"
+    }}
+  >
+    Location Transfer - 311 Movement
+  </div>
+</div>
+
+
+ {/* BUTTON 5 */}
+ <div 
+  onClick={handleClickPhy} // ✅ Entire card is clickable
+  style={{
+    width: "180px",
+    height: "120px",
+    borderRadius: "12px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    cursor: "pointer",
+    backgroundColor: "#F5EEE6",
+    boxShadow: "0 8px 16px #2B7A78",
+  }}
+>
+  <div
+    style={{
       width: "100%",
       height: "70%",
+      backgroundColor: "#DAC9E4",
       borderTopLeftRadius: "12px",
       borderTopRightRadius: "12px",
-      backgroundColor: "rgb(219, 223, 190)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
     }}
-    onClick={handleClickStock1}
   >
-    <AiOutlineStock style={{ height: "80px", width: "180px" }}/>
+    <MdProductionQuantityLimits style={{ height: "80px", width: "180px", marginTop: "5px" }} />
   </div>
   <div
     style={{
@@ -211,148 +387,13 @@ const Dashboard = () => {
       textAlign: "center",
     }}
   >
-    Stock Posting - 202 Movement
+    Phy Inventory Adjustment
   </div>
 </div>
-{/* Button 3 - Scrap Disposal */}
-<div
-    style={{
-        width: "180px",
-        height: "120px",
-        borderRadius: "12px",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        cursor: "pointer",
-        backgroundColor: "#F5EEE6",
-    boxShadow: "0 8px 16px #2B7A78"
-    }}
->
-    <div
-        style={{
-            width: "100%",
-            height: "70%",
-            borderTopLeftRadius: "12px",
-            borderTopRightRadius: "12px",
-            backgroundColor: "#B4C1C7",
-        }}
-        onClick={handleClickScrap551}
-    >
-        <TbBuildingSkyscraper style={{ height: "80px", width: "180px" }} />
-    </div>
-    <div
-        style={{
-            width: "100%",
-            height: "40%",
-            backgroundColor: "#FFFFFF",
-            borderBottomLeftRadius: "12px",
-            borderBottomRightRadius: "12px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            fontSize: "12px",
-            fontWeight: "bold",
-            color: "#2e59d9",
-            textAlign: "center",
-        }}
-    >
-        Scrap-551 Movement
 
-    </div>
-</div>
-{/* BUTTON 4 */}
-<div 
-style={{
-width: "180px",
- height: "120px",
- borderRadius: "12px",
- display: "flex",
-flexDirection: "column",
- justifyContent: "center",
- alignItems: "center",
- cursor: "pointer",
- backgroundColor: "#F5EEE6",
-    boxShadow: "0 8px 16px #2B7A78"
-}} >
- <div
- style={{
- width: "100%", 
- height: "70%",
- backgroundColor: "#AEE0FF",  
- borderTopLeftRadius: "12px", 
-borderTopRightRadius: "12px",
-
-}}
- onClick={handleClickLocation}>
-  <GrManual style={{ height: "80px", width: "180px" ,marginTop:"2px"}} />
- </div>
- <div
- style={{
-width: "100%",
- height: "40%",
- backgroundColor: "#FFFFFF", 
- borderBottomLeftRadius: "12px", 
- borderBottomRightRadius: "12px",
- display: "flex",
-  justifyContent: "center", 
-  alignItems: "center",
-  fontSize: "12px", 
-  fontWeight: "bold", 
-  color: "#2e59d9",
-  textAlign:"center"
-          }}>
-Location Transfer-311 Movement
-
-</div>
- </div>
- {/* BUTTON 5 */}
- <div 
-style={{
-width: "180px",
- height: "120px",
- borderRadius: "12px",
- 
- display: "flex",
-flexDirection: "column",
- justifyContent: "center",
- alignItems: "center",
- cursor: "pointer",
- backgroundColor: "#F5EEE6",
- boxShadow: "0 8px 16px #2B7A78"
-}} >
- <div
- style={{
- width: "100%", 
- height: "70%",
- backgroundColor:"#DAC9E4" ,  
- borderTopLeftRadius: "12px", 
-borderTopRightRadius: "12px",
-}}
- onClick={handleClickPhy}>
-  <MdProductionQuantityLimits style={{ height: "80px", width: "180px" ,marginTop:"5px" }} />
- </div>
- <div
- style={{
-width: "100%",
- height: "40%",
- backgroundColor: "#FFFFFF", 
- borderBottomLeftRadius: "12px", 
- borderBottomRightRadius: "12px",
- display: "flex",
-  justifyContent: "center", 
-  alignItems: "center",
-  fontSize: "12px", 
-  fontWeight: "bold", 
-  color: "#2e59d9",
-  textAlign:"center"
-          }}>
- Phy Inventory Adjustment
-
- </div>
-</div>
 {/* button 6 */}
 <div
+  onClick={handleClickRGP} // ✅ Entire card is clickable
   style={{
     width: "180px",
     height: "120px",
@@ -362,9 +403,9 @@ width: "100%",
     justifyContent: "center",
     alignItems: "center",
     cursor: "pointer",
-    backgroundColor: "#F5EEE6", // Updated background color
-    boxShadow: "0 8px 16px #2B7A78", // Added box shadow
-    marginTop:"10px"
+    backgroundColor: "#F5EEE6", // Background color
+    boxShadow: "0 8px 16px #2B7A78", // Box shadow
+    marginTop: "10px",
   }}
 >
   <div
@@ -374,10 +415,12 @@ width: "100%",
       backgroundColor: "#B0F0A5",
       borderTopLeftRadius: "12px",
       borderTopRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
     }}
-    onClick={handleClickRGP}>
-    <SiScrapbox style={{ height: "70px", width: "180px" ,marginTop:"6px" }} />
-
+  >
+    <SiScrapbox style={{ height: "70px", width: "180px", marginTop: "6px" }} />
   </div>
 
   <div
@@ -397,11 +440,12 @@ width: "100%",
     }}
   >
     RGP/NRGP
-
   </div>
 </div>
+
 {/* button 7 */}
 <div
+  onClick={handleClickmanual} // ✅ Entire card is clickable
   style={{
     width: "180px",
     height: "120px",
@@ -413,7 +457,7 @@ width: "100%",
     cursor: "pointer",
     backgroundColor: "#F5EEE6", // Updated background color
     boxShadow: "0 8px 16px #2B7A78", // Added box shadow
-     marginTop:"10px"
+    marginTop: "10px"
   }}
 >
   <div
@@ -423,10 +467,12 @@ width: "100%",
       backgroundColor: "#A1B4FF",
       borderTopLeftRadius: "12px",
       borderTopRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center"
     }}
-    onClick={handleClickmanual}
   >
-    <AiOutlinePartition style={{ height: "75px", width: "180px" , }} />
+    <AiOutlinePartition style={{ height: "75px", width: "180px" }} />
   </div>
 
   <div
@@ -442,15 +488,16 @@ width: "100%",
       fontSize: "12px",
       fontWeight: "bold",
       color: "#2e59d9",
-      textAlign: "center",
+      textAlign: "center"
     }}
   >
-    Manual Schedule-ME38
-
+    Manual Schedule - ME38
   </div>
 </div>
+
 {/* button 8 */}
 <div
+  onClick={handleClickInward} // ✅ Entire card is clickable
   style={{
     width: "180px",
     height: "120px",
@@ -460,9 +507,9 @@ width: "100%",
     justifyContent: "center",
     alignItems: "center",
     cursor: "pointer",
-    backgroundColor: "#F5EEE6", // Updated background color
-    boxShadow: "0 8px 16px #2B7A78", // Added box shadow
-     marginTop:"10px"
+    backgroundColor: "#F5EEE6", // Card background
+    boxShadow: "0 8px 16px #2B7A78", // Shadow
+    marginTop: "10px",
   }}
 >
   <div
@@ -472,10 +519,12 @@ width: "100%",
       backgroundColor: "#c69885",
       borderTopLeftRadius: "12px",
       borderTopRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
     }}
-    onClick={handleClickInward}
-
-  > <FaCircleChevronRight  style={{ height: "67px", width: "180px" , marginTop:"8px"}} />
+  >
+    <FaCircleChevronRight style={{ height: "67px", width: "180px", marginTop: "8px" }} />
   </div>
 
   <div
@@ -495,11 +544,12 @@ width: "100%",
     }}
   >
     Inward of Old Invoices
-
   </div>
 </div>
+
 {/* button 9 */}
 <div
+  onClick={handleClickEmg} // ✅ Entire card is now clickable
   style={{
     width: "180px",
     height: "120px",
@@ -509,9 +559,9 @@ width: "100%",
     justifyContent: "center",
     alignItems: "center",
     cursor: "pointer",
-    backgroundColor: "#F5EEE6", // Updated background color
-    boxShadow: "0 8px 16px #2B7A78", // Added box shadow
-     marginTop:"10px"
+    backgroundColor: "#F5EEE6", // Card background
+    boxShadow: "0 8px 16px #2B7A78", // Shadow
+    marginTop: "10px"
   }}
 >
   <div
@@ -521,10 +571,12 @@ width: "100%",
       backgroundColor: "#FFA9DD",
       borderTopLeftRadius: "12px",
       borderTopRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center"
     }}
-    onClick={handleClickEmg}
   >
-    <GrEmergency style={{ height: "75px", width: "180px" , }} />
+    <GrEmergency style={{ height: "75px", width: "180px" }} />
   </div>
 
   <div
@@ -540,14 +592,16 @@ width: "100%",
       fontSize: "12px",
       fontWeight: "bold",
       color: "#2e59d9",
-      textAlign: "center",
+      textAlign: "center"
     }}
   >
     Emergency Procurement
   </div>
 </div>
+
 {/* button 10 */}
 <div
+  onClick={handleClickMaterial} // ✅ Entire card is now clickable
   style={{
     width: "180px",
     height: "120px",
@@ -557,9 +611,9 @@ width: "100%",
     justifyContent: "center",
     alignItems: "center",
     cursor: "pointer",
-    backgroundColor: "#F5EEE6", // Updated background color
-    boxShadow: "0 8px 16px #2B7A78", // Added box shadow
-     marginTop:"10px"
+    backgroundColor: "#F5EEE6",
+    boxShadow: "0 8px 16px #2B7A78",
+    marginTop: "10px"
   }}
 >
   <div
@@ -569,9 +623,12 @@ width: "100%",
       backgroundColor: "#FFDAC6",
       borderTopLeftRadius: "12px",
       borderTopRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center"
     }}
-    onClick={handleClickMaterial}
-  > <GiMaterialsScience style={{ height: "70px", width: "180px" , }} />
+  >
+    <GiMaterialsScience style={{ height: "70px", width: "180px" }} />
   </div>
 
   <div
@@ -587,14 +644,16 @@ width: "100%",
       fontSize: "12px",
       fontWeight: "bold",
       color: "#2e59d9",
-      textAlign: "center",
+      textAlign: "center"
     }}
   >
     Material Status Change
   </div>
 </div>
+
 {/* button 11 */}
 <div
+  onClick={handleClickRs} // ✅ Entire card is now clickable
   style={{
     width: "180px",
     height: "120px",
@@ -606,7 +665,7 @@ width: "100%",
     cursor: "pointer",
     backgroundColor: "#F5EEE6", // Updated background color
     boxShadow: "0 8px 16px #2B7A78", // Added box shadow
-     marginTop:"10px"
+    marginTop: "10px"
   }}
 >
   <div
@@ -616,10 +675,12 @@ width: "100%",
       backgroundColor: "#E9BFC1",
       borderTopLeftRadius: "12px",
       borderTopRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center"
     }}
-    onClick={handleClickRs}
   >
-    <FaDollarSign style={{ height: "60px", width: "180px" ,marginTop:"6px" }} />
+    <FaDollarSign style={{ height: "60px", width: "180px", marginTop: "6px" }} />
   </div>
 
   <div
@@ -634,16 +695,17 @@ width: "100%",
       alignItems: "center",
       fontSize: "12px",
       fontWeight: "bold",
-      color: "#2e59d9",
-      
+      color: "#2e59d9"
     }}
   >
     Rs 1 Conversion
   </div>
 </div>
+
 {/* button 12 */}
 
 <div
+  onClick={handleClickScrapDisposal} // ✅ Entire card is now clickable
   style={{
     width: "180px",
     height: "120px",
@@ -655,7 +717,7 @@ width: "100%",
     alignItems: "center",
     cursor: "pointer",
     boxShadow: "0 8px 16px #2B7A78", // Updated box shadow
-     marginTop:"10px"
+    marginTop: "10px"
   }}
 >
   <div
@@ -665,9 +727,12 @@ width: "100%",
       backgroundColor: "#FB9F9E",
       borderTopLeftRadius: "12px",
       borderTopRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center"
     }}
-    onClick={handleClickScrapDisposal}
-  ><FaLocationDot  style={{ height: "60px", width: "180px" ,marginTop:"6px" }} />
+  >
+    <FaLocationDot style={{ height: "60px", width: "180px", marginTop: "6px" }} />
   </div>
 
   <div
@@ -683,15 +748,16 @@ width: "100%",
       fontSize: "12px",
       fontWeight: "bold",
       color: "#2e59d9",
-      textAlign: "center",
+      textAlign: "center"
     }}
   >
-     Scrap  Disposal  -  Price Approval
-
+    Scrap Disposal - Price Approval
   </div>
 </div>
+
 {/* button 13 */}
 <div
+  onClick={handleClickProduction} // ✅ Entire card is now clickable
   style={{
     width: "180px",
     height: "120px",
@@ -703,7 +769,7 @@ width: "100%",
     alignItems: "center",
     cursor: "pointer",
     boxShadow: "0 8px 16px #2B7A78", // Updated box shadow
-     marginTop:"10px"
+    marginTop: "10px"
   }}
 >
   <div
@@ -713,10 +779,12 @@ width: "100%",
       backgroundColor: "#7CCCAA",
       borderTopLeftRadius: "12px",
       borderTopRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center"
     }}
-    onClick={handleClickProduction}
   >
-    <FaFileInvoice style={{ height: "60px", width: "180px" ,marginTop:"8px" }} />
+    <FaFileInvoice style={{ height: "60px", width: "180px", marginTop: "8px" }} />
   </div>
 
   <div
@@ -732,15 +800,16 @@ width: "100%",
       fontSize: "12px",
       fontWeight: "bold",
       color: "#2e59d9",
-      textAlign:"center"
+      textAlign: "center"
     }}
   >
     Production Order Aging Control Change
-
   </div>
 </div>
+
 {/* button 14 */}
 <div
+  onClick={handleClickSub} // ✅ Now the entire card is clickable
   style={{
     width: "180px",
     height: "120px",
@@ -752,7 +821,7 @@ width: "100%",
     alignItems: "center",
     cursor: "pointer",
     boxShadow: "0 8px 16px #2B7A78", // Updated box shadow
-     marginTop:"10px"
+    marginTop: "10px"
   }}
 >
   <div
@@ -762,10 +831,12 @@ width: "100%",
       backgroundColor: "#B16F94",
       borderTopLeftRadius: "12px",
       borderTopRightRadius: "12px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center"
     }}
-    onClick={handleClickSub}
   >
-    <IoIosContract style={{ height: "70px", width: "180px" , }} />
+    <IoIosContract style={{ height: "70px", width: "180px" }} />
   </div>
 
   <div
@@ -781,12 +852,13 @@ width: "100%",
       fontSize: "12px",
       fontWeight: "bold",
       color: "#2e59d9",
-      textAlign: "center",
+      textAlign: "center"
     }}
   >
     Subcontracting Stock Value / Aging Change
   </div>
 </div>
+
 
 
 </div>

@@ -31,4 +31,7 @@ export const getMaterial = async ()=>{
 };
 
 
-  
+   export const Resubmit = async (data) => {
+  const response = await axios.post(`${api}/Inward/resubmit`, data);
+  return response;
+};

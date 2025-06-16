@@ -177,7 +177,8 @@ console.log("inwardApproval Plant",PlantID)
 const handleopenApproveModal = (row) => {
   setComment("");
   setInwardID(row.Inward_ID); // ✅ corrected
-  setSelectedRow(row);        // Optional: store selected row data
+  setSelectedRow(row);  
+  setShowSelect("");      // Optional: store selected row data
   setOpenModal(true);
   get_Employee();
 };
@@ -225,39 +226,45 @@ const handleApprove = async () => {
 };
 
 const handleReject = async () => {
-      if (!InwardID) {
-        alert("No row selected. Please open the modal from a row.");
-        return;
-      }
-    
-      try {
-        const data = {
-          Inward_ID: InwardID,
-          RoleID: RoleID,
-          Approver:EmployeeID,
-          Approver_Comment: comment,
-          Modified_By: UserID,
-        };
-    
-        console.log("Update payload:", data);
-    
-        const response = await getRejected(data);
-    
-        if (response.data.success) {
-          alert(response.data.message);
-          getData(); // Refresh table
-          handleCloseModal(); // Close modal
-        } else {
-          alert(response.data.message);
-        }
-      } catch (error) {
-        console.error("Update error:", error);
-        alert(
-          error.response?.data?.message ||
-            "An unexpected error occurred while Approving the invoice."
-        );
-      }
+  if (!InwardID) {
+    alert("No row selected. Please open the modal from a row.");
+    return;
+  }
+
+  if (!comment.trim()) {
+    alert("Comment is required to reject the invoice.");
+    return;
+  }
+
+  try {
+    const data = {
+      Inward_ID: InwardID,
+      RoleID: RoleID,
+      Approver: EmployeeID,
+      Approver_Comment: comment,
+      Modified_By: UserID,
     };
+
+    console.log("Update payload:", data);
+
+    const response = await getRejected(data);
+
+    if (response.data.success) {
+      alert(response.data.message);
+      getData(); // Refresh table
+      handleCloseModal(); // Close modal
+    } else {
+      alert(response.data.message);
+    }
+  } catch (error) {
+    console.error("Update error:", error);
+    alert(
+      error.response?.data?.message ||
+        "An unexpected error occurred while rejecting the invoice."
+    );
+  }
+};
+
 
 const handleL2Submit = async () => {
       if (!InwardID) {
@@ -296,9 +303,6 @@ const handleL2Submit = async () => {
     };
 
 
-  const handleSelectChange = (event) => {
-    setSelectedL2(event.target.value);
-  };
   return (
     <div
       style={{
@@ -436,39 +440,39 @@ const handleL2Submit = async () => {
                 />
       </div>
 
-       <Modal open={openModal} onClose={() => setOpenModal(false)}>
-      <Box
-        sx={{
-          width: 400,
-          bgcolor: 'background.paper',
-          borderRadius: 2,
-          boxShadow: 24,
-          p: 3,
-          mx: 'auto',
-          mt: '10%',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-        }}
-      >
-        {/* Comment Box */}
-        <TextField
-          label="Comment"
-          multiline
-          rows={3}
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-        />
-
-        {/* Action Buttons */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Button variant="contained" color="success" onClick={handleApprove}>
-            Approve
-          </Button>
-          <Button variant="contained" color="error" onClick={handleReject}>
-            Reject
-          </Button>
-          {RoleID === 7 && selectedRow?.Inward_Type === "Purchase" && (
+      <Modal open={openModal} onClose={() => setOpenModal(false)}>
+       <Box
+         sx={{
+           width: 400,
+           bgcolor: 'background.paper',
+           borderRadius: 2,
+           boxShadow: 24,
+           p: 3,
+           mx: 'auto',
+           mt: '10%',
+           display: 'flex',
+           flexDirection: 'column',
+           gap: 2,
+         }}
+       >
+         {/* Comment Box */}
+         <TextField
+           label="Comment"
+           multiline
+           rows={3}
+           value={comment}
+           onChange={(e) => setComment(e.target.value)}
+         />
+     
+         {/* Centered Action Buttons */}
+         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+           <Button variant="contained" color="error" onClick={handleReject}>
+             Reject
+           </Button>
+           <Button variant="contained" color="success" onClick={handleApprove}>
+             Approve
+           </Button>
+           {RoleID === 7 && selectedRow?.Inward_Type === "Purchase" && (
     <Button variant="contained" color="primary" onClick={handleL2Click}>
       L2 Approver
     </Button>
@@ -500,8 +504,9 @@ const handleL2Submit = async () => {
           </Button>
         </Box>
       )}
-      </Box>
-    </Modal>
+         
+       </Box>
+     </Modal>
       
     </div>
   );

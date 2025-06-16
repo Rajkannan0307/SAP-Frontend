@@ -9,7 +9,7 @@ import {
   Select,
   Switch,
   Checkbox,
-  RadioGroup,
+  Typography,
 } from "@mui/material";
 import {
   DataGrid,
@@ -19,6 +19,7 @@ import {
   GridToolbarExport,
 } from "@mui/x-data-grid";
 import SearchIcon from "@mui/icons-material/Search";
+import AutorenewIcon from '@mui/icons-material/Autorenew';
 import AddIcon from "@mui/icons-material/Add";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { FaFileExcel } from "react-icons/fa";
@@ -26,16 +27,16 @@ import * as XLSX from "xlsx-js-style";
 
 import { MenuItem, InputLabel, FormControl } from "@mui/material";
 
-import { MaterialMaster } from "../controller/Masterapiservice";
-import { FaDownload } from "react-icons/fa";
-import { deepPurple } from "@mui/material/colors";
-import { api } from "../controller/constants";
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import ReplayIcon from '@mui/icons-material/Replay';
+import { Tooltip } from '@mui/material';
+
 import {
   getdetails,
   getVendor,
   getAdd,
   getUpdates,
-
+Resubmit
 } from "../controller/EmergencyProcurementservice";
 import { decryptSessionData } from "../controller/StorageUtils";
 const Emergency = () => {
@@ -54,8 +55,8 @@ const Emergency = () => {
   const [PurchaseOrder, setPurchaseOrder] = useState("");
   const [ReasonForDelay, setReasonForDelay] = useState("");
   const [InwardID, setInwardID] = useState("");
-  // const [newRecord] = useState([]);
-  // const [updateRecord] = useState([]);
+ const [openResubmitModal, setOpenResubmitModal] = useState(false);
+  const [comment, setComment] = useState('');// const [updateRecord] = useState([]);
   // const [errRecord] = useState([]);
  const [Plant_ID, setPlantID] = useState("");
   const [openUploadModal, setOpenUploadModal] = useState(false);
@@ -75,6 +76,9 @@ const Emergency = () => {
   const [VendorTable, setVendorTable] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
  const [UserID, setUserID] = useState("");
+ const [selectedRow, setSelectedRow] = useState(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedInwardId, setSelectedInwardId] = useState(null);
   // const [userID, setUserID] = useState("");
  const [InvoiceQty, setInvoiceQty] = useState("");
   const columns = [
@@ -88,6 +92,44 @@ const Emergency = () => {
     { field: "Reason_For_Delay", headerName: "Reason", flex: 1 },
     { field: "Status", headerName: "Status", flex: 1 },
     { field: "Purchase_Order", headerName: "Purchase Order", flex: 1 },
+     {
+     field: "Action",
+     headerName: "Actions",
+     width: 120,
+     sortable: false,
+     filterable: false,
+     renderCell: (params) => {
+       const status = params.row.Status?.toLowerCase();
+   
+       return (
+         <div style={{ display: "flex", gap: "8px" }}>
+           {/* View Button */}
+           <Tooltip title="View">
+             <IconButton
+               color="primary"
+               size="small"
+               onClick={() => handleOpenViewModal(params.row)}
+             >
+               <VisibilityIcon />
+             </IconButton>
+           </Tooltip>
+   
+           {/* Conditionally Render Resubmit Button */}
+           {status?.includes("rejected") && (
+             <Tooltip title="Resubmit">
+               <IconButton
+                 color="secondary"
+                 size="small"
+                 onClick={() => handleOpenResubmitModal(params.row.Inward_ID)}
+               >
+                 <AutorenewIcon />
+               </IconButton>
+             </Tooltip>
+           )}
+         </div>
+       );
+     },
+   }
   ];
   const getData = async () => {
     try {
@@ -103,6 +145,9 @@ const Emergency = () => {
       setRows([]);
     }
   };
+
+
+  
 
  useEffect(() => {
   const encryptedData = sessionStorage.getItem("userData");
@@ -140,7 +185,21 @@ useEffect(() => {
     </GridToolbarContainer>
   );
  
+ const handleOpenResubmitModal = (inwardId) => {
+  setSelectedInwardId(inwardId); // Store Inward ID
+  setOpenResubmitModal(true);
+};
+    const handleCloseResubmitModal=()=>setOpenResubmitModal(false);
+     const handleOpenViewModal = (row) => {
+  setSelectedRow(row);
+  setViewModalOpen(true);
 
+};
+
+const handleCloseViewModal = () => {
+  setSelectedRow(null);
+  setViewModalOpen(false);
+};
   const handleOpenAddModal = (item) => {
     setVendorCode("");
 setPurchaseOrder("");
@@ -343,7 +402,24 @@ setMaterialDescription("");
   // };
 
   // ✅ Handle Row Click for Edit
-
+const handleResubmit = async (InwardID) => {
+  try {
+   const data = {
+        Inward_ID: InwardID,
+        Comment: comment,
+        Modified_By: UserID,
+      };
+    const response = await Resubmit(data);
+ if (response.data.success) {
+    alert("Resubmission successful");
+    handleCloseResubmitModal();
+   getData()// Optionally reload data
+ }
+  } catch (error) {
+    console.error("Resubmission error:", error);
+    alert("Failed to resubmit. Please try again.");
+  }
+};
   const handleRowClick = (params) => {
     get_Vendor();
 
@@ -1089,6 +1165,124 @@ setMaterialDescription("");
           </Box>
         </Box>
       </Modal>  */}
+     <Modal open={openResubmitModal} onClose={handleCloseResubmitModal}>
+  <Box
+    style={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: 400,
+      backgroundColor: "white",
+      borderRadius: "8px",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+      padding: "24px",
+      display: "flex",
+      flexDirection: "column",
+      gap: "16px",
+    }}
+  >
+    <Typography variant="h6" style={{ fontWeight: "bold" }}>
+      Add Comment
+    </Typography>
+
+    <TextField
+      multiline
+      rows={4}
+      placeholder="Enter your comment here..."
+      value={comment}
+      onChange={(e) => setComment(e.target.value)}
+      fullWidth
+    />
+
+    {/* Centered Buttons */}
+    <div style={{ display: "flex", justifyContent: "center", gap: "16px" }}>
+      <Button
+        onClick={handleCloseResubmitModal}
+        variant="outlined"
+        color="error"
+        style={{ textTransform: "none" }}
+      >
+        Cancel
+      </Button>
+      <Button
+        onClick={() => handleResubmit(selectedInwardId)}
+        variant="contained"
+        color="primary"
+        style={{ textTransform: "none" }}
+      >
+        Resubmit
+      </Button>
+    </div>
+  </Box>
+</Modal>
+
+          <Modal open={viewModalOpen} onClose={handleCloseViewModal}>
+  <Box
+    style={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: 500,
+      backgroundColor: "white",
+      borderRadius: "8px",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+      padding: "24px",
+    }}
+  >
+    <Typography variant="h6" style={{ fontWeight: "bold", marginBottom: "16px",  color:"#2e59d9", textDecoration: "underline",
+            textDecorationColor: "#88c57a", }}>
+      Approval Status
+    </Typography>
+
+    {selectedRow && (
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr style={{ backgroundColor: "#bdbdbd" }}>
+            <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Level</th>
+            <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Status</th>
+            <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Approver</th>
+            <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Comment</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 1</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approval1_Status || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver_1 || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver1_Comment || "-"}</td>
+          </tr>
+          <tr>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 2</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approval2_Status || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver_2 || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver2_Comment || "-"}</td>
+          </tr>
+          {/* Uncomment if Level 3 is required */}
+          <tr>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 3</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approval3_Status || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver_3 || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver3_Comment || "-"}</td>
+          </tr>
+         
+        </tbody>
+      </table>
+    )}
+
+    <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
+      <Button
+        onClick={handleCloseViewModal}
+        variant="contained"
+        style={{ textTransform: "none" }}
+      >
+        Close
+      </Button>
+    </div>
+  </Box>
+</Modal>
+
     </div>
   );
 };

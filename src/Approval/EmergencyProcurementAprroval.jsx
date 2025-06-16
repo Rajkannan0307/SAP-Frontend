@@ -28,7 +28,7 @@ import * as XLSX from "xlsx-js-style";
 import { MenuItem, InputLabel, FormControl } from "@mui/material";
 
 import {
-  getdetails,
+  getdetailsEmergency,
  getUpdates,getRejected
 
 } from "../controller/InwardApprovalservice";
@@ -129,7 +129,7 @@ const EmergencyApproval = () => {
  console.log("EmergencyApproval Plant",PlantID)
    const getData = async () => {
      try {
-       const response = await getdetails(UserID,RoleID,PlantID);
+       const response = await getdetailsEmergency(UserID,RoleID,PlantID);
        console.log('inward appoval data',response)
        setData(response);
        setOriginalRows(response);
@@ -225,6 +225,7 @@ const EmergencyApproval = () => {
         const data = {
           Inward_ID: InwardID,
           RoleID: RoleID,
+           Approver:EmployeeID,
           Approver_Comment: comment,
           Modified_By: UserID,
         };
@@ -250,43 +251,48 @@ const EmergencyApproval = () => {
     };
     
     
-      const handleReject = async () => {
-      if (!InwardID) {
-        alert("No row selected. Please open the modal from a row.");
-        return;
-      }
-    
-      try {
-        const data = {
-          Inward_ID: InwardID,
-          RoleID: RoleID,
-          Approver_Comment: comment,
-          Modified_By: UserID,
-        };
-    
-        console.log("Update payload:", data);
-    
-        const response = await getRejected(data);
-    
-        if (response.data.success) {
-          alert(response.data.message);
-          getData(); // Refresh table
-          handleCloseModal(); // Close modal
-        } else {
-          alert(response.data.message);
-        }
-      } catch (error) {
-        console.error("Update error:", error);
-        alert(
-          error.response?.data?.message ||
-            "An unexpected error occurred while Approving the invoice."
-        );
-      }
+     const handleReject = async () => {
+  if (!InwardID) {
+    alert("No row selected. Please open the modal from a row.");
+    return;
+  }
+
+  if (!comment.trim()) {
+    alert("Comment is required to reject the invoice.");
+    return;
+  }
+
+  try {
+    const data = {
+      Inward_ID: InwardID,
+      RoleID: RoleID,
+      Approver: EmployeeID,
+      Approver_Comment: comment,
+      Modified_By: UserID,
     };
+
+    console.log("Update payload:", data);
+
+    const response = await getRejected(data);
+
+    if (response.data.success) {
+      alert(response.data.message);
+      getData(); // Refresh table
+      handleCloseModal(); // Close modal
+    } else {
+      alert(response.data.message);
+    }
+  } catch (error) {
+    console.error("Update error:", error);
+    alert(
+      error.response?.data?.message ||
+        "An unexpected error occurred while rejecting the invoice."
+    );
+  }
+};
+
     
-      const handleSelectChange = (event) => {
-        setSelectedL2(event.target.value);
-      };
+     
       return (
         <div
           style={{
@@ -422,62 +428,42 @@ const EmergencyApproval = () => {
                       }}
                     />
           </div>
-    
-           <Modal open={openModal} onClose={() => setOpenModal(false)}>
-          <Box
-            sx={{
-              width: 400,
-              bgcolor: 'background.paper',
-              borderRadius: 2,
-              boxShadow: 24,
-              p: 3,
-              mx: 'auto',
-              mt: '10%',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 2,
-            }}
-          >
-            {/* Comment Box */}
-            <TextField
-              label="Comment"
-              multiline
-              rows={3}
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-            />
-    
-            {/* Action Buttons */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Button variant="contained" color="success" onClick={handleApprove}>
-                Approve
-              </Button>
-              <Button variant="contained" color="error" onClick={handleReject}>
-                Reject
-              </Button>
-              <Button variant="contained" color="primary" onClick={handleL2Click}>
-                L2 Approver
-              </Button>
-            </Box>
-    
-            {/* Conditional L2 Approver Select Box */}
-            {showSelect && (
-              <FormControl fullWidth>
-                <InputLabel id="l2-approver-label">Select L2 Approver</InputLabel>
-                <Select
-                  labelId="l2-approver-label"
-                  value={selectedL2}
-                  label="Select L2 Approver"
-                  onChange={handleSelectChange}
-                >
-                  <MenuItem value="L2_1">L2 Approver 1</MenuItem>
-                  <MenuItem value="L2_2">L2 Approver 2</MenuItem>
-                  <MenuItem value="L2_3">L2 Approver 3</MenuItem>
-                </Select>
-              </FormControl>
-            )}
-          </Box>
-        </Modal>
+    <Modal open={openModal} onClose={() => setOpenModal(false)}>
+  <Box
+    sx={{
+      width: 400,
+      bgcolor: 'background.paper',
+      borderRadius: 2,
+      boxShadow: 24,
+      p: 3,
+      mx: 'auto',
+      mt: '10%',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 2,
+    }}
+  >
+    {/* Comment Box */}
+    <TextField
+      label="Comment"
+      multiline
+      rows={3}
+      value={comment}
+      onChange={(e) => setComment(e.target.value)}
+    />
+
+    {/* Centered Action Buttons */}
+    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+      <Button variant="contained" color="error" onClick={handleReject}>
+        Reject
+      </Button>
+      <Button variant="contained" color="success" onClick={handleApprove}>
+        Approve
+      </Button>
+    </Box>
+  </Box>
+</Modal>
+
         </div>
       );
     };

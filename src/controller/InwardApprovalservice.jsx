@@ -14,6 +14,17 @@ export const getdetails = async (UserID, RoleID, PlantID, EmployeeID) => {
   return response.data;
 };
 
+export const getdetailsEmergency = async (UserID, RoleID, PlantID, EmployeeID) => {
+  const response = await axios.get(
+    `${api}/InwardApproval/get_details_emergency?UserID=${UserID}&RoleID=${RoleID}&PlantID=${PlantID}&EmployeeID=${EmployeeID}`,
+    {
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    }
+  );
+  return response.data;
+};
 
 
 
@@ -35,3 +46,4 @@ export const getdetails = async (UserID, RoleID, PlantID, EmployeeID) => {
     const response = await axios.put(`${api}/InwardApproval/UpdateL2Approver`, data);
     return response;
   };
+  

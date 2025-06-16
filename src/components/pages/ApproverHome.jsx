@@ -28,7 +28,7 @@ const ApproverHome = () => {
       id: "2",
       title: "201 Stock Posting",
       path: "/home/Approval_201",
-      endpoint: "/ApprovalHomePage/get_details_309Approval",
+      endpoint: "/ApprovalHomePage/get_details_201Approval",
       movementId: 2,
       icon: <FiCheckCircle />,
     },
@@ -36,7 +36,7 @@ const ApproverHome = () => {
       id: "3",
       title: "202 Stock Posting",
       path: "/home/Approval_202",
-      endpoint: "/ApprovalHomePage/get_details_309Approval",
+      endpoint: "/ApprovalHomePage/get_details_202Approval",
       movementId: 3,
       icon: <FiCheckCircle />,
     },
@@ -59,7 +59,7 @@ const ApproverHome = () => {
     {
       id: "5",
       title: "Rs1 Conversion",
-      path: "/approval/202",
+      path: "/approval/rs1",
       endpoint: "/ApprovalHomePage/get_details_Rs1Approval",
       movementId: 5,
       icon: <FiCheckCircle />,
@@ -67,15 +67,15 @@ const ApproverHome = () => {
     {
       id: "6",
       title: "ME38 Manual Schedule",
-      path: "/approval/203",
+      path: "/approval/me38",
       endpoint: "/ApprovalHomePage/get_details_ME38Approval",
       movementId: 6,
       icon: <FiCheckCircle />,
     },
     {
       id: "7",
-      title: "RGP/NRGP ",
-      path: "/approval/204",
+      title: "RGP/NRGP",
+      path: "/approval/rgp",
       endpoint: "/ApprovalHomePage/get_details_RGPApproval",
       movementId: 7,
       icon: <FiCheckCircle />,
@@ -84,22 +84,22 @@ const ApproverHome = () => {
       id: "8",
       title: "Inward of Old Invoices",
       path: "/home/InwardApproval",
-      endpoint: "/ApprovalHomePage/get_details_InwardOldInvoice",
+      endpoint: "/ApprovalHomePage/get_details_InwardApproval",
       movementId: 8,
       icon: <FiCheckCircle />,
     },
     {
       id: "9",
       title: "Emergency Procurement",
-      path: "/approval/206",
-      endpoint: "/ApprovalHomePage/get_details_EmergencyApproval",
+      path: "/home/EmergencyApproval",
+      endpoint: "/ApprovalHomePage/get_details_Emergency",
       movementId: 9,
       icon: <FiCheckCircle />,
     },
     {
       id: "10",
       title: "Production Order Aging Control Change",
-      path: "/approval/207",
+      path: "/approval/po-aging",
       endpoint: "/ApprovalHomePage/get_details_POAgingApproval",
       movementId: 10,
       icon: <FiCheckCircle />,
@@ -107,15 +107,15 @@ const ApproverHome = () => {
     {
       id: "11b",
       title: "Phy Inventory Adjustment",
-      path: "/approval/208",
+      path: "/approval/inventory-adjustment",
       endpoint: "/ApprovalHomePage/get_details_InventoryAdjustment",
-      movementId: 11,
+      movementId: 15,
       icon: <FiCheckCircle />,
     },
     {
       id: "12",
-      title: "Scrap  Disposal ",
-      path: "/approval/209",
+      title: "Scrap Disposal",
+      path: "/approval/scrap-disposal",
       endpoint: "/ApprovalHomePage/get_details_ScrapDisposal",
       movementId: 12,
       icon: <FiCheckCircle />,
@@ -123,7 +123,7 @@ const ApproverHome = () => {
     {
       id: "13",
       title: "Subcontracting Stock Value / Aging Change",
-      path: "/approval/210",
+      path: "/approval/subcontracting",
       endpoint: "/ApprovalHomePage/get_details_Subcontracting",
       movementId: 13,
       icon: <FiCheckCircle />,
@@ -131,7 +131,7 @@ const ApproverHome = () => {
     {
       id: "14",
       title: "Material Status Change",
-      path: "/approval/211",
+      path: "/approval/material-status",
       endpoint: "/ApprovalHomePage/get_details_MaterialStatus",
       movementId: 14,
       icon: <FiCheckCircle />,
@@ -142,31 +142,36 @@ const ApproverHome = () => {
     const encryptedData = sessionStorage.getItem("userData");
     if (encryptedData) {
       const decryptedData = decryptSessionData(encryptedData);
-      if (decryptedData?.RoleId && decryptedData?.PlantID) {
-        fetchApprovals(decryptedData.RoleId, decryptedData.PlantID);
+      if (decryptedData?.RoleId && decryptedData?.PlantID&& decryptedData?.EmpId
+
+      ) {
+        fetchApprovals(decryptedData.RoleId, decryptedData.PlantID,decryptedData.EmpId
+        );
       }
     }
   }, []);
 
-  const fetchApprovals = async (roleId, plantId) => {
-    try {
-      const statusObj = {};
-      await Promise.all(
-        approvalItems.map(async (item) => {
+  const fetchApprovals = async (roleId, plantId,EmployeeID) => {
+    const statusObj = {};
+    await Promise.all(
+      approvalItems.map(async (item) => {
+        try {
           const response = await axios.get(`${api}${item.endpoint}`, {
             params: {
               roleId,
               plantId,
+              EmployeeID,
               movementId: item.movementId,
             },
           });
           statusObj[item.id] = response.data?.length > 0;
-        })
-      );
-      setApprovalStatus(statusObj);
-    } catch (error) {
-      console.error("Error fetching approval statuses:", error);
-    }
+        } catch (error) {
+          console.error(`❌ Failed to fetch: ${item.title}`, error.message);
+          statusObj[item.id] = false;
+        }
+      })
+    );
+    setApprovalStatus(statusObj);
   };
 
   const itemsPerRow = 5;
@@ -200,86 +205,84 @@ const ApproverHome = () => {
           boxShadow: "0 0 12px rgb(202, 190, 157)",
           width: "90%",
           maxWidth: "1900px",
-          height: "485x",
+          height: "485px",
         }}
       >
-        <Box>
-          {groupedItems.map((group, groupIndex) => (
-            <React.Fragment key={groupIndex}>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: `repeat(${itemsPerRow}, 1fr)`,
-                  gap: 2,
-                  mb: 5,
-                  mt: 5,
-                }}
-              >
-                {group.map((item) => {
-                  const hasApproval = approvalStatus[item.id];
-                  return (
-                    <Box
-                      key={item.id}
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        px: 2,
-                        py: 1,
-                        height: "70px",
-                        background: hasApproval ? "#ffffff" : "#DADADA",
-                        borderRadius: 2,
-                        boxShadow: hasApproval
-                          ? "0 0 10px rgba(3, 17, 39, 0.5)"
-                          : "0 2px 6px rgba(0,0,0,0.08)",
-                        transition: "0.3s ease",
-                      }}
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Box sx={{ fontSize: 24, color: hasApproval ? "#1e3a8a" : "#666666" }}>
-                          {item.icon}
-                        </Box>
-                        <Typography sx={{ fontSize: 13 }} color={hasApproval ? "rgb(2, 5, 12)" : "#C0C0C0"}>
-                          {item.title}
-                        </Typography>
+        {groupedItems.map((group, groupIndex) => (
+          <React.Fragment key={groupIndex}>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: `repeat(${itemsPerRow}, 1fr)`,
+                gap: 2,
+                mb: 5,
+                mt: 5,
+              }}
+            >
+              {group.map((item) => {
+                const hasApproval = approvalStatus[item.id];
+                return (
+                  <Box
+                    key={item.id}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      px: 2,
+                      py: 1,
+                      height: "70px",
+                      background: hasApproval ? "#ffffff" : "#DADADA",
+                      borderRadius: 2,
+                      boxShadow: hasApproval
+                        ? "0 0 10px rgba(3, 17, 39, 0.5)"
+                        : "0 2px 6px rgba(0,0,0,0.08)",
+                      transition: "0.3s ease",
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box sx={{ fontSize: 24, color: hasApproval ? "#1e3a8a" : "#666666" }}>
+                        {item.icon}
                       </Box>
+                      <Typography sx={{ fontSize: 13 }} color={hasApproval ? "rgb(2, 5, 12)" : "#C0C0C0"}>
+                        {item.title}
+                      </Typography>
+                    </Box>
 
-                      <Button
-                        variant="contained"
-                        onClick={() => navigate(item.path)}
-                        disabled={!hasApproval}
-                        sx={{
+                    <Button
+                      variant="contained"
+                      onClick={() => navigate(item.path)}
+                      disabled={!hasApproval}
+                      sx={{
+                        background: hasApproval
+                          ? "linear-gradient(135deg, #1E3A8A, #3B82F6)"
+                          : "#E5E7EB",
+                        color: hasApproval ? "#fff" : "#ccc",
+                        textTransform: "none",
+                        fontWeight: "bold",
+                        fontSize: "14px",
+                        padding: "4px 12px",
+                        minWidth: "90px",
+                        borderRadius: "8px",
+                        left: 6,
+                        "&:hover": {
                           background: hasApproval
                             ? "linear-gradient(135deg, #1E3A8A, #3B82F6)"
-                            : "#E5E7EB",
-                          color: hasApproval ? "#fff" : "#ccc",
-                          textTransform: "none",
-                          fontWeight: "bold",
-                          fontSize: "14px",
-                          padding: "4px 12px",
-                          minWidth: "90px",
-                          borderRadius: "8px",
-                          left: 6,
-                          "&:hover": {
-                            background: hasApproval
-                              ? "linear-gradient(135deg, #1E3A8A, #3B82F6)"
-                              : "#D1D5DB",
-                          },
-                        }}
-                      >
-                        Approve
-                      </Button>
-                    </Box>
-                  );
-                })}
-              </Box>
+                            : "#D1D5DB",
+                        },
+                      }}
+                    >
+                      Approve
+                    </Button>
+                  </Box>
+                );
+              })}
+            </Box>
 
-              {groupIndex < groupedItems.length - 1 && (
-                <Divider sx={{ border: "2px solid rgba(43, 43, 44, 0.2)" }} />
-              )}
-            </React.Fragment>
-          ))}
-        </Box>
+            {groupIndex < groupedItems.length - 1 && (
+              <Divider sx={{ border: "2px solid rgba(43, 43, 44, 0.2)" }} />
+            )}
+          </React.Fragment>
+        ))}
       </Box>
     </Box>
   );
