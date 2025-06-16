@@ -435,7 +435,7 @@ const Partno = () => {
       From_SLoc_Code_Validation: item.From_SLoc_Val,
       To_SLoc_Code_Validation: item.To_SLoc_Val,
       //Plant_From_To_Material_Code_Validation: item.Material_Same_Plant_Val,
-      Plant_From_To_SLoc_Code_Validation: item.SLoc_Same_Plant_Val,
+      Plant_From_To_SLoc_Code_Validation: item.From_SLoc_Plant_Val,
 
       Movement_Code_Validation: item.Movement_Val,
       User_Plant_Validation: item.User_Plant_Val,

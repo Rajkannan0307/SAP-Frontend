@@ -97,7 +97,7 @@ const Stock201 = () => {
   const [MovementTypeTable, setMovementTypeTable] = useState([])
   const [ReasonForMovement, setReasonForMovement] = useState([])
   const [CostCenterTable, setCostCenterTable] = useState([])
-  const [ReasonForMovementTable, setReasonForMovementTable] = useState([]); 
+  const [ReasonForMovementTable, setReasonForMovementTable] = useState([]);
   const [TrnSapID, setTrnSapID] = useState("");
   const [MovementCode, setMovementCode] = useState("");
   const [DocID, setDocID] = useState("");
@@ -242,26 +242,33 @@ const Stock201 = () => {
 
 
 
+
   const handleOpenEditModal = (record) => {
+    // Check CostCenterID field exists in rec (adjust property name if needed)
+    const costCenterIdFromRecord = record.CostCenterID || record.CostCenter_ID || "";
+
+    // Set cost center ID from record or default to first in list if loaded
+    if (costCenterIdFromRecord) {
+      setCostCenterID(Number(costCenterIdFromRecord));
+    } else if (CostCenterTable.length > 0) {
+      setCostCenterID(CostCenterTable[0].CostCenter_ID);
+    } else {
+      setCostCenterID("");
+    }
     setMatCode(record.MatCode);
     setTrnSapID(record.TrnSapID);
     setMovementCode(record.MovementCode);
     setQty(record.Qty);
     setSLocID(record.SLocID);
-    setCostCenterID(record.CostCenterID);
+    setCostCenterID(record.CostCenterID || CostCenterTable[0]?.CostCenter_ID || "");
+
     setPrice(record.Price);
     setMovtID(record.MovtID);
     setValuationType(record.ValuationType);
     setReasonForMovt(record.ReasonForMovt);
     setBatch(record.Batch);
     setOpenEditModal(true);
-
-
   };
-
-  const status = Array.isArray(data) ? data[0]?.Approval_Status?.toLowerCase() : data?.Approval_Status?.toLowerCase();
-  console.log("viiii", status)
-
 
   // Backend cpnnect to -(get) plant, storage location, material, valuvation
   const get_Plant = async () => {
@@ -269,7 +276,7 @@ const Stock201 = () => {
       const response = await getPlants();
       setPlantTable(response.data);
     } catch (error) {
-      console.error("Error updating user:", error);
+      //console.error("Error updating user:", error);
     }
   };
   const get_Material = async () => {
@@ -277,14 +284,14 @@ const Stock201 = () => {
       const response = await getMaterial();
       setMaterialTable(response.data);
     } catch (error) {
-      console.error("Error updating user:", error);
+      //console.error("Error updating user:", error);
     }
   };
   const get_SLoc = async () => {
     try {
       const response = await getSLoc();
       setSLocTable(response.data);
-      console.log('Sloc Api  Sloc', response.data)
+     // console.log('Sloc Api  Sloc', response.data)
     } catch (error) {
       console.error("Error updating user:", error);
     }
@@ -294,24 +301,24 @@ const Stock201 = () => {
       const response = await getValuationType();
       setValuationTypeTable(response.data);
     } catch (error) {
-      console.error("Error updating user:", error);
+      //console.error("Error updating user:", error);
     }
   };
-const get_CostCenter = async () => {
-  try {
-    const response = await getCostCenter();  // <-- API call here
-    setCostCenterTable(response.data);       // response.data is expected to be an array of cost center objects
-  } catch (error) {
-    console.error("Error fetching cost centers:", error);
-  }
-};
+  const get_CostCenter = async () => {
+    try {
+      const response = await getCostCenter();  
+      setCostCenterTable(response.data);      
+      } catch (error) {
+    //  console.error("Error fetching cost centers:", error);
+    }
+  };
 
   const get_ReasonForMovement = async () => {
     try {
       const response = await getReasonForMovement();
       setReasonForMovement(response.data);
     } catch (error) {
-      console.error("Error updating user:", error);
+     // console.error("Error updating user:", error);
     }
   };
   const get_Movement = async () => {
@@ -319,28 +326,15 @@ const get_CostCenter = async () => {
       const response = await getMovement();
       setMovementTypeTable(response.data);
     } catch (error) {
-      console.error("Error updating user:", error);
+     // console.error("Error updating user:", error);
     }
-  };
-
-
-console.log("Editing Row:", {
-  Price, CostCenterID, ReasonForMovt,
-  CostCenterTable,
-  ReasonForMovementTable
-});
-
+  }
 
   const handleCloseRowEditModal = () => {
     setOpenRowEditModal(false);
   };
 
   const handleDownload = (row) => {
-    // Example logic - customize as needed
-    console.log("Downloading row data:", row);
-
-    // Example: Trigger file download or call API
-    // You might fetch a file or generate CSV/Excel from row data
     const blob = new Blob([JSON.stringify(row, null, 2)], { type: "application/json" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -368,9 +362,7 @@ console.log("Editing Row:", {
     getData();
     const encryptedData = sessionStorage.getItem('userData');
     if (encryptedData) {
-      const decryptedData = decryptSessionData(encryptedData);
-
-
+      const decryptedData = decryptSessionData(encryptedData)
       setUser_Level(decryptedData.UserLevelName)
       console.log("userlevel", decryptedData.UserLevelName)
     }
@@ -395,7 +387,6 @@ console.log("Editing Row:", {
       alert("Please select a file first.");
       return;
     }
-
     else {
       try {
         const formData = new FormData();
@@ -426,23 +417,17 @@ console.log("Editing Row:", {
     // Column headers for Error Records
     const ErrorColumns = ['Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
       'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
-
     ];
-
     // Column headers for New Records (based on your columns array)
     const newRecordsColumns = ['Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
       'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',];
-
-
     // Column headers for Duplicate Records
     const DuplicateColumns = ['Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
       'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
     ];
 
-
     // Filter and map the data for Error Records
     const filteredError = errRecord.map(item => ({
-      //Doc_ID: item.Doc_ID || '',
       Plant_Code: item.Plant_Code || '',
       Material_Code: item.Material_Code || '',
       Quantity: item.Quantity || '',
@@ -453,9 +438,6 @@ console.log("Editing Row:", {
       Batch: item.Batch || '',
       Rate_Unit: item.Rate_Per_Unit || '',
       Remark: item.Reason_For_Movt || '',
-      //User_Code: item.User_ID || '',
-      // Approval_Status: item.Approval_Status || '',
-      // SAP_Transaction_Status: item.SAP_Transaction_Status || '',
 
       Plant_Code_Validation: item.Plant_Val,
       Plant_Material_Code_Validation: item.Material_Val,
@@ -474,7 +456,6 @@ console.log("Editing Row:", {
 
     // Filter and map the data for New Records
     const filteredNewData = newRecord.map(item => ({
-      // Doc_ID: selectedRow.Doc_ID || '',
       Plant_Code: item.Plant_Code || '',
       Material_Code: item.Material_Code || '',
       Quantity: item.Quantity || '',
@@ -485,18 +466,11 @@ console.log("Editing Row:", {
       Batch: item.Batch || '',
       Rate_Unit: item.Rate_Per_Unit || '',
       Remark: item.Reason_For_Movt || '',
-      //User_Code: selectedRow.User_Code || '',
-      //Approval_Status: selectedRow.Approval_Status || '',
-      //  SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
 
     }));
 
-
-
     // Filter and map the data for Duplicate Record
     const filteredUpdate = DuplicateRecord.map(item => ({
-
-      //Doc_ID: selectedRow.Doc_ID || '',
       Plant_Code: item.Plant_Code || '',
       Material_Code: item.Material_Code || '',
       Quantity: item.Quantity || '',
@@ -507,15 +481,11 @@ console.log("Editing Row:", {
       Batch: item.Batch || '',
       Rate_Unit: item.Rate_Per_Unit || '',
       Remark: item.Reason_For_Movt || '',
-      //User_Code: selectedRow.User_Code || '',
-      //Approval_Status: selectedRow.Approval_Status || '',
-      //SAP_Transaction_Status: selectedRow.SAP_Transaction_Status || '',
 
 
       Plant_Code_Duplicate: item.Plant_Code,
       Material_Code_Duplicate: item.Material_Code,
       CostCenter_Code_Duplicate: item.CostCenter_Code,
-      //Duplicate: item.Qty,
     }));
 
 
@@ -617,10 +587,7 @@ console.log("Editing Row:", {
 
   }
 
-  // const downloadExcel = () => {
-  //   // Logic to download Excel file
-  // };
-  // excel download
+
   const handleDownloadExcel = (selectedRow) => {
     if (!selectedRow) {
       alert("No row selected.");
@@ -994,101 +961,61 @@ console.log("Editing Row:", {
   };
 
   useEffect(() => {
-    console.log("MatCode:", MatCode);
-    console.log("Material options:", MaterialTable.map(i => i.Material_ID));
-  }, [openRowEditModal]);
+   }, [openRowEditModal]);
 
   useEffect(() => {
-    console.log("CostCenterID:", CostCenterID);
-    console.log("CostCenterID options:", CostCenterTable.map(i => i.CostCenter_ID));
-  }, [openRowEditModal]);
+    }, [openRowEditModal]);
 
-const loadDropdownData = async () => {
-  await Promise.all([
-    get_Material(),
-    get_SLoc(),
-    get_ValuationTypeTable(),
-    get_Movement(),
-    get_ReasonForMovement(),
-    get_CostCenter()
-  ]);
-};
+  const loadDropdownData = async () => {
+    await Promise.all([
+      get_Material(),
+      get_SLoc(),
+      get_ValuationTypeTable(),
+      get_Movement(),
+      get_ReasonForMovement(),
+      get_CostCenter()
+    ]);
+  };
 
-const handleConditionalRowClick = async (params) => {
-  const rawStatus = params.row?.Approval_Status;
-  if (!rawStatus) return;
+  const handleConditionalRowClick = async (params) => {
+    console.log('selected row', params.row);
 
-  const status = rawStatus.toUpperCase();
+    const rawStatus = params.row?.Approval_Status;
+    if (!rawStatus) return;
 
-  if (status === "REJECTED" || status === "UNDER QUERY") {
-    await loadDropdownData();
+    const status = rawStatus.toUpperCase();
 
-    setPlantCode(params.row.Plant_Code);
-    setDocID(params.row.Doc_ID);
-    setTrnSapID(params.row.Trn_Sap_ID);
-    setMatCode(params.row.Material_Code);
-    setQty(params.row.Qty);
-    setPrice(params.row.Rate_Per_Unit);
+    if (status === "REJECTED" || status === "UNDER QUERY") {
+      await loadDropdownData();
 
-    setCostCenterID(params.row.CostCenter_ID);
-    setSLocID(params.row.SLoc_Code);
-    setMovtID(params.row.Movement_Code);
-    setValuationType(params.row.Valuation_Type);
-    
-    // IMPORTANT: set ReasonForMovement (not ReasonForMovt)
-    setReasonForMovement(params.row.ReasonForMovtCode);
+      setPlantCode(params.row.Plant_Code);
+      setDocID(params.row.Doc_ID);
+      setTrnSapID(params.row.Trn_Sap_ID);
+      setMatCode(params.row.Material_Code);
+      setQty(params.row.Qty);
+      setPrice(params.row.Rate_PerPart);
 
-    setBatch(params.row.Batch);
+      setCostCenterID(params.row.CostCenter_ID);
+      setSLocID(params.row.SLoc_Code);
+      setMovtID(params.row.Movement_Code);
+      setValuationType(params.row.Valuation_Type);
 
-    setSelectedRow(params.row);
-    setOpenRowEditModal(true);
-    setReasonForMovement(String(params.row.ReasonForMovtCode));
-    setCostCenterID(String(params.row.CostCenter_ID));
-    setCostCenterID(params.row.CostCenter_ID ?? '');  // Fallback to empty string if undefined
-setPrice(params.row.Rate_Per_Unit ?? 0);          // Or some default number
-setReasonForMovement(params.row.ReasonForMovtCode ?? '');
-  }
-};
+      // IMPORTANT: set ReasonForMovement (not ReasonForMovt)
+      setReasonForMovement(params.row.Remarks);
 
+      setBatch(params.row.Batch);
 
+      setSelectedRow(params.row);
+      setOpenRowEditModal(true);
+      setReasonForMovement(String(params.row.Remarks));
+      setCostCenterID(String(params.row.CostCenter_ID));
 
-const handleEditrow = (params) => {
-  console.log("Editing Row data:", params.row);
+    }
+  };
 
-  const price = params.row.Rate_Per_Unit ?? 0;
-  const reasonForMovt = params.row.ReasonForMovtCode ?? "";
-
-  const costCenterIdString = params.row.CostCenter_ID
-    ? params.row.CostCenter_ID.toString().padStart(4, "0")
-    : "";
-
-  setPrice(price);
-  setReasonForMovt(reasonForMovt);
-
-  // Assuming costCenterTable is defined and contains padded strings
-  const validCostCenter = CostCenterTable.find(
-    (item) => item.id === costCenterIdString
-  );
-
-  setCostCenterID(validCostCenter ? costCenterIdString : "");
-};
-
-
-
-const someFunction = (params) => {
-  setPlantCode(params.row.Plant_Code);
-  setDocID(params.row.Doc_ID);
-  setTrnSapID(params.row.Trn_Sap_ID);
-
-  console.log("Editing record with:");
-  console.log("Price:", params.row.Rate_Per_Unit);
-  console.log("CostCenterID:", params.row.CostCenter_ID);
-  console.log("ReasonForMovement:", params.row.ReasonForMovtCode);
-}
 
 
   useEffect(() => {
-    console.log("MaterialTable:", MaterialTable);
   }, [MaterialTable]);
 
   const handleCloseEditRowModal = () => {
@@ -1427,7 +1354,7 @@ const someFunction = (params) => {
   }, []);
 
 
-  
+
   // ✅ Custom Toolbar
   const CustomToolbar = () => (
     <GridToolbarContainer>
@@ -2157,24 +2084,27 @@ const someFunction = (params) => {
             </FormControl>
           ))}
 
-          {/* CostCenter */}
-          <FormControl fullWidth size="small">
-            <InputLabel id="costcenter-label">Cost Center</InputLabel>
-            <Select
-              labelId="costcenter-label"
-              label="Cost Center"
-              value={CostCenterID}
-              onChange={e => setCostCenterID(e.target.value)}
-            >
-              {CostCenterTable.map(item => (
-                <MenuItem key={item.CostCenter_ID} value={item.CostCenter_ID}>
-                  {item.CostCenter_Code} - {item.CostCenter_Name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {/* CostCenter Dropdown */}
 
-
+          {[
+            ["Cost Center", CostCenterID || "", setCostCenterID, CostCenterTable, "CostCenter_ID", "CostCenter_Code"]
+          ].map(([label, value, setter, table, idKey, labelKey]) => (
+            <FormControl fullWidth size="small" key={label}>
+              <InputLabel id={`${label}-label`}>{label}</InputLabel>
+              <Select
+                labelId={`${label}-label`}
+                label={label}
+                value={value}
+                onChange={(e) => setter(e.target.value)}
+              >
+                {table.map(item => (
+                  <MenuItem key={item[idKey]} value={item[idKey]}>
+                    {item[labelKey]}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          ))}
 
           {/* Price */}
           <TextField
@@ -2208,6 +2138,7 @@ const someFunction = (params) => {
           ))}
 
           {/* ReasonForMovement Type */}
+
           <FormControl fullWidth size="small">
             <InputLabel id="reason-for-mov-label">Reason For Movement</InputLabel>
             <Select
@@ -2217,9 +2148,13 @@ const someFunction = (params) => {
               onChange={e => setReasonForMovement(e.target.value)}
             >
               {ReasonForMovementTable.map(item => (
-                <MenuItem key={item.Movt_List_ID} value={item.Movement_List_Code}>
-                  {item.Movement_List_Code} - {item.Movement_List_Name}
+                <MenuItem
+                  key={item.Movt_List_ID}
+                  value={`${item.Movement_List_Code}-${item.Movement_List_Name}`}
+                >
+                  {item.Movement_List_Code}-{item.Movement_List_Name}
                 </MenuItem>
+
               ))}
             </Select>
           </FormControl>
