@@ -36,6 +36,7 @@ import {
   getAdd,
   updateInwardInvoicePurchase,
   getMaterial,
+  getPurchaseData
 } from "../controller/Inwardtransactionapiservice";
 import { decryptSessionData } from "../controller/StorageUtils";
 const Purchase = () => {
@@ -47,7 +48,9 @@ const Purchase = () => {
   const [openEditModal, setOpenEditModal] = useState(false);
  // const UserID = localStorage.getItem("UserID");
   const [VendorCode, setVendorCode] = useState("");
-
+ const [openExcelDownloadModal, setOpenExcelDownloadModal] = useState(false);
+ const [fromDate, setFromDate] = useState('');
+   const [toDate, setToDate] = useState('');
   const [PartNo, setPartNo] = useState("");
   const [InwardID, setInwardID] = useState("");
 
@@ -66,26 +69,17 @@ const Purchase = () => {
   // const [updateRecord] = useState([]);
   // const [errRecord] = useState([]);
 
-  const [openUploadModal, setOpenUploadModal] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState(""); // Track upload status
-  const [uploadedFileData, setUploadedFileData] = useState(null);
-  const [PlantCode, setPlantCode] = useState([]);
-  const [MaterialType, setMaterialType] = useState([]);
+ 
+  
   const [MaterialCode, setMaterialCode] = useState("");
-  const [MaterialID, setMaterialID] = useState("");
-  const [Description, setDescription] = useState("");
-  const [Rate, setRate] = useState("");
-  const [ActiveStatus, setActiveStatus] = useState(false);
-  const [PlantTable, setPlantTable] = useState([]);
+  
+ 
+ 
   const [VendorTable, setVendorTable] = useState([]);
   const [MaterialTable, setMaterialTable] = useState([]);
   const [UserID, setUserID] = useState("");
    const [Plant_ID, setPlantID] = useState("");
-  const [selectedRows, setSelectedRows] = useState([]);
-
+ 
  const columns = [
   { field: "Vendor_Code", headerName: "Vendor Code", flex: 1 },
     { field: "Vendor_Name", headerName: "Vendor Name", flex: 1 },
@@ -104,16 +98,24 @@ const Purchase = () => {
     { field: "Reason_For_Delay", headerName: "Reason For Delay", flex: 1.3 },
   { field: "Status", headerName: "Status",  flex: 1, },
 ];
-   useEffect(() => {
-    const encryptedData = sessionStorage.getItem("userData");
-    if (encryptedData) {
-      const decryptedData = decryptSessionData(encryptedData);
-      setUserID(decryptedData.UserID);
-      setPlantID(decryptedData.PlantID);
-      console.log("Service Plantid", decryptedData.PlantID)
-      console.log("Service userid", decryptedData.UserID);
-    }
-  }, []);
+ // Set UserID and PlantID once on mount
+useEffect(() => {
+  const encryptedData = sessionStorage.getItem("userData");
+  if (encryptedData) {
+    const decryptedData = decryptSessionData(encryptedData);
+    setUserID(decryptedData.UserID);
+    setPlantID(decryptedData.PlantID);
+    console.log("Service Plantid", decryptedData.PlantID);
+    console.log("Service userid", decryptedData.UserID);
+  }
+}, []);
+
+// Fetch data only after UserID is available
+useEffect(() => {
+  if (UserID) {
+    getData();
+  }
+}, [UserID]);
 
   const getData = async () => {
     try {
@@ -130,12 +132,6 @@ const Purchase = () => {
     }
   };
 
- // Call getData only after UserID is set
- useEffect(() => {
-   if (UserID) {
-     getData();
-   }
- }, [UserID]);
   const get_Material = async () => {
     try {
       const response = await getMaterial();
@@ -163,21 +159,7 @@ const Purchase = () => {
     </GridToolbarContainer>
   );
 
-  const handleCheckboxChange = (row) => {
-    setSelectedRows((prevSelected) => {
-      const isSelected = prevSelected.some(
-        (item) => item.Inward_ID === row.Inward_ID
-      );
-      if (isSelected) {
-        return prevSelected.filter((item) => item.Inward_ID !== row.Inward_ID);
-      } else {
-        return [...prevSelected, row];
-      }
-    });
-  };
-
-
-
+  
   
 
   // ✅ Handle Add Modal
@@ -198,213 +180,107 @@ const Purchase = () => {
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
-
-  // ✅ Handle Upload Modal
-  const handleOpenUploadModal = () => setOpenUploadModal(true);
-  const handleCloseUploadModal = () => {
-    setOpenUploadModal(false);
-    setUploadStatus("");
-    setUploadedFile(null);
-    setUploadProgress(0);
-    setUploadedFileData(null);
-    setIsUploading(false);
-  };
-
-  const handleFileUpload = (event) => {
-    setUploadedFile(event.target.files[0]);
-  };
-
-  const handleUploadData = async () => {
-    if (!uploadedFile) {
-      alert("Please select a file first.");
-      return;
-    } else {
-      try {
-        const formData = new FormData();
-        console.log("file", uploadedFile);
-        formData.append("User_Add", uploadedFile);
-        formData.append("UserID", UserID);
-        const response = await MaterialMaster(formData);
-        console.log("response", response.data);
-        alert(response.data.message);
-        // console.log('response', response.data)
-        if (
-          response.data.NewRecord.length > 0 ||
-          response.data.UpdatedData.length > 0 ||
-          response.data.ErrorRecords.length > 0
-        ) {
-          downloadExcel(
-            response.data.NewRecord,
-            response.data.UpdatedData,
-            response.data.ErrorRecords
-          );
-        }
-        getData();
-      } catch (error) {
-        if (error.response && error.response.status === 400) {
-          alert(error.response.data.message);
-        }
+ const  handleOpenExcelModal=()=>{
+  setOpenExcelDownloadModal(true);
+  setFromDate("");
+  setToDate("");
+ }
+const handleCloseExcelModal=()=>setOpenExcelDownloadModal(false);
+   const handleDownloadReportExcel = async () => {
+      if (!fromDate) {
+        alert('Select From Date');
+        return;
       }
-    }
-    handleCloseUploadModal();
-  };
-
-  const downloadExcel = (newRecord, updateRecord, errRecord) => {
-    const wb = XLSX.utils.book_new();
-
-    const newRecordsColumns = [
-      "Plant_Code",
-      "Material_Type",
-      "Material_Code",
-      "Description",
-      "Rate",
-      "ActiveStatus",
-      "Status",
-    ];
-    const UpdatedColumns = [
-      "Plant_Code",
-      "Material_Type",
-      "Material_Code",
-      "Description",
-      "Rate",
-      "ActiveStatus",
-      "Status",
-    ];
-    const ErrorColumns = [
-      "Plant_Code",
-      "Material_Type",
-      "Material_Code",
-      "Description",
-      "Rate",
-      "ActiveStatus",
-      "PlantCode_Validation",
-      "Material_Type_Validation",
-    ];
-
-    const filteredNewData = newRecord.map((item) => ({
-      Plant_Code: item.Plant_Code,
-      Material_Type: item.Material_Type,
-      Material_Code: item.Material_Code,
-      Description: item.Description,
-      Rate: item.Rate,
-      ActiveStatus: item.Active_Status,
-      Status: item.Status,
-    }));
-
-    const filteredUpdate = updateRecord.map((item) => ({
-      Plant_Code: item.Plant_Code,
-      Material_Type: item.Material_Type,
-      Material_Code: item.Material_Code,
-      Description: item.Description,
-      Rate: item.Rate,
-      ActiveStatus: item.Active_Status,
-      Status: item.Status,
-    }));
-
-    const filteredError = errRecord.map((item) => ({
-      Plant_Code: item.Plant_Code,
-      Material_Type: item.Material_Type,
-      Material_Code: item.Material_Code,
-      Description: item.Description,
-      Rate: item.Rate,
-      ActiveStatus: item.Active_Status,
-      PlantCode_Validation: item.Plant_Val,
-      Material_Type_Validation: item.Material_Val,
-    }));
-
-    // 🔹 Helper to style header cells
-    const styleHeaders = (worksheet, columns) => {
-      columns.forEach((_, index) => {
-        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-        if (worksheet[cellAddress]) {
-          worksheet[cellAddress].s = {
-            font: { bold: true, color: { rgb: "000000" } },
-            fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
-            alignment: { horizontal: "center" },
-          };
+      if (!toDate) {
+        alert('Select To Date');
+        return;
+      }
+  
+      try {
+        // Call backend API with fromDate and toDate as query params
+        const response = await getPurchaseData(fromDate, toDate,UserID);
+  
+        if (response.status === 400) {
+          alert(`Error: ${response.data.message || 'Invalid input or date range.'}`);
+          return;
         }
-      });
-    };
-
-    // 🔴 Style red text for validation columns only
-    const styleValidationColumns = (worksheet, columns, dataLength) => {
-      const validationCols = [
-        "PlantCode_Validation",
-        "Material_Type_Validation",
-      ];
-
-      for (let row = 1; row <= dataLength; row++) {
-        validationCols.forEach((colName) => {
-          const colIdx = columns.indexOf(colName);
-          if (colIdx === -1) return;
-
-          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-          const cell = worksheet[cellAddress];
-
-          if (cell && typeof cell.v === "string") {
-            const value = cell.v.trim().toLowerCase();
-
-            // Apply green if value is "valid", otherwise red
-            cell.s = {
-              font: {
-                color: { rgb: value === "valid" ? "2e7d32" : "FF0000" }, // green or red
-              },
+  
+        const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+        const fileExtension = ".xlsx";
+        const fileName = "Purchase Invoice";
+  
+        // Convert JSON response to worksheet
+        const ws = XLSX.utils.json_to_sheet(response.data);
+  
+        // Style header row (row 0)
+        const headers = Object.keys(response.data[0] || {});
+        headers.forEach((_, colIdx) => {
+          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+          if (ws[cellAddress]) {
+            ws[cellAddress].s = {
+              font: { bold: true, color: { rgb: "000000" } },
+              fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
+              alignment: { horizontal: "center" },
             };
           }
         });
+  
+        // Create workbook
+        const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+  
+        // Write workbook to binary array
+        const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  
+        // Create Blob and trigger download
+        const data = new Blob([excelBuffer], { type: fileType });
+        const url = window.URL.createObjectURL(data);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", fileName + fileExtension);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+  
+        alert("File downloaded successfully!");
+        handleCloseExcelModal();
+      } catch (error) {
+        console.error("Download failed:", error);
+        if (error.response) {
+          alert(error.response.data.message || "Unknown error from backend");
+        } else if (error.request) {
+          alert("No response from server. Please try again later.");
+        } else {
+          alert(`Error: ${error.message}`);
+        }
       }
     };
 
-    // 📄 New Records Sheet
-    if (filteredNewData.length === 0) filteredNewData.push({});
-    const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, {
-      header: newRecordsColumns,
-    });
-    styleHeaders(wsNewRecords, newRecordsColumns);
-    XLSX.utils.book_append_sheet(wb, wsNewRecords, "New Records");
-
-    // 📄 Updated Records Sheet
-    if (filteredUpdate.length === 0) filteredUpdate.push({});
-    const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, {
-      header: UpdatedColumns,
-    });
-    styleHeaders(wsUpdated, UpdatedColumns);
-    XLSX.utils.book_append_sheet(wb, wsUpdated, "Updated Records");
-
-    // 📄 Error Records Sheet
-    if (filteredError.length === 0) filteredError.push({});
-    const wsError = XLSX.utils.json_to_sheet(filteredError, {
-      header: ErrorColumns,
-    });
-    styleHeaders(wsError, ErrorColumns);
-    styleValidationColumns(wsError, ErrorColumns, filteredError.length);
-    XLSX.utils.book_append_sheet(wb, wsError, "Error Records");
-
-    // 📦 Export the Excel file
-    const fileName = "Material Data Upload Log.xlsx";
-    XLSX.writeFile(wb, fileName);
-  };
-
   // ✅ Handle Row Click for Edit
+const handleRowClick = (params) => {
+  // Check status before allowing edit
+  const status = params.row.Status;
+  if (status !== "New" && status !== "Rejected") {
+    alert("Only 'New' or 'Rejected' status can be edited.");
+    return;
+  }
 
- const handleRowClick = (params) => {
   get_Material();
   get_Vendor();
 
-  const rawDate = params.row.Invoice_Date; // e.g., "30-04-2025"
+  const rawDate = params.row.Invoice_Date;
   let formattedDate = rawDate;
 
-  // If date is in DD-MM-YYYY format, convert it
   if (rawDate && rawDate.includes('-')) {
     const [day, month, year] = rawDate.split('-');
     if (day.length === 2 && month.length === 2 && year.length === 4) {
-      formattedDate = `${year}-${month}-${day}`; // -> "2025-04-30"
+      formattedDate = `${year}-${month}-${day}`;
     }
   }
 
   setInwardID(params.row.Inward_ID);
   setVendorCode(params.row.Vendor_ID);
-  setInvoiceDate(formattedDate); // ✅ Correct format for date input
+  setInvoiceDate(formattedDate);
   setInvoiceNo(params.row.Invoice_No);
   setInvoiceQty(params.row.Invoice_Qty);
   setInvoiceValue(params.row.Invoice_Value);
@@ -413,8 +289,10 @@ const Purchase = () => {
   setMonthlyScheduledQty(params.row.Monthly_Scheduled_Qty);
   setCurrentStock(params.row.Current_Stock);
   setReasonForDelay(params.row.Reason_For_Delay);
-  setOpenEditModal(true);
+
+  setOpenEditModal(true); // ✅ Will trigger only for New/Rejected
 };
+
 
 
    const handleSearch = () => {
@@ -691,23 +569,11 @@ const formattedInvoiceDate = getFormattedDate(InvoiceDate);
 
         {/* Icons */}
         <div style={{ display: "flex", gap: "10px" }}>
-          {/* Upload Button */}
-          {/* <IconButton
-            onClick={handleOpenUploadModal}
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#FF6699",
-              color: "white",
-              width: "40px",
-              height: "40px",
-            }}
-          >
-            <CloudUploadIcon />
-          </IconButton> */}
+         
 
           {/* Download Button */}
           <IconButton
-            onClick={handleDownloadExcel}
+             onClick={handleOpenExcelModal}
             style={{
               borderRadius: "50%",
               backgroundColor: "#339900",
@@ -1193,103 +1059,84 @@ const formattedInvoiceDate = getFormattedDate(InvoiceDate);
           </Box>
         </Box>
       </Modal>
-      {/* upload modal */}
-
-      {/* <Modal open={openUploadModal} onClose={handleCloseUploadModal}>
-        <Box
-          sx={{
-            width: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            textAlign: "center",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "22px",
-              textAlign: "center",
-              marginBottom: "20px",
-              color: "#2e59d9",
-              textDecoration: "underline",
-              textDecorationColor: "#88c57a",
-              textDecorationThickness: "3px",
-            }}
+      {/* ExcelDownload From & To Date Modal */}
+          <Modal
+            open={openExcelDownloadModal}
+            onClose={handleCloseExcelModal}  // Use the custom handleCloseModal function
           >
-            Purchase  Excel File Upload
-          </h3>
-
-          <Button
-            variant="contained"
-    style={{
-              marginBottom: "10px",
-              backgroundColor: deepPurple[500],
-              color: "white",
-            }}
-          >
-            <a
-              style={{ textDecoration: "none", color: "white" }}
-              href={`${api}/Master/Template/MaterialMaster.xlsx`}
-            >
-              {" "}
-              <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
-            </a>{" "}
-          </Button>
-          <input
-            type="file"
-            accept=".xlsx, .xls"
-            onChange={handleFileUpload}
-            style={{
-              padding: "8px",
-              backgroundColor: "white", // ✅ Blue background
-              color: "black",
-              border: "1px solid black",
-              borderRadius: "5px",
-              cursor: "pointer",
-              width: "240px",
-              marginTop: "10px",
-            }}
-          />
-
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-           
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleCloseUploadModal}
-              style={{ marginTop: "10px", width: "25%" }}
-            >
-              Close
-            </Button>
-           
-            <Button
-              variant="contained"
-              onClick={handleUploadData}
-              disabled={isUploading}
-              style={{
-                marginTop: "10px",
-                width: "25%",
-                color: "white",
-                backgroundColor: "blue",
+            <Box
+              sx={{
+                width: 400,
+                bgcolor: 'background.paper',
+                borderRadius: 2,
+                boxShadow: 24,
+                p: 4,
+                margin: 'auto',
+                marginTop: '10%',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '15px',
               }}
             >
-              Upload
-            </Button>
-          </Box>
-        </Box>
-      </Modal> */}
-    </div>
+              <h3
+                style={{
+                  gridColumn: 'span 2',
+                  textAlign: 'center',
+                  marginBottom: '15px',
+                  color: 'blue',
+                  textDecoration: 'underline',
+                  textDecorationColor: 'limegreen',
+                  textDecorationThickness: '3px',
+                }}
+              >
+                Excel Download
+              </h3>
+    
+              <TextField
+                label="From Date"
+                name="FromDate"
+                type="date"
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                required
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
+              <TextField
+                label="To Date"
+                name="ToDate"
+                type="date"
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                required
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
+    
+              <Box
+                sx={{
+                  gridColumn: 'span 2',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  marginTop: '15px',
+                }}
+              >
+                <Button variant="contained" color="error" onClick={handleCloseExcelModal}>
+                  Cancel
+                </Button>
+                <Button
+                  style={{ width: '90px' }}
+                  variant="contained"
+                  color="primary"
+                  onClick={handleDownloadReportExcel}
+                >
+                  Download
+                </Button>
+              </Box>
+            </Box>
+          </Modal>
+         </div>
   );
 };
 

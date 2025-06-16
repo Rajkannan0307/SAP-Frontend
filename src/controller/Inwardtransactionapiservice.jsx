@@ -45,3 +45,13 @@ export const updateInwardInvoicePurchase = async (data)=>{
     const response = await axios.put(`${api}/Inward/update_Service`, data);
     return response;
   };
+
+  export const getPurchaseData = async (from, to,UserID)=>{
+      const response = await axios.get(`${api}/Inward/downloadPurchase?From=${from}&to=${to}&UserID=${UserID}`, );
+      return response;
+  };
+
+  export const getServiceData = async (from, to,UserID)=>{
+      const response = await axios.get(`${api}/Inward/downloadService?From=${from}&to=${to}&UserID=${UserID}`, );
+      return response;
+  };
