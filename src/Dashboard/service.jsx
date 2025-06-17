@@ -11,6 +11,7 @@ import {
   Typography,
   RadioGroup,
 } from "@mui/material";
+import CloseIcon from '@mui/icons-material/Close';
 import {
   DataGrid,
   GridToolbarContainer,
@@ -624,7 +625,7 @@ const handleDownloadReportExcel = async () => {
               fontWeight: "bold",
             },
             "& .MuiDataGrid-columnHeaderTitle": {
-              fontSize: "16px",
+              fontSize: "14px",
               fontWeight: "bold",
             },
             "& .MuiDataGrid-row": {
@@ -930,7 +931,7 @@ const handleDownloadReportExcel = async () => {
                         textDecorationThickness: '3px',
                       }}
                     >
-                      Excel Download
+                     Service Inward Excel Download
                     </h3>
           
                     <TextField
@@ -1030,21 +1031,45 @@ const handleDownloadReportExcel = async () => {
 </Modal>
    <Modal open={viewModalOpen} onClose={handleCloseViewModal}>
   <Box
-    style={{
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      width: 500,
-      backgroundColor: "white",
-      borderRadius: "8px",
-      boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
-      padding: "24px",
+    sx={{
+      position: 'relative',
+      p: 4,
+      width: { xs: '90%', sm: 800 },
+      mx: 'auto',
+      mt: '5%',
+      bgcolor: 'background.paper',
+      borderRadius: 3,
+      boxShadow: 24,
     }}
   >
-    <Typography variant="h6" style={{ fontWeight: "bold", marginBottom: "16px",  color:"#2e59d9", textDecoration: "underline",
-            textDecorationColor: "#88c57a", }}>
-      Approval Status
+    {/* ❌ Close Icon */}
+    <IconButton
+      aria-label="close"
+      onClick={handleCloseViewModal}
+      sx={{
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        color: '#f44336',
+        '&:hover': { color: '#d32f2f' },
+      }}
+    >
+      <CloseIcon />
+    </IconButton>
+
+    <Typography
+      variant="h6"
+      gutterBottom
+      sx={{
+        textAlign: 'center',
+        color: '#1976d2',
+        borderBottom: '2px solid limegreen',
+        display: 'inline-block',
+        mb: 3,
+        fontWeight: 'bold', // ✅ Correct way to set bold font
+      }}
+    >
+      Inward Approval Status
     </Typography>
 
     {selectedRow && (
@@ -1059,25 +1084,25 @@ const handleDownloadReportExcel = async () => {
         </thead>
         <tbody>
           <tr>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 1</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 1 -PLANT FINANCE HEAD</td>
             <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approval1_Status || "-"}</td>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver_1 || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver1_Name || "-"}</td>
             <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver1_Comment || "-"}</td>
           </tr>
           <tr>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 2</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 2 -CORP MRPC</td>
             <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approval2_Status || "-"}</td>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver_2 || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver2_Name || "-"}</td>
             <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver2_Comment || "-"}</td>
           </tr>
-          {/* Uncomment if Level 3 is required
+           {/* Uncomment if Level 3 is required */}
           <tr>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 3</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 3 -CORP FINANCE HEAD</td>
             <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approval3_Status || "-"}</td>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver_3 || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver3_Name || "-"}</td>
             <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver3_Comment || "-"}</td>
           </tr>
-          */}
+          
         </tbody>
       </table>
     )}

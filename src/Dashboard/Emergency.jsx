@@ -11,6 +11,9 @@ import {
   Checkbox,
   Typography,
 } from "@mui/material";
+import CloseIcon from '@mui/icons-material/Close';
+
+
 import {
   DataGrid,
   GridToolbarContainer,
@@ -36,7 +39,7 @@ import {
   getVendor,
   getAdd,
   getUpdates,
-Resubmit
+Resubmit,getEmergencyData
 } from "../controller/EmergencyProcurementservice";
 import { decryptSessionData } from "../controller/StorageUtils";
 const Emergency = () => {
@@ -59,22 +62,13 @@ const Emergency = () => {
   const [comment, setComment] = useState('');// const [updateRecord] = useState([]);
   // const [errRecord] = useState([]);
  const [Plant_ID, setPlantID] = useState("");
-  const [openUploadModal, setOpenUploadModal] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState(""); // Track upload status
-  const [uploadedFileData, setUploadedFileData] = useState(null);
-  const [PlantCode, setPlantCode] = useState([]);
-  const [MaterialType, setMaterialType] = useState([]);
-  const [MaterialCode, setMaterialCode] = useState("");
-  const [MaterialID, setMaterialID] = useState("");
+ 
   const [MaterialDescription, setMaterialDescription] = useState("");
-  const [Rate, setRate] = useState("");
-  const [ActiveStatus, setActiveStatus] = useState(false);
-  const [PlantTable, setPlantTable] = useState([]);
+  const [openExcelDownloadModal, setOpenExcelDownloadModal] = useState(false);
+  const [fromDate, setFromDate] = useState('');
+    const [toDate, setToDate] = useState('');
   const [VendorTable, setVendorTable] = useState([]);
-  const [selectedRows, setSelectedRows] = useState([]);
+ 
  const [UserID, setUserID] = useState("");
  const [selectedRow, setSelectedRow] = useState(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -561,68 +555,81 @@ const handleResubmit = async (InwardID) => {
       }
     }
   };
-  // excel download
-  const handleDownloadExcel = () => {
-   if (data.length === 0) {
-     alert("No Data Found");
-     return;
-   }
- 
-   const DataColumns = [
-     "Vendor_Code",
-     "Vendor_Name",
-      "Material_Description",
-    "Quantity",
-    
-     
-     "Total_Value",
-     "Purchase_Order",
-    
-     
-     "Reason_For_Delay",
-     "Status",
-   ];
- 
-   const filteredData = data.map((item) => ({
-     Vendor_Code: item.Vendor_Code,
-     Vendor_Name: item.Vendor_Name,
-     Material_Description: item.Material_Description,
-    Quantity:item.Invoice_Qty,
-     
-     Total_Value: item.Invoice_Value,
-     Purchase_Order: item.Purchase_Order,
-    
-     Reason_For_Delay: item.Reason_For_Delay,
-     Status: item.Status,
-   }));
- 
-   const worksheet = XLSX.utils.json_to_sheet(filteredData, {
-     header: DataColumns,
-   });
- 
-   // Style header row
-   DataColumns.forEach((_, index) => {
-     const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-     if (!worksheet[cellAddress]) return;
-     worksheet[cellAddress].s = {
-       font: {
-         bold: true,
-         color: { rgb: "000000" },
-       },
-       fill: {
-         fgColor: { rgb: "FFFF00" },
-       },
-       alignment: {
-         horizontal: "center",
-       },
-     };
-   });
- 
-   const workbook = XLSX.utils.book_new();
-   XLSX.utils.book_append_sheet(workbook, worksheet, "Emergency Procurement Data");
-   XLSX.writeFile(workbook, "Emergency Procurement Data.xlsx");
- };
-
+  const  handleOpenExcelModal=()=>{
+  setOpenExcelDownloadModal(true);
+  setFromDate("");
+  setToDate("");
+ }
+const handleCloseExcelModal=()=>setOpenExcelDownloadModal(false);
+const handleDownloadReportExcel = async () => {
+      if (!fromDate) {
+        alert('Select From Date');
+        return;
+      }
+      if (!toDate) {
+        alert('Select To Date');
+        return;
+      }
+  
+      try {
+        // Call backend API with fromDate and toDate as query params
+        const response = await getEmergencyData(fromDate, toDate,UserID);
+  
+        if (response.status === 400) {
+          alert(`Error: ${response.data.message || 'Invalid input or date range.'}`);
+          return;
+        }
+  
+        const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+        const fileExtension = ".xlsx";
+        const fileName = "Emergency Procurement";
+  
+        // Convert JSON response to worksheet
+        const ws = XLSX.utils.json_to_sheet(response.data);
+  
+        // Style header row (row 0)
+        const headers = Object.keys(response.data[0] || {});
+        headers.forEach((_, colIdx) => {
+          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+          if (ws[cellAddress]) {
+            ws[cellAddress].s = {
+              font: { bold: true, color: { rgb: "000000" } },
+              fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
+              alignment: { horizontal: "center" },
+            };
+          }
+        });
+  
+        // Create workbook
+        const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+  
+        // Write workbook to binary array
+        const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  
+        // Create Blob and trigger download
+        const data = new Blob([excelBuffer], { type: fileType });
+        const url = window.URL.createObjectURL(data);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", fileName + fileExtension);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+  
+        alert("File downloaded successfully!");
+        handleCloseExcelModal();
+      } catch (error) {
+        console.error("Download failed:", error);
+        if (error.response) {
+          alert(error.response.data.message || "Unknown error from backend");
+        } else if (error.request) {
+          alert("No response from server. Please try again later.");
+        } else {
+          alert(`Error: ${error.message}`);
+        }
+      }
+    }; 
   return (
     <div
       style={{
@@ -705,23 +712,11 @@ const handleResubmit = async (InwardID) => {
 
   
         <div style={{ display: "flex", gap: "10px" }}>
-          {/* Upload Button */}
-          {/* <IconButton onClick={handleOpenUploadModal}
-
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#FF6699",
-              color: "white",
-              width: "40px",
-              height: "40px",
-            }}
-          >
-            <CloudUploadIcon />
-          </IconButton> */}
+         
 
           {/* Download Button */}
           <IconButton
-            onClick={handleDownloadExcel}
+            onClick={handleOpenExcelModal}
             style={{
               borderRadius: "50%",
               backgroundColor: "#339900",
@@ -904,15 +899,7 @@ const handleResubmit = async (InwardID) => {
             value={ReasonForDelay}
             onChange={(e) => setReasonForDelay(e.target.value)}
           />
-          {/* Purchase Order */}
-          {/* <TextField
-            label="Purchase Order"
-            name="PurchaseOrder"
-            value={PurchaseOrder}
-            onChange={(e) => setPurchaseOrder(e.target.value)}
-           
-          /> */}
-          {/* Buttons */}
+         
           <Box
             sx={{
               gridColumn: "span 2",
@@ -1069,102 +1056,7 @@ const handleResubmit = async (InwardID) => {
         </Box>
       </Modal>
 
-      {/* upload modal */}
-{/* 
-      <Modal open={openUploadModal} onClose={handleCloseUploadModal}>
-        <Box
-          sx={{
-            width: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            textAlign: "center",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "22px",
-              textAlign: "center",
-              marginBottom: "20px",
-              color: "#2e59d9",
-              textDecoration: "underline",
-              textDecorationColor: "#88c57a",
-              textDecorationThickness: "3px",
-            }}
-          >
-          Service Excel File Upload
-          </h3>
-
-          <Button
-            variant="contained"
-            style={{
-              marginBottom: "10px",
-              backgroundColor: deepPurple[500],
-              color: "white",
-            }}
-          >
-            <a
-              style={{ textDecoration: "none", color: "white" }}
-              href={`${api}/Master/Template/MaterialMaster.xlsx`}
-            >
-              {" "}
-              <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
-            </a>{" "}
-          </Button>
-          <input
-            type="file"
-            accept=".xlsx, .xls"
-            onChange={handleFileUpload}
-            style={{
-              padding: "8px",
-              backgroundColor: "white", // ✅ Blue background
-              color: "black",
-              border: "1px solid black",
-              borderRadius: "5px",
-              cursor: "pointer",
-              width: "240px",
-              marginTop: "10px",
-            }}
-          />
-
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            {/* ✅ Close Button */}
-            {/* <Button
-              variant="contained"
-              color="error"
-              onClick={handleCloseUploadModal}
-              style={{ marginTop: "10px", width: "25%" }}
-            >
-              Close
-            </Button>
-            {/* ✅ Upload Button */}
-            {/* <Button
-              variant="contained"
-              onClick={handleUploadData}
-              disabled={isUploading}
-              style={{
-                marginTop: "10px",
-                width: "25%",
-                color: "white",
-                backgroundColor: "blue",
-              }}
-            >
-              Upload
-            </Button>
-          </Box>
-        </Box>
-      </Modal>  */}
+      
      <Modal open={openResubmitModal} onClose={handleCloseResubmitModal}>
   <Box
     style={{
@@ -1219,21 +1111,45 @@ const handleResubmit = async (InwardID) => {
 
           <Modal open={viewModalOpen} onClose={handleCloseViewModal}>
   <Box
-    style={{
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      width: 500,
-      backgroundColor: "white",
-      borderRadius: "8px",
-      boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
-      padding: "24px",
+    sx={{
+      position: 'relative',
+      p: 4,
+      width: { xs: '90%', sm: 800 },
+      mx: 'auto',
+      mt: '5%',
+      bgcolor: 'background.paper',
+      borderRadius: 3,
+      boxShadow: 24,
     }}
   >
-    <Typography variant="h6" style={{ fontWeight: "bold", marginBottom: "16px",  color:"#2e59d9", textDecoration: "underline",
-            textDecorationColor: "#88c57a", }}>
-      Approval Status
+    {/* ❌ Close Icon */}
+    <IconButton
+      aria-label="close"
+      onClick={handleCloseViewModal}
+      sx={{
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        color: '#f44336',
+        '&:hover': { color: '#d32f2f' },
+      }}
+    >
+      <CloseIcon />
+    </IconButton>
+
+    <Typography
+      variant="h6"
+      gutterBottom
+      sx={{
+        textAlign: 'center',
+        color: '#1976d2',
+        borderBottom: '2px solid limegreen',
+        display: 'inline-block',
+        mb: 3,
+        fontWeight: 'bold', // ✅ Correct way to set bold font
+      }}
+    >
+      Inward Approval Status
     </Typography>
 
     {selectedRow && (
@@ -1248,22 +1164,22 @@ const handleResubmit = async (InwardID) => {
         </thead>
         <tbody>
           <tr>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 1</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 1 PLANT MRPC</td>
             <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approval1_Status || "-"}</td>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver_1 || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver1_Name || "-"}</td>
             <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver1_Comment || "-"}</td>
           </tr>
           <tr>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 2</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 2 PLANT FINANCE HEAD</td>
             <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approval2_Status || "-"}</td>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver_2 || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver2_Name || "-"}</td>
             <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver2_Comment || "-"}</td>
           </tr>
           {/* Uncomment if Level 3 is required */}
           <tr>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 3</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 3 PLANT HEAD</td>
             <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approval3_Status || "-"}</td>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver_3 || "-"}</td>
+            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver3_Name || "-"}</td>
             <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver3_Comment || "-"}</td>
           </tr>
          
@@ -1282,7 +1198,83 @@ const handleResubmit = async (InwardID) => {
     </div>
   </Box>
 </Modal>
-
+{/* ExcelDownload From & To Date Modal */}
+          <Modal
+            open={openExcelDownloadModal}
+            onClose={handleCloseExcelModal}  // Use the custom handleCloseModal function
+          >
+            <Box
+              sx={{
+                width: 400,
+                bgcolor: 'background.paper',
+                borderRadius: 2,
+                boxShadow: 24,
+                p: 4,
+                margin: 'auto',
+                marginTop: '10%',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '15px',
+              }}
+            >
+              <h3
+                style={{
+                  gridColumn: 'span 2',
+                  textAlign: 'center',
+                  marginBottom: '15px',
+                  color: 'blue',
+                  textDecoration: 'underline',
+                  textDecorationColor: 'limegreen',
+                  textDecorationThickness: '3px',
+                }}
+              >
+               Emergency Procurement Excel Download
+              </h3>
+    
+              <TextField
+                label="From Date"
+                name="FromDate"
+                type="date"
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                required
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
+              <TextField
+                label="To Date"
+                name="ToDate"
+                type="date"
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                required
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
+    
+              <Box
+                sx={{
+                  gridColumn: 'span 2',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  marginTop: '15px',
+                }}
+              >
+                <Button variant="contained" color="error" onClick={handleCloseExcelModal}>
+                  Cancel
+                </Button>
+                <Button
+                  style={{ width: '90px' }}
+                  variant="contained"
+                  color="primary"
+                  onClick={handleDownloadReportExcel}
+                >
+                  Download
+                </Button>
+              </Box>
+            </Box>
+          </Modal>
     </div>
   );
 };
