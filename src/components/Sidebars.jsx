@@ -263,12 +263,13 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "MVT List Item", path: "/home/MVT_LIST_ITEM", icon: <FaTableList style={{ marginRight: "2px", fontSize: "20px", width: "25px", color: "thistle" }} />, code: 'MVT_LIST_ITEM' },
             { name: "Cost Center", path: "/home/CostCenter", icon: <FaDollarSign style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkorange" }} />, code: 'CostCenter' },
            { name: "ValuationType", path: "/home/ValuationType", icon: <GrCubes style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "Window" }} />, code: 'ValuationType' },
+            { name: "SupvCode", path: "/home/SupvCode", icon: <GrCubes style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "Window" }} />, code: 'SupvCode' },
         
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
             'UserMaster', 'Role', 'Material', 'Vendor',
-            'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter','ValuationType'
+            'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter','ValuationType','SupvCode'
           ]}
         />
 

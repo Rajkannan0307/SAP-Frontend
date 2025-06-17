@@ -49,6 +49,7 @@ import Service from"./Dashboard/service";
 import Purchase from "./Dashboard/Purchase";
 import InwardApproval from "./Approval/InwardApproval"
 import EmergencyApproval from "./Approval/EmergencyProcurementAprroval"
+import SupvCode from"./Masters/SupvCode"
 const App = () => {
   return (
     <Router>
@@ -69,6 +70,7 @@ const App = () => {
             <Route path="Vendor" element={<ProtectedRoute screenId={8}><Vendor /></ProtectedRoute>} />
             <Route path="Customer" element={<ProtectedRoute screenId={9}><Customer /></ProtectedRoute>} />
             <Route path="StorageLocation" element={<ProtectedRoute screenId={10}><StorageLocation /></ProtectedRoute>} />
+             <Route path="SupvCode" element={<ProtectedRoute screenId={6}><SupvCode /></ProtectedRoute>} />
             <Route path="Movement_Type" element={<ProtectedRoute screenId={11}><Movement_Type /></ProtectedRoute>} />
             <Route path="MVT_LIST_ITEM" element={<ProtectedRoute screenId={12}><MVT_LIST_ITEM /></ProtectedRoute>} />
             <Route path="CostCenter" element={<ProtectedRoute screenId={13}><CostCenter /></ProtectedRoute>} />
