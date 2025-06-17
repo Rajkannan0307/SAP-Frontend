@@ -4,8 +4,8 @@ import MenuIcon from "@mui/icons-material/Menu";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { PiNuclearPlantFill } from "react-icons/pi";
-import { MdDashboard } from "react-icons/md";
-import ReportIcon from "@mui/icons-material/Report";
+import { GrCubes } from "react-icons/gr";
+import { MdCalendarMonth } from "react-icons/md";
 import BusinessIcon from "@mui/icons-material/Business";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
@@ -26,8 +26,9 @@ import { decryptSessionData } from "../controller/StorageUtils";
 import { FaExchangeAlt } from "react-icons/fa";
 import { SiSap } from "react-icons/si";
 import { BsFillSignpostFill } from "react-icons/bs";
-//import { TbCarCrane } from "react-icons/tb";
-
+import { FaExternalLinkSquareAlt } from "react-icons/fa";
+import { TbReport } from "react-icons/tb";
+import EmergencyIcon from '@mui/icons-material/Emergency';
 const Sidebar = ({ setSidebarOpen }) => {
   const [open, setOpen] = useState(false);
   const [Masters, setMasterOpen] = useState(false);
@@ -259,9 +260,9 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "Customer", path: "/home/Customer", icon: <RiCustomerService2Fill style={{ marginRight: "2px", fontSize: "20px", width: "25px", color: "deepskyblue" }} />, code: 'Customer' },
             { name: "Storage Location", path: "/home/StorageLocation", icon: <GrStorage style={{ marginRight: "2px", fontSize: "20px", width: "25px", color: "gold" }} />, code: 'StorageLocation' },
             { name: "Movement Type", path: "/home/Movement_Type", icon: <DriveFileMoveIcon style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "turquoise" }} />, code: 'Movement_Type' },
-            { name: "MVT List Item", path: "/home/MVT_LIST_ITEM", icon: <FaTableList style={{ marginRight: "2px", fontSize: "20px", width: "25px", color: "crimson" }} />, code: 'MVT_LIST_ITEM' },
+            { name: "MVT List Item", path: "/home/MVT_LIST_ITEM", icon: <FaTableList style={{ marginRight: "2px", fontSize: "20px", width: "25px", color: "thistle" }} />, code: 'MVT_LIST_ITEM' },
             { name: "Cost Center", path: "/home/CostCenter", icon: <FaDollarSign style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkorange" }} />, code: 'CostCenter' },
-           { name: "ValuationType", path: "/home/ValuationType", icon: <FaDollarSign style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkorange" }} />, code: 'ValuationType' },
+           { name: "ValuationType", path: "/home/ValuationType", icon: <GrCubes style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "Window" }} />, code: 'ValuationType' },
         
           ]}
           codeList={[
@@ -307,8 +308,8 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "309 Approval", path: "/home/Approval_309", icon: <MdOutlineApproval style={{ fontSize: "20px", marginRight: "3px", color: "rgb(233, 127, 228)" }} />, code: 'Approval_309' },
             { name: "201 Approval", path: "/home/Approval_201", icon: <BsFillSignpostFill style={{ fontSize: "20px", marginRight: "3px", color: "rgb(52, 188, 252)" }} />, code: 'Approval_201' },
             { name: "202 Approval", path: "/home/Approval_202", icon: <BsFillSignpostFill style={{ fontSize: "20px", marginRight: "3px", color: "rgb(52, 188, 252)" }} />, code: 'Approval_202' },
-            { name: "Inward of Old Invoice Approval", path: "/home/InwardApproval", icon: <BsFillSignpostFill style={{ fontSize: "20px", marginRight: "3px", color: "rgb(52, 188, 252)" }} />, code: 'InwardApproval' },
-           { name: "Emergency Procurement Approval", path: "/home/EmergencyApproval", icon: <BsFillSignpostFill style={{ fontSize: "20px", marginRight: "3px", color: "rgb(52, 188, 252)" }} />, code: 'EmergencyApproval' },
+            { name: "Inward of Old Invoice Approval", path: "/home/InwardApproval", icon: <FaExternalLinkSquareAlt style={{ fontSize: "20px", marginRight: "3px", color: "rgb(240, 186, 117)" }} />, code: 'InwardApproval' },
+           { name: "Emergency Procurement Approval", path: "/home/EmergencyApproval", icon: <EmergencyIcon style={{ fontSize: "25px", marginRight: "1px", color: "rgb(230, 123, 123)" }} />, code: 'EmergencyApproval' },
 
           ]}
           codeList={[
@@ -321,20 +322,20 @@ const Sidebar = ({ setSidebarOpen }) => {
           open={open}
           isOpen={Report}
           toggleSection={toggleReport}
-          icon={<ReportIcon />}
+          icon={<TbReport  style={{ marginRight: "8px", color: "#ffcc00" ,fontSize: "27px",}}/>}
           Permissions={Permissions}
           label="Report"
           links={[
             {
-              name: "Report 1",
+              name: "Inward of Old Invoice Report",
               path: "/home/Report1",
-              icon: <ReportIcon style={{ marginRight: "8px", color: "#ffcc00" }} />,
+              icon: <MdCalendarMonth style={{ marginRight: "8px", color:"rgb(238, 110, 110)",fontSize: "23px",}} />,
               code: 'Report1'
             },
             {
-              name: "Report 2",
+              name: "Emergency Procurement Report",
               path: "/home/Report2",
-              icon: <ReportIcon style={{ marginRight: "8px", color: "#ffcc00" }} />,
+              icon: <MdCalendarMonth style={{ marginRight: "8px", color:"rgb(238, 106, 106)" ,fontSize: "23px",}} />,
               code: 'Report2'
             },
           ]}

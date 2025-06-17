@@ -11,6 +11,8 @@ import {
   Checkbox,
   Typography,
 } from "@mui/material";
+import CloseIcon from '@mui/icons-material/Close';
+
 import {
   DataGrid,
   GridToolbarContainer,
@@ -90,14 +92,14 @@ const [selectedInwardId, setSelectedInwardId] = useState(null);
     { field: "Vendor_Name", headerName: "Vendor Name", flex: 1 },
     { field: "Invoice_Date", headerName: "Invoice Date", flex: 1 },
     { field: "Invoice_No", headerName: "Invoice No", flex: 1 },
-    { field: "Invoice_Qty", headerName: "Invoice Quantity", flex: 1 },
+    { field: "Invoice_Qty", headerName: "Quantity", flex: 1 },
     { field: "Invoice_Value", headerName: "Invoice Value", flex: 1 },
     { field: "Purchase_Order", headerName: "Purchase Order", flex: 1.2 },
     { field: "Material_Code", headerName: "Part No", flex: 1 },
     {
       field: "Monthly_Scheduled_Qty",
       headerName: "Monthly Scheduled Qty",
-      flex: 1.5,
+      flex: 1.8,
     },
     { field: "Current_Stock", headerName: "Current Stock", flex: 1 },
     { field: "Reason_For_Delay", headerName: "Reason For Delay", flex: 1.3 },
@@ -1167,7 +1169,7 @@ const formattedInvoiceDate = getFormattedDate(InvoiceDate);
                   textDecorationThickness: '3px',
                 }}
               >
-                Excel Download
+               Purchase inward Excel Download
               </h3>
     
               <TextField
@@ -1267,73 +1269,79 @@ const formattedInvoiceDate = getFormattedDate(InvoiceDate);
          </Modal>
  <Modal open={viewModalOpen} onClose={handleCloseViewModal}>
   <Box
-    style={{
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      width: 500,
-      backgroundColor: "white",
-      borderRadius: "8px",
-      boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
-      padding: "24px",
+    sx={{
+      position: 'relative',
+      p: 4,
+      width: { xs: '90%', sm: 800 },
+      mx: 'auto',
+      mt: '5%',
+      bgcolor: 'background.paper',
+      borderRadius: 3,
+      boxShadow: 24,
     }}
   >
-    <Typography variant="h6" style={{ fontWeight: "bold", marginBottom: "16px",  color:"#2e59d9", textDecoration: "underline",
-            textDecorationColor: "#88c57a", }}>
-      Approval Status
-    </Typography>
+    {/* ❌ Close Icon */}
+    <IconButton
+      aria-label="close"
+      onClick={handleCloseViewModal}
+      sx={{
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        color: '#f44336',
+        '&:hover': { color: '#d32f2f' },
+      }}
+    >
+      <CloseIcon />
+    </IconButton>
 
-    {selectedRow && (
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ backgroundColor: "#bdbdbd" }}>
-            <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Level</th>
-            <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Status</th>
-            <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Approver</th>
-            <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Comment</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 1</td>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approval1_Status || "-"}</td>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver_1 || "-"}</td>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver1_Comment || "-"}</td>
-          </tr>
-          <tr>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 2</td>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approval2_Status || "-"}</td>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver_2 || "-"}</td>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver2_Comment || "-"}</td>
-          </tr>
-          {/* Uncomment if Level 3 is required
-          <tr>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 3</td>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approval3_Status || "-"}</td>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver_3 || "-"}</td>
-            <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow.Approver3_Comment || "-"}</td>
-          </tr>
-          */}
-        </tbody>
-      </table>
-    )}
+   <Typography
+  variant="h6"
+  gutterBottom
+  sx={{
+    textAlign: 'center',
+    color: '#1976d2',
+    borderBottom: '2px solid limegreen',
+    display: 'inline-block',
+    mb: 3,
+    fontWeight: 'bold', // ✅ Correct way to set bold font
+  }}
+>
+  Inward Approval Status
+</Typography>
 
-    <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
-      <Button
-        onClick={handleCloseViewModal}
-        variant="contained"
-        style={{ textTransform: "none" }}
-      >
-        Close
-      </Button>
-    </div>
+    {/* 👇 Approval Table */}
+    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <thead>
+        <tr style={{ backgroundColor: "#bdbdbd" }}>
+          <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Level</th>
+          <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Status</th>
+          <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Approver</th>
+          <th style={{ textAlign: "left", padding: "8px", border: "1px solid #ddd" }}>Comment</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style={{ padding: "8px", border: "1px solid #ddd" }}>Level 1 - CORP MRPC</td>
+          <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow?.Approval1_Status || "-"}</td>
+          <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow?.Approver1_Name || "-"}</td>
+          <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow?.Approver1_Comment || "-"}</td>
+        </tr>
+        <tr>
+          <td style={{ padding: "8px", border: "1px solid #ddd" }}>{`Level 2 - ${selectedRow?.Approver2_RoleName || ""}`}</td>
+          <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow?.Approval2_Status || "-"}</td>
+          <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow?.Approver2_Name || "-"}</td>
+          <td style={{ padding: "8px", border: "1px solid #ddd" }}>{selectedRow?.Approver2_Comment || "-"}</td>
+        </tr>
+       
+      </tbody>
+    </table>
+
+   
   </Box>
 </Modal>
 
-
-
-         </div>
+ </div>
   );
 };
 

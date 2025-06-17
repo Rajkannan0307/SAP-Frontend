@@ -35,3 +35,7 @@ export const getMaterial = async ()=>{
   const response = await axios.post(`${api}/Inward/resubmit`, data);
   return response;
 };
+ export const getEmergencyData = async (from, to,UserID)=>{
+      const response = await axios.get(`${api}/Emergency/downloadEmergency?From=${from}&to=${to}&UserID=${UserID}`, );
+      return response;
+  };
