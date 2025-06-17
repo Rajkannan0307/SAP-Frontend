@@ -237,19 +237,6 @@ const Partno = () => {
   getData();
   }, []);
 
-  // //[View_PartnoApproval_Status]
-  // const handleViewStatus = async (docId) => {
-  //   console.log("Fetching approval status for Doc_ID:", docId);
-  //   try {
-  //     const response = await get309ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
-  //     console.log("API Response:", response);
-  //     setViewStatusData(response);  // Update your state with the fetched data
-  //   } catch (error) {
-  //     console.error("❌ Error fetching grouped records:", error);
-  //     setViewStatusData([]);  // Handle errors and reset data
-  //   }
-  // };
-
   const handleOpenEditModal = (record) => {
     setFromMatCode(record.FromMatCode);
     setToMatCode(record.ToMatCode);
@@ -331,11 +318,6 @@ const Partno = () => {
       console.error("Error updating user:", error);
     }
   };
-
-
-  // const handleCloseViewModal = () => {
-  //   setOpenViewModal(false);
-  // };
 
   // ✅ Handle Upload Modal
 
