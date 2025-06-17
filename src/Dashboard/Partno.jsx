@@ -135,7 +135,8 @@ const Partno = () => {
 
     const selectableRows = rows.filter((row) => {
       const status = row.Approval_Status?.toLowerCase().trim();
-      return status === "rejected" || status === "under query";
+      //return status === "rejected" || status === "under query";
+    return status === "under query";
     });
 
     if (checked) {
@@ -153,7 +154,8 @@ const Partno = () => {
           updated.length ===
           rows.filter((row) => {
             const status = row.Approval_Status?.toLowerCase().trim();
-            return status === "rejected" || status === "under query";
+            //return status === "rejected" || status === "under query";
+            return  status === "under query";
           }).length
         ) {
           setHeaderChecked(true);
@@ -181,11 +183,12 @@ const Partno = () => {
 
     const resubmittableRows = selectedRowsData.filter(row => {
       const status = (row.Approval_Status || "").toLowerCase().trim();
-      return status === "rejected" || status === "under query";
+      //return status === "rejected" || status === "under query";
+      return  status === "under query";
     });
 
     if (resubmittableRows.length === 0) {
-      alert("No selected rows are eligible for resubmit (only 'Rejected' or 'Under Query' allowed).");
+      alert("No selected rows are eligible for resubmit (only 'Under Query' allowed).");
       return;
     }
 
@@ -221,7 +224,9 @@ const Partno = () => {
   // ✅ Logic to check if the Resubmit button should be shown
   const resubmittableSelectedRows = rows.filter(row =>
     selectedRowIds.includes(row.Trn_Sap_ID) &&
-    ["rejected", "under query"].includes((row.Approval_Status || "").toLowerCase().trim())
+    //["rejected", "under query"].includes((row.Approval_Status || "").toLowerCase().trim())
+  ["under query"].includes((row.Approval_Status || "").toLowerCase().trim())
+
   );
 
   const showResubmitButton = resubmittableSelectedRows.length > 0;
@@ -376,205 +381,214 @@ const Partno = () => {
     handleCloseUploadModal();
   }
 
-  const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
-    const wb = XLSX.utils.book_new();
+const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
+  const wb = XLSX.utils.book_new();
 
-    // Column headers for Error Records
-    const ErrorColumns = ['Plant_Code', 'Movement_Code', 'From_Material_Code',
-      'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
-      'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
-      'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
-      'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark', 'Plant_Code_Validation',
-      'From_Material_Code_Validation', 'To_Material_Code_Validation',
-      'From_SLoc_Code_Validation', 'To_SLoc_Code_Validation'
-    ];
+  // Column headers for Error Records
+  const ErrorColumns = ['Plant_Code', 'Movement_Code', 'From_Material_Code',
+    'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
+    'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
+    'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
+    'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark', 'Plant_Code_Validation',
+    'From_Material_Code_Validation', 'To_Material_Code_Validation',
+    'From_SLoc_Code_Validation', 'To_SLoc_Code_Validation'
+  ];
 
-    // Column headers for New Records (based on your columns array)
-    const newRecordsColumns = ['Plant_Code', 'Movement_Code', 'From_Material_Code',
-      'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
-      'From_Batch', 'From_Rate_Per_Unit',
-      'To_Material_Code', 'To_Qty',
-      'To_Storage_Code', 'To_Valuation_Type',
-      'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark'
-    ];
+  // Column headers for New Records (based on your columns array)
+  const newRecordsColumns = ['Plant_Code', 'Movement_Code', 'From_Material_Code',
+    'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
+    'From_Batch', 'From_Rate_Per_Unit',
+    'To_Material_Code', 'To_Qty',
+    'To_Storage_Code', 'To_Valuation_Type',
+    'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark'
+  ];
 
-    // Column headers for Duplicate Records
-    const DuplicateColumns = [
-      'Plant_Code', 'Movement_Code', 'From_Material_Code',
-      'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
-      'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
-      'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
-      'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark',
-      'Plant_Code_Duplicate',
-      'From_Material_Code_Duplicate',
-      'From_Qty_Duplicate',
-    ];
+  // Column headers for Duplicate Records (added From_Qty_Duplicate)
+  const DuplicateColumns = [
+    'Plant_Code', 'Movement_Code', 'From_Material_Code',
+    'From_Qty', 'From_Storage_Code', 'From_Valuation_Type',
+    'From_Batch', 'From_Rate_Per_Unit', 'To_Material_Code',
+    'To_Qty', 'To_Storage_Code', 'To_Valuation_Type',
+    'To_Batch', 'To_Rate_Per_Unit', 'Net_Different_Price', 'Remark',
+    'Plant_Code_Duplicate',
+    'From_Material_Code_Duplicate',
+    'From_Qty_Duplicate'  // <-- Added new duplicate column here
+  ];
 
-    // Filter and map the data for Error Records
-    const filteredError = errRecord.map(item => ({
-      Plant_Code: item.Plant_Code,
-      Movement_Code: item.Movement_Code,
-      From_Material_Code: item.From_Material_Code,
-      From_Qty: item.From_Qty,
-      From_Storage_Code: item.From_Storage_Code,
-      From_Valuation_Type: item.From_Valuation_Type,
-      From_Batch: item.From_Batch,
-      From_Rate_Per_Unit: item.From_Rate_Per_Unit,
-      To_Material_Code: item.To_Material_Code,
-      To_Qty: item.To_Qty,
-      To_Storage_Code: item.To_Storage_Code,
-      To_Valuation_Type: item.To_Valuation_Type,
-      To_Batch: item.To_Batch,
-      To_Rate_Per_Unit: item.To_Rate_Per_Unit,
-      Net_Different_Price: item.Net_Difference_Price,
-      Remark: item.Remark,
+  // Filter and map the data for Error Records
+  const filteredError = errRecord.map(item => ({
+    Plant_Code: item.Plant_Code,
+    Movement_Code: item.Movement_Code,
+    From_Material_Code: item.From_Material_Code,
+    From_Qty: item.From_Qty,
+    From_Storage_Code: item.From_Storage_Code,
+    From_Valuation_Type: item.From_Valuation_Type,
+    From_Batch: item.From_Batch,
+    From_Rate_Per_Unit: item.From_Rate_Per_Unit,
+    To_Material_Code: item.To_Material_Code,
+    To_Qty: item.To_Qty,
+    To_Storage_Code: item.To_Storage_Code,
+    To_Valuation_Type: item.To_Valuation_Type,
+    To_Batch: item.To_Batch,
+    To_Rate_Per_Unit: item.To_Rate_Per_Unit,
+    Net_Different_Price: item.Net_Difference_Price,
+    Remark: item.Remark,
 
-      Plant_Code_Validation: item.Plant_Val,
-      From_Material_Code_Validation: item.From_Mat_Val,
-      To_Material_Code_Validation: item.To_Mat_Val,
-      From_SLoc_Code_Validation: item.From_SLoc_Val,
-      To_SLoc_Code_Validation: item.To_SLoc_Val,
-      //Plant_From_To_Material_Code_Validation: item.Material_Same_Plant_Val,
-      Plant_From_To_SLoc_Code_Validation: item.From_SLoc_Plant_Val,
+    Plant_Code_Validation: item.Plant_Val,
+    From_Material_Code_Validation: item.From_Mat_Val,
+    To_Material_Code_Validation: item.To_Mat_Val,
+    From_SLoc_Code_Validation: item.From_SLoc_Val,
+    To_SLoc_Code_Validation: item.To_SLoc_Val,
 
-      Movement_Code_Validation: item.Movement_Val,
-      User_Plant_Validation: item.User_Plant_Val,
+    Movement_Code_Validation: item.Movement_Val,
+    User_Plant_Validation: item.User_Plant_Val,
+  }));
 
-    }));
+  // Filter and map the data for New Records
+  const filteredNewData = newRecord.map(item => ({
+    Plant_Code: item.Plant_Code,
+    Movement_Code: item.Movement_Code,
+    From_Material_Code: item.From_Material_Code,
+    From_Qty: item.From_Qty,
+    From_Storage_Code: item.From_Storage_Code,
+    From_Valuation_Type: item.From_Valuation_Type,
+    From_Batch: item.From_Batch,
+    From_Rate_Per_Unit: item.From_Rate_Per_Unit,
+    To_Material_Code: item.To_Material_Code,
+    To_Qty: item.To_Qty,
+    To_Storage_Code: item.To_Storage_Code,
+    To_Valuation_Type: item.To_Valuation_Type,
+    To_Batch: item.To_Batch,
+    To_Rate_Per_Unit: item.To_Rate_Per_Unit,
+    Net_Different_Price: item.Net_Difference_Price,
+    Remark: item.Remark,
+  }));
 
-    // Filter and map the data for New Records
-    const filteredNewData = newRecord.map(item => ({
-      Plant_Code: item.Plant_Code,
-      Movement_Code: item.Movement_Code,
-      From_Material_Code: item.From_Material_Code,
-      From_Qty: item.From_Qty,
-      From_Storage_Code: item.From_Storage_Code,
-      From_Valuation_Type: item.From_Valuation_Type,
-      From_Batch: item.From_Batch,
-      From_Rate_Per_Unit: item.From_Rate_Per_Unit,
-      To_Material_Code: item.To_Material_Code,
-      To_Qty: item.To_Qty,
-      To_Storage_Code: item.To_Storage_Code,
-      To_Valuation_Type: item.To_Valuation_Type,
-      To_Batch: item.To_Batch,
-      To_Rate_Per_Unit: item.To_Rate_Per_Unit,
-      Net_Different_Price: item.Net_Difference_Price,
-      Remark: item.Remark,
-    }));
+  // Filter and map the data for Duplicate Record
+  const filteredUpdate = DuplicateRecord.map(item => ({
+    Plant_Code: item.Plant_Code,
+    Movement_Code: item.Movement_Code,
+    From_Material_Code: item.From_Material_Code,
+    From_Qty: item.From_Qty,
+    From_Storage_Code: item.From_Storage_Code,
+    From_Valuation_Type: item.From_Valuation_Type,
+    From_Batch: item.From_Batch,
+    From_Rate_Per_Unit: item.From_Rate_Per_Unit,
+    To_Material_Code: item.To_Material_Code,
+    To_Qty: item.To_Qty,
+    To_Storage_Code: item.To_Storage_Code,
+    To_Valuation_Type: item.To_Valuation_Type,
+    To_Batch: item.To_Batch,
+    To_Rate_Per_Unit: item.To_Rate_Per_Unit,
+    Net_Different_Price: item.Net_Difference_Price,
+    Remark: item.Remark,
 
-    // Filter and map the data for Duplicate Record
-    const filteredUpdate = DuplicateRecord.map(item => ({
+    Plant_Code_Duplicate: item.Plant_Code,
+    From_Material_Code_Duplicate: item.From_Material_Code,
+    From_Qty_Duplicate: item.From_Qty,  // <-- Added duplicate qty value here
+  }));
 
-      Plant_Code: item.Plant_Code,
-      Movement_Code: item.Movement_Code,
-      From_Material_Code: item.From_Material_Code,
-      From_Qty: item.From_Qty,
-      From_Storage_Code: item.From_Storage_Code,
-      From_Valuation_Type: item.From_Valuation_Type,
-      From_Batch: item.From_Batch,
-      From_Rate_Per_Unit: item.From_Rate_Per_Unit,
-      To_Material_Code: item.To_Material_Code,
-      To_Qty: item.To_Qty,
-      To_Storage_Code: item.To_Storage_Code,
-      To_Valuation_Type: item.To_Valuation_Type,
-      To_Batch: item.To_Batch,
-      To_Rate_Per_Unit: item.To_Rate_Per_Unit,
-      Net_Different_Price: item.Net_Difference_Price,
-      Remark: item.Remark,
-
-      Plant_Code_Duplicate: item.Plant_Code,
-      From_Material_Code_Duplicate: item.From_Material_Code,
-      From_Qty_Duplicate: item.From_Qty,
-    }));
-
-    // work sheet styyle
-    const styleHeaders = (worksheet, columns) => {
-      columns.forEach((_, index) => {
-        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-        if (worksheet[cellAddress]) {
-          worksheet[cellAddress].s = {
-            font: { bold: true, color: { rgb: '000000' } },
-            fill: { fgColor: { rgb: 'FFFF00' } }, // Yellow background
-            alignment: { horizontal: 'center' },
-          };
-        }
-      });
-    };
-    // // 🔴 Style red text for validation columns only
-    const styleValidationColumns = (worksheet, columns, dataLength) => {
-      const validationCols = ['Plant_Code_Validation', 'From_Material_Code_Validation',
-        'To_Material_Code_Validation', 'From_SLoc_Code_Validation',
-        'To_SLoc_Code_Validation']
-
-      for (let row = 1; row <= dataLength; row++) {
-        validationCols.forEach(colName => {
-          const colIdx = columns.indexOf(colName);
-          if (colIdx === -1) return;
-
-          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-          const cell = worksheet[cellAddress];
-
-          if (cell && typeof cell.v === 'string') {
-            const value = cell.v.trim().toLowerCase();
-
-            // Apply green if value is "valid", otherwise red
-            cell.s = {
-              font: {
-                color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' } // green or red
-              }
-            };
-          }
-        });
-      }
-    };
-    // ✅ Style only specific duplicate columns in gray
-const styleDuplicateRecords = (worksheet, columns, dataLength) => {
-  const duplicateCols = ['Plant_Code', 'From_Material_Code', 'To_Material_Code', 'From_SLoc_Code', 'To_SLoc_Code'];
-
-  for (let row = 0; row <= dataLength; row++) {
-    columns.forEach((colName, colIdx) => {
-      const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-      const cell = worksheet[cellAddress];
-      if (!cell) return;
-
-      if (row === 0) {
-        // ✅ Header styling
-        cell.s = {
-          font: { bold: true, color: { rgb: '000000' } }, // black text
-          fill: { fgColor: { rgb: 'FFFF00' } }, // yellow background
-          alignment: { horizontal: 'center' }
-        };
-      } else if (duplicateCols.includes(colName)) {
-        // ✅ Duplicate column value styling
-        cell.s = {
-          font: { color: { rgb: '808080' } }, // gray text
-          fill: { fgColor: { rgb: 'FFCCCC' } } // light red background
+  // Worksheet header styling
+  const styleHeaders = (worksheet, columns) => {
+    columns.forEach((_, index) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+      if (worksheet[cellAddress]) {
+        worksheet[cellAddress].s = {
+          font: { bold: true, color: { rgb: '000000' } },
+          fill: { fgColor: { rgb: 'FFFF00' } }, // Yellow background
+          alignment: { horizontal: 'center' },
         };
       }
     });
-  }
+  };
+
+  // Style validation columns in error sheet (red/green)
+  const styleValidationColumns = (worksheet, columns, dataLength) => {
+    const validationCols = ['Plant_Code_Validation', 'From_Material_Code_Validation',
+      'To_Material_Code_Validation', 'From_SLoc_Code_Validation',
+      'To_SLoc_Code_Validation']
+
+    for (let row = 1; row <= dataLength; row++) {
+      validationCols.forEach(colName => {
+        const colIdx = columns.indexOf(colName);
+        if (colIdx === -1) return;
+
+        const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+        const cell = worksheet[cellAddress];
+
+        if (cell && typeof cell.v === 'string') {
+          const value = cell.v.trim().toLowerCase();
+
+          // Green if "valid", red otherwise
+          cell.s = {
+            font: {
+              color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' }
+            }
+          };
+        }
+      });
+    }
+  };
+
+  // Style duplicate columns with gray text and red background
+  const styleDuplicateRecords = (worksheet, columns, dataLength) => {
+    const duplicateCols = [
+      'Plant_Code',
+      'From_Material_Code',
+      'To_Material_Code',
+      'From_SLoc_Code',
+      'To_SLoc_Code',
+      'From_Qty_Duplicate'  // <-- Added this column for styling
+    ];
+
+    for (let row = 0; row <= dataLength; row++) {
+      columns.forEach((colName, colIdx) => {
+        const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+        const cell = worksheet[cellAddress];
+        if (!cell) return;
+
+        if (row === 0) {
+          // Header styling
+          cell.s = {
+            font: { bold: true, color: { rgb: '000000' } },
+            fill: { fgColor: { rgb: 'FFFF00' } },
+            alignment: { horizontal: 'center' }
+          };
+        } else if (duplicateCols.includes(colName)) {
+          // Duplicate column styling
+          cell.s = {
+            font: { color: { rgb: '808080' } },
+            fill: { fgColor: { rgb: 'FFCCCC' } }
+          };
+        }
+      });
+    }
+  };
+
+  // Add New Records sheet even if empty
+  if (filteredNewData.length === 0) filteredNewData.push({});
+  const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, { header: newRecordsColumns });
+  styleHeaders(wsNewRecords, newRecordsColumns);
+  XLSX.utils.book_append_sheet(wb, wsNewRecords, 'New Records');
+
+  // Add Error Records sheet even if empty
+  if (filteredError.length === 0) filteredError.push({});
+  const wsError = XLSX.utils.json_to_sheet(filteredError, { header: ErrorColumns });
+  styleHeaders(wsError, ErrorColumns);
+  styleValidationColumns(wsError, ErrorColumns, filteredError.length);
+  XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
+
+  // Add Duplicate Records sheet even if empty
+  if (filteredUpdate.length === 0) filteredUpdate.push({});
+  const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, { header: DuplicateColumns });
+  styleDuplicateRecords(wsUpdated, DuplicateColumns, filteredUpdate.length);
+  XLSX.utils.book_append_sheet(wb, wsUpdated, 'DuplicateRecords');
+
+  // Download the file
+  const fileName = 'Trn309Movt Upload DataLog.xlsx';
+  XLSX.writeFile(wb, fileName);
 };
 
-    // Add New Records sheet even if empty data is available
-    if (filteredNewData.length === 0) filteredNewData.push({});
-    const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, { header: newRecordsColumns });
-    styleHeaders(wsNewRecords, newRecordsColumns);
-    XLSX.utils.book_append_sheet(wb, wsNewRecords, 'New Records');
-    // Add Error Records sheet  even if empty data is available
-    if (filteredError.length === 0) filteredError.push({});
-    const wsError = XLSX.utils.json_to_sheet(filteredError, { header: ErrorColumns });
-    styleHeaders(wsError, ErrorColumns);
-    styleValidationColumns(wsError, ErrorColumns, filteredError.length);
-    XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
-    // Add     Duplicate Records sheet even if empty data is available
-    if (filteredUpdate.length === 0) filteredUpdate.push({});
-    const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, { header: DuplicateColumns });
-    styleDuplicateRecords(wsUpdated, DuplicateColumns, filteredUpdate.length);
-    XLSX.utils.book_append_sheet(wb, wsUpdated, 'DuplicateRecords');
-    // Set the file name and download the Excel file
-    const fileName = 'Trn309Movt Upload DataLog.xlsx';
-    XLSX.writeFile(wb, fileName);
-  };
 
   const handleOpenViewModal = (item) => {
     setOpenViewModal(true);
@@ -864,7 +878,8 @@ const styleDuplicateRecords = (worksheet, columns, dataLength) => {
       renderHeader: () => {
         const selectableRows = rows.filter((row) => {
           const status = row.Approval_Status?.toLowerCase().trim();
-          return status === "rejected" || status === "under query";
+         // return status === "rejected" || status === "under query";
+        return  status === "under query";
         });
 
         const allSelected =
@@ -907,7 +922,8 @@ const styleDuplicateRecords = (worksheet, columns, dataLength) => {
       renderCell: (params) => {
         const row = params.row;
         const status = row.Approval_Status?.toLowerCase().trim();
-        const isSelectable = status === "rejected" || status === "under query";
+        //const isSelectable = status === "rejected" || status === "under query";
+        const isSelectable =  status === "under query";
 
         const isChecked = selectedRowIds.includes(row.Trn_Sap_ID);
 
@@ -1415,76 +1431,76 @@ const styleDuplicateRecords = (worksheet, columns, dataLength) => {
       </Modal>
 
       {/* 🟨  Info Icon  View Status Modal */}
-      <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
-        <Box sx={{
-          position: 'relative',
-          p: 4,
-          width: { xs: '90%', sm: 900 },
-          mx: 'auto',
-          mt: '5%',
-          bgcolor: 'background.paper',
-          borderRadius: 3,
-          boxShadow: 24
-        }}>
-          {/* ❌ Close Button */}
-          <IconButton
-            aria-label="close"
-            onClick={() => setOpenViewStatusModal(false)}
-            sx={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              color: '#f44336',
-              '&:hover': { color: '#d32f2f' },
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
 
-          {/* 🔷 Title */}
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{
-                color: '#1976d2',
-                borderBottom: '2px solid limegreen',
-                display: 'inline-block',
-              }}
-            >
-              Approval Status
-            </Typography>
-          </Box>
-          <>
-            {/* 🧾 Status Table */}
-            <Table size="small" sx={{ borderCollapse: 'collapse' }}>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#bdbdbd' }}>
-                  <TableCell sx={{ border: '1px solid #555555' }}>Date</TableCell>
-                  <TableCell sx={{ border: '1px solid #555555' }}>Role</TableCell>
-                  <TableCell sx={{ border: '1px solid #555555' }}>Name</TableCell>
-                  <TableCell sx={{ border: '1px solid #555555' }}>Comment</TableCell>
-                  <TableCell sx={{ border: '1px solid #555555' }}>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {viewStatusData.map((row, idx) => (
-                  <TableRow key={idx} sx={{ border: '1px solid #555555' }}>
-                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_Date}</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Role}</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_By}</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Approver_Comment || '—'}</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Status} - {User_Level}</TableCell>
+<Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
+  <Box sx={{
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: { xs: '95%', sm: 800 },
+    maxHeight: '90vh',
+    overflowY: 'auto',
+    bgcolor: 'white',
+    borderRadius: '8px',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+    padding: '24px',
+  }}>
+    <IconButton
+      aria-label="close"
+      onClick={() => setOpenViewStatusModal(false)}
+      sx={{ position: 'absolute', top: 8, right: 8, color: '#f44336', '&:hover': { color: '#d32f2f' } }}
+    >
+      <CloseIcon />
+    </IconButton>
+
+    <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: '#2e59d9', textDecoration: 'underline', textDecorationColor: '#88c57a', textAlign: 'center' }}>
+      Approval Status
+    </Typography>
+
+    <Table size="small" sx={{ borderCollapse: 'collapse', width: '100%' }}>
+      <TableHead>
+        <TableRow sx={{ backgroundColor: '#bdbdbd' }}>
+          <TableCell sx={{ border: '1px solid #ddd' }}>Role</TableCell>
+          <TableCell sx={{ border: '1px solid #ddd' }}>Date</TableCell>
+          <TableCell sx={{ border: '1px solid #ddd' }}>Name</TableCell>
+          <TableCell sx={{ border: '1px solid #ddd' }}>Comment</TableCell>
+          <TableCell sx={{ border: '1px solid #ddd' }}>Status</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {[
+          'Requester',
+          'Plant Finance Head',
+          'Plant MRPC',
+          'Plant Head',
+          'Corp Finance Head',
+          'Corp MRPC',
+        ].map((role, idx) => {
+          // find the row in the data matching the Role exactly (case insensitive might be needed depending on DB)
+          const row = viewStatusData.find(r => r.Role?.toLowerCase() === role.toLowerCase()) || {};
+          return (
+            <TableRow key={idx}>
+              <TableCell sx={{ border: '1px solid #ddd' }}>{role}</TableCell>
+              <TableCell sx={{ border: '1px solid #ddd' }}>{row.Action_Date || '—'}</TableCell>
+              <TableCell sx={{ border: '1px solid #ddd' }}>{row.Action_By || '—'}</TableCell>
+              <TableCell sx={{ border: '1px solid #ddd' }}>{row.Approver_Comment || '—'}</TableCell>
+              <TableCell sx={{ border: '1px solid #ddd' }}>{row.Status ? `${row.Status} - ${User_Level}` : '—'}</TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+
+    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+      <Button onClick={() => setOpenViewStatusModal(false)} variant="contained" sx={{ textTransform: 'none' }}>
+        Close
+      </Button>
+    </Box>
+  </Box>
+</Modal>
 
 
-                  </TableRow>
-                ))}
-
-              </TableBody>
-            </Table>
-          </>
-        </Box>
-      </Modal>
 
       {/* ExcelDownload From & To Date Modal */}
       <Modal

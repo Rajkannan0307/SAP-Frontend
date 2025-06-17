@@ -104,6 +104,8 @@ const Stock201 = () => {
   const [Qty, setQty] = useState("");
   const [SLocID, setSLocID] = useState("");
   const [CostCenterID, setCostCenterID] = useState("");
+
+  const [CostCenterCode, setCostCenterCode] = useState("");
   const [ValuationType, setValuationType] = useState("");
   const [MovtID, setMovtID] = useState("");
   const [ReasonForMovt, setReasonForMovt] = useState("");
@@ -291,7 +293,7 @@ const Stock201 = () => {
     try {
       const response = await getSLoc();
       setSLocTable(response.data);
-     // console.log('Sloc Api  Sloc', response.data)
+      // console.log('Sloc Api  Sloc', response.data)
     } catch (error) {
       console.error("Error updating user:", error);
     }
@@ -306,10 +308,10 @@ const Stock201 = () => {
   };
   const get_CostCenter = async () => {
     try {
-      const response = await getCostCenter();  
-      setCostCenterTable(response.data);      
-      } catch (error) {
-    //  console.error("Error fetching cost centers:", error);
+      const response = await getCostCenter();
+      setCostCenterTable(response.data);
+    } catch (error) {
+      //  console.error("Error fetching cost centers:", error);
     }
   };
 
@@ -318,7 +320,7 @@ const Stock201 = () => {
       const response = await getReasonForMovement();
       setReasonForMovement(response.data);
     } catch (error) {
-     // console.error("Error updating user:", error);
+      // console.error("Error updating user:", error);
     }
   };
   const get_Movement = async () => {
@@ -326,7 +328,7 @@ const Stock201 = () => {
       const response = await getMovement();
       setMovementTypeTable(response.data);
     } catch (error) {
-     // console.error("Error updating user:", error);
+      // console.error("Error updating user:", error);
     }
   }
 
@@ -961,10 +963,10 @@ const Stock201 = () => {
   };
 
   useEffect(() => {
-   }, [openRowEditModal]);
+  }, [openRowEditModal]);
 
   useEffect(() => {
-    }, [openRowEditModal]);
+  }, [openRowEditModal]);
 
   const loadDropdownData = async () => {
     await Promise.all([
@@ -1294,16 +1296,57 @@ const Stock201 = () => {
     Batch: ''
   });
 
+  // const handleUpdate = async () => {
+  //   setIsUpdating(true);
+  //   try {
+  //     const data = {
+  //       ModifiedBy: UserID,
+  //       DocID: String(DocID),
+  //       MatCode,
+  //       Qty,
+  //       SLocCode: String(SLocID),
+  //       CostCenterCode: String(CostCenterID),
+  //       //SLocID,
+  //       //CostCenterID,
+  //       Price,
+  //       ValuationType,
+  //       Batch,
+  //       TrnSapID
+  //     };
+
+  //     const response = await Edit201Record(data);
+  //     console.log("API response:", response);
+
+  //     if (response?.success === true) {
+  //       alert(response.message);
+  //       getData();
+  //       handleCloseRowEditModal();
+  //     } else {
+  //       alert(response?.message || "Update failed. Please try again.");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error details:", error.response?.data || error);
+  //     alert(error.response?.data?.message || "An error occurred while updating the record.");
+  //   } finally {
+  //     setIsUpdating(false);
+  //   }
+  // };
+
   const handleUpdate = async () => {
     setIsUpdating(true);
     try {
+      console.log("Payload types:", {
+        SLocCode: typeof SLocID,
+        CostCenterCode: typeof CostCenterID
+      });
+
       const data = {
         ModifiedBy: UserID,
         DocID: String(DocID),
         MatCode,
         Qty,
-        SLocID,
-        CostCenterID,
+        SLocCode: (SLocID),
+         CostCenterCode: String(CostCenterCode),
         Price,
         ValuationType,
         Batch,
@@ -1327,6 +1370,24 @@ const Stock201 = () => {
       setIsUpdating(false);
     }
   };
+
+
+
+  React.useEffect(() => {
+  if (selectedRow) {
+    setPlantCode(selectedRow.Plant_Code);
+    setDocID(selectedRow.Doc_ID);
+    setTrnSapID(selectedRow.Trn_Sap_ID);
+    setMatCode(selectedRow.Material_Code);
+    setQty(selectedRow.Qty);
+    setSLocID(selectedRow.SLoc_Code);
+    setCostCenterCode(selectedRow.CostCenter_Code);  // <-- set cost center code here
+    setPrice(selectedRow.Rate_PerPart);
+    setValuationType(selectedRow.Valuation_Type);
+    setBatch(selectedRow.Batch);
+    // ... set other states
+  }
+}, [selectedRow]);
 
   const fetchData = async () => {
     try {
@@ -1982,200 +2043,187 @@ const Stock201 = () => {
 
 
       {/*Row edit modal*/}
-      <Modal open={openRowEditModal} onClose={handleCloseRowEditModal}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            width: 450,
-            maxHeight: "85vh",
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 3,
-            p: 2,
-            mt: 4,
-            mx: "auto",
-            gap: 1.5,
-            overflowY: "auto",
-            transition: 'all 0.3s ease'
-          }}
-        >
-          <h3 style={{
-            gridColumn: "span 2",
-            textAlign: "center",
-            color: "#2e59d9",
-            textDecoration: "underline",
-            textDecorationColor: "#88c57a",
-            textDecorationThickness: "3px",
-          }}>
-            Edit 201 Record
-          </h3>
+{/* Row edit modal */}
+<Modal open={openRowEditModal} onClose={handleCloseRowEditModal}>
+  <Box
+    sx={{
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      width: 450,
+      maxHeight: "85vh",
+      bgcolor: "background.paper",
+      borderRadius: 2,
+      boxShadow: 3,
+      p: 2,
+      mt: 4,
+      mx: "auto",
+      gap: 1.5,
+      overflowY: "auto",
+      transition: 'all 0.3s ease'
+    }}
+  >
+    <h3 style={{
+      gridColumn: "span 2",
+      textAlign: "center",
+      color: "#2e59d9",
+      textDecoration: "underline",
+      textDecorationColor: "#88c57a",
+      textDecorationThickness: "3px",
+    }}>
+      Edit 201 Record
+    </h3>
 
-          {/* Read-only fields */}
-          {[
-            ["Plant Code", PlantCode],
-            ["Doc ID", DocID],
-            ["Trn ID", TrnSapID],
-          ].map(([label, value]) => (
-            <TextField
-              key={label}
-              label={label}
-              value={value}
-              fullWidth
-              InputProps={{ readOnly: true }}
-              {...compactFieldProps}
-            />
-          ))}
+    {/* Read-only fields */}
+    {[
+      ["Plant Code", PlantCode],
+      ["Doc ID", DocID],
+      ["Trn ID", TrnSapID],
+    ].map(([label, value]) => (
+      <TextField
+        key={label}
+        label={label}
+        value={value}
+        fullWidth
+        InputProps={{ readOnly: true }}
+        {...compactFieldProps}
+      />
+    ))}
 
-          {/* Read-only Movement Type */}
-          <TextField
-            label="Movement Type"
-            value={MovtID}  // Assuming MovtID holds the code string to display
-            fullWidth
-            InputProps={{ readOnly: true }}
-            {...compactFieldProps}
-          />
+    {/* Read-only Movement Type */}
+    <TextField
+      label="Movement Type"
+      value={MovtID}  // Assuming MovtID holds display string
+      fullWidth
+      InputProps={{ readOnly: true }}
+      {...compactFieldProps}
+    />
 
-          {/* Select: Material */}
-          <FormControl fullWidth size="small">
-            <InputLabel id="to-mat-label">Material Code</InputLabel>
-            <Select
-              labelId="mat-label"
-              label="Mat Code"
-              value={MatCode}
-              onChange={e => setMatCode(e.target.value)}
-            >
-              {MaterialTable.map(item =>
-                <MenuItem key={item.Material_ID} value={item.Material_Code}>
-                  {item.Material_Code} - {item.Description}
-                </MenuItem>
-              )}
-            </Select>
-          </FormControl>
+    {/* Material Code */}
+    <FormControl fullWidth size="small">
+      <InputLabel id="mat-label">Material Code</InputLabel>
+      <Select
+        labelId="mat-label"
+        label="Material Code"
+        value={MatCode}
+        onChange={e => setMatCode(e.target.value)}
+      >
+        {MaterialTable.map(item => (
+          <MenuItem key={item.Material_ID} value={item.Material_Code}>
+            {item.Material_Code} - {item.Description}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
 
-          {/* Quantities */}
-          <TextField
-            label="Quantity"
-            type="number"
-            value={Qty}
-            onChange={e => setQty(Number(e.target.value))}
-            fullWidth
-            {...compactFieldProps}
-          />
+    {/* Quantity */}
+    <TextField
+      label="Quantity"
+      type="number"
+      value={Qty}
+      onChange={e => setQty(Number(e.target.value))}
+      fullWidth
+      {...compactFieldProps}
+    />
 
-          {/* SLoc */}
-          {[
-            ["SLoc Code", SLocID, setSLocID],
-          ].map(([label, value, setter]) => (
-            <FormControl fullWidth size="small" key={label}>
-              <InputLabel id={`${label}-label`}>{label}</InputLabel>
-              <Select
-                labelId={`${label}-label`}
-                label={label}
-                value={value}
-                onChange={e => setter(e.target.value)}
-              >
-                {SLocTable.map(item => (
-                  <MenuItem key={item.SLoc_ID} value={item.Storage_Code}>
-                    {item.Storage_Code}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          ))}
+    {/* Storage Location */}
+    <FormControl fullWidth size="small">
+      <InputLabel id="sloc-label">SLoc Code</InputLabel>
+      <Select
+        labelId="sloc-label"
+        label="SLoc Code"
+        value={SLocID}
+        onChange={e => setSLocID(e.target.value)}
+      >
+        {SLocTable.map(item => (
+          <MenuItem key={item.SLoc_ID} value={item.Storage_Code}>
+            {item.Storage_Code}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
 
-          {/* CostCenter Dropdown */}
-
-          {[
-            ["Cost Center", CostCenterID || "", setCostCenterID, CostCenterTable, "CostCenter_ID", "CostCenter_Code"]
-          ].map(([label, value, setter, table, idKey, labelKey]) => (
-            <FormControl fullWidth size="small" key={label}>
-              <InputLabel id={`${label}-label`}>{label}</InputLabel>
-              <Select
-                labelId={`${label}-label`}
-                label={label}
-                value={value}
-                onChange={(e) => setter(e.target.value)}
-              >
-                {table.map(item => (
-                  <MenuItem key={item[idKey]} value={item[idKey]}>
-                    {item[labelKey]}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          ))}
-
-          {/* Price */}
-          <TextField
-            label="Price"
-            type="number"
-            value={Price}
-            onChange={e => setPrice(Number(e.target.value))}
-            fullWidth
-            {...compactFieldProps}
-          />
-
-          {/* Valuation Type */}
-          {[
-            ["Valuation Type", ValuationType, setValuationType]
-          ].map(([label, value, setter]) => (
-            <FormControl fullWidth size="small" key={label}>
-              <InputLabel id={`${label}-label`}>{label}</InputLabel>
-              <Select
-                labelId={`${label}-label`}
-                label={label}
-                value={value}
-                onChange={e => setter(e.target.value)}
-              >
-                {ValuationTypeTable.map(item =>
-                  <MenuItem key={item.Valuation_ID} value={item.Valuation_Name}>
-                    {item.Valuation_Name}
-                  </MenuItem>
-                )}
-              </Select>
-            </FormControl>
-          ))}
-
-          {/* ReasonForMovement Type */}
-
-          <FormControl fullWidth size="small">
-            <InputLabel id="reason-for-mov-label">Reason For Movement</InputLabel>
-            <Select
-              labelId="reason-for-mov-label"
-              label="Reason For Movement"
-              value={ReasonForMovement}
-              onChange={e => setReasonForMovement(e.target.value)}
-            >
-              {ReasonForMovementTable.map(item => (
-                <MenuItem
-                  key={item.Movt_List_ID}
-                  value={`${item.Movement_List_Code}-${item.Movement_List_Name}`}
-                >
-                  {item.Movement_List_Code}-{item.Movement_List_Name}
-                </MenuItem>
-
-              ))}
-            </Select>
-          </FormControl>
+    {/* Cost Center */}
+<FormControl fullWidth size="small">
+  <InputLabel id="costcenter-label">Cost Center</InputLabel>
+  <Select
+    labelId="costcenter-label"
+    label="Cost Center"
+    value={CostCenterCode || ""}
+    onChange={(e) => setCostCenterCode(e.target.value)} // Note: Don't use Number()
+  >
+    {CostCenterTable.map(item => (
+      <MenuItem key={item.CostCenter_ID} value={item.CostCenter_Code}>
+        {item.CostCenter_Code}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
 
 
 
-          <TextField
-            label="Batch"
-            value={Batch}
-            onChange={e => setBatch(e.target.value)}
-            fullWidth
-            {...compactFieldProps}
-          />
+    {/* Price */}
+    <TextField
+      label="Price"
+      type="number"
+      value={Price}
+      onChange={e => setPrice(Number(e.target.value))}
+      fullWidth
+      {...compactFieldProps}
+    />
 
-          {/* Buttons */}
-          <Box sx={{ gridColumn: "span 2", display: "flex", justifyContent: "center", gap: 2, mt: 1 }}>
-            <Button size="small" variant="contained" color="error" onClick={handleCloseRowEditModal}>Cancel</Button>
-            <Button size="small" variant="contained" color="primary" onClick={handleUpdate}>Update</Button>
-          </Box>
-        </Box>
-      </Modal>
+    {/* Valuation Type */}
+    <FormControl fullWidth size="small">
+      <InputLabel id="valuation-label">Valuation Type</InputLabel>
+      <Select
+        labelId="valuation-label"
+        label="Valuation Type"
+        value={ValuationType}
+        onChange={e => setValuationType(e.target.value)}
+      >
+        {ValuationTypeTable.map(item => (
+          <MenuItem key={item.Valuation_ID} value={item.Valuation_Name}>
+            {item.Valuation_Name}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+
+    {/* Reason For Movement */}
+    <FormControl fullWidth size="small">
+      <InputLabel id="reason-for-mov-label">Reason For Movement</InputLabel>
+      <Select
+        labelId="reason-for-mov-label"
+        label="Reason For Movement"
+        value={ReasonForMovement}
+        onChange={e => setReasonForMovement(e.target.value)}
+      >
+        {ReasonForMovementTable.map(item => (
+          <MenuItem
+            key={item.Movt_List_ID}
+            value={`${item.Movement_List_Code}-${item.Movement_List_Name}`}
+          >
+            {item.Movement_List_Code} - {item.Movement_List_Name}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+
+    {/* Batch */}
+    <TextField
+      label="Batch"
+      value={Batch}
+      onChange={e => setBatch(e.target.value)}
+      fullWidth
+      {...compactFieldProps}
+    />
+
+    {/* Buttons */}
+    <Box sx={{ gridColumn: "span 2", display: "flex", justifyContent: "center", gap: 2, mt: 1 }}>
+      <Button size="small" variant="contained" color="error" onClick={handleCloseRowEditModal}>Cancel</Button>
+      <Button size="small" variant="contained" color="primary" onClick={handleUpdate}>Update</Button>
+    </Box>
+  </Box>
+</Modal>
 
 
     </div>
