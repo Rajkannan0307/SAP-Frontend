@@ -19,4 +19,8 @@ export const getAdd = async (data) => {
     const response = await axios.put(`${api}/StorageLocation/get_Updates`, data);
     return response;
   };
-  
+  export const getSupvCode = async (PlantCode)=>{
+
+  const response = await axios.get(`${api}/StorageLocation/Get_SupvCode?PlantCode=${PlantCode}`);
+  return response;
+};

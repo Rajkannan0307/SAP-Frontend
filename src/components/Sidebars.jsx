@@ -267,12 +267,12 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "Cost Center", path: "/home/CostCenter", icon: <FaDollarSign style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkorange" }} />, code: 'CostCenter' },
             { name: "ValuationType", path: "/home/ValuationType", icon: <GrCubes style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "Window" }} />, code: 'ValuationType' },
             { name: "SupvCode", path: "/home/SupvCode", icon: <GrCubes style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "Window" }} />, code: 'SupvCode' },
-
+        
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
             'UserMaster', 'Role', 'Material', 'Vendor',
-            'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter', 'ValuationType', 'SupvCode'
+            'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter','ValuationType','SupvCode'
           ]}
         />
 
