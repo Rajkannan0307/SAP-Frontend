@@ -20,7 +20,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
-import { getdetails,getAdd,getUpdates,getPlants } from "../controller/StorageLocationapiservice";
+import { getdetails,getAdd,getUpdates,getPlants } from "../controller/SupvCodeMasterapiservice";
 import { MenuItem, InputLabel, FormControl } from '@mui/material';
 const UserID = localStorage.getItem('UserID');
 const SupvCode = () => {
