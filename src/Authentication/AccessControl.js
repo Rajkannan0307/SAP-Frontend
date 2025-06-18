@@ -11,7 +11,7 @@ const accessMap = {
   6: [14, 19,20,22], // CORP FINANCE HEAD can access Approval_309, Report1, Report2
   7: [7, 8, 9, 10, 12, 13, 14, 16, 17,18,19,20,22], // CORP MRPC can access multiple screens
   8: [14, 19,20], // BUSINESS HEAD can access Approval_309, Report1, Report2
-  9: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,18,19,20,21],// CORP ADMIN (Full Access)
+  9: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,18,19,20,21,22,23,24,25],// CORP ADMIN (Full Access)
   10:[22] // CORP MMD HEAD
 };
 
