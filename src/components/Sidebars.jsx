@@ -25,7 +25,10 @@ import usePermissions from "../controller/usePermission";
 import { decryptSessionData } from "../controller/StorageUtils";
 import { FaExchangeAlt } from "react-icons/fa";
 import { SiSap } from "react-icons/si";
+import { GiAmericanShield } from "react-icons/gi";
 import { BsFillSignpostFill } from "react-icons/bs";
+import { MdAddTask } from "react-icons/md";
+import { SiScrapbox } from "react-icons/si";
 import { FaExternalLinkSquareAlt } from "react-icons/fa";
 import { TbReport } from "react-icons/tb";
 import EmergencyIcon from '@mui/icons-material/Emergency';
@@ -262,40 +265,40 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "Movement Type", path: "/home/Movement_Type", icon: <DriveFileMoveIcon style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "turquoise" }} />, code: 'Movement_Type' },
             { name: "MVT List Item", path: "/home/MVT_LIST_ITEM", icon: <FaTableList style={{ marginRight: "2px", fontSize: "20px", width: "25px", color: "thistle" }} />, code: 'MVT_LIST_ITEM' },
             { name: "Cost Center", path: "/home/CostCenter", icon: <FaDollarSign style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkorange" }} />, code: 'CostCenter' },
-           { name: "ValuationType", path: "/home/ValuationType", icon: <GrCubes style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "Window" }} />, code: 'ValuationType' },
+            { name: "ValuationType", path: "/home/ValuationType", icon: <GrCubes style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "Window" }} />, code: 'ValuationType' },
             { name: "SupvCode", path: "/home/SupvCode", icon: <GrCubes style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "Window" }} />, code: 'SupvCode' },
-        
+
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
             'UserMaster', 'Role', 'Material', 'Vendor',
-            'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter','ValuationType','SupvCode'
+            'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter', 'ValuationType', 'SupvCode'
           ]}
         />
 
-{Permissions.includes('dashboard') && (
-    <button
-      onClick={() => {
-        closeAllDropdowns(); // Close other sections
-        navigate("/home/dashboard");
-      }}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-        background: "none",
-        border: "none",
-        color: "white",
-        cursor: "pointer",
-        fontWeight: "bold",
-        fontSize: "18px",
-        margin: "10px 0",
-        marginBottom: "10px"
-      }}>
-      <FaExchangeAlt style={{ color: "turquoise", fontSize: "19px" }} />
-      {open && "Transaction"}
-    </button>
-  )}
+        {Permissions.includes('dashboard') && (
+          <button
+            onClick={() => {
+              closeAllDropdowns(); // Close other sections
+              navigate("/home/dashboard");
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "none",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              fontWeight: "bold",
+              fontSize: "18px",
+              margin: "10px 0",
+              marginBottom: "10px"
+            }}>
+            <FaExchangeAlt style={{ color: "turquoise", fontSize: "19px" }} />
+            {open && "Transaction"}
+          </button>
+        )}
 
         {/* Approval Section */}
         <SidebarSection
@@ -306,15 +309,17 @@ const Sidebar = ({ setSidebarOpen }) => {
           Permissions={Permissions}
           label="Approval"
           links={[
-            { name: "309 Approval", path: "/home/Approval_309", icon: <MdOutlineApproval style={{ fontSize: "20px", marginRight: "3px", color: "rgb(233, 127, 228)" }} />, code: 'Approval_309' },
-            { name: "201 Approval", path: "/home/Approval_201", icon: <BsFillSignpostFill style={{ fontSize: "20px", marginRight: "3px", color: "rgb(52, 188, 252)" }} />, code: 'Approval_201' },
-            { name: "202 Approval", path: "/home/Approval_202", icon: <BsFillSignpostFill style={{ fontSize: "20px", marginRight: "3px", color: "rgb(52, 188, 252)" }} />, code: 'Approval_202' },
-            { name: "Inward of Old Invoice Approval", path: "/home/InwardApproval", icon: <FaExternalLinkSquareAlt style={{ fontSize: "20px", marginRight: "3px", color: "rgb(240, 186, 117)" }} />, code: 'InwardApproval' },
-           { name: "Emergency Procurement Approval", path: "/home/EmergencyApproval", icon: <EmergencyIcon style={{ fontSize: "25px", marginRight: "1px", color: "rgb(230, 123, 123)" }} />, code: 'EmergencyApproval' },
+            { name: "309 Approval", path: "/home/Approval_309", icon: <MdOutlineApproval style={{ fontSize: "28px", marginRight: "3px", color: "rgb(52, 188, 252)" }} />, code: 'Approval_309' },
+            { name: "201 Approval", path: "/home/Approval_201", icon: <GiAmericanShield style={{ fontSize: "28px", marginRight: "3px", color: "rgb(231, 89, 177)" }} />, code: 'Approval_201' },
+            { name: "202 Approval", path: "/home/Approval_202", icon: <BsFillSignpostFill style={{ fontSize: "30px", marginRight: "3px", color: "rgb(186, 241, 113)" }} />, code: 'Approval_202' },
+            { name: "551 Approval", path: "/home/Approval_551", icon: <MdAddTask style={{ fontSize: "30px", marginRight: "3px", color: "rgb(235, 62, 62)" }} />, code: 'Approval_551' },
+            { name: "311 Approval", path: "/home/Approval_311", icon: <SiScrapbox style={{ fontSize: "30px", marginRight: "3px", color: "rgb(171, 136, 228)" }} />, code: 'Approval_551' },
+            { name: "Inward of Old Invoice Approval", path: "/home/InwardApproval", icon: <FaExternalLinkSquareAlt style={{ fontSize: "25px", marginRight: "3px", color: "rgb(240, 186, 117)" }} />, code: 'InwardApproval' },
+            { name: "Emergency Procurement Approval", path: "/home/EmergencyApproval", icon: <EmergencyIcon style={{ fontSize: "29px", marginRight: "1px", color: "rgb(230, 123, 123)" }} />, code: 'EmergencyApproval' },
 
           ]}
           codeList={[
-            'Approval_309', 'Approval_201','Approval_202','InwardApproval','EmergencyApproval'
+            'Approval_309', 'Approval_201', 'Approval_202', 'Approval_551', 'Approval_311', 'InwardApproval', 'EmergencyApproval'
           ]}
         />
 
@@ -323,20 +328,20 @@ const Sidebar = ({ setSidebarOpen }) => {
           open={open}
           isOpen={Report}
           toggleSection={toggleReport}
-          icon={<TbReport  style={{ marginRight: "8px", color: "#ffcc00" ,fontSize: "27px",}}/>}
+          icon={<TbReport style={{ marginRight: "8px", color: "#ffcc00", fontSize: "27px", }} />}
           Permissions={Permissions}
           label="Report"
           links={[
             {
               name: "Inward of Old Invoice Report",
               path: "/home/Report1",
-              icon: <MdCalendarMonth style={{ marginRight: "8px", color:"rgb(238, 110, 110)",fontSize: "23px",}} />,
+              icon: <MdCalendarMonth style={{ marginRight: "8px", color: "rgb(238, 110, 110)", fontSize: "23px", }} />,
               code: 'Report1'
             },
             {
               name: "Emergency Procurement Report",
               path: "/home/Report2",
-              icon: <MdCalendarMonth style={{ marginRight: "8px", color:"rgb(238, 106, 106)" ,fontSize: "23px",}} />,
+              icon: <MdCalendarMonth style={{ marginRight: "8px", color: "rgb(238, 106, 106)", fontSize: "23px", }} />,
               code: 'Report2'
             },
           ]}

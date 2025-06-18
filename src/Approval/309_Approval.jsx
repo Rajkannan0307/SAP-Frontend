@@ -30,7 +30,7 @@ import axios from 'axios';
 import DownloadIcon from '@mui/icons-material/Download';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { getdetails, getApprovalView, HandleApprovalAction, getPlants,DownloadDocumentAllExcel,fetchDocumentExcelData, getRole, get309ApprovalView } from '../controller/Approvalapiservice';
+import { getdetails, getApprovalView, HandleApprovalAction, getPlants, DownloadDocumentAllExcel, fetchDocumentExcelData, getRole, get309ApprovalView } from '../controller/Approvalapiservice';
 import { decryptSessionData } from "../controller/StorageUtils"
 
 
@@ -210,15 +210,15 @@ const Approval = () => {
             <CheckCircleIcon fontSize="small" />
           </IconButton>
 
-           {/* Download Button */}
-        <IconButton
-  size="large"
-  color="primary"
-  onClick={() => DownloadDocumentAllExcel(params.row.Doc_ID)} // ✅ only pass the docId
-  title="Download"
->
-  <DownloadIcon fontSize="small" />
-</IconButton>
+          {/* Download Button */}
+          <IconButton
+            size="large"
+            color="primary"
+            onClick={() => DownloadDocumentAllExcel(params.row.Doc_ID)} // ✅ only pass the docId
+            title="Download"
+          >
+            <DownloadIcon fontSize="small" />
+          </IconButton>
         </div>
       ),
     },
@@ -237,50 +237,50 @@ const Approval = () => {
   );
 
 
-const DownloadDocumentAllExcel = async (DocID) => {
-  try {
-    const response = await fetchDocumentExcelData(DocID);
-    const data = response.data;
+  const DownloadDocumentAllExcel = async (DocID) => {
+    try {
+      const response = await fetchDocumentExcelData(DocID);
+      const data = response.data;
 
-    if (!data || data.length === 0) {
-      alert('No data available to download.');
-      return;
-    }
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const headers = Object.keys(data[0]);
-
-    headers.forEach((_, colIdx) => {
-      const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
-      if (ws[cellAddress]) {
-        ws[cellAddress].s = {
-          font: { bold: true },
-          fill: { fgColor: { rgb: "FFFF00" } },
-          alignment: { horizontal: "center" },
-        };
+      if (!data || data.length === 0) {
+        alert('No data available to download.');
+        return;
       }
-    });
 
-    const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
-    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      const ws = XLSX.utils.json_to_sheet(data);
+      const headers = Object.keys(data[0]);
 
-    const blob = new Blob([excelBuffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
+      headers.forEach((_, colIdx) => {
+        const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+        if (ws[cellAddress]) {
+          ws[cellAddress].s = {
+            font: { bold: true },
+            fill: { fgColor: { rgb: "FFFF00" } },
+            alignment: { horizontal: "center" },
+          };
+        }
+      });
 
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", `Trn309_Movement_List_${DocID}.xlsx`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+      const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+      const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
 
-    alert("File downloaded successfully!");
-  } catch (error) {
-    console.error("Download failed:", error);
-    alert(`Error downloading: ${error.message}`);
-  }
-};
+      const blob = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `Trn309_Movement_List_${DocID}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      alert("File downloaded successfully!");
+    } catch (error) {
+      console.error("Download failed:", error);
+      alert(`Error downloading: ${error.message}`);
+    }
+  };
 
   const get_Plant = async () => {
     try {
@@ -524,7 +524,8 @@ const DownloadDocumentAllExcel = async (DocID) => {
             textDecoration: "underline",
             textDecorationColor: "limegreen",
             marginBottom: -7,
-            textDecorationThickness: '3px'
+            textDecorationThickness: '3px',
+            textUnderlineOffset: "6px",
           }}
         >
           309 Approval
@@ -645,6 +646,7 @@ const DownloadDocumentAllExcel = async (DocID) => {
                 textDecoration: "underline",
                 textDecorationColor: "limegreen",
                 textDecorationThickness: "3px",
+               textUnderlineOffset: "6px",
               }}
             >
               Document Details
@@ -757,6 +759,8 @@ const DownloadDocumentAllExcel = async (DocID) => {
               paddingBottom: "1px",                  // space between text and underline
               display: "inline-block",               // shrink width to text only
               textUnderlineOffset: "px",
+              textDecorationThickness: "3px",
+              textUnderlineOffset: "6px",
             }}
           >
             309 Approval
@@ -866,10 +870,22 @@ const DownloadDocumentAllExcel = async (DocID) => {
           {/* ❌ Top-right close (X) button */}
           <IconButton
             onClick={() => setOpenViewStatusModal(false)}
-            sx={{ position: "absolute", top: 8, right: 8 }}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              color: '#f44336', // Red icon
+              '&:hover': {
+                backgroundColor: '#ffcdd2', // Light red background on hover
+                color: '#b71c1c', // Slightly darker red icon on hover (optional)
+              },
+            }}
           >
             <CloseIcon />
           </IconButton>
+
+
+
 
           {/* 📝 Modal Title */}
           <Typography
@@ -882,6 +898,7 @@ const DownloadDocumentAllExcel = async (DocID) => {
               textDecoration: "underline",
               textDecorationColor: "limegreen",
               textDecorationThickness: "3px",
+              textUnderlineOffset: "6px",
             }}
           >
             Approval Status Details

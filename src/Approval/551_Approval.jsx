@@ -28,13 +28,13 @@ import axios from 'axios';
 import * as XLSX from 'sheetjs-style';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { getdetails, getApprovalView, HandleApprovalAction, getPlants, getRole, get201ApprovalView, DownloadAllExcel } from '../controller/Approval201apiservice';
+import { getdetails, getApprovalView, HandleApprovalAction, getPlants, getRole, get551ApprovalView, DownloadAllExcel } from '../controller/Approval551apiservice';
 import { decryptSessionData } from "../controller/StorageUtils"
 import DownloadIcon from '@mui/icons-material/Download';
 
 
 
-const Approval201 = () => {
+const Approval551 = () => {
   // State to control the visibility of the modal
   const [openViewModal, setOpenViewModal] = useState(false);
   const [PlantTable, setPlantTable] = useState([]);
@@ -117,7 +117,7 @@ const Approval201 = () => {
   const handleViewStatus = async (docId) => {
     console.log("Fetching approval status for Doc_ID:", docId);
     try {
-      const response = await get201ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
+      const response = await get551ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
       console.log("API Response:", response);
       setViewStatusData(response);  // Update your state with the fetched data
     } catch (error) {
@@ -262,7 +262,7 @@ const Approval201 = () => {
     try {
       const response = await getdetails(Plant_ID, RoleID, Role);
 
-      console.log('response 201', response);  // Check the structure of response
+      console.log('response 551', response);  // Check the structure of response
       setData(response);  // Ensure that this is correctly setting the data
       setOriginalRows(response); // for reference during search
       setRows(response);
@@ -332,7 +332,7 @@ const Approval201 = () => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Row_Details");
 
-    XLSX.writeFile(workbook, `Trn201Movt_${row.Doc_ID || 'Row'}.xlsx`);
+    XLSX.writeFile(workbook, `Trn551Movt_${row.Doc_ID || 'Row'}.xlsx`);
 
     alert("Refer To The XLSX sheet For The Particular DocID Details.");
   };
@@ -353,7 +353,7 @@ const Approval201 = () => {
 
       const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
       const fileExtension = ".xlsx";
-      const fileName = "Trn 201 Movement List";
+      const fileName = "Trn 551 Movement List";
 
       // Create worksheet from JSON data
       const ws = XLSX.utils.json_to_sheet(response.data);
@@ -599,7 +599,7 @@ const Approval201 = () => {
             textUnderlineOffset: "6px",
           }}
         >
-          201 Approval
+          551 Approval
         </h2>
       </div>
 
@@ -713,7 +713,7 @@ const Approval201 = () => {
                textUnderlineOffset: "6px",
             }}
           >
-            201 Approval
+            551 Approval
           </Typography>
 
           <TextField
@@ -882,4 +882,4 @@ const Approval201 = () => {
   );
 };
 
-export default Approval201;
+export default Approval551;

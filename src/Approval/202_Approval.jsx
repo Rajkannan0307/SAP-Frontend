@@ -29,7 +29,7 @@ import axios from 'axios';
 import * as XLSX from 'sheetjs-style';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { getdetails, getApprovalView, HandleApprovalAction, getPlants, getRole, get202ApprovalView,DownloadAllExcel } from '../controller/Approval202apiservice';
+import { getdetails, getApprovalView, HandleApprovalAction, getPlants, getRole, get202ApprovalView, DownloadAllExcel } from '../controller/Approval202apiservice';
 import { decryptSessionData } from "../controller/StorageUtils"
 import DownloadIcon from '@mui/icons-material/Download';
 
@@ -214,14 +214,14 @@ const Approval202 = () => {
           </IconButton>
 
           {/* Download Button */}
-        <IconButton
-  size="large"
-  color="primary"
-  onClick={() => handleDownloadAllExcel(params.row.Doc_ID)} // ✅ only pass the docId
-  title="Download"
->
-  <DownloadIcon fontSize="small" />
-</IconButton>
+          <IconButton
+            size="large"
+            color="primary"
+            onClick={() => handleDownloadAllExcel(params.row.Doc_ID)} // ✅ only pass the docId
+            title="Download"
+          >
+            <DownloadIcon fontSize="small" />
+          </IconButton>
 
         </div>
       ),
@@ -289,119 +289,119 @@ const Approval202 = () => {
   };
 
   //view docid detail for Particular DocID Particular row  download
-const handleDownloadExcelRowView = (row) => {
-  if (!row) {
-    alert("No data available to export.");
-    return;
-  }
-
-  const DataColumns = [
-    "Doc_ID", "Plant_Code", "Material_Code", "Quantity", "SLoc_Code", "CostCenter_Code",
-    "Movement_Code", "Valuation_Type", "Batch", "Rate_Unit", "Reason_For_Movt",
-    "Approval_Status"
-  ];
-
-  const filteredData = [{
-    Doc_ID: row.Doc_ID || '',
-    Plant_Code: row.Plant_Code || '',
-    Material_Code: row.Material_Code || '',
-    Quantity: row.Qty || '',
-    SLoc_Code: row.SLoc_Code || '',
-    CostCenter_Code: row.CostCenter_Code || '',
-    Movement_Code: row.Movement_Code || '',
-    Valuation_Type: row.Valuation_Type || '',
-    Batch: row.Batch || '',
-    Rate_Unit: row.Rate_PerPart || '',
-    Reason_For_Movt: row.Remarks || '',
-    Approval_Status: row.Approval_Status || ''
-  }];
-
-  const worksheet = XLSX.utils.json_to_sheet(filteredData, { header: DataColumns });
-
-  // Style header
-  DataColumns.forEach((_, index) => {
-    const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-    if (worksheet[cellAddress]) {
-      worksheet[cellAddress].s = {
-        font: { bold: true, color: { rgb: "000000" } },
-        fill: { fgColor: { rgb: "FFFF00" } },
-        alignment: { horizontal: "center" },
-      };
-    }
-  });
-
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Row_Details");
-
-  XLSX.writeFile(workbook, `Trn202Movt_${row.Doc_ID || 'Row'}.xlsx`);
-
-  alert("Refer To The XLSX sheet For The Particular DocID Details.");
-};
-
-
-  //view detail for Particular DocID Details ... download
-
-
-const handleDownloadAllExcel = async (DocID) => {
-  try {
-    const response = await DownloadAllExcel(DocID);
-    console.log('Data from API:', response.data);
-
-    if (!response.data || response.data.length === 0) {
-      alert('No data available to download.');
+  const handleDownloadExcelRowView = (row) => {
+    if (!row) {
+      alert("No data available to export.");
       return;
     }
 
-    const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-    const fileExtension = ".xlsx";
-    const fileName = "Trn 202 Movement List";
+    const DataColumns = [
+      "Doc_ID", "Plant_Code", "Material_Code", "Quantity", "SLoc_Code", "CostCenter_Code",
+      "Movement_Code", "Valuation_Type", "Batch", "Rate_Unit", "Reason_For_Movt",
+      "Approval_Status"
+    ];
 
-    // Create worksheet from JSON data
-    const ws = XLSX.utils.json_to_sheet(response.data);
+    const filteredData = [{
+      Doc_ID: row.Doc_ID || '',
+      Plant_Code: row.Plant_Code || '',
+      Material_Code: row.Material_Code || '',
+      Quantity: row.Qty || '',
+      SLoc_Code: row.SLoc_Code || '',
+      CostCenter_Code: row.CostCenter_Code || '',
+      Movement_Code: row.Movement_Code || '',
+      Valuation_Type: row.Valuation_Type || '',
+      Batch: row.Batch || '',
+      Rate_Unit: row.Rate_PerPart || '',
+      Reason_For_Movt: row.Remarks || '',
+      Approval_Status: row.Approval_Status || ''
+    }];
 
-    // Style headers - row 0
-    const headers = Object.keys(response.data[0] || {});
-    headers.forEach((_, colIdx) => {
-      const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
-      if (ws[cellAddress]) {
-        ws[cellAddress].s = {
+    const worksheet = XLSX.utils.json_to_sheet(filteredData, { header: DataColumns });
+
+    // Style header
+    DataColumns.forEach((_, index) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+      if (worksheet[cellAddress]) {
+        worksheet[cellAddress].s = {
           font: { bold: true, color: { rgb: "000000" } },
-          fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
+          fill: { fgColor: { rgb: "FFFF00" } },
           alignment: { horizontal: "center" },
         };
       }
     });
 
-    // Create workbook and add worksheet
-    const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Row_Details");
 
-    // Generate Excel file buffer
-    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    XLSX.writeFile(workbook, `Trn202Movt_${row.Doc_ID || 'Row'}.xlsx`);
 
-    // Create Blob and trigger download
-    const data = new Blob([excelBuffer], { type: fileType });
-    const url = window.URL.createObjectURL(data);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", fileName + fileExtension);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+    alert("Refer To The XLSX sheet For The Particular DocID Details.");
+  };
 
-    alert("File downloaded successfully! View The Particular DocID Details ...");
-  } catch (error) {
-    console.error("Download failed:", error);
 
-    if (error.response) {
-      alert(`Error: ${error.response.data.message || 'Unknown backend error'}`);
-    } else if (error.request) {
-      alert('No response from server. Please try again later.');
-    } else {
-      alert(`Error: ${error.message}`);
+  //view detail for Particular DocID Details ... download
+
+
+  const handleDownloadAllExcel = async (DocID) => {
+    try {
+      const response = await DownloadAllExcel(DocID);
+      console.log('Data from API:', response.data);
+
+      if (!response.data || response.data.length === 0) {
+        alert('No data available to download.');
+        return;
+      }
+
+      const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+      const fileExtension = ".xlsx";
+      const fileName = "Trn 202 Movement List";
+
+      // Create worksheet from JSON data
+      const ws = XLSX.utils.json_to_sheet(response.data);
+
+      // Style headers - row 0
+      const headers = Object.keys(response.data[0] || {});
+      headers.forEach((_, colIdx) => {
+        const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+        if (ws[cellAddress]) {
+          ws[cellAddress].s = {
+            font: { bold: true, color: { rgb: "000000" } },
+            fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
+            alignment: { horizontal: "center" },
+          };
+        }
+      });
+
+      // Create workbook and add worksheet
+      const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+
+      // Generate Excel file buffer
+      const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+
+      // Create Blob and trigger download
+      const data = new Blob([excelBuffer], { type: fileType });
+      const url = window.URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", fileName + fileExtension);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      alert("File downloaded successfully! View The Particular DocID Details ...");
+    } catch (error) {
+      console.error("Download failed:", error);
+
+      if (error.response) {
+        alert(`Error: ${error.response.data.message || 'Unknown backend error'}`);
+      } else if (error.request) {
+        alert('No response from server. Please try again later.');
+      } else {
+        alert(`Error: ${error.message}`);
+      }
     }
-  }
-};
+  };
 
 
 
@@ -710,6 +710,8 @@ const handleDownloadAllExcel = async (DocID) => {
               paddingBottom: "1px",                  // space between text and underline
               display: "inline-block",               // shrink width to text only
               textUnderlineOffset: "px",
+              textDecorationThickness: "3px",
+              textUnderlineOffset: "6px",
             }}
           >
             202 Approval
@@ -819,7 +821,16 @@ const handleDownloadAllExcel = async (DocID) => {
           {/* ❌ Top-right close (X) button */}
           <IconButton
             onClick={() => setOpenViewStatusModal(false)}
-            sx={{ position: "absolute", top: 8, right: 8 }}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              color: '#f44336', // Red icon
+              '&:hover': {
+                backgroundColor: '#ffcdd2', // Light red background on hover
+                color: '#b71c1c', // Slightly darker red icon on hover (optional)
+              },
+            }}
           >
             <CloseIcon />
           </IconButton>
@@ -834,7 +845,8 @@ const handleDownloadAllExcel = async (DocID) => {
               color: "#1565c0",
               textDecoration: "underline",
               textDecorationColor: "limegreen",
-              textDecorationThickness: "2px",
+
+              textDecorationThickness: "3px",
               textUnderlineOffset: "6px",
 
             }}
