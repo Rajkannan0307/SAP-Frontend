@@ -20,7 +20,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
-import { getdetails,getAdd,getUpdates,getPlants } from "../controller/StorageLocationapiservice";
+import { getdetails,getAdd,getUpdates,getPlants ,getSupvCode} from "../controller/StorageLocationapiservice";
 import { MenuItem, InputLabel, FormControl } from '@mui/material';
 const UserID = localStorage.getItem('UserID');
 const StorageLocation = () => {
@@ -36,8 +36,12 @@ const StorageLocation = () => {
    const[StorageCode,setStorageCode]=useState("");
    const[StorageName,setStorageName]=useState("");
    const [SLoc_ID, setSLocID] = useState([]);
+    const [SupvTable, setSupvTable] = useState([])
+     const [Supv_Code, setSupv_Code] = useState("");
+
  const columns = [
      { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
+       { field: "Sup_Code", headerName: "Supervisor Code", flex: 1 },
      { field: "Storage_Code", headerName: "Storage Code", flex: 1 },
      { field: "SLoc_Name", headerName: "Storage Location Name", flex: 1 },
     
@@ -86,7 +90,24 @@ const StorageLocation = () => {
     getData();
   }, []);
 
+useEffect(() => {
+  if (PlantCode) {
+    get_SupvCode();        // Load supervisor codes
+    setSupv_Code('');      // Reset selected supervisor
+  } else {
+    setSupvTable([]);      // Clear the table if no plant
+  }
+}, [PlantCode]);
 
+ const get_SupvCode = async () => {
+  try {
+    const response = await getSupvCode(PlantCode);
+    console.log("👉 SupvTable data:", response.data); // 👈 Check here
+    setSupvTable(response.data);
+  } catch (error) {
+    console.error("❌ Error fetching supervisors:", error);
+  }
+};
   const get_Plant = async () => {
       try {
         const response = await getPlants();
@@ -125,8 +146,10 @@ const StorageLocation = () => {
     setPlantCode("");
     setStorageCode("");
     setStorageName("");
+     setSupv_Code("");
     setActiveStatus(true);
     setOpenAddModal(true);
+    get_SupvCode();
     get_Plant();
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
@@ -138,6 +161,7 @@ const StorageLocation = () => {
     setStorageCode(params.row.Storage_Code);
     setStorageName(params.row.SLoc_Name);
     setActiveStatus(params.row.Active_Status);
+       setSupv_Code(params.row.Sup_Code);
     setOpenEditModal(true); // Open the modal
   };
 
@@ -145,7 +169,7 @@ const StorageLocation = () => {
     const handleAdd = async () => {
       console.log("Data being sent to the server:", {
         PlantCode,
-         StorageCode,StorageName,UserID
+         StorageCode,StorageName,UserID,Supv_Code
        
       });
       console.log("Add button clicked");
@@ -154,8 +178,8 @@ const StorageLocation = () => {
       if (
         PlantCode === "" ||
         StorageCode === "" ||
-        StorageName === "" 
-        
+        StorageName === ""  ||
+        Supv_Code ===''
       ) {
         alert("Please fill in all required fields");
         return;
@@ -172,6 +196,7 @@ const StorageLocation = () => {
           UserID:UserID,
           Plant_Code: PlantCode,
           Storage_Code:StorageCode,
+           Supv_Code:Supv_Code,
           SLoc_Name:StorageName,
           Active_Status:ActiveStatus, // Make sure this is defined somewhere
         };
@@ -242,13 +267,15 @@ const StorageLocation = () => {
          "Storage_Code",
          "SLoc_Name",
         "ActiveStatus",
+        'Supv_Code'
       ];
   
       const filteredData = data.map((item) => ({
         Plant_Code: item.Plant_Code,
         Storage_Code:item.Storage_Code,
+        Supv_Code:item.Sup_Code,
         SLoc_Name:item.SLoc_Name,
-  
+   
         ActiveStatus: item.Active_Status ? "Active" : "Inactive"
   
       }));
@@ -484,6 +511,25 @@ const StorageLocation = () => {
               ))}
             </Select>
           </FormControl>
+        
+           <FormControl fullWidth>
+            <InputLabel>Supervisor Code</InputLabel>
+            <Select
+              label="Supervisor Code"
+              name="Supervisor Code"
+              value={Supv_Code}
+              onChange={(e) => setSupv_Code(e.target.value)}
+              required
+            >
+              {SupvTable
+                .filter(item => item.Plant_ID=== PlantCode)  // or === parseInt(PlantCode)
+                .map((item) => (
+                  <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
+                    {item.Sup_Code}
+                  </MenuItem>
+                ))}
+            </Select>
+          </FormControl>
           <TextField
                   label="Storage Code"
                   name="Storage Code"
@@ -605,7 +651,15 @@ const StorageLocation = () => {
                   }}
                   required
                 />
-      
+      <TextField
+                  label="Supervisor Code"
+                  name="Supervisor Code"
+                  value={Supv_Code}
+                  onChange={(e) => setSupv_Code(e.target.value)}
+                  InputProps={{
+                    readOnly: true,  // This makes the TextField read-only
+                  }}
+                />
       <TextField
                   label="Storage Code"
                   name="Storage Code"

@@ -28,7 +28,7 @@ import { MaterialMaster } from "../controller/Masterapiservice";
 import { FaDownload } from "react-icons/fa";
 import { deepPurple } from '@mui/material/colors';
 import { api } from "../controller/constants";
-import { getdetails, getAdd, getPlants, getUpdates, getMaterialType } from '../controller/Masterapiservice';
+import { getdetails, getAdd, getPlants, getUpdates, getMaterialType,getSupvCode } from '../controller/Masterapiservice';
 
 
 const Material = () => {
@@ -55,12 +55,14 @@ const Material = () => {
   const [PlantCode, setPlantCode] = useState([]);
   const [MaterialType, setMaterialType] = useState([]);
   const [MaterialCode, setMaterialCode] = useState("");
+  const [Supv_Code, setSupv_Code] = useState("");
   const [MaterialID, setMaterialID] = useState("");
   const [Description, setDescription] = useState("");
   const [Rate, setRate] = useState("");
   const [ActiveStatus, setActiveStatus] = useState(false);
   const [PlantTable, setPlantTable] = useState([]);
   const [MaterialTable, setMaterialTable] = useState([])
+  const [SupvTable, setSupvTable] = useState([])
   // const [userID, setUserID] = useState("");
 
 
@@ -68,6 +70,7 @@ const Material = () => {
   const columns = [
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
     { field: "Material_Type", headerName: "Material Type", flex: 1 },
+     { field: "Sup_Code", headerName: "Supervisor Code", flex: 1 },
     { field: "Material_Code", headerName: "Material Code", flex: 1 },
     { field: "Description", headerName: "Description", flex: 2 },
 
@@ -123,6 +126,14 @@ const Material = () => {
   }, []);
 
 
+useEffect(() => {
+  if (PlantCode) {
+    get_SupvCode();
+  } else {
+    setSupvTable([]); // reset supervisor list if PlantCode is cleared
+  }
+}, [PlantCode]);
+
 
   const get_Plant = async () => {
     try {
@@ -141,6 +152,16 @@ const Material = () => {
       console.error("Error updating user:", error);
     }
   };
+  const get_SupvCode = async () => {
+  try {
+    const response = await getSupvCode(PlantCode);
+    console.log("👉 SupvTable data:", response.data); // 👈 Check here
+    setSupvTable(response.data);
+  } catch (error) {
+    console.error("❌ Error fetching supervisors:", error);
+  }
+};
+
 
   // ✅ Custom Toolbar
   const CustomToolbar = () => (
@@ -157,11 +178,13 @@ const Material = () => {
     setMaterialCode("");
     setDescription("");
     setMaterialType("");
+    setSupv_Code("")
     setRate("");
     setActiveStatus(true);
     setOpenAddModal(true);
     get_Plant();
     get_Material_Type();
+    get_SupvCode();
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
@@ -216,13 +239,14 @@ const Material = () => {
 const downloadExcel = (newRecord, updateRecord, errRecord) => {
   const wb = XLSX.utils.book_new();
 
-  const newRecordsColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'ActiveStatus', 'Status'];
-  const UpdatedColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'ActiveStatus', 'Status'];
-  const ErrorColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation'];
+  const newRecordsColumns = ['Plant_Code', 'Material_Type','Supv_Code', 'Material_Code', 'Description', 'Rate', 'ActiveStatus', 'Status'];
+  const UpdatedColumns = ['Plant_Code', 'Material_Type', 'Supv_Code','Material_Code', 'Description', 'Rate', 'ActiveStatus', 'Status'];
+  const ErrorColumns = ['Plant_Code', 'Material_Type','Supv_Code', 'Material_Code', 'Description', 'Rate', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation'];
 
   const filteredNewData = newRecord.map(item => ({
     Plant_Code: item.Plant_Code,
     Material_Type: item.Material_Type,
+     Supv_Code:item.Sup_Code,
     Material_Code: item.Material_Code,
     Description: item.Description,
     Rate: item.Rate,
@@ -233,6 +257,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
   const filteredUpdate = updateRecord.map(item => ({
     Plant_Code: item.Plant_Code,
     Material_Type: item.Material_Type,
+     Supv_Code:item.Sup_Code,
     Material_Code: item.Material_Code,
     Description: item.Description,
     Rate: item.Rate,
@@ -243,7 +268,9 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
   const filteredError = errRecord.map(item => ({
     Plant_Code: item.Plant_Code,
     Material_Type: item.Material_Type,
+     Supv_Code:item.Sup_Code,
     Material_Code: item.Material_Code,
+    
     Description: item.Description,
     Rate: item.Rate,
     ActiveStatus: item.Active_Status,
@@ -328,6 +355,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
     setPlantCode(params.row.Plant_Code);
     setMaterialType(params.row.Material_Type);
     setMaterialCode(params.row.Material_Code);
+    setSupv_Code(params.row.Sup_Code);
     setDescription(params.row.Description);
     setRate(params.row.Rate);
     setActiveStatus(params.row.Active_Status);
@@ -344,7 +372,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
       setRows(originalRows);
     } else {
       const filteredRows = originalRows.filter((row) =>
-        ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate '].some((key) => {
+        ['Plant_Code', 'Material_Type', 'Material_Code','Supv_Code', 'Description', 'Rate '].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
         })
@@ -357,10 +385,10 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
   // ✅ Handle Add Material
   const handleAdd = async () => {
     console.log("Data being sent to the server:", {
-      PlantCode, MaterialType, MaterialCode, Description, Rate, ActiveStatus,UserID
+      PlantCode, MaterialType, MaterialCode, Description, Supv_Code,Rate, ActiveStatus,UserID
     });
     console.log("Add button clicked")
-    if (PlantCode === '' || MaterialType === '' || MaterialCode === '' || Description === '' || Rate === '') {
+    if (PlantCode === '' ||Supv_Code ===''|| MaterialType === '' || MaterialCode === '' || Description === '' || Rate === '') {
       alert("Please fill in all required fields");
       return;  // Exit the function if validation fails
     }
@@ -370,6 +398,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
         UserID:UserID,
         Plant_Code: PlantCode,
         Material_Type: MaterialType,
+        Supv_Code:Supv_Code,
         Material_Code: MaterialCode,
         Description: Description,
         Rate: Rate,
@@ -399,6 +428,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
       const data = {
         UserID:UserID,
         Material_ID: MaterialID,
+        
         Description: Description,
         Rate: Rate,
         Active_Status: ActiveStatus,
@@ -436,12 +466,14 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
       return;
     }
   
-    const DataColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'ActiveStatus'];
+    const DataColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Supv_Code','Description', 'Rate', 'ActiveStatus'];
   
     const filteredData = data.map(item => ({
       Plant_Code: item.Plant_Code,
       Material_Type: item.Material_Type,
+       Supv_Code:item.Sup_Code,
       Material_Code: item.Material_Code,
+     
       Description: item.Description,
       Rate: item.Rate,
        ActiveStatus: item.Active_Status ? "Active" : "Inactive"
@@ -690,6 +722,25 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
               ))}
             </Select>
           </FormControl>
+ <FormControl fullWidth>
+  <InputLabel>Supervisor Code</InputLabel>
+  <Select
+    label="Supervisor Code"
+    name="Supervisor Code"
+    value={Supv_Code}
+    onChange={(e) => setSupv_Code(e.target.value)}
+    required
+  >
+    {SupvTable
+      .filter(item => item.Plant_ID === PlantCode)  // or === parseInt(PlantCode)
+      .map((item) => (
+        <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
+          {item.Sup_Code}
+        </MenuItem>
+      ))}
+  </Select>
+</FormControl>
+
 
           <TextField
             label="Material Code"
@@ -805,6 +856,16 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
               readOnly: true,  // This makes the TextField read-only
             }}
           />
+           <TextField
+            label="Supervisor Code"
+            name="Supervisor Code"
+            value={Supv_Code}
+            onChange={(e) => setSupv_Code(e.target.value)}
+            InputProps={{
+              readOnly: true,  // This makes the TextField read-only
+            }}
+          />
+          
 
           <TextField
             label="Material Code"

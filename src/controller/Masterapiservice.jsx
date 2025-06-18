@@ -33,7 +33,11 @@ export const getMaterialType = async ()=>{
   const response = await axios.get(`${api}/Master/Get_Material_Type`);
   return response;
 };
-  
+  export const getSupvCode = async (PlantCode)=>{
+
+  const response = await axios.get(`${api}/Master/Get_SupvCode?PlantCode=${PlantCode}`);
+  return response;
+};
 export const getLogin = async (data) => {
   const response = await axios.post(`${api}/login/Get_Login`, data);
   return response;
