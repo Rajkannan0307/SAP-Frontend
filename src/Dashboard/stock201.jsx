@@ -178,139 +178,73 @@ useEffect(() => {
   setHeaderChecked(allSelected);
 }, [selectedRowIds, rows]);
 
-// Resubmit button click handler
-  const handleOpenCheckResubmitModal = async () => {
-    const resubmittableRows = rows.filter(row =>
-      selectedRowIds.includes(row.Trn_Sap_ID) &&
-      (row.Approval_Status || "").toLowerCase().trim() === "under query"
-    );
 
-    if (resubmittableRows.length === 0) {
-      alert("No valid 'Under Query' rows selected.");
-      return;
+
+
+const handleOpenCheckResubmitModal = async () => {
+  if (!selectedRowIds || selectedRowIds.length === 0) {
+    alert("Please select at least one row to resubmit.");
+    return;
+  }
+
+  const selectedRowsData = rows.filter(row =>
+    selectedRowIds.includes(row.Trn_Sap_ID)
+  );
+
+  const resubmittableRows = selectedRowsData.filter(row =>
+    (row.Approval_Status || "").toLowerCase().trim() === "under query"
+  );
+
+  if (resubmittableRows.length === 0) {
+    alert("No valid rows eligible for resubmit.");
+    return;
+  }
+
+  try {
+    let successCount = 0;
+
+    for (const row of resubmittableRows) {
+      const resubmitResponse = await getresubmit({
+        Doc_ID: row.Doc_ID,
+        Trn_Sap_ID: row.Trn_Sap_ID,
+        UserID: UserID,
+        Action: "Resubmit"
+      });
+
+      if (resubmitResponse.success) {
+        successCount++;
+      }
     }
 
-    try {
-      let successCount = 0;
+    if (successCount > 0) {
+      alert(`${successCount} row(s) resubmitted.`);
 
-      for (const row of resubmittableRows) {
-        const resubmitResponse = await getresubmit({
-          Doc_ID: row.Doc_ID,
-          Trn_Sap_ID: row.Trn_Sap_ID,
-          UserID: UserID,
-          Action: "Resubmit",
-        });
-        console.log("👉 Sending Resubmit Payload:", {
-          Doc_ID: row.Doc_ID,
-          Trn_Sap_ID: row.Trn_Sap_ID,
-          UserID: UserID,
-          Action: "Resubmit",
-        });
+      // ✅ Option A: Update only changed rows locally (faster UI)
+      setRows(prevRows =>
+        prevRows.map(row =>
+          selectedRowIds.includes(row.Trn_Sap_ID) &&
+          row.Approval_Status.toLowerCase().trim() === "under query"
+            ? { ...row, Approval_Status: "Pending" }
+            : row
+        )
+      );
 
-        if (resubmitResponse.success) successCount++;
-      }
-
-      if (successCount > 0) {
-        alert(`${successCount} row(s) resubmitted successfully.`);
-        await getData();  // Wait for fresh data
-      } else {
-        alert("No rows were successfully resubmitted.");
-      }
+      // ✅ Option B: Full reload from backend (slower, but complete)
+      // await getData();
 
       setSelectedRowIds([]);
       setHeaderChecked(false);
-
-    } catch (err) {
-      console.error("Resubmit error:", err);
-      alert("Error during resubmit.");
+    } else {
+      alert("No rows were updated.");
     }
-  };
 
+  } catch (error) {
+    console.error("Error during resubmit:", error);
+    alert("An error occurred during resubmit.");
+  }
 
-//   const handleOpenCheckResubmitModal = async () => {
-//   const resubmittableRows = rows.filter(row =>
-//     selectedRowIds.includes(row.Trn_Sap_ID) &&
-//     (row.Approval_Status || "").toLowerCase().trim() === "under query"
-//   );
-
-//   if (resubmittableRows.length === 0) {
-//     alert("No valid 'Under Query' rows selected.");
-//     return;
-//   }
-
-//   // Group selected rows by Doc_ID
-//   const groupedByDoc = resubmittableRows.reduce((acc, row) => {
-//     if (!acc[row.Doc_ID]) acc[row.Doc_ID] = [];
-//     acc[row.Doc_ID].push(row.Trn_Sap_ID);
-//     return acc;
-//   }, {});
-
-//   try {
-//     let successCount = 0;
-
-//     for (const [docId, trnSapIds] of Object.entries(groupedByDoc)) {
-//       // For each Doc_ID, call resubmit once, passing all Trn_Sap_IDs if your backend supports it,
-//       // or call once per Doc_ID (and backend updates all related rows)
-//       // Adjust API accordingly; example below calls one row per doc for demo:
-
-//       const resubmitResponse = await getresubmit({
-//         Doc_ID: parseInt(docId),
-//         Trn_Sap_ID: trnSapIds[0], // or better: support batch API passing array of Trn_Sap_IDs
-//         UserID: UserID,
-//         Action: "Resubmit",
-//       });
-
-//       if (resubmitResponse.success) successCount++;
-//     }
-
-//     if (successCount > 0) {
-//       alert(`${successCount} document(s) resubmitted successfully.`);
-//       await getData();
-//     } else {
-//       alert("No documents were successfully resubmitted.");
-//     }
-
-//     setSelectedRowIds([]);
-//     setHeaderChecked(false);
-//   } catch (err) {
-//     console.error("Resubmit error:", err);
-//     alert("Error during resubmit.");
-//   }
-// };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  setOpenCheckResubmitModal(true);
+};
 
 
 
@@ -318,138 +252,6 @@ useEffect(() => {
   const handleChange = (event) => {
     setChecked(event.target.checked);
   };
-
-// // ✅ Row checkbox toggle
-// const handleRowCheckboxChange = (id, isChecked) => {
-//   setSelectedRowIds(prev => {
-//     if (isChecked) {
-//       return [...prev, id]; // add
-//     } else {
-//       return prev.filter(rowId => rowId !== id); // remove
-//     }
-//   });
-// };
-
-// // ✅ Header checkbox toggle
-// const handleHeaderCheckboxChange = (e) => {
-//   const isChecked = e.target.checked;
-
-//   const underQueryIds = rows
-//     .filter(row => row.Approval_Status?.toLowerCase().trim() === "under query")
-//     .map(row => row.Trn_Sap_ID);
-
-//   setHeaderChecked(isChecked);
-
-//   if (isChecked) {
-//     setSelectedRowIds(underQueryIds);
-//   } else {
-//     setSelectedRowIds([]);
-//   }
-// };
-
-
-
-// ✅ Resubmit Modal Handler
-//   const handleOpenCheckResubmitModal = async () => {
-//     if (!selectedRowIds || selectedRowIds.length === 0) {
-//       alert("Please select at least one row to resubmit.");
-//       return;
-//     }
-
-//     const selectedRowsData = rows.filter(row =>
-//       selectedRowIds.includes(row.Trn_Sap_ID)
-//     );
-
-//     const resubmittableRows = selectedRowsData.filter(row => {
-//       const status = (row.Approval_Status || "").toLowerCase().trim();
-//       //return status === "rejected" || status === "under query";
-//       return  status === "under query";
-//     });
-
-//     if (resubmittableRows.length === 0) {
-//       alert("No selected rows are eligible for resubmit (only 'Under Query' allowed).");
-//       return;
-//     }
-
-//     try {
-// let successCount = 0;
-
-// for (const row of resubmittableRows) {
-//   const resubmitResponse = await getresubmit({
-//     Doc_ID: row.Doc_ID,
-//     Trn_Sap_ID: row.Trn_Sap_ID,
-//     UserID: UserID,
-//     Action: "Resubmit",
-//   });
-
-//   if (resubmitResponse.success) {
-//     successCount++;
-//   } else {
-//     console.warn(`❌ Resubmit failed for Doc_ID ${row.Doc_ID}`);
-//   }
-// }
-
-// if (successCount > 0) {
-//   alert(`${successCount} document(s) resubmitted successfully.`);
-// } else {
-//   alert("No documents were resubmitted. Please check log for details.");
-// }
-
-
-//       alert("The selected document has been resubmitted successfully.");
-//       getData();
-
-//       // Clear all selections after resubmit
-//       setSelectedRowIds([]);
-//       setHeaderChecked(false);
-
-//     } catch (error) {
-//       console.error("Error during resubmit:", error);
-//       alert("An error occurred during resubmit. Please try again.");
-//     }
-
-//     setOpenCheckResubmitModal(true);
-//   };
-
-// const handleOpenCheckResubmitModal = async () => {
-//   const resubmittableRows = rows.filter(row =>
-//     selectedRowIds.includes(row.Trn_Sap_ID) &&
-//     (row.Approval_Status || "").toLowerCase().trim() === "under query"
-//   );
-
-//   if (resubmittableRows.length === 0) {
-//     alert("No valid 'Under Query' rows selected.");
-//     return;
-//   }
-
-//   try {
-//     let successCount = 0;
-
-//     for (const row of resubmittableRows) {
-//       const resubmitResponse = await getresubmit({
-//         Trn_Sap_ID: row.Trn_Sap_ID,
-//         UserID: UserID,
-//         Action: "Resubmit"
-//       });
-
-//       if (resubmitResponse.success) successCount++;
-//     }
-
-//     if (successCount > 0) {
-//       alert(`${successCount} row(s) resubmitted successfully.`);
-//       getData();  // refresh table
-//     } else {
-//       alert("No rows were successfully resubmitted.");
-//     }
-
-//     setSelectedRowIds([]); // Clear selection
-//     setHeaderChecked(false);
-
-//   } catch (err) {
-//     console.error("Resubmit error:", err);
-//     alert("Error during resubmit.");
-//   }
-// };
 
 
 
@@ -472,32 +274,7 @@ const showResubmitButton = rows.some(row =>
     getData();
   }, []);
 
-  // const handleOpenEditModal = (record) => {
-  //   // Check CostCenterID field exists in rec (adjust property name if needed)
-  //   const costCenterIdFromRecord = record.CostCenterID || record.CostCenter_ID || "";
 
-  //   // Set cost center ID from record or default to first in list if loaded
-  //   if (costCenterIdFromRecord) {
-  //     setCostCenterID(Number(costCenterIdFromRecord));
-  //   } else if (CostCenterTable.length > 0) {
-  //     setCostCenterID(CostCenterTable[0].CostCenter_ID);
-  //   } else {
-  //     setCostCenterID("");
-  //   }
-  //   setMatCode(record.MatCode);
-  //   setTrnSapID(record.TrnSapID);
-  //   setMovementCode(record.MovementCode);
-  //   setQty(record.Qty);
-  //   setSLocID(record.SLocID);
-  //   setCostCenterID(record.CostCenterID || CostCenterTable[0]?.CostCenter_ID || "");
-
-  //   setPrice(record.Price);
-  //   setMovtID(record.MovtID);
-  //   setValuationType(record.ValuationType);
-  //   setReasonForMovt(record.ReasonForMovt);
-  //   setBatch(record.Batch);
-  //   setOpenEditModal(true);
-  // };
 
   // Backend cpnnect to -(get) plant, storage location, material, valuvation
   const get_Plant = async () => {
@@ -640,172 +417,338 @@ const showResubmitButton = rows.some(row =>
   }
 
 
+  // const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
+  //   const wb = XLSX.utils.book_new();
+
+  //   // Column headers for Error Records
+  //   const ErrorColumns = ['Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+  //     'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
+  //   ];
+  //   // Column headers for New Records (based on your columns array)
+  //   const newRecordsColumns = ['Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+  //     'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',];
+  //   // Column headers for Duplicate Records
+  //   const DuplicateColumns = ['Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+  //     'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
+  //   ];
+
+  //   // Filter and map the data for Error Records
+  //   const filteredError = errRecord.map(item => ({
+  //     Plant_Code: item.Plant_Code || '',
+  //     Material_Code: item.Material_Code || '',
+  //     Quantity: item.Quantity || '',
+  //     SLoc_Code: item.SLoc_Code || '',
+  //     CostCenter_Code: item.CostCenter_Code || '',
+  //     Movement_Code: item.Movement_Code || '',
+  //     Valuation_Type: item.Valuation_Type || '',
+  //     Batch: item.Batch || '',
+  //     Rate_Unit: item.Rate_Per_Unit || '',
+  //     Remark: item.Reason_For_Movt || '',
+
+  //     Plant_Code_Validation: item.Plant_Val,
+  //     Plant_Material_Code_Validation: item.Material_Val,
+  //     SLoc_Code_Validation: item.SLoc_Val,
+  //     CostCenter_Code_Validation: item.CostCenter_Val,
+
+  //     Plant_SLoc_Val_Validation: item.Plant_SLoc_Val,
+  //     Plant_CostCenter_Val_Validation: item.Plant_CostCenter_Val,
+  //     Movt_Validation: item.Reason_Val,
+  //     Mst_Valuation_Val: item.Valuation_Val,
+  //     User_Plant_Val: item.User_Plant_Val,
+
+  //   }));
+
+  //   // Filter and map the data for New Records
+  //   const filteredNewData = newRecord.map(item => ({
+  //     Plant_Code: item.Plant_Code || '',
+  //     Material_Code: item.Material_Code || '',
+  //     Quantity: item.Quantity || '',
+  //     SLoc_Code: item.SLoc_Code || '',
+  //     CostCenter_Code: item.CostCenter_Code || '',
+  //     Movement_Code: item.Movement_Code || '',
+  //     Valuation_Type: item.Valuation_Type || '',
+  //     Batch: item.Batch || '',
+  //     Rate_Unit: item.Rate_Per_Unit || '',
+  //     Remark: item.Reason_For_Movt || '',
+
+  //   }));
+
+  //   // Filter and map the data for Duplicate Record
+  //   const filteredUpdate = DuplicateRecord.map(item => ({
+  //     Plant_Code: item.Plant_Code || '',
+  //     Material_Code: item.Material_Code || '',
+  //     Quantity: item.Quantity || '',
+  //     SLoc_Code: item.SLoc_Code || '',
+  //     CostCenter_Code: item.CostCenter_Code || '',
+  //     Movement_Code: item.Movement_Code || '',
+  //     Valuation_Type: item.Valuation_Type || '',
+  //     Batch: item.Batch || '',
+  //     Rate_Unit: item.Rate_Per_Unit || '',
+  //     Remark: item.Reason_For_Movt || '',
+
+
+  //     Plant_Code_Duplicate: item.Plant_Code,
+  //     Material_Code_Duplicate: item.Material_Code,
+  //     CostCenter_Code_Duplicate: item.CostCenter_Code,
+  //   }));
+
+
+  //   // 🔹 Helper to style header cells
+  //   const styleHeaders = (worksheet, columns) => {
+  //     columns.forEach((_, index) => {
+  //       const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+  //       if (worksheet[cellAddress]) {
+  //         worksheet[cellAddress].s = {
+  //           font: { bold: true, color: { rgb: '000000' } },
+  //           fill: { fgColor: { rgb: 'FFFF00' } }, // Yellow background
+  //           alignment: { horizontal: 'center' },
+  //         };
+  //       }
+  //     });
+  //   };
+
+
+  //   // 🔴 Style red text for validation columns only
+  //   const styleValidationColumns = (worksheet, columns, dataLength) => {
+  //     const validationCols = ['Plant_Val', 'Material_Val',
+  //       'SLoc_Val', 'CostCenter_Val', 'Plant_SLoc_Val',
+  //       'Plant_CostCenter_Val', 'Reason_Val',
+  //       'Valuation_Val', 'User_Plant_Val',]
+
+  //     for (let row = 1; row <= dataLength; row++) {
+  //       validationCols.forEach(colName => {
+  //         const colIdx = columns.indexOf(colName);
+  //         if (colIdx === -1) return;
+
+  //         const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+  //         const cell = worksheet[cellAddress];
+
+  //         if (cell && typeof cell.v === 'string') {
+  //           const value = cell.v.trim().toLowerCase();
+
+  //           // Apply green if value is "valid", otherwise red
+  //           cell.s = {
+  //             font: {
+  //               color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' } // green or red
+  //             }
+  //           };
+  //         }
+  //       });
+  //     }
+  //   };
+
+  //   // ✅ Style only specific duplicate columns in gray
+  //   const styleDuplicateRecords = (worksheet, columns, dataLength) => {
+  //     const duplicateCols = ['Plant_Code', 'Material_Code', 'SLoc_Code', 'Material_Code', 'CostCenter_Code']; // 👈 update with actual duplicate column names
+
+  //     for (let row = 1; row <= dataLength; row++) {
+  //       duplicateCols.forEach(colName => {
+  //         const colIdx = columns.indexOf(colName);
+  //         if (colIdx === -1) return; // skip if not found
+
+  //         const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+  //         const cell = worksheet[cellAddress];
+
+  //         if (cell) {
+  //           cell.s = {
+  //             font: { color: { rgb: '808080' } }, // Gray text
+  //             // fill: { fgColor: { rgb: 'E0E0E0' } } // optional background
+  //           };
+  //         }
+  //       });
+  //     }
+  //   };
+
+  //   // Add New Records sheet even if empty data is available
+  //   if (filteredNewData.length === 0) filteredNewData.push({});
+  //   const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, { header: newRecordsColumns });
+  //   styleHeaders(wsNewRecords, newRecordsColumns);
+  //   XLSX.utils.book_append_sheet(wb, wsNewRecords, 'New Records');
+
+
+  //   // Add Error Records sheet  even if empty data is available
+  //   if (filteredError.length === 0) filteredError.push({});
+  //   const wsError = XLSX.utils.json_to_sheet(filteredError, { header: ErrorColumns });
+  //   styleHeaders(wsError, ErrorColumns);
+  //   styleValidationColumns(wsError, ErrorColumns, filteredError.length);
+  //   XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
+
+  //   // Add     Duplicate Records sheet even if empty data is available
+  //   if (filteredUpdate.length === 0) filteredUpdate.push({});
+  //   const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, { header: DuplicateColumns });
+  //   styleDuplicateRecords(wsUpdated, DuplicateColumns, filteredUpdate.length);
+  //   XLSX.utils.book_append_sheet(wb, wsUpdated, 'DuplicateRecords');
+
+
+  //   const fileName = 'Trn201Movt Data UploadLog.xlsx';
+  //   XLSX.writeFile(wb, fileName);
+  // }
+
+
   const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
-    const wb = XLSX.utils.book_new();
+  const wb = XLSX.utils.book_new();
 
-    // Column headers for Error Records
-    const ErrorColumns = ['Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
-      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
+  // Column headers for Error Records
+  const ErrorColumns = [
+    'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+    'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
+    'Plant_Val', 'Material_Val', 'SLoc_Val', 'CostCenter_Val',
+    'Plant_SLoc_Val', 'Plant_CostCenter_Val', 'Reason_Val',
+    'Valuation_Val', 'User_Plant_Val'
+  ];
+
+  // Column headers for New Records
+  const newRecordsColumns = [
+    'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+    'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark'
+  ];
+
+  // Column headers for Duplicate Records
+  const DuplicateColumns = [
+    'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
+    'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark'
+  ];
+
+  // Map Error Records
+  const filteredError = errRecord.map(item => ({
+    Plant_Code: item.Plant_Code || '',
+    Material_Code: item.Material_Code || '',
+    Quantity: item.Quantity || '',
+    SLoc_Code: item.SLoc_Code || '',
+    CostCenter_Code: item.CostCenter_Code || '',
+    Movement_Code: item.Movement_Code || '',
+    Valuation_Type: item.Valuation_Type || '',
+    Batch: item.Batch || '',
+    Rate_Unit: item.Rate_Per_Unit || '',
+    Remark: item.Reason_For_Movt || '',
+    Plant_Val: item.Plant_Val,
+    Material_Val: item.Material_Val,
+    SLoc_Val: item.SLoc_Val,
+    CostCenter_Val: item.CostCenter_Val,
+    Plant_SLoc_Val: item.Plant_SLoc_Val,
+    Plant_CostCenter_Val: item.Plant_CostCenter_Val,
+    Reason_Val: item.Reason_Val,
+    Valuation_Val: item.Valuation_Val,
+    User_Plant_Val: item.User_Plant_Val
+  }));
+
+  // Map New Records
+  const filteredNewData = newRecord.map(item => ({
+    Plant_Code: item.Plant_Code || '',
+    Material_Code: item.Material_Code || '',
+    Quantity: item.Quantity || '',
+    SLoc_Code: item.SLoc_Code || '',
+    CostCenter_Code: item.CostCenter_Code || '',
+    Movement_Code: item.Movement_Code || '',
+    Valuation_Type: item.Valuation_Type || '',
+    Batch: item.Batch || '',
+    Rate_Unit: item.Rate_Per_Unit || '',
+    Remark: item.Reason_For_Movt || ''
+  }));
+
+  // Map Duplicate Records
+  const filteredUpdate = DuplicateRecord.map(item => ({
+    Plant_Code: item.Plant_Code || '',
+    Material_Code: item.Material_Code || '',
+    Quantity: item.Quantity || '',
+    SLoc_Code: item.SLoc_Code || '',
+    CostCenter_Code: item.CostCenter_Code || '',
+    Movement_Code: item.Movement_Code || '',
+    Valuation_Type: item.Valuation_Type || '',
+    Batch: item.Batch || '',
+    Rate_Unit: item.Rate_Per_Unit || '',
+    Remark: item.Reason_For_Movt || ''
+  }));
+
+  // 🔹 Style header cells
+  const styleHeaders = (worksheet, columns) => {
+    columns.forEach((_, index) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+      if (worksheet[cellAddress]) {
+        worksheet[cellAddress].s = {
+          font: { bold: true, color: { rgb: '000000' } },
+          fill: { fgColor: { rgb: 'FFFF00' } },
+          alignment: { horizontal: 'center' }
+        };
+      }
+    });
+  };
+
+  // ✅ Green or ❌ Red for Valid/Invalid fields
+  const styleValidationColumns = (worksheet, columns, dataLength) => {
+    const validationCols = [
+      'Plant_Val', 'Material_Val', 'SLoc_Val', 'CostCenter_Val',
+      'Plant_SLoc_Val', 'Plant_CostCenter_Val', 'Reason_Val',
+      'Valuation_Val', 'User_Plant_Val'
     ];
-    // Column headers for New Records (based on your columns array)
-    const newRecordsColumns = ['Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
-      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',];
-    // Column headers for Duplicate Records
-    const DuplicateColumns = ['Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
-      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
-    ];
 
-    // Filter and map the data for Error Records
-    const filteredError = errRecord.map(item => ({
-      Plant_Code: item.Plant_Code || '',
-      Material_Code: item.Material_Code || '',
-      Quantity: item.Quantity || '',
-      SLoc_Code: item.SLoc_Code || '',
-      CostCenter_Code: item.CostCenter_Code || '',
-      Movement_Code: item.Movement_Code || '',
-      Valuation_Type: item.Valuation_Type || '',
-      Batch: item.Batch || '',
-      Rate_Unit: item.Rate_Per_Unit || '',
-      Remark: item.Reason_For_Movt || '',
+    for (let row = 1; row <= dataLength; row++) {
+      validationCols.forEach(colName => {
+        const colIdx = columns.indexOf(colName);
+        if (colIdx === -1) return;
 
-      Plant_Code_Validation: item.Plant_Val,
-      Plant_Material_Code_Validation: item.Material_Val,
-      SLoc_Code_Validation: item.SLoc_Val,
-      CostCenter_Code_Validation: item.CostCenter_Val,
+        const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+        const cell = worksheet[cellAddress];
 
-      Plant_SLoc_Val_Validation: item.Plant_SLoc_Val,
-      Plant_CostCenter_Val_Validation: item.Plant_CostCenter_Val,
-      Movt_Validation: item.Reason_Val,
-      Mst_Valuation_Val: item.Valuation_Val,
-      User_Plant_Val: item.User_Plant_Val,
-
-    }));
-
-    // Filter and map the data for New Records
-    const filteredNewData = newRecord.map(item => ({
-      Plant_Code: item.Plant_Code || '',
-      Material_Code: item.Material_Code || '',
-      Quantity: item.Quantity || '',
-      SLoc_Code: item.SLoc_Code || '',
-      CostCenter_Code: item.CostCenter_Code || '',
-      Movement_Code: item.Movement_Code || '',
-      Valuation_Type: item.Valuation_Type || '',
-      Batch: item.Batch || '',
-      Rate_Unit: item.Rate_Per_Unit || '',
-      Remark: item.Reason_For_Movt || '',
-
-    }));
-
-    // Filter and map the data for Duplicate Record
-    const filteredUpdate = DuplicateRecord.map(item => ({
-      Plant_Code: item.Plant_Code || '',
-      Material_Code: item.Material_Code || '',
-      Quantity: item.Quantity || '',
-      SLoc_Code: item.SLoc_Code || '',
-      CostCenter_Code: item.CostCenter_Code || '',
-      Movement_Code: item.Movement_Code || '',
-      Valuation_Type: item.Valuation_Type || '',
-      Batch: item.Batch || '',
-      Rate_Unit: item.Rate_Per_Unit || '',
-      Remark: item.Reason_For_Movt || '',
-
-
-      Plant_Code_Duplicate: item.Plant_Code,
-      Material_Code_Duplicate: item.Material_Code,
-      CostCenter_Code_Duplicate: item.CostCenter_Code,
-    }));
-
-
-    // 🔹 Helper to style header cells
-    const styleHeaders = (worksheet, columns) => {
-      columns.forEach((_, index) => {
-        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-        if (worksheet[cellAddress]) {
-          worksheet[cellAddress].s = {
-            font: { bold: true, color: { rgb: '000000' } },
-            fill: { fgColor: { rgb: 'FFFF00' } }, // Yellow background
-            alignment: { horizontal: 'center' },
+        if (cell && typeof cell.v === 'string') {
+          const value = cell.v.trim().toLowerCase();
+          cell.s = {
+            font: {
+              color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' } // green or red
+            }
           };
         }
       });
-    };
+    }
+  };
 
+// 🔁 Style duplicate columns with red background and gray text
+const styleDuplicateRecords = (worksheet, columns, dataLength) => {
+  const duplicateCols = ['Plant_Code', 'Material_Code', 'Quantity', 'Movement_Code']; // updated
 
-    // 🔴 Style red text for validation columns only
-    const styleValidationColumns = (worksheet, columns, dataLength) => {
-      const validationCols = ['Plant_Val', 'Material_Val',
-        'SLoc_Val', 'CostCenter_Val', 'Plant_SLoc_Val',
-        'Plant_CostCenter_Val', 'Reason_Val',
-        'Valuation_Val', 'User_Plant_Val',]
+  for (let row = 1; row <= dataLength; row++) {
+    duplicateCols.forEach(colName => {
+      const colIdx = columns.indexOf(colName);
+      if (colIdx === -1) return;
 
-      for (let row = 1; row <= dataLength; row++) {
-        validationCols.forEach(colName => {
-          const colIdx = columns.indexOf(colName);
-          if (colIdx === -1) return;
+      const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+      const cell = worksheet[cellAddress];
 
-          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-          const cell = worksheet[cellAddress];
-
-          if (cell && typeof cell.v === 'string') {
-            const value = cell.v.trim().toLowerCase();
-
-            // Apply green if value is "valid", otherwise red
-            cell.s = {
-              font: {
-                color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' } // green or red
-              }
-            };
-          }
-        });
+      if (cell) {
+        cell.s = {
+          font: { color: { rgb: '808080' } }, // gray text
+          fill: { fgColor: { rgb: 'FFE0E0' } } // light red background
+        };
       }
-    };
-
-    // ✅ Style only specific duplicate columns in gray
-    const styleDuplicateRecords = (worksheet, columns, dataLength) => {
-      const duplicateCols = ['Plant_Code', 'Material_Code', 'SLoc_Code', 'Material_Code', 'CostCenter_Code']; // 👈 update with actual duplicate column names
-
-      for (let row = 1; row <= dataLength; row++) {
-        duplicateCols.forEach(colName => {
-          const colIdx = columns.indexOf(colName);
-          if (colIdx === -1) return; // skip if not found
-
-          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-          const cell = worksheet[cellAddress];
-
-          if (cell) {
-            cell.s = {
-              font: { color: { rgb: '808080' } }, // Gray text
-              // fill: { fgColor: { rgb: 'E0E0E0' } } // optional background
-            };
-          }
-        });
-      }
-    };
-
-    // Add New Records sheet even if empty data is available
-    if (filteredNewData.length === 0) filteredNewData.push({});
-    const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, { header: newRecordsColumns });
-    styleHeaders(wsNewRecords, newRecordsColumns);
-    XLSX.utils.book_append_sheet(wb, wsNewRecords, 'New Records');
-
-
-    // Add Error Records sheet  even if empty data is available
-    if (filteredError.length === 0) filteredError.push({});
-    const wsError = XLSX.utils.json_to_sheet(filteredError, { header: ErrorColumns });
-    styleHeaders(wsError, ErrorColumns);
-    styleValidationColumns(wsError, ErrorColumns, filteredError.length);
-    XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
-
-    // Add     Duplicate Records sheet even if empty data is available
-    if (filteredUpdate.length === 0) filteredUpdate.push({});
-    const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, { header: DuplicateColumns });
-    styleDuplicateRecords(wsUpdated, DuplicateColumns, filteredUpdate.length);
-    XLSX.utils.book_append_sheet(wb, wsUpdated, 'DuplicateRecords');
-
-
-    const fileName = 'Trn201Movt Data UploadLog.xlsx';
-    XLSX.writeFile(wb, fileName);
+    });
   }
+};
+
+
+  // Sheet: New Records
+  if (filteredNewData.length === 0) filteredNewData.push({});
+  const wsNew = XLSX.utils.json_to_sheet(filteredNewData, { header: newRecordsColumns });
+  styleHeaders(wsNew, newRecordsColumns);
+  XLSX.utils.book_append_sheet(wb, wsNew, 'New Records');
+
+  // Sheet: Error Records
+  if (filteredError.length === 0) filteredError.push({});
+  const wsError = XLSX.utils.json_to_sheet(filteredError, { header: ErrorColumns });
+  styleHeaders(wsError, ErrorColumns);
+  styleValidationColumns(wsError, ErrorColumns, filteredError.length);
+  XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
+
+  // Sheet: Duplicate Records
+  if (filteredUpdate.length === 0) filteredUpdate.push({});
+  const wsDup = XLSX.utils.json_to_sheet(filteredUpdate, { header: DuplicateColumns });
+  styleHeaders(wsDup, DuplicateColumns);
+  styleDuplicateRecords(wsDup, DuplicateColumns, filteredUpdate.length);
+  XLSX.utils.book_append_sheet(wb, wsDup, 'Duplicate Records');
+
+  // Save File
+  const fileName = 'Trn201Movt Data UploadLog.xlsx';
+  XLSX.writeFile(wb, fileName);
+};
 
   const handleDownloadExcel = (selectedRow) => {
     if (!selectedRow) {
