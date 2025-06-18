@@ -101,7 +101,7 @@ export const Edit201Record = async (data) => {
 
 
 export const getresubmit = async (data) => {
-  const response = await axios.post(`${api}/Movement201/HandleResubmitAction`, data);
+  const response = await axios.post(`${api}/Movement201/HandleResubmitAction201`, data);
   
   return response.data;
 };
