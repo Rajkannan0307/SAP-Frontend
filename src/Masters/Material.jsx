@@ -126,13 +126,13 @@ const Material = () => {
   }, []);
 
 
-useEffect(() => {
-  if (PlantCode) {
-    get_SupvCode();
-  } else {
-    setSupvTable([]); // reset supervisor list if PlantCode is cleared
-  }
-}, [PlantCode]);
+// useEffect(() => {
+//   if (PlantCode) {
+//     get_SupvCode();
+//   } else {
+//     setSupvTable([]); // reset supervisor list if PlantCode is cleared
+//   }
+// }, [PlantCode]);
 
 
   const get_Plant = async () => {
@@ -152,15 +152,28 @@ useEffect(() => {
       console.error("Error updating user:", error);
     }
   };
+  useEffect(() => {
+    if (PlantCode && PlantCode !== '') {
+      get_SupvCode();
+    } else {
+      setSupvTable([]);
+    }
+  }, [PlantCode]);
+  
   const get_SupvCode = async () => {
-  try {
-    const response = await getSupvCode(PlantCode);
-    console.log("👉 SupvTable data:", response.data); // 👈 Check here
-    setSupvTable(response.data);
-  } catch (error) {
-    console.error("❌ Error fetching supervisors:", error);
-  }
-};
+    try {
+      if (!PlantCode || PlantCode === '') {
+        console.warn("⚠️ No valid PlantCode provided.");
+        return;
+      }
+  
+      const response = await getSupvCode(PlantCode);
+      console.log("👉 SupvTable data:", response.data);
+      setSupvTable(response.data);
+    } catch (error) {
+      console.error("❌ Error fetching supervisors:", error);
+    }
+  };
 
 
   // ✅ Custom Toolbar
@@ -722,24 +735,23 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
               ))}
             </Select>
           </FormControl>
- <FormControl fullWidth>
-  <InputLabel>Supervisor Code</InputLabel>
-  <Select
-    label="Supervisor Code"
-    name="Supervisor Code"
-    value={Supv_Code}
-    onChange={(e) => setSupv_Code(e.target.value)}
-    required
-  >
-    {SupvTable
-      .filter(item => item.Plant_ID === PlantCode)  // or === parseInt(PlantCode)
-      .map((item) => (
-        <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
-          {item.Sup_Code}
-        </MenuItem>
-      ))}
-  </Select>
-</FormControl>
+  <FormControl fullWidth>
+             <InputLabel>Supervisor Code</InputLabel>
+             <Select
+               label="Supervisor Code"
+               name="Supervisor Code"
+               value={Supv_Code}
+               onChange={(e) => setSupv_Code(e.target.value)}
+               required
+             >
+               {SupvTable.filter((item) => item.Plant_ID === PlantCode) // or === parseInt(PlantCode)
+                 .map((item) => (
+                   <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
+                     {item.Sup_Code}-{item.Sup_Name}
+                   </MenuItem>
+                 ))}
+             </Select>
+           </FormControl>
 
 
           <TextField

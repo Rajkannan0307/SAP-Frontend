@@ -91,23 +91,28 @@ const StorageLocation = () => {
   }, []);
 
 useEffect(() => {
-  if (PlantCode) {
-    get_SupvCode();        // Load supervisor codes
-    setSupv_Code('');      // Reset selected supervisor
+  if (PlantCode && PlantCode !== '') {
+    get_SupvCode();
   } else {
-    setSupvTable([]);      // Clear the table if no plant
+    setSupvTable([]);
   }
 }, [PlantCode]);
 
- const get_SupvCode = async () => {
+const get_SupvCode = async () => {
   try {
+    if (!PlantCode || PlantCode === '') {
+      console.warn("⚠️ No valid PlantCode provided.");
+      return;
+    }
+
     const response = await getSupvCode(PlantCode);
-    console.log("👉 SupvTable data:", response.data); // 👈 Check here
+    console.log("👉 SupvTable data:", response.data);
     setSupvTable(response.data);
   } catch (error) {
     console.error("❌ Error fetching supervisors:", error);
   }
 };
+
   const get_Plant = async () => {
       try {
         const response = await getPlants();
@@ -161,7 +166,7 @@ useEffect(() => {
     setStorageCode(params.row.Storage_Code);
     setStorageName(params.row.SLoc_Name);
     setActiveStatus(params.row.Active_Status);
-       setSupv_Code(params.row.Sup_Code);
+    setSupv_Code(params.row.Sup_Code);
     setOpenEditModal(true); // Open the modal
   };
 
@@ -525,7 +530,7 @@ useEffect(() => {
                 .filter(item => item.Plant_ID=== PlantCode)  // or === parseInt(PlantCode)
                 .map((item) => (
                   <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
-                    {item.Sup_Code}
+                    {item.Sup_Code}-{item.Sup_Name}
                   </MenuItem>
                 ))}
             </Select>

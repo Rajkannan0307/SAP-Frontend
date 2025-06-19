@@ -25,11 +25,11 @@ export const getAdd = async (data) => {
     const response = await axios.get(`${api}/LineMaster/Get_Department`);
     return response;
   };
-  export const getSupvCode = async (PlantCode)=>{
-
-  const response = await axios.get(`${api}/LineMaster/Get_SupvCode?PlantCode=${PlantCode}`);
+export const getSupvCode = async (Plant_ID) => {
+  const response = await axios.get(`${api}/LineMaster/Get_SupvCode?Plant_ID=${Plant_ID}`);
   return response;
 };
+
 export const getModule = async ()=>{
 
     const response = await axios.get(`${api}/LineMaster/Get_Module`);
