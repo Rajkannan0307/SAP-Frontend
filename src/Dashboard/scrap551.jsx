@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { TextField,Button,Modal,Box,IconButton,Typography,} from "@mui/material";
+import { TextField, Button, Modal, Box, IconButton, Typography, } from "@mui/material";
 import { FaDownload } from "react-icons/fa";
 import { deepPurple } from '@mui/material/colors';
 
 import {
-  Table,TableHead,TableRow,TableCell,TableBody, InputLabel,
+  Table, TableHead, TableRow, TableCell, TableBody, InputLabel,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { decryptSessionData } from "../controller/StorageUtils"
@@ -24,7 +24,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from 'sheetjs-style';
 import {
-  Movement551, getresubmit,  getTransactionData, getdetails, getPlants,getMaterial, getSLoc,
+  Movement551, getresubmit, getTransactionData, getdetails, getPlants, getMaterial, getSLoc,
   getMovement, getReasonForMovement, getCostCenter, getValuationType, get551ApprovalView, Edit551Record,
 } from "../controller/Movement551apiservice";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -33,7 +33,7 @@ import { api } from "../controller/constants";
 const Scrap551 = () => {
 
   const [searchText, setSearchText] = useState("");
-  const [rows, setRows] = useState([]); 
+  const [rows, setRows] = useState([]);
   const [originalRows, setOriginalRows] = useState([]);
   const [openUploadModal, setOpenUploadModal] = useState(false);
   const [openExcelDownloadModal, setOpenExcelDownloadModal] = useState(false);
@@ -78,13 +78,10 @@ const Scrap551 = () => {
   const [Batch, setBatch] = useState("");
   const [MatCode, setMatCode] = useState('');
   const [Price, setPrice] = useState("");
-  const [Date, setDate] = useState("");
   const [items, setItems] = useState([]);
   //click resubmit
   const [openChickResubmitModal, setOpenCheckResubmitModal] = useState(false);
-  const [selectedRows, setSelectedRows] = useState({}); // Store selected checkboxes by row ID
   // Store header checkbox state
-  const [checked, setChecked] = useState(false);
   const [selectedRowIds, setSelectedRowIds] = useState([]);
   const [headerChecked, setHeaderChecked] = useState(false);
 
@@ -140,7 +137,7 @@ const Scrap551 = () => {
 
 
 
-// check box select and re submit
+  // check box select and re submit
   const handleOpenCheckResubmitModal = async () => {
     if (!selectedRowIds || selectedRowIds.length === 0) {
       alert("Please select at least one row to resubmit.");
@@ -348,117 +345,86 @@ const Scrap551 = () => {
     getData();
     handleCloseUploadModal();
   }
-//download the new error duplicate for the upload data
-  const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
+
+  const downloadExcel = (newRecord = [], DuplicateRecord = [], errRecord = []) => {
     const wb = XLSX.utils.book_new();
 
-    // Column headers for Error Records
-    const ErrorColumns = [
-      'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
-      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
+    // --- Column Headers ---
+    const commonHeaders = [
+      'Plant_Code', 'Material_Code', 'SLoc_Code', 'Reason_For_Movt',
+      'Movement_Code', 'Rejection_Qty', 'Provision_Qty',
+      'Provision_Value', 'Rate', 'Remark'
+    ];
+
+    const errorHeaders = [
+      ...commonHeaders,
       'Plant_Val', 'Material_Val', 'SLoc_Val', 'CostCenter_Val',
       'Plant_SLoc_Val', 'Plant_CostCenter_Val', 'Reason_Val',
       'Valuation_Val', 'User_Plant_Val'
     ];
 
-    // Column headers for New Records
-    const newRecordsColumns = [
-      'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
-      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark'
-    ];
-
-    // Column headers for Duplicate Records
-    const DuplicateColumns = [
-      'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
-      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark'
-    ];
-
-    // Map Error Records
-    const filteredError = errRecord.map(item => ({
+    // --- Format functions ---
+    const formatRecord = (item) => ({
       Plant_Code: item.Plant_Code || '',
       Material_Code: item.Material_Code || '',
-      Quantity: item.Quantity || '',
       SLoc_Code: item.SLoc_Code || '',
-      CostCenter_Code: item.CostCenter_Code || '',
+      Reason_For_Movt: item.Reason_For_Movt || '',
       Movement_Code: item.Movement_Code || '',
-      Valuation_Type: item.Valuation_Type || '',
-      Batch: item.Batch || '',
-      Rate_Unit: item.Rate_Per_Unit || '',
-      Remark: item.Reason_For_Movt || '',
-      Plant_Val: item.Plant_Val,
-      Material_Val: item.Material_Val,
-      SLoc_Val: item.SLoc_Val,
-      CostCenter_Val: item.CostCenter_Val,
-      Plant_SLoc_Val: item.Plant_SLoc_Val,
-      Plant_CostCenter_Val: item.Plant_CostCenter_Val,
-      Reason_Val: item.Reason_Val,
-      Valuation_Val: item.Valuation_Val,
-      User_Plant_Val: item.User_Plant_Val
-    }));
+      Rejection_Qty: item.Rejection_Qty || '',
+      Provision_Qty: item.Provision_Qty || '',
+      Provision_Value: item.Provision_Value || '',
+      Rate: item.Rate || '',
+      Remark: item.Remark || item.Remarks || ''
+    });
 
-    // Map New Records
-    const filteredNewData = newRecord.map(item => ({
-      Plant_Code: item.Plant_Code || '',
-      Material_Code: item.Material_Code || '',
-      Quantity: item.Quantity || '',
-      SLoc_Code: item.SLoc_Code || '',
-      CostCenter_Code: item.CostCenter_Code || '',
-      Movement_Code: item.Movement_Code || '',
-      Valuation_Type: item.Valuation_Type || '',
-      Batch: item.Batch || '',
-      Rate_Unit: item.Rate_Per_Unit || '',
-      Remark: item.Reason_For_Movt || ''
-    }));
+    const formatErrorRecord = (item) => ({
+      ...formatRecord(item),
+      Plant_Val: item.Plant_Val || '',
+      Material_Val: item.Material_Val || '',
+      SLoc_Val: item.SLoc_Val || '',
+      CostCenter_Val: item.CostCenter_Val || '',
+      Plant_SLoc_Val: item.Plant_SLoc_Val || '',
+      Plant_CostCenter_Val: item.Plant_CostCenter_Val || '',
+      Reason_Val: item.Reason_Val || '',
+      Valuation_Val: item.Valuation_Val || '',
+      User_Plant_Val: item.User_Plant_Val || ''
+    });
 
-    // Map Duplicate Records
-    const filteredUpdate = DuplicateRecord.map(item => ({
-      Plant_Code: item.Plant_Code || '',
-      Material_Code: item.Material_Code || '',
-      Quantity: item.Quantity || '',
-      SLoc_Code: item.SLoc_Code || '',
-      CostCenter_Code: item.CostCenter_Code || '',
-      Movement_Code: item.Movement_Code || '',
-      Valuation_Type: item.Valuation_Type || '',
-      Batch: item.Batch || '',
-      Rate_Unit: item.Rate_Per_Unit || '',
-      Remark: item.Reason_For_Movt || ''
-    }));
+    const newData = newRecord.map(formatRecord);
+    const dupData = DuplicateRecord.map(formatRecord);
+    const errData = errRecord.map(formatErrorRecord);
 
-    // 🔹 Style header cells
-    const styleHeaders = (worksheet, columns) => {
-      columns.forEach((_, index) => {
-        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-        if (worksheet[cellAddress]) {
-          worksheet[cellAddress].s = {
-            font: { bold: true, color: { rgb: '000000' } },
-            fill: { fgColor: { rgb: 'FFFF00' } },
+    // --- Style Functions ---
+    const styleHeaders = (ws, headers) => {
+      headers.forEach((_, colIdx) => {
+        const cell = ws[XLSX.utils.encode_cell({ c: colIdx, r: 0 })];
+        if (cell) {
+          cell.s = {
+            font: { bold: true },
+            fill: { fgColor: { rgb: 'FFFF99' } }, // Yellow
             alignment: { horizontal: 'center' }
           };
         }
       });
     };
 
-    // ✅ Green or ❌ Red for Valid/Invalid fields
-    const styleValidationColumns = (worksheet, columns, dataLength) => {
+    const styleValidationColumns = (ws, headers, rowCount) => {
       const validationCols = [
         'Plant_Val', 'Material_Val', 'SLoc_Val', 'CostCenter_Val',
         'Plant_SLoc_Val', 'Plant_CostCenter_Val', 'Reason_Val',
         'Valuation_Val', 'User_Plant_Val'
       ];
 
-      for (let row = 1; row <= dataLength; row++) {
-        validationCols.forEach(colName => {
-          const colIdx = columns.indexOf(colName);
-          if (colIdx === -1) return;
-
-          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-          const cell = worksheet[cellAddress];
-
+      for (let r = 1; r <= rowCount; r++) {
+        validationCols.forEach(col => {
+          const c = headers.indexOf(col);
+          if (c === -1) return;
+          const cell = ws[XLSX.utils.encode_cell({ c, r })];
           if (cell && typeof cell.v === 'string') {
-            const value = cell.v.trim().toLowerCase();
+            const val = cell.v.trim().toLowerCase();
             cell.s = {
               font: {
-                color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' } // green or red
+                color: { rgb: val === 'valid' ? '2E7D32' : 'FF0000' } // green/red
               }
             };
           }
@@ -466,53 +432,46 @@ const Scrap551 = () => {
       }
     };
 
-    // 🔁 Style duplicate columns with red background and gray text
-    const styleDuplicateRecords = (worksheet, columns, dataLength) => {
-      const duplicateCols = ['Plant_Code', 'Material_Code', 'Quantity', 'Movement_Code']; // updated
+    const styleDuplicateColumns = (ws, headers, rowCount) => {
+      const dupCols = ['Plant_Code', 'Material_Code', 'Rejection_Qty', 'Movement_Code'];
 
-      for (let row = 1; row <= dataLength; row++) {
-        duplicateCols.forEach(colName => {
-          const colIdx = columns.indexOf(colName);
-          if (colIdx === -1) return;
-
-          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-          const cell = worksheet[cellAddress];
-
+      for (let r = 1; r <= rowCount; r++) {
+        dupCols.forEach(col => {
+          const c = headers.indexOf(col);
+          if (c === -1) return;
+          const cell = ws[XLSX.utils.encode_cell({ c, r })];
           if (cell) {
             cell.s = {
-              font: { color: { rgb: '808080' } }, // gray text
-              fill: { fgColor: { rgb: 'FFE0E0' } } // light red background
+              font: { color: { rgb: '808080' } },
+              fill: { fgColor: { rgb: 'FFE0E0' } }
             };
           }
         });
       }
     };
 
-
-    // Sheet: New Records
-    if (filteredNewData.length === 0) filteredNewData.push({});
-    const wsNew = XLSX.utils.json_to_sheet(filteredNewData, { header: newRecordsColumns });
-    styleHeaders(wsNew, newRecordsColumns);
+    // --- New Records Sheet ---
+    const wsNew = XLSX.utils.json_to_sheet(newData.length ? newData : [{}], { header: commonHeaders });
+    styleHeaders(wsNew, commonHeaders);
     XLSX.utils.book_append_sheet(wb, wsNew, 'New Records');
 
-    // Sheet: Error Records
-    if (filteredError.length === 0) filteredError.push({});
-    const wsError = XLSX.utils.json_to_sheet(filteredError, { header: ErrorColumns });
-    styleHeaders(wsError, ErrorColumns);
-    styleValidationColumns(wsError, ErrorColumns, filteredError.length);
-    XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
+    // --- Error Records Sheet ---
+    const wsErr = XLSX.utils.json_to_sheet(errData.length ? errData : [{}], { header: errorHeaders });
+    styleHeaders(wsErr, errorHeaders);
+    styleValidationColumns(wsErr, errorHeaders, errData.length);
+    XLSX.utils.book_append_sheet(wb, wsErr, 'Error Records');
 
-    // Sheet: Duplicate Records
-    if (filteredUpdate.length === 0) filteredUpdate.push({});
-    const wsDup = XLSX.utils.json_to_sheet(filteredUpdate, { header: DuplicateColumns });
-    styleHeaders(wsDup, DuplicateColumns);
-    styleDuplicateRecords(wsDup, DuplicateColumns, filteredUpdate.length);
+    // --- Duplicate Records Sheet ---
+    const wsDup = XLSX.utils.json_to_sheet(dupData.length ? dupData : [{}], { header: commonHeaders });
+    styleHeaders(wsDup, commonHeaders);
+    styleDuplicateColumns(wsDup, commonHeaders, dupData.length);
     XLSX.utils.book_append_sheet(wb, wsDup, 'Duplicate Records');
 
-    // Save File
-    const fileName = 'Trn551Movt Data UploadLog.xlsx';
-    XLSX.writeFile(wb, fileName);
+    // --- Save File ---
+    XLSX.writeFile(wb, 'Trn551Movt Data UploadLog.xlsx');
   };
+
+
 
   useEffect(() => {
   }, [openRowEditModal]);
@@ -545,15 +504,14 @@ const Scrap551 = () => {
       setMatCode(params.row.Material_Code);
       setQty(params.row.Qty);
       setPrice(params.row.Rate_PerPart);
-      setCostCenterID(params.row.CostCenter_ID);
       setSLocID(params.row.SLoc_Code);
       setMovtID(params.row.Movement_Code);
       setValuationType(params.row.Valuation_Type);
-      setReasonForMovement(params.row.Remarks);
+      setReasonForMovement(params.row.ReasonForMovement);
       setBatch(params.row.Batch);
       setSelectedRow(params.row);
       setOpenRowEditModal(true);
-      setReasonForMovement(String(params.row.Remarks));
+      setReasonForMovement(String(params.row.ReasonForMovement));
       setCostCenterID(String(params.row.CostCenter_ID));
     }
   };
@@ -575,21 +533,28 @@ const Scrap551 = () => {
 
   //✅ DataGrid Columns with Edit & Delete Buttons
 
-  const columns = [
-    { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
-    { field: "Doc_ID", headerName: "Doc ID", flex: 1 },
-    { field: "Date", headerName: "Date", flex: 1 },
-    { field: "Material_Code", headerName: "Material Code", flex: 1 },
-    { field: "Qty", headerName: "Qty", flex: 1 },
-    { field: "Movement_Code", headerName: "Movement Type", flex: 1 },
-    { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
-    {
-      field: "actions",
-      headerName: "Actions",
-      flex: 1,
-      sortable: false,
-      editable: false,
-      disableColumnMenu: true,
+
+const columns = [
+  { field: "Plant_Code", headerName: "Plant Code", width: 100 },
+  { field: "Doc_ID", headerName: "Doc ID", width: 70 },
+  { field: "Date", headerName: "Date", width: 100 },
+  { field: "Material_Code", headerName: "Material Code", width: 125 },
+  { field: "Rejection_Qty", headerName: "Rejection Qty", width: 125 },
+  { field: "Provision_Qty", headerName: "Provision Qty", width: 125 },
+  { field: "Rate_PerPart", headerName: "Rate", width: 58 },
+  { field: "Rejection_Value", headerName: "Rejection Value", width: 135 },
+  { field: "Provision_Value", headerName: "Provision Value", width: 135 },
+  { field: "Movement_Code", headerName: "Movement Type", width: 135 },
+  { field: "Difference_Qty", headerName: "Different Qty", width: 125 },
+  { field: "Difference_Value", headerName: "Different Value", width: 130 },
+  { field: "Approval_Status", headerName: "Approval Status", width: 140 },
+  {
+    field: "actions",
+    headerName: "Actions",
+    width: 173,
+    sortable: false,
+    editable: false,
+    disableColumnMenu: true,
       renderHeader: () => {
         const selectableRows = rows.filter((row) => {
           const status = row.Approval_Status?.toLowerCase().trim();
@@ -633,7 +598,6 @@ const Scrap551 = () => {
       renderCell: (params) => {
         const row = params.row;
         const status = row.Approval_Status?.toLowerCase().trim();
-        // const isSelectable = status === "rejected" || status === "under query";
         const isSelectable = status === "under query";
 
         const isChecked = selectedRowIds.includes(row.Trn_Sap_ID);
@@ -761,7 +725,6 @@ const Scrap551 = () => {
       setMatCode(selectedRow.Material_Code);
       setQty(selectedRow.Qty);
       setSLocID(selectedRow.SLoc_Code);
-      setCostCenterCode(selectedRow.CostCenter_Code);  // <-- set cost center code here
       setPrice(selectedRow.Rate_PerPart);
       setValuationType(selectedRow.Valuation_Type);
       setBatch(selectedRow.Batch);
@@ -928,18 +891,20 @@ const Scrap551 = () => {
       {/* ✅ DataGrid */}
       <div
         style={{
-          flexGrow: 1,  // Ensures it grows to fill the remaining space
+          width: "100%",       // Use full container width
+          maxWidth: "17200px",  // Prevent overflow on large screens
+          margin: "0 auto",    // Center horizontally
           backgroundColor: "#fff",
           borderRadius: 8,
           boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-          height: "500px"
+          height: "600px",
         }}
       >
         <DataGrid
           rows={rows}
           columns={columns}
           pageSize={5}
-          getRowId={(row) => row.Trn_Sap_ID} // Ensure Trn_Sap_ID is unique and exists
+          getRowId={(row) => row.Trn_Sap_ID}
           rowsPerPageOptions={[5]}
           onRowClick={handleConditionalRowClick}
           disableSelectionOnClick
@@ -950,7 +915,6 @@ const Scrap551 = () => {
             }
           }}
           sx={{
-            // Header Style
             "& .MuiDataGrid-columnHeader": {
               backgroundColor: "#bdbdbd",
               color: "black",
@@ -958,19 +922,16 @@ const Scrap551 = () => {
             },
             "& .MuiDataGrid-columnHeaderTitle": {
               fontSize: "16px",
-              //fontWeight: "bold",
             },
             "& .MuiDataGrid-row": {
-              backgroundColor: "#f5f5f5", // Default row background
+              backgroundColor: "#f5f5f5",
               "&:hover": {
                 backgroundColor: "#f5f5f5",
               },
             },
-            // ✅ Remove Selected Row Background
             "& .MuiDataGrid-row.Mui-selected": {
-              backgroundColor: "inherit", // No background on selection
+              backgroundColor: "inherit",
             },
-
             "& .MuiDataGrid-cell": {
               color: "#333",
               fontSize: "14px",
@@ -978,6 +939,8 @@ const Scrap551 = () => {
           }}
         />
       </div>
+
+
       {/* upload modal */}
       <Modal open={openUploadModal} onClose={handleCloseUploadModal}>
         <Box
@@ -1132,35 +1095,39 @@ const Scrap551 = () => {
                 'Level 2 - Plant MRPC',
                 'Level 3 - Plant Head',
                 'Level 4 - Corp Finance Head',
-                'Level 5 - Corp MRPC',
-              ].map((displayRole, idx) => {
-                // Map frontend display role to backend role string
-                const roleMap = {
-                  'Requester': 'Requester',
-                  'Level 1 - Plant Finance Head': 'Plant Finance Head',
-                  'Level 2 - Plant MRPC': 'Plant MRPC',
-                  'Level 3 - Plant Head': 'Plant Head',
-                  'Level 4 - Corp Finance Head': 'Corp Finance Head',
-                  'Level 5 - Corp MRPC': 'Corp MRPC',
-                };
+                'Level 5 - Business Head',
+                'Level 6 - Corp MRPC',
+              ]
+                .map((displayRole, idx) => {
+                  // Map frontend display role to backend role string
 
-                const backendRole = roleMap[displayRole];
+                  const roleMap = {
+                    'Requester': 'Requester',
+                    'Level 1 - Plant Finance Head': 'Plant Finance Head',
+                    'Level 2 - Plant MRPC': 'Plant MRPC',
+                    'Level 3 - Plant Head': 'Plant Head',
+                    'Level 4 - Corp Finance Head': 'Corp Finance Head',
+                    'Level 5 - Business Head': 'Business Head',
+                    'Level 6 - Corp MRPC': 'Corp MRPC',
+                  };
 
-                // Find matching row from backend data, case insensitive match
-                const row = viewStatusData.find(
-                  r => r.Role?.toLowerCase() === backendRole.toLowerCase()
-                ) || {};
+                  const backendRole = roleMap[displayRole];
 
-                return (
-                  <TableRow key={idx} sx={{ border: '1px solid #555555' }}>
-                    <TableCell sx={{ border: '1px solid #555555' }}>{displayRole}</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_Date || '—'}</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_By || '—'}</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Approver_Comment || '—'}</TableCell>
-                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Status || '—'}</TableCell>
-                  </TableRow>
-                );
-              })}
+                  // Find matching row from backend data, case insensitive match
+                  const row = viewStatusData.find(
+                    r => r.Role?.toLowerCase() === backendRole.toLowerCase()
+                  ) || {};
+
+                  return (
+                    <TableRow key={idx} sx={{ border: '1px solid #555555' }}>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{displayRole}</TableCell>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_Date || '—'}</TableCell>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_By || '—'}</TableCell>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Approver_Comment || '—'}</TableCell>
+                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Status || '—'}</TableCell>
+                    </TableRow>
+                  );
+                })}
             </TableBody>
           </Table>
 
@@ -1249,16 +1216,6 @@ const Scrap551 = () => {
             </Select>
           </FormControl>
 
-          {/* Quantity */}
-          <TextField
-            label="Quantity"
-            type="number"
-            value={Qty}
-            onChange={e => setQty(Number(e.target.value))}
-            fullWidth
-            {...compactFieldProps}
-          />
-
           {/* Storage Location */}
           <FormControl fullWidth size="small">
             <InputLabel id="sloc-label">SLoc Code</InputLabel>
@@ -1276,24 +1233,71 @@ const Scrap551 = () => {
             </Select>
           </FormControl>
 
-          {/* Cost Center */}
-          <FormControl fullWidth size="small">
-            <InputLabel id="costcenter-label">Cost Center</InputLabel>
-            <Select
-              labelId="costcenter-label"
-              label="Cost Center"
-              value={CostCenterCode || ""}
-              onChange={(e) => setCostCenterCode(e.target.value)} // Note: Don't use Number()
-            >
-              {CostCenterTable.map(item => (
-                <MenuItem key={item.CostCenter_ID} value={item.CostCenter_Code}>
-                  {item.CostCenter_Code}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
 
-          {/* Price */}
+
+          {/*Rejection_Qty  Quantity */}
+          <TextField
+            label="Rejection Qty"
+            type="number"
+            value={Qty}
+            onChange={e => setQty(Number(e.target.value))}
+            fullWidth
+            {...compactFieldProps}
+          />
+
+          {/* Provision_Qty Quantity */}
+          <TextField
+            label="Provision Qty"
+            type="number"
+            // value={Qty}
+            onChange={e => setQty(Number(e.target.value))}
+            fullWidth
+            {...compactFieldProps}
+          />
+
+          {/* Diffrent  Quantity */}
+          <TextField
+            label="Different Qty"
+            //type="number"
+            // value={Qty}
+            // onChange={e => setQty(Number(e.target.value))}
+            fullWidth
+            {...compactFieldProps}
+          />
+
+          {/* Diffrent Value   */}
+          <TextField
+            label="Different Value"
+            type="number"
+            // value={Price}
+            // onChange={e => setPrice(Number(e.target.value))}
+            fullWidth
+            {...compactFieldProps}
+          />
+
+          {/* Rejection Value   */}
+          <TextField
+            label="Rejection Value"
+            type="number"
+            // value={Price}
+            // onChange={e => setPrice(Number(e.target.value))}
+            fullWidth
+            {...compactFieldProps}
+          />
+
+
+          {/* Provision Value   */}
+          <TextField
+            label="Provision Value"
+            type="number"
+            // value={Price}
+            // onChange={e => setPrice(Number(e.target.value))}
+            fullWidth
+            {...compactFieldProps}
+          />
+
+
+          {/* Rate   -  Price */}
           <TextField
             label="Price"
             type="number"
@@ -1302,23 +1306,6 @@ const Scrap551 = () => {
             fullWidth
             {...compactFieldProps}
           />
-
-          {/* Valuation Type */}
-          <FormControl fullWidth size="small">
-            <InputLabel id="valuation-label">Valuation Type</InputLabel>
-            <Select
-              labelId="valuation-label"
-              label="Valuation Type"
-              value={ValuationType}
-              onChange={e => setValuationType(e.target.value)}
-            >
-              {ValuationTypeTable.map(item => (
-                <MenuItem key={item.Valuation_ID} value={item.Valuation_Name}>
-                  {item.Valuation_Name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
 
           {/* Reason For Movement */}
           <FormControl fullWidth size="small">
@@ -1340,14 +1327,6 @@ const Scrap551 = () => {
             </Select>
           </FormControl>
 
-          {/* Batch */}
-          <TextField
-            label="Batch"
-            value={Batch}
-            onChange={e => setBatch(e.target.value)}
-            fullWidth
-            {...compactFieldProps}
-          />
 
           {/* Buttons */}
           <Box sx={{ gridColumn: "span 2", display: "flex", justifyContent: "center", gap: 2, mt: 1 }}>

@@ -24,14 +24,14 @@ import SearchIcon from "@mui/icons-material/Search";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from 'sheetjs-style';
 import {
-  Movement202, getresubmit,  getTransactionData, getdetails, getPlants,getMaterial, getSLoc,
-  getMovement, getReasonForMovement, getCostCenter, getValuationType, get202ApprovalView, Edit202Record,
-} from "../controller/Movement202apiservice";
+  Movement201, getresubmit,  getTransactionData, getdetails, getPlants,getMaterial, getSLoc,
+  getMovement, getReasonForMovement, getCostCenter, getValuationType, get201ApprovalView, Edit201Record,
+} from "../controller/Movement201apiservice";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { api } from "../controller/constants";
 
 
-const Stock202 = () => {
+const Stock201 = () => {
 
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]); 
@@ -333,7 +333,7 @@ const Stock202 = () => {
         console.log('file', uploadedFile)
         formData.append("User_Add", uploadedFile);
         formData.append("UserID", UserID);
-        const response = await Movement202(formData)
+        const response = await Movement201(formData)
         console.log('response', response.data)
         alert(response.data.message)
         if (response.data.NewRecord.length > 0 || response.data.DuplicateRecords.length > 0 || response.data.ErrorRecords.length > 0) {
@@ -511,7 +511,7 @@ const Stock202 = () => {
     XLSX.utils.book_append_sheet(wb, wsDup, 'Duplicate Records');
 
     // Save File
-    const fileName = 'Trn202Movt Data UploadLog.xlsx';
+    const fileName = 'Trn201Movt Data UploadLog.xlsx';
     XLSX.writeFile(wb, fileName);
   };
 
@@ -705,7 +705,7 @@ const Stock202 = () => {
     console.log("Selected Doc ID:", docId);
 
     try {
-      const response = await get202ApprovalView(docId);
+      const response = await get201ApprovalView(docId);
       console.log("Approval View Response:", response); // fetches status history
       setViewStatusData(response);
 
@@ -738,7 +738,7 @@ const Stock202 = () => {
         TrnSapID
       };
 
-      const response = await Edit202Record(data);
+      const response = await Edit201Record(data);
       console.log("API response:", response);
 
       if (response?.success === true) {
@@ -832,7 +832,7 @@ const Stock202 = () => {
             textUnderlineOffset: "6px",
           }}
         >
-          202 Movement Transaction
+          201 Movement Transaction
         </h2>
       </div>
 
@@ -1005,7 +1005,7 @@ const Stock202 = () => {
           >
             <a
               style={{ textDecoration: "none", color: "white" }}
-              href={`${api}/transaction/Template/Trn202Movt.xlsx`}
+              href={`${api}/transaction/Template/Trn201Movt.xlsx`}
             >
               {" "}
               <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
@@ -1207,7 +1207,7 @@ const Stock202 = () => {
             textDecorationColor: "#88c57a",
             textDecorationThickness: "3px",
           }}>
-            Edit 202 Record
+            Edit 201 Record
           </h3>
 
           {/* Read-only fields */}
@@ -1364,4 +1364,4 @@ const Stock202 = () => {
 }
 
 
-export default Stock202
+export default Stock201
