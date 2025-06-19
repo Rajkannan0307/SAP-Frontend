@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { TextField, Button, Modal, Box, IconButton, Typography, } from "@mui/material";
+import { TextField,Button,Modal,Box,IconButton,Typography,} from "@mui/material";
 import { FaDownload } from "react-icons/fa";
 import { deepPurple } from '@mui/material/colors';
-import {Table, TableHead, TableRow, TableCell, TableBody, InputLabel,
+
+import {
+  Table,TableHead,TableRow,TableCell,TableBody, InputLabel,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { decryptSessionData } from "../controller/StorageUtils"
@@ -17,11 +19,12 @@ import {
   GridToolbarFilterButton,
   GridToolbarExport,
 } from "@mui/x-data-grid";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import SearchIcon from "@mui/icons-material/Search";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from 'sheetjs-style';
 import {
-  Movement202, getresubmit, getTransactionData, getdetails, getPlants,getMaterial, getSLoc, 
+  Movement202, getresubmit,  getTransactionData, getdetails, getPlants,getMaterial, getSLoc,
   getMovement, getReasonForMovement, getCostCenter, getValuationType, get202ApprovalView, Edit202Record,
 } from "../controller/Movement202apiservice";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -31,23 +34,28 @@ import { api } from "../controller/constants";
 const Stock202 = () => {
 
   const [searchText, setSearchText] = useState("");
-  const [rows, setRows] = useState([]); // ✅ Initial empty rows
+  const [rows, setRows] = useState([]); 
   const [originalRows, setOriginalRows] = useState([]);
   const [openUploadModal, setOpenUploadModal] = useState(false);
   const [openExcelDownloadModal, setOpenExcelDownloadModal] = useState(false);
   const UserID = localStorage.getItem('UserID');
   const [User_Level, setUser_Level] = useState("");
+
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState(""); // Track upload status
   const [uploadedFileData, setUploadedFileData] = useState(null);
   const [data, setData] = useState([]);
+
   const [openRowEditModal, setOpenRowEditModal] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+
   const [selectedRow, setSelectedRow] = useState(null);
   const [openViewStatusModal, setOpenViewStatusModal] = useState(false);
   const [viewStatusData, setViewStatusData] = useState([]);
+
+
   const [PlantCode, setPlantCode] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -73,12 +81,16 @@ const Stock202 = () => {
   const [Price, setPrice] = useState("");
   const [Date, setDate] = useState("");
   const [items, setItems] = useState([]);
-
   //click resubmit
   const [openChickResubmitModal, setOpenCheckResubmitModal] = useState(false);
+  const [selectedRows, setSelectedRows] = useState({}); // Store selected checkboxes by row ID
   // Store header checkbox state
+  const [checked, setChecked] = useState(false);
   const [selectedRowIds, setSelectedRowIds] = useState([]);
   const [headerChecked, setHeaderChecked] = useState(false);
+
+
+
 
 
   useEffect(() => {
@@ -127,21 +139,28 @@ const Stock202 = () => {
     setHeaderChecked(allSelected);
   }, [selectedRowIds, rows]);
 
+
+
+// check box select and re submit
   const handleOpenCheckResubmitModal = async () => {
     if (!selectedRowIds || selectedRowIds.length === 0) {
       alert("Please select at least one row to resubmit.");
       return;
     }
+
     const selectedRowsData = rows.filter(row =>
       selectedRowIds.includes(row.Trn_Sap_ID)
     );
+
     const resubmittableRows = selectedRowsData.filter(row =>
       (row.Approval_Status || "").toLowerCase().trim() === "under query"
     );
+
     if (resubmittableRows.length === 0) {
       alert("No valid rows eligible for resubmit.");
       return;
     }
+
     try {
       let successCount = 0;
 
@@ -157,8 +176,10 @@ const Stock202 = () => {
           successCount++;
         }
       }
+
       if (successCount > 0) {
         alert(`${successCount} row(s) resubmitted.`);
+
         // ✅ Option A: Update only changed rows locally (faster UI)
         setRows(prevRows =>
           prevRows.map(row =>
@@ -168,8 +189,10 @@ const Stock202 = () => {
               : row
           )
         );
+
         // ✅ Option B: Full reload from backend (slower, but complete)
         // await getData();
+
         setSelectedRowIds([]);
         setHeaderChecked(false);
       } else {
@@ -180,6 +203,7 @@ const Stock202 = () => {
       console.error("Error during resubmit:", error);
       alert("An error occurred during resubmit.");
     }
+
     setOpenCheckResubmitModal(true);
   };
 
@@ -188,8 +212,8 @@ const Stock202 = () => {
     selectedRowIds.includes(row.Trn_Sap_ID) &&
     row.Approval_Status?.toLowerCase().trim() === "under query"
   );
-  // resubmit check box to connect
 
+  // resubmit check box to connect
   useEffect(() => {
     getData();
   }, []);
@@ -258,6 +282,7 @@ const Stock202 = () => {
     setOpenRowEditModal(false);
   };
 
+
   const getData = async () => {
     try {
       const response = await getdetails(UserID);
@@ -324,27 +349,31 @@ const Stock202 = () => {
     getData();
     handleCloseUploadModal();
   }
-
+//download the new error duplicate for the upload data
   const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
     const wb = XLSX.utils.book_new();
+
     // Column headers for Error Records
     const ErrorColumns = [
       'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
-      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
+      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'ReasonForMovt',
       'Plant_Val', 'Material_Val', 'SLoc_Val', 'CostCenter_Val',
       'Plant_SLoc_Val', 'Plant_CostCenter_Val', 'Reason_Val',
       'Valuation_Val', 'User_Plant_Val'
     ];
+
     // Column headers for New Records
     const newRecordsColumns = [
       'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
-      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark'
+      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'ReasonForMovt'
     ];
+
     // Column headers for Duplicate Records
     const DuplicateColumns = [
       'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
-      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark'
+      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'ReasonForMovt'
     ];
+
     // Map Error Records
     const filteredError = errRecord.map(item => ({
       Plant_Code: item.Plant_Code || '',
@@ -356,7 +385,7 @@ const Stock202 = () => {
       Valuation_Type: item.Valuation_Type || '',
       Batch: item.Batch || '',
       Rate_Unit: item.Rate_Per_Unit || '',
-      Remark: item.Reason_For_Movt || '',
+      ReasonForMovt: item.Reason_For_Movt || '',
       Plant_Val: item.Plant_Val,
       Material_Val: item.Material_Val,
       SLoc_Val: item.SLoc_Val,
@@ -379,7 +408,7 @@ const Stock202 = () => {
       Valuation_Type: item.Valuation_Type || '',
       Batch: item.Batch || '',
       Rate_Unit: item.Rate_Per_Unit || '',
-      Remark: item.Reason_For_Movt || ''
+      ReasonForMovt: item.Reason_For_Movt || ''
     }));
 
     // Map Duplicate Records
@@ -393,7 +422,7 @@ const Stock202 = () => {
       Valuation_Type: item.Valuation_Type || '',
       Batch: item.Batch || '',
       Rate_Unit: item.Rate_Per_Unit || '',
-      Remark: item.Reason_For_Movt || ''
+      ReasonForMovt: item.Reason_For_Movt || ''
     }));
 
     // 🔹 Style header cells
@@ -460,6 +489,7 @@ const Stock202 = () => {
       }
     };
 
+
     // Sheet: New Records
     if (filteredNewData.length === 0) filteredNewData.push({});
     const wsNew = XLSX.utils.json_to_sheet(filteredNewData, { header: newRecordsColumns });
@@ -485,73 +515,6 @@ const Stock202 = () => {
     XLSX.writeFile(wb, fileName);
   };
 
-  // Download the data from the trn sap table to particular date
-  const handleDownloadReportExcel = async () => {
-    if (!fromDate) {
-      alert('Select From Date');
-      return;
-    }
-    if (!toDate) {
-      alert('Select To Date');
-      return;
-    }
-
-    try {
-      // Call backend API with fromDate and toDate as query params
-      const response = await getTransactionData(fromDate, toDate);
-
-      if (response.status === 400) {
-        alert(`Error: ${response.data.message || 'Invalid input or date range.'}`);
-        return;
-      }
-      const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-      const fileExtension = ".xlsx";
-      const fileName = "Trn_202_Movement_List";
-      // Convert JSON response to worksheet
-      const ws = XLSX.utils.json_to_sheet(response.data);
-      // Style header row (row 0)
-      const headers = Object.keys(response.data[0] || {});
-      headers.forEach((_, colIdx) => {
-        const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
-        if (ws[cellAddress]) {
-          ws[cellAddress].s = {
-            font: { bold: true, color: { rgb: "000000" } },
-            fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
-            alignment: { horizontal: "center" },
-          };
-        }
-      });
-
-      // Create workbook
-      const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
-
-      // Write workbook to binary array
-      const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-
-      // Create Blob and trigger download
-      const data = new Blob([excelBuffer], { type: fileType });
-      const url = window.URL.createObjectURL(data);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", fileName + fileExtension);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-      alert("File downloaded successfully!");
-    } catch (error) {
-      console.error("Download failed:", error);
-      if (error.response) {
-        alert(error.response.data.message || "Unknown error from backend");
-      } else if (error.request) {
-        alert("No response from server. Please try again later.");
-      } else {
-        alert(`Error: ${error.message}`);
-      }
-    }
-  };
-
   useEffect(() => {
   }, [openRowEditModal]);
 
@@ -571,12 +534,9 @@ const Stock202 = () => {
 
   const handleConditionalRowClick = async (params) => {
     console.log('selected row', params.row);
-
     const rawStatus = params.row?.Approval_Status;
     if (!rawStatus) return;
-
     const status = rawStatus.toUpperCase();
-
     if (status === "UNDER QUERY") {
       await loadDropdownData();
 
@@ -590,15 +550,14 @@ const Stock202 = () => {
       setSLocID(params.row.SLoc_Code);
       setMovtID(params.row.Movement_Code);
       setValuationType(params.row.Valuation_Type);
-      setReasonForMovement(params.row.Remarks);
+      setReasonForMovement(params.row.Reason_For_Movt);
       setBatch(params.row.Batch);
       setSelectedRow(params.row);
       setOpenRowEditModal(true);
-      setReasonForMovement(String(params.row.Remarks));
+      setReasonForMovement(String(params.row.Reason_For_Movt));
       setCostCenterID(String(params.row.CostCenter_ID));
     }
   };
-
   useEffect(() => {
   }, [MaterialTable]);
 
@@ -638,7 +597,6 @@ const Stock202 = () => {
           //return status === "rejected" || status === "under query";
           return status === "under query";
         });
-
         const allSelected =
           selectableRows.length > 0 &&
           selectedRowIds.length === selectableRows.length;
@@ -697,7 +655,9 @@ const Stock202 = () => {
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50px' }}>
                 <InfoIcon sx={{ fontSize: 28 }} />
               </Box>
+
             </div>
+
             {isSelectable && (
               <Checkbox
                 checked={isChecked}
@@ -719,10 +679,6 @@ const Stock202 = () => {
     setFromDate(''); // Reset From Date
     setToDate(''); // Reset To Date
   };
-  const handleCloseModal = () => {
-    setOpenExcelDownloadModal(false);
-
-  };
 
   // ✅ Search Functionality
   const handleSearch = () => {
@@ -741,6 +697,7 @@ const Stock202 = () => {
     }
   };
 
+
   const handleOpenViewStatusModal = async (rowData) => {
     const docId = rowData?.Doc_ID;
     setSelectedRow(rowData); // sets selected row for conditional UI logic
@@ -757,6 +714,7 @@ const Stock202 = () => {
       setViewStatusData([]); // fallback to empty state
     }
   };
+
 
   const handleUpdate = async () => {
     setIsUpdating(true);
@@ -775,9 +733,11 @@ const Stock202 = () => {
         CostCenterCode: String(CostCenterCode),
         Price,
         ValuationType,
+        ReasonForMovement,
         Batch,
         TrnSapID
       };
+
       const response = await Edit202Record(data);
       console.log("API response:", response);
 
@@ -805,6 +765,7 @@ const Stock202 = () => {
       setSLocID(selectedRow.SLoc_Code);
       setCostCenterCode(selectedRow.CostCenter_Code);  // <-- set cost center code here
       setPrice(selectedRow.Rate_PerPart);
+      setReasonForMovement(selectedRow.Reason_For_Movt);
       setValuationType(selectedRow.Valuation_Type);
       setBatch(selectedRow.Batch);
     }
@@ -867,7 +828,8 @@ const Stock202 = () => {
             textDecoration: "underline",
             textDecorationColor: "limegreen",
             marginBottom: -7,
-            textDecorationThickness: '3px'
+            textDecorationThickness: '3px',
+            textUnderlineOffset: "6px",
           }}
         >
           202 Movement Transaction
@@ -911,8 +873,9 @@ const Stock202 = () => {
 
         {/* Resubmit, Upload, and Download Buttons */}
 
+
         <div style={{ display: "flex", gap: "10px" }}>
-          {/* ✅ Resubmit Button (Only if status is Rejected or Under Query) */}
+          {/* ✅ Resubmit Button (Only if status is Under Query) */}
           {showResubmitButton && (
             <Button
               variant="contained"
@@ -1042,7 +1005,7 @@ const Stock202 = () => {
           >
             <a
               style={{ textDecoration: "none", color: "white" }}
-              href={`${api}/transaction/Template/Trn201Movt.xlsx`}
+              href={`${api}/transaction/Template/Trn202Movt.xlsx`}
             >
               {" "}
               <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
@@ -1107,7 +1070,6 @@ const Stock202 = () => {
           </Box>
         </Box>
       </Modal>
-
 
       {/* 🟨 View Status Modal */}
       <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
@@ -1184,7 +1146,9 @@ const Stock202 = () => {
                   'Level 4 - Corp Finance Head': 'Corp Finance Head',
                   'Level 5 - Corp MRPC': 'Corp MRPC',
                 };
+
                 const backendRole = roleMap[displayRole];
+
                 // Find matching row from backend data, case insensitive match
                 const row = viewStatusData.find(
                   r => r.Role?.toLowerCase() === backendRole.toLowerCase()
@@ -1202,6 +1166,7 @@ const Stock202 = () => {
               })}
             </TableBody>
           </Table>
+
           {/* Close Button at Bottom */}
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
             <Button
@@ -1210,84 +1175,6 @@ const Stock202 = () => {
               sx={{ textTransform: 'none' }}
             >
               Close
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
-
-      {/* ExcelDownload Modal */}
-      <Modal
-        open={openExcelDownloadModal}
-        onClose={handleCloseModal}  // Use the custom handleCloseModal function
-      >
-        <Box
-          sx={{
-            width: 400,
-            bgcolor: 'background.paper',
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: 'auto',
-            marginTop: '10%',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: '15px',
-          }}
-        >
-          <h3
-            style={{
-              gridColumn: 'span 2',
-              textAlign: 'center',
-              marginBottom: '15px',
-              color: 'blue',
-              textDecoration: 'underline',
-              textDecorationColor: 'limegreen',
-              textDecorationThickness: '3px',
-            }}
-          >
-            Excel Download
-          </h3>
-
-          <TextField
-            label="From Date"
-            name="FromDate"
-            type="date"
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            required
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-          />
-          <TextField
-            label="To Date"
-            name="ToDate"
-            type="date"
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            required
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-          />
-
-          <Box
-            sx={{
-              gridColumn: 'span 2',
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '10px',
-              marginTop: '15px',
-            }}
-          >
-            <Button variant="contained" color="error" onClick={handleCloseModal}>
-              Cancel
-            </Button>
-            <Button
-              style={{ width: '90px' }}
-              variant="contained"
-              color="primary"
-              onClick={handleDownloadReportExcel}
-            >
-              Download
             </Button>
           </Box>
         </Box>

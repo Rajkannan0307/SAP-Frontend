@@ -24,14 +24,14 @@ import SearchIcon from "@mui/icons-material/Search";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from 'sheetjs-style';
 import {
-  Movement201, getresubmit,  getTransactionData, getdetails, getPlants,getMaterial, getSLoc,
-  getMovement, getReasonForMovement, getCostCenter, getValuationType, get201ApprovalView, Edit201Record,
-} from "../controller/Movement201apiservice";
+  Movement202, getresubmit,  getTransactionData, getdetails, getPlants,getMaterial, getSLoc,
+  getMovement, getReasonForMovement, getCostCenter, getValuationType, get202ApprovalView, Edit202Record,
+} from "../controller/Movement202apiservice";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { api } from "../controller/constants";
 
 
-const Stock201 = () => {
+const Stock202 = () => {
 
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]); 
@@ -333,7 +333,7 @@ const Stock201 = () => {
         console.log('file', uploadedFile)
         formData.append("User_Add", uploadedFile);
         formData.append("UserID", UserID);
-        const response = await Movement201(formData)
+        const response = await Movement202(formData)
         console.log('response', response.data)
         alert(response.data.message)
         if (response.data.NewRecord.length > 0 || response.data.DuplicateRecords.length > 0 || response.data.ErrorRecords.length > 0) {
@@ -356,7 +356,7 @@ const Stock201 = () => {
     // Column headers for Error Records
     const ErrorColumns = [
       'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
-      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark',
+      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'ReasonForMovt',
       'Plant_Val', 'Material_Val', 'SLoc_Val', 'CostCenter_Val',
       'Plant_SLoc_Val', 'Plant_CostCenter_Val', 'Reason_Val',
       'Valuation_Val', 'User_Plant_Val'
@@ -365,13 +365,13 @@ const Stock201 = () => {
     // Column headers for New Records
     const newRecordsColumns = [
       'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
-      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark'
+      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'ReasonForMovt'
     ];
 
     // Column headers for Duplicate Records
     const DuplicateColumns = [
       'Plant_Code', 'Material_Code', 'Quantity', 'SLoc_Code', 'CostCenter_Code',
-      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'Remark'
+      'Movement_Code', 'Valuation_Type', 'Batch', 'Rate_Unit', 'ReasonForMovt'
     ];
 
     // Map Error Records
@@ -385,7 +385,7 @@ const Stock201 = () => {
       Valuation_Type: item.Valuation_Type || '',
       Batch: item.Batch || '',
       Rate_Unit: item.Rate_Per_Unit || '',
-      Remark: item.Reason_For_Movt || '',
+      ReasonForMovt: item.Reason_For_Movt || '',
       Plant_Val: item.Plant_Val,
       Material_Val: item.Material_Val,
       SLoc_Val: item.SLoc_Val,
@@ -408,7 +408,7 @@ const Stock201 = () => {
       Valuation_Type: item.Valuation_Type || '',
       Batch: item.Batch || '',
       Rate_Unit: item.Rate_Per_Unit || '',
-      Remark: item.Reason_For_Movt || ''
+      ReasonForMovt: item.Reason_For_Movt || ''
     }));
 
     // Map Duplicate Records
@@ -422,7 +422,7 @@ const Stock201 = () => {
       Valuation_Type: item.Valuation_Type || '',
       Batch: item.Batch || '',
       Rate_Unit: item.Rate_Per_Unit || '',
-      Remark: item.Reason_For_Movt || ''
+      ReasonForMovt: item.Reason_For_Movt || ''
     }));
 
     // 🔹 Style header cells
@@ -511,7 +511,7 @@ const Stock201 = () => {
     XLSX.utils.book_append_sheet(wb, wsDup, 'Duplicate Records');
 
     // Save File
-    const fileName = 'Trn201Movt Data UploadLog.xlsx';
+    const fileName = 'Trn202Movt Data UploadLog.xlsx';
     XLSX.writeFile(wb, fileName);
   };
 
@@ -550,11 +550,11 @@ const Stock201 = () => {
       setSLocID(params.row.SLoc_Code);
       setMovtID(params.row.Movement_Code);
       setValuationType(params.row.Valuation_Type);
-      setReasonForMovement(params.row.Remarks);
+      setReasonForMovement(params.row.Reason_For_Movt);
       setBatch(params.row.Batch);
       setSelectedRow(params.row);
       setOpenRowEditModal(true);
-      setReasonForMovement(String(params.row.Remarks));
+      setReasonForMovement(String(params.row.Reason_For_Movt));
       setCostCenterID(String(params.row.CostCenter_ID));
     }
   };
@@ -705,7 +705,7 @@ const Stock201 = () => {
     console.log("Selected Doc ID:", docId);
 
     try {
-      const response = await get201ApprovalView(docId);
+      const response = await get202ApprovalView(docId);
       console.log("Approval View Response:", response); // fetches status history
       setViewStatusData(response);
 
@@ -733,11 +733,12 @@ const Stock201 = () => {
         CostCenterCode: String(CostCenterCode),
         Price,
         ValuationType,
+        ReasonForMovement,
         Batch,
         TrnSapID
       };
 
-      const response = await Edit201Record(data);
+      const response = await Edit202Record(data);
       console.log("API response:", response);
 
       if (response?.success === true) {
@@ -764,6 +765,7 @@ const Stock201 = () => {
       setSLocID(selectedRow.SLoc_Code);
       setCostCenterCode(selectedRow.CostCenter_Code);  // <-- set cost center code here
       setPrice(selectedRow.Rate_PerPart);
+      setReasonForMovement(selectedRow.Reason_For_Movt);
       setValuationType(selectedRow.Valuation_Type);
       setBatch(selectedRow.Batch);
     }
@@ -830,7 +832,7 @@ const Stock201 = () => {
             textUnderlineOffset: "6px",
           }}
         >
-          201 Movement Transaction
+          202 Movement Transaction
         </h2>
       </div>
 
@@ -1003,7 +1005,7 @@ const Stock201 = () => {
           >
             <a
               style={{ textDecoration: "none", color: "white" }}
-              href={`${api}/transaction/Template/Trn201Movt.xlsx`}
+              href={`${api}/transaction/Template/Trn202Movt.xlsx`}
             >
               {" "}
               <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
@@ -1205,7 +1207,7 @@ const Stock201 = () => {
             textDecorationColor: "#88c57a",
             textDecorationThickness: "3px",
           }}>
-            Edit 201 Record
+            Edit 202 Record
           </h3>
 
           {/* Read-only fields */}
@@ -1362,4 +1364,4 @@ const Stock201 = () => {
 }
 
 
-export default Stock201
+export default Stock202
