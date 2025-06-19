@@ -35,11 +35,11 @@ const Module = () => {
    const [PlantCode, setPlantCode] = useState([]);
    const[Dept_Name,setDept_Name]=useState("");
    const[Module_Name,setModule_Name]=useState("");
-   const [Supv_ID, setSupv_ID] = useState([]);
+   const [Module_ID, setModule_ID] = useState([]);
     const [DepartmentTable, setDepartmentTable] = useState([]);
  const columns = [
      { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
-     { field: "Dept_Name", headerName: "Department Code ", flex: 1 },
+     { field: "Dept_Name", headerName: "Department Name ", flex: 1 },
      { field: "Module_Name", headerName: "Module Name", flex: 1 },
     
      {
@@ -145,7 +145,7 @@ const Module = () => {
 
   const handleRowClick = (params) => {
     setPlantCode(params.row.Plant_Code);
-    setSupv_ID(params.row.Supv_ID);
+    setModule_ID(params.row.Module_ID);
     setDept_Name(params.row.Dept_Name);
     setModule_Name(params.row.Module_Name);
     setActiveStatus(params.row.Active_Status);
@@ -187,7 +187,7 @@ const Module = () => {
         const response = await getAdd(data); // Ensure getAdd uses a POST request
     
         if (response.data.success) {
-          alert("StorageLocation added successfully!");
+          alert("Module added successfully!");
           getData(); // refresh UI (e.g. user list)
           handleCloseAddModal(); // close the modal
         } else {
@@ -208,7 +208,7 @@ const Module = () => {
  const handleUpdate = async () => {
      const data = {
       UserID:UserID,
-     Supv_ID: Supv_ID,
+     Module_ID: Module_ID,
      Module_Name: Module_Name,
        Active_Status: ActiveStatus,
      };
@@ -284,7 +284,7 @@ const Module = () => {
   
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "StorageLocation");
-      XLSX.writeFile(workbook, "StorageLocation_Data.xlsx");
+      XLSX.writeFile(workbook, "ModuleMaster_Data.xlsx");
     };
   return (
     <div
@@ -316,7 +316,7 @@ const Module = () => {
             marginBottom: -7,
           }}
         >
-         SupvCode Master
+         Module Master
         </h2>
       </div>
 
@@ -474,7 +474,7 @@ const Module = () => {
                     textDecorationThickness: "3px",
                   }}
                 >
-                  Add Department Master
+                  Add Module Master
                 </h3>
                 
                 <FormControl fullWidth>

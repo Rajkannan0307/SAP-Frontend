@@ -31,6 +31,9 @@ import { MdAddTask } from "react-icons/md";
 import { SiScrapbox } from "react-icons/si";
 import { FaExternalLinkSquareAlt } from "react-icons/fa";
 import { TbReport } from "react-icons/tb";
+import { MdSupervisedUserCircle } from "react-icons/md";
+import { GiRingMould } from "react-icons/gi";
+import { CiLineHeight } from "react-icons/ci";
 import EmergencyIcon from '@mui/icons-material/Emergency';
 const Sidebar = ({ setSidebarOpen }) => {
   const [open, setOpen] = useState(false);
@@ -265,14 +268,15 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "Movement Type", path: "/home/Movement_Type", icon: <DriveFileMoveIcon style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "turquoise" }} />, code: 'Movement_Type' },
             { name: "MVT List Item", path: "/home/MVT_LIST_ITEM", icon: <FaTableList style={{ marginRight: "2px", fontSize: "20px", width: "25px", color: "thistle" }} />, code: 'MVT_LIST_ITEM' },
             { name: "Cost Center", path: "/home/CostCenter", icon: <FaDollarSign style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkorange" }} />, code: 'CostCenter' },
-            { name: "ValuationType", path: "/home/ValuationType", icon: <GrCubes style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "Window" }} />, code: 'ValuationType' },
-            { name: "SupvCode", path: "/home/SupvCode", icon: <GrCubes style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "Window" }} />, code: 'SupvCode' },
-        
+            { name: "ValuationType", path: "/home/ValuationType", icon: <GrCubes style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "rosybrown" }} />, code: 'ValuationType' },
+            { name: "SupvCode", path: "/home/SupvCode", icon: <MdSupervisedUserCircle style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "aquamarine" }} />, code: 'SupvCode' },
+             { name: "Module", path: "/home/Module", icon: <GiRingMould style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "khaki" }} />, code: 'Module' },
+             { name: "Line", path: "/home/Line", icon: <CiLineHeight style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkseagreen" }} />, code: 'Line' },
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
             'UserMaster', 'Role', 'Material', 'Vendor',
-            'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter','ValuationType','SupvCode'
+            'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter','ValuationType','SupvCode','Module','Line'
           ]}
         />
 

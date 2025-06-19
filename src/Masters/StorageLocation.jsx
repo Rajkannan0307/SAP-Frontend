@@ -267,13 +267,13 @@ useEffect(() => {
          "Storage_Code",
          "SLoc_Name",
         "ActiveStatus",
-        'Supv_Code'
+        'Supervisor_Code'
       ];
   
       const filteredData = data.map((item) => ({
         Plant_Code: item.Plant_Code,
         Storage_Code:item.Storage_Code,
-        Supv_Code:item.Sup_Code,
+        Supervisor_Code:item.Sup_Code,
         SLoc_Name:item.SLoc_Name,
    
         ActiveStatus: item.Active_Status ? "Active" : "Inactive"

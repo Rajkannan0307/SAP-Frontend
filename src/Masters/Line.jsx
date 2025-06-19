@@ -20,10 +20,10 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
-import { getdetails,getAdd,getUpdates,getPlants } from "../controller/SupvCodeMasterapiservice";
+import { getdetails,getAdd,getUpdates,getPlants,getDepartment,getSupvCode,getModule} from "../controller/LineMasterapiservice";
 import { MenuItem, InputLabel, FormControl } from '@mui/material';
 const UserID = localStorage.getItem('UserID');
-const SupvCode = () => {
+const Line = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
   const [originalRows, setOriginalRows] = useState([]);
@@ -33,40 +33,47 @@ const SupvCode = () => {
   const [ActiveStatus, setActiveStatus] = useState(false);
   const [PlantTable, setPlantTable] = useState([]);
    const [PlantCode, setPlantCode] = useState([]);
-   const[Sup_Code,setSup_Code]=useState("");
-   const[Sup_Name,setSup_Name]=useState("");
-   const [Supv_ID, setSupv_ID] = useState([]);
+   const[Dept_Name,setDept_Name]=useState("");
+   const[Line_Name,setLine_Name]=useState("");
+   const [Line_ID, setLine_ID] = useState([]);
+    const [SupvTable, setSupvTable] = useState([])
+    const [ModuleTable, setModuleTable] = useState([])
+        const [Supv_Code, setSupv_Code] = useState("");
+    const[Module_Name,setModule_Name]=useState("");
+    const [DepartmentTable, setDepartmentTable] = useState([]);
  const columns = [
      { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
-     { field: "Sup_Code", headerName: "Supervisor Code ", flex: 1 },
-     { field: "Sup_Name", headerName: "Supervisor Name", flex: 1 },
+     { field: "Dept_Name", headerName: "Department Name ", flex: 1 },
+      { field: "Sup_Code", headerName: "Supervisor Code", flex: 1 },
+      { field: "Module_Name", headerName: "Module Name", flex: 1 },
+     { field: "Line_Name", headerName: "Line Name", flex: 1 },
     
      {
-       field: "ActiveStatus",
-       headerName: "Active Status",
-       flex: 1,
-       renderCell: (params) => {
-         const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
-         return (
-           <FormControlLabel
-             control={
-               <Switch
-                 checked={isActive} // Use the boolean value directly
-                 color="default" // Neutral color for default theme
-                 sx={{
-                   "& .MuiSwitch-track": {
-                     backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                   },
-                   "& .MuiSwitch-thumb": {
-                     backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                   },
-                 }}
-               />
-             }
-           />
-         );
-       },
-     },
+      field: "ActiveStatus",
+      headerName: "Active Status",
+      flex: 1,
+      renderCell: (params) => {
+        const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
+        return (
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isActive} // Use the boolean value directly
+                color="default" // Neutral color for default theme
+                sx={{
+                  "& .MuiSwitch-track": {
+                    backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
+                  },
+                  "& .MuiSwitch-thumb": {
+                    backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
+                  },
+                }}
+              />
+            }
+          />
+        );
+      },
+    },
    ];
   const getData = async () => {
      try {
@@ -112,7 +119,7 @@ const SupvCode = () => {
       setRows(originalRows);
     } else {
       const filteredRows = originalRows.filter((row) =>
-        ["Plant_Code","Sup_Code","Sup_Name"].some((key) => {
+        ["Plant_Code","Dept_Name","Line_Name","Module_Name","Sup_Code"].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
         })
@@ -120,23 +127,64 @@ const SupvCode = () => {
       setRows(filteredRows);
     }
   };
+
+useEffect(() => {
+  if (PlantCode) {
+    get_SupvCode();        // Load supervisor codes
+    setSupv_Code('');      // Reset selected supervisor
+  } else {
+    setSupvTable([]);      // Clear the table if no plant
+  }
+}, [PlantCode]);
+
+ const get_SupvCode = async () => {
+  try {
+    const response = await getSupvCode(PlantCode);
+    console.log("👉 SupvTable data:", response.data); // 👈 Check here
+    setSupvTable(response.data);
+  } catch (error) {
+    console.error("❌ Error fetching supervisors:", error);
+  }
+};
+ const get_Module = async () => {
+  try {
+    const response = await getModule();
+    console.log("👉 ModuleTable data:", response.data); // 👈 Check here
+    setModuleTable(response.data);
+  } catch (error) {
+    console.error("❌ Error fetching supervisors:", error);
+  }
+};
+   const GetDepartment = async () => {
+      try {
+        const response = await getDepartment();
+        setDepartmentTable(response.data);
+      } catch (error) {
+        console.error("Error updating user:", error);
+      }
+    };
   // ✅ Handle Add Modal
   const handleOpenAddModal = (item) => {
     setPlantCode("");
-    setSup_Code("");
-    setSup_Name("");
+    setDept_Name("");
+      setSupv_Code("");
+    setLine_Name("");
     setActiveStatus(true);
     setOpenAddModal(true);
     get_Plant();
+    get_Module();
+    GetDepartment();
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
 
   const handleRowClick = (params) => {
     setPlantCode(params.row.Plant_Code);
-    setSupv_ID(params.row.Supv_ID);
-    setSup_Code(params.row.Sup_Code);
-    setSup_Name(params.row.Sup_Name);
+    setLine_ID(params.row.Line_ID);
+    setDept_Name(params.row.Dept_Name);
+     setSupv_Code(params.row.Sup_Code);
+     setModule_Name(params.row.Module_Name);
+    setLine_Name(params.row.Line_Name);
     setActiveStatus(params.row.Active_Status);
     setOpenEditModal(true); // Open the modal
   };
@@ -145,7 +193,7 @@ const SupvCode = () => {
     const handleAdd = async () => {
       console.log("Data being sent to the server:", {
         PlantCode,
-         Sup_Code,Sup_Name,UserID
+         Dept_Name,Line_Name,UserID
        
       });
       console.log("Add button clicked");
@@ -153,26 +201,26 @@ const SupvCode = () => {
       // Step 1: Validate required fields
       if (
         PlantCode === "" ||
-        Sup_Code === "" ||
-        Sup_Name === "" 
+        Dept_Name === "" ||
+        Line_Name === "" ||
+        Module_Name===""||
+        Supv_Code===""
         
       ) {
         alert("Please fill in all required fields");
         return;
       }
-     // Step 2: Validate Sup_Code (must be exactly 4 digits)
-  if (Sup_Code.toString().length !== 3) {
-    alert("Storage Code must be exactly 3 digits");
-    return;
-  }
+     
      
       try {
         // Prepare data to be sent
         const data = {
           UserID:UserID,
           Plant_Code: PlantCode,
-          Sup_Code:Sup_Code,
-          Sup_Name:Sup_Name,
+          Dept_Name:Dept_Name,
+          Sup_Code:Supv_Code,
+          Module_Name:Module_Name,
+          Line_Name:Line_Name,
           Active_Status:ActiveStatus, // Make sure this is defined somewhere
         };
     
@@ -180,7 +228,7 @@ const SupvCode = () => {
         const response = await getAdd(data); // Ensure getAdd uses a POST request
     
         if (response.data.success) {
-          alert("StorageLocation added successfully!");
+          alert("Line added successfully!");
           getData(); // refresh UI (e.g. user list)
           handleCloseAddModal(); // close the modal
         } else {
@@ -201,8 +249,9 @@ const SupvCode = () => {
  const handleUpdate = async () => {
      const data = {
       UserID:UserID,
-     Supv_ID: Supv_ID,
-     Sup_Name: Sup_Name,
+     Line_ID:Line_ID,
+    
+     Line_Name: Line_Name,
        Active_Status: ActiveStatus,
      };
      console.log("Data being sent:", data); // Log data to verify it before sending
@@ -239,15 +288,19 @@ const SupvCode = () => {
   
       const DataColumns = [
         "Plant_Code",
-         "Sup_Code",
-         "Sup_Name",
+         "Dept_Name",
+         "Supervisor_Code",
+         "Module_Name",
+         "Line_Name",
         "ActiveStatus",
       ];
   
       const filteredData = data.map((item) => ({
         Plant_Code: item.Plant_Code,
-        Sup_Code:item.Sup_Code,
-        Sup_Name:item.Sup_Name,
+        Dept_Name:item.Dept_Name,
+        Supervisor_Code:item.Sup_Code,
+        Module_Name:item.Module_Name,
+        Line_Name:item.Line_Name,
   
         ActiveStatus: item.Active_Status ? "Active" : "Inactive"
   
@@ -277,7 +330,7 @@ const SupvCode = () => {
   
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "StorageLocation");
-      XLSX.writeFile(workbook, "SupervisorMaster_Data.xlsx");
+      XLSX.writeFile(workbook, "LineMaster_Data.xlsx");
     };
   return (
     <div
@@ -309,7 +362,7 @@ const SupvCode = () => {
             marginBottom: -7,
           }}
         >
-         SupvCode Master
+         Line Master
         </h2>
       </div>
 
@@ -408,7 +461,7 @@ const SupvCode = () => {
           columns={columns}
           pageSize={5} // Set the number of rows per page to 8
           rowsPerPageOptions={[5]}
-          getRowId={(row) => row.Supv_ID} // Specify a custom id field
+          getRowId={(row) => row.Line_ID} // Specify a custom id field
           onRowClick={handleRowClick}
           disableSelectionOnClick
           slots={{ toolbar: CustomToolbar }}
@@ -467,7 +520,7 @@ const SupvCode = () => {
                     textDecorationThickness: "3px",
                   }}
                 >
-                  Add Supervisor Master
+                  Add Line Master
                 </h3>
                 
                 <FormControl fullWidth>
@@ -484,31 +537,63 @@ const SupvCode = () => {
               ))}
             </Select>
           </FormControl>
-          <TextField
-                  label="Supervisor Code"
-                  name="Supervisor Code"
-                  value={Sup_Code} 
-                 
-                  type="text"
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Remove any non-digit character
-                    if (/^\d*$/.test(value)) {
-                      setSup_Code(value);
-                    }
-                  }}
-                  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
-                     maxLength: 3,
-                
-                  }}
-                  required
-                 
-                />
+
+           <FormControl fullWidth>
+                      <InputLabel>Department</InputLabel>
+                      <Select
+                        label="Department"
+                        name="Department"
+                        value={Dept_Name}
+                        onChange={(e) => setDept_Name(e.target.value)}
+                        required
+                      >
+                        {DepartmentTable.map((item, index) => (
+                          <MenuItem key={index} value={item.Dept_ID}>
+                            {item.Dept_Name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+          
+               <FormControl fullWidth>
+                         <InputLabel>Supervisor Code</InputLabel>
+                         <Select
+                           label="Supervisor Code"
+                           name="Supervisor Code"
+                           value={Supv_Code}
+                           onChange={(e) => setSupv_Code(e.target.value)}
+                           required
+                         >
+                           {SupvTable
+                             .filter(item => item.Plant_ID=== PlantCode)  // or === parseInt(PlantCode)
+                             .map((item) => (
+                               <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
+                                 {item.Sup_Code}
+                               </MenuItem>
+                             ))}
+                         </Select>
+                       </FormControl>
+                         <FormControl fullWidth>
+                                   <InputLabel>Module Name</InputLabel>
+                                   <Select
+                                     label="Module Name"
+                                     name="Module Name"
+                                     value={Module_Name}
+                                     onChange={(e) => setModule_Name(e.target.value)}
+                                     required
+                                   >
+                                     {ModuleTable.map((item) => (
+                                         <MenuItem key={item.Module_ID} value={item.Module_ID}>
+                                           {item.Module_Name}
+                                         </MenuItem>
+                                       ))}
+                                   </Select>
+                                 </FormControl>
                 <TextField
-                  label="Supervisor Name"
-                  name="Sup_Name"
-                  value={Sup_Name} 
-                  onChange={(e) => setSup_Name(e.target.value)}
+                  label="Line Name"
+                  name="Line_Name"
+                  value={Line_Name} 
+                  onChange={(e) => setLine_Name(e.target.value)}
                   fullWidth
                   
                   required
@@ -593,7 +678,7 @@ const SupvCode = () => {
                     textDecorationThickness: "3px",
                   }}
                 >
-                  Edit Supervisor Master
+                  Edit Line Master
                 </h3>
                 <TextField
                   label="Plant"
@@ -607,9 +692,9 @@ const SupvCode = () => {
                 />
       
       <TextField
-                  label="Supervisor Code"
-                  name="Supervisor Code"
-                  value={Sup_Code} // Use the current value of PlantCode
+                  label="Department Name"
+                  name="Department Name"
+                  value={Dept_Name} // Use the current value of PlantCode
                   fullWidth
                   InputProps={{
                     readOnly: true, // Make it read-only
@@ -617,10 +702,28 @@ const SupvCode = () => {
                   required
                 />
                 <TextField
-                  label="Supervisor Name"
-                  name="Sup_Name"
-                  value={Sup_Name} 
-                  onChange={(e) => setSup_Name(e.target.value)}
+                                  label="Supervisor Code"
+                                  name="Supervisor Code"
+                                  value={Supv_Code}
+                                  onChange={(e) => setSupv_Code(e.target.value)}
+                                  InputProps={{
+                                    readOnly: true,  // This makes the TextField read-only
+                                  }}
+                                />
+                    <TextField
+                                                  label="Module Name"
+                                                  name="Module Name"
+                                                  value={Module_Name}
+                                                  onChange={(e) => setModule_Name(e.target.value)}
+                                                  InputProps={{
+                                                    readOnly: true,  // This makes the TextField read-only
+                                                  }}
+                                                />
+                <TextField
+                  label="Line Name"
+                  name="Line_Name"
+                  value={Line_Name} 
+                  onChange={(e) => setLine_Name(e.target.value)}
                   fullWidth
                   
                   required
@@ -679,4 +782,4 @@ const SupvCode = () => {
   );
 };
 
-export default SupvCode;
+export default Line;
