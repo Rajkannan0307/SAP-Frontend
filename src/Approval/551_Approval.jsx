@@ -802,81 +802,87 @@ const Approval551 = () => {
       </Modal>
 
 
+{/* Approver page view approval status*/}
+<Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
+  <Box
+    sx={{
+      width: 1000,
+      bgcolor: "background.paper",
+      borderRadius: 2,
+      boxShadow: 24,
+      p: 3,
+      margin: "auto",
+      marginTop: "10%",
+      position: "relative",
+    }}
+  >
+    {/* ❌ Close button */}
+    <IconButton
+      onClick={() => setOpenViewStatusModal(false)}
+      sx={{
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        color: '#f44336',
+        '&:hover': {
+          backgroundColor: '#ffcdd2',
+          color: '#b71c1c',
+        },
+      }}
+    >
+      <CloseIcon />
+    </IconButton>
 
-      <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
-        <Box
-          sx={{
-            width: 1000,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            // fontSize: 12,
-            p: 3,
-            margin: "auto",
-            marginTop: "10%",
-            position: "relative", // to position X button
-          }}
-        >
-          {/* ❌ Top-right close (X) button */}
-          <IconButton
-            onClick={() => setOpenViewStatusModal(false)}
-            sx={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              color: '#f44336', // Red icon
-              '&:hover': {
-                backgroundColor: '#ffcdd2', // Light red background on hover
-                color: '#b71c1c', // Slightly darker red icon on hover (optional)
-              },
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
+    {/* 📝 Title */}
+    <Typography
+      variant="h6"
+      align="center"
+      sx={{
+        mb: 2,
+        fontWeight: "bold",
+        color: "#1565c0",
+        textDecoration: "underline",
+        textDecorationColor: "limegreen",
+        textDecorationThickness: "3px",
+        textUnderlineOffset: "6px",
+      }}
+    >
+      Approval Status Details
+    </Typography>
 
-          {/* 📝 Modal Title */}
-          <Typography
-            variant="h6"
-            align="center"
-            sx={{
-              mb: 2,
-              fontWeight: "bold",
-              color: "#1565c0",
-              textDecoration: "underline",
-              textDecorationColor: "limegreen",
-              textDecorationThickness: "3px",
-              textUnderlineOffset: "6px",
+    {/* 📋 Table */}
+    <Table size="small" sx={{ borderCollapse: 'collapse' }}>
+      <TableHead>
+        <TableRow sx={{ bgcolor: '#bdbdbd' }}>
+          <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Role</TableCell>
+          <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Date</TableCell>
+          <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Name</TableCell>
+          <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Comment</TableCell>
+          <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Status</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {viewStatusData.map((item, index) => (
+          <TableRow key={index}>
+            <TableCell sx={{ border: '1px solid #555555' }}>{item.Role}</TableCell>
+            <TableCell sx={{ border: '1px solid #555555' }}>{item.Date}</TableCell>
+            <TableCell sx={{ border: '1px solid #555555' }}>{item.Modified_By}</TableCell>
+            <TableCell sx={{ border: '1px solid #555555' }}>{item.Approver_Comment}</TableCell>
+            <TableCell sx={{ border: '1px solid #555555' }}>
+              {item.Status}
+              {item.Role === User_Level && (
+                <Typography component="span" sx={{ fontWeight: 'bold', color: '#1b5e20', ml: 1 }}>
+                  (Your Level)
+                </Typography>
+              )}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </Box>
+</Modal>
 
-            }}
-          >
-            Approval Status Details
-          </Typography>
-
-          {/* 📋 Table */}
-          <Table size="small" sx={{ borderCollapse: 'collapse' }}>
-            <TableHead>
-              <TableRow sx={{ bgcolor: '#bdbdbd' }}>
-                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Date</TableCell>
-                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Role</TableCell>
-                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Name</TableCell>
-                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Comment</TableCell>
-                <TableCell sx={{ border: '1px solid #555555', color: 'black' }}>Status</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {viewStatusData.map((item, index) => (
-                <TableRow key={index}>
-                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Date}</TableCell>
-                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Role}</TableCell>
-                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Modified_By}</TableCell>
-                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Approver_Comment}</TableCell>
-                  <TableCell sx={{ border: '1px solid #555555' }}>{item.Status} - {User_Level}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Box>
-      </Modal>
 
     </div>
   );

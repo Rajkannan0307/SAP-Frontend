@@ -55,11 +55,11 @@ export const get_detailsApproval=async (Plant, role,Role,Doc_ID)=>{
     const response = await axios.get(`${api}/Approval551/get_detailsApproval?Plant=${Plant}&role=${role}&Role=${Role}`);
     return response.data; 
    }; 
-export const get551ApprovalView = async (docId) => {
-  const response = await axios.get(`${api}/Approval551/View551ApprovalStatus?Doc_ID=${docId}`);
+// export const get551ApprovalView = async (docId) => {
+//   const response = await axios.get(`${api}/Approval551/View551ApprovalStatus?Doc_ID=${docId}`);
   
-  return response.data;
-};
+//   return response.data;
+// };
 
 
 
@@ -76,4 +76,7 @@ export const DownloadAllExcel = async (DocID)=>{
 };
 
 
-  
+  export const get551ApprovalView = async (docId) => {
+  const response = await axios.get(`${api}/Approval551/View551ApprovalStatus?Doc_ID=${docId}`);
+  return response.data;
+};

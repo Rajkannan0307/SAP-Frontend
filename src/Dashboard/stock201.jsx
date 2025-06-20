@@ -532,6 +532,77 @@ const Stock201 = () => {
     ]);
   };
 
+  // Download the data from the trn sap table to particular date
+  const handleDownloadReportExcel = async () => {
+    if (!fromDate) {
+      alert('Select From Date');
+      return;
+    }
+    if (!toDate) {
+      alert('Select To Date');
+      return;
+    }
+
+    try {
+      // Call backend API with fromDate and toDate as query params
+      const response = await getTransactionData(fromDate, toDate);
+
+      if (response.status === 400) {
+        alert(`Error: ${response.data.message || 'Invalid input or date range.'}`);
+        return;
+      }
+
+      const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+      const fileExtension = ".xlsx";
+      const fileName = "Trn_201_Movement_List";
+
+      // Convert JSON response to worksheet
+      const ws = XLSX.utils.json_to_sheet(response.data);
+
+      // Style header row (row 0)
+      const headers = Object.keys(response.data[0] || {});
+      headers.forEach((_, colIdx) => {
+        const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+        if (ws[cellAddress]) {
+          ws[cellAddress].s = {
+            font: { bold: true, color: { rgb: "000000" } },
+            fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
+            alignment: { horizontal: "center" },
+          };
+        }
+      });
+
+      // Create workbook
+      const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+
+      // Write workbook to binary array
+      const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+
+      // Create Blob and trigger download
+      const data = new Blob([excelBuffer], { type: fileType });
+      const url = window.URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", fileName + fileExtension);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      alert("File downloaded successfully!");
+    } catch (error) {
+      console.error("Download failed:", error);
+      if (error.response) {
+        alert(error.response.data.message || "Unknown error from backend");
+      } else if (error.request) {
+        alert("No response from server. Please try again later.");
+      } else {
+        alert(`Error: ${error.message}`);
+      }
+    }
+  };
+
+  
   const handleConditionalRowClick = async (params) => {
     console.log('selected row', params.row);
     const rawStatus = params.row?.Approval_Status;
@@ -584,100 +655,98 @@ const Stock201 = () => {
     { field: "Qty", headerName: "Qty", flex: 1 },
     { field: "Movement_Code", headerName: "Movement Type", flex: 1 },
     { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
-    {
-      field: "actions",
-      headerName: "Actions",
-      flex: 1,
-      sortable: false,
-      editable: false,
-      disableColumnMenu: true,
-      renderHeader: () => {
-        const selectableRows = rows.filter((row) => {
-          const status = row.Approval_Status?.toLowerCase().trim();
-          //return status === "rejected" || status === "under query";
-          return status === "under query";
-        });
-        const allSelected =
-          selectableRows.length > 0 &&
-          selectedRowIds.length === selectableRows.length;
-        const isIndeterminate =
-          selectedRowIds.length > 0 &&
-          selectedRowIds.length < selectableRows.length;
-        return (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              width: "100%",
+ {
+  field: "actions",
+  headerName: "Actions",
+  flex: 1,
+  sortable: false,
+  editable: false,
+  disableColumnMenu: true,
+  headerClassName: "actions-header",
+  cellClassName: "actions-cell",
+  renderHeader: () => {
+    const selectableRows = rows.filter((row) => {
+      const status = row.Approval_Status?.toLowerCase().trim();
+      return status === "under query";
+    });
+    const allSelected =
+      selectableRows.length > 0 &&
+      selectedRowIds.length === selectableRows.length;
+    const isIndeterminate =
+      selectedRowIds.length > 0 &&
+      selectedRowIds.length < selectableRows.length;
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          width: "100%",
+        }}
+      >
+        <span>Actions</span>
+        {selectableRows.length > 0 && (
+          <Checkbox
+            checked={allSelected}
+            indeterminate={isIndeterminate}
+            onChange={handleHeaderCheckboxChange}
+            inputProps={{ "aria-label": "Select all rows" }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        )}
+      </div>
+    );
+  },
+  renderCell: (params) => {
+    const row = params.row;
+    const status = row.Approval_Status?.toLowerCase().trim();
+    const isSelectable = status === "under query";
+    const isChecked = selectedRowIds.includes(row.Trn_Sap_ID);
+
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedRow(row);
+            handleOpenViewStatusModal(row);
+          }}
+          title="View Details"
+          style={{ cursor: "pointer", color: "#008080" }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50px' }}>
+            <InfoIcon sx={{ fontSize: 28 }} />
+          </Box>
+        </div>
+
+        {isSelectable && (
+          <Checkbox
+            checked={isChecked}
+            onChange={(e) => {
+              e.stopPropagation();
+              handleRowCheckboxChange(row.Trn_Sap_ID, e.target.checked);
             }}
-          >
-            <span sx={{
-              fontWeight: 600, fontSize: 20, color: '#333', // optional
-            }}
-            >
-              Actions
-            </span>
-            {selectableRows.length > 0 && (
-              <Checkbox
-                checked={allSelected}
-                indeterminate={isIndeterminate}
-                onChange={handleHeaderCheckboxChange}
-                inputProps={{ "aria-label": "Select all rows" }}
-                onClick={(e) => e.stopPropagation()}
-              />
-            )}
-          </div>
-        );
-      },
-      // In renderCell:
-      renderCell: (params) => {
-        const row = params.row;
-        const status = row.Approval_Status?.toLowerCase().trim();
-        // const isSelectable = status === "rejected" || status === "under query";
-        const isSelectable = status === "under query";
+          />
+        )}
+      </div>
+    );
+  }
+}
 
-        const isChecked = selectedRowIds.includes(row.Trn_Sap_ID);
-
-        console.log("Approval_Status:", row.Approval_Status); // 👈 Debug
-
-        return (
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedRow(row);
-                handleOpenViewStatusModal(row);
-              }}
-              title="View Details"
-              style={{ cursor: "pointer", color: "#008080" }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50px' }}>
-                <InfoIcon sx={{ fontSize: 28 }} />
-              </Box>
-
-            </div>
-
-            {isSelectable && (
-              <Checkbox
-                checked={isChecked}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  handleRowCheckboxChange(row.Trn_Sap_ID, e.target.checked);
-                }}
-              />
-            )}
-          </div>
-        );
-      },
-
-    }
   ];
 
   const handleOpenModal = () => {
     setOpenExcelDownloadModal(true);
     setFromDate(''); // Reset From Date
     setToDate(''); // Reset To Date
+  };
+
+
+   // from & to downloadd
+    const handleCloseModal = () => {
+    setOpenExcelDownloadModal(false);
+
   };
 
   // ✅ Search Functionality
@@ -952,33 +1021,46 @@ const Stock201 = () => {
               event.stopPropagation();
             }
           }}
-          sx={{
-            // Header Style
-            "& .MuiDataGrid-columnHeader": {
-              backgroundColor: "#bdbdbd",
-              color: "black",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-columnHeaderTitle": {
-              fontSize: "16px",
-              //fontWeight: "bold",
-            },
-            "& .MuiDataGrid-row": {
-              backgroundColor: "#f5f5f5", // Default row background
-              "&:hover": {
-                backgroundColor: "#f5f5f5",
-              },
-            },
-            // ✅ Remove Selected Row Background
-            "& .MuiDataGrid-row.Mui-selected": {
-              backgroundColor: "inherit", // No background on selection
-            },
+sx={{
+  // Header Style
+  "& .MuiDataGrid-columnHeader": {
+    backgroundColor: "#bdbdbd",
+    color: "black",
+    fontWeight: "bold",
+  },
+  "& .MuiDataGrid-columnHeaderTitle": {
+    fontSize: "16px",
+  },
 
-            "& .MuiDataGrid-cell": {
-              color: "#333",
-              fontSize: "14px",
-            },
-          }}
+  // ✅ Actions column header
+  "& .MuiDataGrid-columnHeader--field-actions .MuiDataGrid-columnHeaderTitle": {
+    fontSize: "16px",
+   // fontWeight: "normal", // Remove bold
+  },
+
+  // ✅ Actions column cells
+  "& .MuiDataGrid-cell--field-actions": {
+    fontSize: "16px",
+   // fontWeight: "normal", // Remove bold
+  },
+
+  "& .MuiDataGrid-row": {
+    backgroundColor: "#f5f5f5",
+    "&:hover": {
+      backgroundColor: "#f5f5f5",
+    },
+  },
+
+  "& .MuiDataGrid-row.Mui-selected": {
+    backgroundColor: "inherit",
+  },
+
+  "& .MuiDataGrid-cell": {
+    color: "#333",
+    fontSize: "14px",
+  },
+}}
+
         />
       </div>
       {/* upload modal */}
@@ -1087,16 +1169,18 @@ const Stock201 = () => {
             overflowY: 'auto',
           }}
         >
-          {/* ❌ Close Button */}
+          {/* ❌ Top-right close (X) button */}
           <IconButton
-            aria-label="close"
             onClick={() => setOpenViewStatusModal(false)}
             sx={{
               position: 'absolute',
               top: 8,
               right: 8,
-              color: '#f44336',
-              '&:hover': { color: '#d32f2f' },
+              color: '#f44336', // Red icon
+              '&:hover': {
+                backgroundColor: '#ffcdd2', // Light red background on hover
+                color: '#b71c1c', // Slightly darker red icon on hover (optional)
+              },
             }}
           >
             <CloseIcon />
@@ -1180,6 +1264,85 @@ const Stock201 = () => {
         </Box>
       </Modal>
 
+
+      {/* ExcelDownload From & To Date Modal */}
+      <Modal
+        open={openExcelDownloadModal}
+        onClose={handleCloseModal}  // Use the custom handleCloseModal function
+      >
+        <Box
+          sx={{
+            width: 400,
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            margin: 'auto',
+            marginTop: '10%',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '15px',
+          }}
+        >
+          <h3
+            style={{
+              gridColumn: 'span 2',
+              textAlign: 'center',
+              marginBottom: '15px',
+              color: 'blue',
+              textDecoration: 'underline',
+              textDecorationColor: 'limegreen',
+              textDecorationThickness: '3px',
+            }}
+          >
+            Excel Download
+          </h3>
+
+          <TextField
+            label="From Date"
+            name="FromDate"
+            type="date"
+            InputLabelProps={{ shrink: true }}
+            fullWidth
+            required
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+          />
+          <TextField
+            label="To Date"
+            name="ToDate"
+            type="date"
+            InputLabelProps={{ shrink: true }}
+            fullWidth
+            required
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+          />
+
+          <Box
+            sx={{
+              gridColumn: 'span 2',
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '10px',
+              marginTop: '15px',
+            }}
+          >
+            <Button variant="contained" color="error" onClick={handleCloseModal}>
+              Cancel
+            </Button>
+            <Button
+              style={{ width: '90px' }}
+              variant="contained"
+              color="primary"
+              onClick={handleDownloadReportExcel}
+            >
+              Download
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
+      
       {/* Row edit modal */}
       <Modal open={openRowEditModal} onClose={handleCloseRowEditModal}>
         <Box

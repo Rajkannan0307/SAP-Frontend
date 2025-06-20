@@ -650,7 +650,7 @@ const Partno = () => {
 
       const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
       const fileExtension = ".xlsx";
-      const fileName = "Trn 309 Movement List";
+      const fileName = "Trn 309 Movement Data List";
 
       // Define worksheet and header style
       const ws = XLSX.utils.json_to_sheet(response.data);
@@ -701,6 +701,7 @@ const Partno = () => {
       }
     }
   };
+  
   // Download the data from the trn sap table to particular date
   const handleDownloadReportExcel = async () => {
     if (!fromDate) {
@@ -965,64 +966,64 @@ const Partno = () => {
     }
   };
 
-  //view detail for Particular DocID Details ... downloa
-  const handleDownloadByDocId = async (docId) => {
-    try {
-      if (!docId) {
-        alert("Doc_ID is missing.");
-        return;
-      }
-      console.log("Calling download with Doc_ID:", docId);
+  // //view detail for Particular DocID Details ... downloa
+  // const handleDownloadByDocId = async (docId) => {
+  //   try {
+  //     if (!docId) {
+  //       alert("Doc_ID is missing.");
+  //       return;
+  //     }
+  //     console.log("Calling download with Doc_ID:", docId);
 
-      const response = await DownloadAllExcel(docId);
+  //     const response = await DownloadAllExcel(docId);
 
-      const data = response.data;
+  //     const data = response.data;
 
-      if (!data || data.length === 0) {
-        alert("No data found for this Doc_ID.");
-        return;
-      }
+  //     if (!data || data.length === 0) {
+  //       alert("No data found for this Doc_ID.");
+  //       return;
+  //     }
 
-      const ws = XLSX.utils.json_to_sheet(data);
+  //     const ws = XLSX.utils.json_to_sheet(data);
 
-      // Style headers
-      const headers = Object.keys(data[0]);
-      headers.forEach((_, colIdx) => {
-        const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
-        if (ws[cellAddress]) {
-          ws[cellAddress].s = {
-            font: { bold: true, color: { rgb: "000000" } },
-            fill: { fgColor: { rgb: "FFFF00" } },
-            alignment: { horizontal: "center" },
-          };
-        }
-      });
+  //     // Style headers
+  //     const headers = Object.keys(data[0]);
+  //     headers.forEach((_, colIdx) => {
+  //       const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+  //       if (ws[cellAddress]) {
+  //         ws[cellAddress].s = {
+  //           font: { bold: true, color: { rgb: "000000" } },
+  //           fill: { fgColor: { rgb: "FFFF00" } },
+  //           alignment: { horizontal: "center" },
+  //         };
+  //       }
+  //     });
 
-      const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
-      const excelBuffer = XLSX.write(wb, {
-        bookType: "xlsx",
-        type: "array",
-        cellStyles: true,
-      });
+  //     const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+  //     const excelBuffer = XLSX.write(wb, {
+  //       bookType: "xlsx",
+  //       type: "array",
+  //       cellStyles: true,
+  //     });
 
-      const fileType =
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-      const blob = new Blob([excelBuffer], { type: fileType });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `Trn309_DocID_${docId}.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
+  //     const fileType =
+  //       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+  //     const blob = new Blob([excelBuffer], { type: fileType });
+  //     const url = URL.createObjectURL(blob);
+  //     const link = document.createElement("a");
+  //     link.href = url;
+  //     link.setAttribute("download", `Trn309_DocID_${docId}.xlsx`);
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     link.remove();
+  //     URL.revokeObjectURL(url);
 
-      alert(`Downloaded data for Doc_ID: ${docId}`);
-    } catch (error) {
-      console.error("Download failed:", error);
-      alert("Error downloading file. See console for details.");
-    }
-  };
+  //     alert(`Downloaded data for Doc_ID: ${docId}`);
+  //   } catch (error) {
+  //     console.error("Download failed:", error);
+  //     alert("Error downloading file. See console for details.");
+  //   }
+  // };
 
   const handleCloseRowEditModal = () => {
     setOpenRowEditModal(false);

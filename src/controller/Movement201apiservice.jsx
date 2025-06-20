@@ -85,7 +85,7 @@ export const DownloadAllExcel = async (DocID) => {
 
 // ✅ FIXED: Update this path to match backend
 export const getTransactionData = async (fromDate, toDate) => {
-  const response = await axios.get(`${api}/Movement201/getTransactionData`, {
+  const response = await axios.get(`${api}/Movement201/download_data`, {
     params: {
       From: fromDate,
       to: toDate,
