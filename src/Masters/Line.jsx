@@ -53,10 +53,10 @@ const Line = () => {
   const columns = [
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
     { field: "Dept_Name", headerName: "Department Name ", flex: 1 },
-    { field: "Sup_Code", headerName: "Supervisor Code", flex: 1 },
+   
     { field: "Module_Name", headerName: "Module Name", flex: 1 },
     { field: "Line_Name", headerName: "Line Name", flex: 1 },
-
+    { field: "Sup_Code", headerName: "Supervisor Code", flex: 1 },
     {
       field: "ActiveStatus",
       headerName: "Active Status",
@@ -173,7 +173,7 @@ const Line = () => {
       console.log("👉 ModuleTable data:", response.data); // 👈 Check here
       setModuleTable(response.data);
     } catch (error) {
-      console.error("❌ Error fetching supervisors:", error);
+      console.error("❌ Error fetching Module:", error);
     }
   };
   const GetDepartment = async () => {
@@ -200,7 +200,6 @@ const Line = () => {
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
-
 const handleRowClick = async (params) => {
   const plantId = params.row.Plant_ID;
   const plantCode = params.row.Plant_Code;
@@ -208,12 +207,10 @@ const handleRowClick = async (params) => {
   setPlantID(plantId);
   setPlantCode(plantCode);
 
- await getSupvCode(params.row.Plant_ID);
- // fetch supervisor list first ✅
+  await get_SupvCode(plantId); // ✅ fetch and set SupvTable here
 
-  setSupv_Code(params.row.Supv_ID); // then set this ✅
+  setSupv_Code(params.row.Supv_ID); // ✅ this value will now match dropdown options
 
-  // other fields
   setLine_ID(params.row.Line_ID);
   setDept_Name(params.row.Dept_Name);
   setModule_Name(params.row.Module_Name);

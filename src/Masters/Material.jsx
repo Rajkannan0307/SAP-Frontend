@@ -763,15 +763,16 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
             label="Description"
             name="Description" value={Description}
             onChange={(e) => setDescription(e.target.value)} required />
+<TextField
+  label="Rate"
+  name="Rate"
+  type="number"
+  value={Rate}
+  onChange={(e) => setRate(e.target.value)}
+  inputProps={{ min: 0 }}
+  required
+/>
 
-          <TextField
-            label="Rate"
-            name="Rate"
-            type="number"
-            value={Rate}
-            onChange={(e) => setRate(e.target.value)}
-            required
-          />
 
 
           <FormControlLabel
@@ -896,14 +897,16 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
 
           />
 
-          <TextField
-            label="Rate"
-            type="number"
-            name="Rate"
-            value={Rate}
-            onChange={(e) => setRate(e.target.value)}
+         <TextField
+  label="Rate"
+  name="Rate"
+  type="number"
+  value={Rate}
+  onChange={(e) => setRate(e.target.value)}
+  inputProps={{ min: 0 }}
+  required
+/>
 
-          />
           <FormControlLabel
             control={
               <Switch

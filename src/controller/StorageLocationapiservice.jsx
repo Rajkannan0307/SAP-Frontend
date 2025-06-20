@@ -19,8 +19,18 @@ export const getAdd = async (data) => {
     const response = await axios.put(`${api}/StorageLocation/get_Updates`, data);
     return response;
   };
-  export const getSupvCode = async (PlantCode)=>{
+  export const getSupvCode = async (plantId)=>{
 
-  const response = await axios.get(`${api}/StorageLocation/Get_SupvCode?PlantCode=${PlantCode}`);
+  const response = await axios.get(`${api}/StorageLocation/Get_SupvCode?PlantCode=${plantId}`);
+  return response;
+};
+export const getSupvMappingsBySLocId = async (slocId) => {
+  const response = await axios.get(`${api}/StorageLocation/supv-mapping/${slocId}`);
+  return response.data;
+};
+
+export const MappingData = async ()=>{
+
+  const response = await axios.get(`${api}/StorageLocation/Get_SupvCode_Mappings`);
   return response;
 };
