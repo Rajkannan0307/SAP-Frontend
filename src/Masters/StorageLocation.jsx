@@ -189,37 +189,40 @@ getMappingData();
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
   const handleRowClick = async (params) => {
-    const plantId = params.row.Plant_ID;
-    const plantCode = params.row.Plant_Code;
+  const plantId = params.row.Plant_ID;
+  const plantCode = params.row.Plant_Code;
 
-    setPlantID(plantId); // ✅ Set early
-    setPlantCode(plantCode); // ✅ Set early
+  setPlantID(plantId);
+  setPlantCode(plantCode);
 
-    // Wait one tick so React updates `PlantID` before we use it in filtering
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  const supvData = await get_SupvCode(plantId, false);
+  setSupvTable(supvData);
+
+  setSLocID(params.row.SLoc_ID);
+  setStorageCode(params.row.Storage_Code);
+  setStorageName(params.row.SLoc_Name);
+  setActiveStatus(params.row.Active_Status);
+
+  try {
+    // 👇 Force fresh mappings
+    const supvs = await getSupvMappingsBySLocId(params.row.SLoc_ID);
+    console.log("🔁 Fresh supv mappings:", supvs);
+
+    const selectedIDs = supvs.map((s) => Number(s.Supv_ID));
+    setSupv_Codes(selectedIDs);
+
+    // 👇 Wait for state to update
     await new Promise((resolve) => setTimeout(resolve, 0));
+    setOpenEditModal(true);
+  } catch (err) {
+    console.error("❌ Failed to load mappings:", err);
+    setSupv_Codes([]);
+    setOpenEditModal(true);
+  }
+};
 
-    const supvData = await get_SupvCode(plantId, false); // fetch supervisor list
-    setSupvTable(supvData); // ✅ Now set manually
-
-    setSLocID(params.row.SLoc_ID);
-    setStorageCode(params.row.Storage_Code);
-    setStorageName(params.row.SLoc_Name);
-    setActiveStatus(params.row.Active_Status);
-
-    try {
-      const supvs = await getSupvMappingsBySLocId(params.row.SLoc_ID);
-      const selectedIDs = supvs.map((s) => Number(s.Supv_ID));
-      setSupv_Codes(selectedIDs);
-
-      // 🔐 Wait one tick so state settles before modal opens
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      setOpenEditModal(true);
-    } catch (err) {
-      console.error("❌ Failed to load supervisor mappings:", err);
-      setSupv_Codes([]);
-      setOpenEditModal(true);
-    }
-  };
 
   // useEffect(() => {
   //   console.log("🔥 Modal Opened - Supv_Codes:", Supv_Codes);
@@ -292,38 +295,35 @@ getMappingData();
   //console.log("🚀 Supv_Codes (Before Modal):", Supv_Codes);
 
   const handleUpdate = async () => {
-    const data = {
-      UserID: UserID,
-      SLoc_ID: SLoc_ID,
-      SLoc_Name: StorageName,
-      Active_Status: ActiveStatus,
-      Supv_Codes: Supv_Codes, // ✅ ADD THIS LINE
-    };
-
-    console.log("Data being sent:", data); // ✅ Confirm in browser console
-
-    try {
-      const response = await getUpdates(data);
-
-      if (response.data.success) {
-        alert(response.data.message);
-        getData(); // Refresh
-        handleCloseEditModal(); // Close modal
-      } else {
-        alert(response.data.message);
-      }
-    } catch (error) {
-      console.error("Error details:", error.response?.data);
-
-      if (error.response && error.response.data?.message) {
-        alert(error.response.data.message);
-      } else {
-        alert(
-          "An error occurred while updating the StorageLocation. Please try again."
-        );
-      }
-    }
+  const data = {
+    UserID,
+    SLoc_ID,
+    SLoc_Name: StorageName,
+    Active_Status: ActiveStatus,
+    Supv_Codes,
   };
+
+  try {
+    const response = await getUpdates(data);
+
+    if (response.data.success) {
+      alert(response.data.message);
+
+      // ⏳ Wait a bit before fetching updated mappings
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      await getMappingData();
+      await getData();
+
+      handleCloseEditModal();
+    } else {
+      alert(response.data.message);
+    }
+  } catch (error) {
+    console.error("Error updating:", error.response?.data);
+    alert("Update failed. Please try again.");
+  }
+};
+
 const getMappingData = async () => {
   try {
     const res = await MappingData();

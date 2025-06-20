@@ -35,6 +35,8 @@ import { MdSupervisedUserCircle } from "react-icons/md";
 import { GiRingMould } from "react-icons/gi";
 import { CiLineHeight } from "react-icons/ci";
 import EmergencyIcon from '@mui/icons-material/Emergency';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import ProductionQuantityLimitsIcon from '@mui/icons-material/ProductionQuantityLimits';
 const Sidebar = ({ setSidebarOpen }) => {
   const [open, setOpen] = useState(false);
   const [Masters, setMasterOpen] = useState(false);
@@ -295,7 +297,7 @@ const Sidebar = ({ setSidebarOpen }) => {
               color: "white",
               cursor: "pointer",
               fontWeight: "bold",
-              fontSize: "18px",
+              fontSize: "17px",
               margin: "10px 0",
               marginBottom: "10px"
             }}>
@@ -326,7 +328,54 @@ const Sidebar = ({ setSidebarOpen }) => {
             'Approval_309', 'Approval_201', 'Approval_202', 'Approval_551', 'Approval_311', 'InwardApproval', 'EmergencyApproval'
           ]}
         />
+ {Permissions.includes('Store') && (
+          <button
 
+            onClick={() => {
+              closeAllDropdowns(); // Close other sections
+              navigate("/home/SAP");
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "none",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              fontWeight: "bold",
+              fontSize: "17px",
+              margin: "10px 0", // Space above and below
+              marginBottom: "16px"
+            }}>
+            <StorefrontIcon style={{ color: "hotpink", fontSize: "24px" }} />
+            {open && "Store Dashboard"}
+          </button>
+        )}
+         {Permissions.includes('Production') && (
+          <button
+
+            onClick={() => {
+              closeAllDropdowns(); // Close other sections
+              navigate("/home/SAP");
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "none",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              fontWeight: "bold",
+              fontSize: "17px",
+              margin: "10px 0", // Space above and below
+              marginBottom: "16px"
+            }}>
+            <ProductionQuantityLimitsIcon style={{ color: "lemonchiffon", fontSize: "24px" }} />
+            {open && "Production Plan"}
+          </button>
+        )}
         {/* Transactions Section */}
         <SidebarSection
           open={open}
@@ -369,7 +418,7 @@ const Sidebar = ({ setSidebarOpen }) => {
               color: "white",
               cursor: "pointer",
               fontWeight: "bold",
-              fontSize: "18px",
+              fontSize: "17px",
               margin: "10px 0", // Space above and below
               marginBottom: "16px"
             }}>
