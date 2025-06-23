@@ -113,17 +113,14 @@ const [mappingData, setMappingData] = useState([]);
   //     setSupvTable([]);
   //   }
   // }, [PlantCode]);
-  useEffect(() => {
-    // ⏳ Initial fetch
-    getData();
-getMappingData();
-    // 🔄 When PlantCode changes, fetch supervisor codes
-    if (PlantCode) {
-      get_SupvCode(PlantCode);
-    } else {
-      setSupvTable([]);
-    }
-  }, [PlantCode]);
+ useEffect(() => {
+  if (PlantCode && openAddModal) {
+    get_SupvCode(PlantCode); // ✅ Now it fetches only when PlantCode changes during Add
+  } else if (openAddModal) {
+    setSupvTable([]);        // Clear when PlantCode is empty during Add
+  }
+}, [PlantCode, openAddModal]);
+
 
   const get_SupvCode = async (plantId, setStateDirectly = true) => {
     try {
@@ -176,16 +173,20 @@ getMappingData();
     }
   };
   // ✅ Handle Add Modal
-  const handleOpenAddModal = (item) => {
-    setPlantCode("");
-    setStorageCode("");
-    setStorageName("");
-    setSupv_Code("");
-    setActiveStatus(true);
-    setOpenAddModal(true);
-    get_SupvCode();
-    get_Plant();
-  };
+ const handleOpenAddModal = () => {
+  setPlantCode("");           // Reset all
+  setStorageCode("");
+  setStorageName("");
+  setSupv_Codes([]);
+  setSupvTable([]);
+  setActiveStatus(true);
+  setOpenAddModal(true);
+
+  get_Plant();               // ✅ fetch plant list only
+  // ❌ Don't call get_SupvCode here
+};
+
+
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
   const handleRowClick = async (params) => {
