@@ -29,7 +29,7 @@ import {
   getPlants,
   getSupvCode,
   getSupvMappingsBySLocId,
-  MappingData
+  MappingData,getStorageDownload
 } from "../controller/StorageLocationapiservice";
 import { MenuItem, InputLabel, FormControl } from "@mui/material";
 const UserID = localStorage.getItem("UserID");
@@ -51,6 +51,7 @@ const StorageLocation = () => {
   const [PlantID, setPlantID] = useState("");
   const [Supv_Codes, setSupv_Codes] = useState([]);
 const [mappingData, setMappingData] = useState([]);
+const [storageData, setStorageData] = useState([]);
   const columns = [
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
 
@@ -102,9 +103,12 @@ const [mappingData, setMappingData] = useState([]);
       setRows([]);
     }
   };
-  //   useEffect(() => {
-  //     getData();
-  //   }, []);
+    useEffect(() => {
+      getData();
+      getStorageData();
+  getMappingData();
+    }, []);
+  
 
   // useEffect(() => {
   //   if (PlantCode) {
@@ -311,10 +315,11 @@ const [mappingData, setMappingData] = useState([]);
       alert(response.data.message);
 
       // ⏳ Wait a bit before fetching updated mappings
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      await getMappingData();
+      await new Promise((resolve) => setTimeout(resolve, 400));
+     
       await getData();
-
+         await getMappingData();
+       await getStorageData();
       handleCloseEditModal();
     } else {
       alert(response.data.message);
@@ -334,14 +339,27 @@ const getMappingData = async () => {
     console.error("Error fetching supervisor mappings:", err);
   }
 };
+ const getStorageData = async () => {
+    try {
+      const response = await getStorageDownload();
+      console.log(response); // Check the structure of response
+      setStorageData(response); // Ensure that this is correctly setting the data
+     
+    } catch (error) {
+      console.error("Error fetching supervisor mappings:", error);
+    }
+  };
 
 const handleDownloadExcel = () => {
-  if (data.length === 0 || mappingData.length === 0) {
+  console.log("📦 StorageData:", storageData);
+console.log("🗺️ MappingData:", mappingData);
+
+  if (storageData.length === 0 || mappingData.length === 0) {
     alert("No Data Found");
     return;
   }
 
-  const storageSheetData = data.map((item) => ({
+  const storageSheetData = storageData.map((item) => ({
     Plant_Code: item.Plant_Code,
     Storage_Code: item.Storage_Code,
     SLoc_Name: item.SLoc_Name,
@@ -350,7 +368,7 @@ const handleDownloadExcel = () => {
   }));
 
   const mappingSheetData = mappingData.map((item) => ({
-   
+    Plant_Code: item.Plant_Code,
     Storage_Code: item.Storage_Code,
     SLoc_Name: item.SLoc_Name,
     Sup_Code: item.Sup_Code,

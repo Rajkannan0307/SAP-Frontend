@@ -34,3 +34,7 @@ export const MappingData = async ()=>{
   const response = await axios.get(`${api}/StorageLocation/Get_SupvCode_Mappings`);
   return response;
 };
+export const getStorageDownload=async ()=>{
+    const response = await axios.get(`${api}/StorageLocation/get_StorageDownload`);
+    return response.data;
+};
