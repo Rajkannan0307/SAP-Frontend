@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, } from "react";
 import {
   TextField,
   Button,
@@ -6,9 +6,13 @@ import {
   Box,
   FormControlLabel,
   IconButton,
-  Select,
+
+  Tabs,
+  Tab,
   Switch,
+  Typography,Table, TableBody, TableCell, TableHead, TableRow
 } from "@mui/material";
+import { Link, useLocation } from 'react-router-dom';
 import {
   DataGrid,
   GridToolbarContainer,
@@ -37,38 +41,19 @@ const StoreDashboard = () => {
    const[Module_Name,setModule_Name]=useState("");
    const [Module_ID, setModule_ID] = useState([]);
     const [DepartmentTable, setDepartmentTable] = useState([]);
- const columns = [
-     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
-     { field: "Dept_Name", headerName: "Department Name ", flex: 1 },
-     { field: "Module_Name", headerName: "Module Name", flex: 1 },
-    
-     {
-      field: "ActiveStatus",
-      headerName: "Active Status",
-      flex: 1,
-      renderCell: (params) => {
-        const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
-        return (
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isActive} // Use the boolean value directly
-                color="default" // Neutral color for default theme
-                sx={{
-                  "& .MuiSwitch-track": {
-                    backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                  },
-                  "& .MuiSwitch-thumb": {
-                    backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                  },
-                }}
-              />
-            }
-          />
-        );
-      },
-    },
-   ];
+
+    const [activeTab, setActiveTab] = useState(0);
+    const location = useLocation();
+
+  // Determine active tab based on URL
+  const currentPath = location.pathname;
+  const tabIndex = currentPath === '/page2' ? 1 : 0;
+
+  const handleTabChange = (_, newValue) => {
+    setActiveTab(newValue);
+    console.log(`Switched to tab ${newValue}`);
+  };
+ 
   const getData = async () => {
      try {
        const response = await getdetails();
@@ -98,13 +83,7 @@ const StoreDashboard = () => {
     };
 
   // ✅ Custom Toolbar
-  const CustomToolbar = () => (
-    <GridToolbarContainer>
-      <GridToolbarColumnsButton />
-      <GridToolbarFilterButton />
-      <GridToolbarExport />
-    </GridToolbarContainer>
-  );
+ 
   // ✅ Search Functionality
   const handleSearch = () => {
     const text = searchText.trim().toLowerCase();
@@ -143,100 +122,7 @@ const StoreDashboard = () => {
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
 
-  const handleRowClick = (params) => {
-    setPlantCode(params.row.Plant_Code);
-    setModule_ID(params.row.Module_ID);
-    setDept_Name(params.row.Dept_Name);
-    setModule_Name(params.row.Module_Name);
-    setActiveStatus(params.row.Active_Status);
-    setOpenEditModal(true); // Open the modal
-  };
-
-  // ✅ Handle Add User
-    const handleAdd = async () => {
-      console.log("Data being sent to the server:", {
-        PlantCode,
-         Dept_Name,Module_Name,UserID
-       
-      });
-      console.log("Add button clicked");
-    
-      // Step 1: Validate required fields
-      if (
-        PlantCode === "" ||
-        Dept_Name === "" ||
-        Module_Name === "" 
-        
-      ) {
-        alert("Please fill in all required fields");
-        return;
-      }
-     
-     
-      try {
-        // Prepare data to be sent
-        const data = {
-          UserID:UserID,
-          Plant_Code: PlantCode,
-          Dept_Name:Dept_Name,
-          Module_Name:Module_Name,
-          Active_Status:ActiveStatus, // Make sure this is defined somewhere
-        };
-    
-        // Step 3: Call the API to add the user
-        const response = await getAdd(data); // Ensure getAdd uses a POST request
-    
-        if (response.data.success) {
-          alert("Module added successfully!");
-          getData(); // refresh UI (e.g. user list)
-          handleCloseAddModal(); // close the modal
-        } else {
-          alert(response.data.message || "Failed to add StorageLocation.");
-        }
-      } catch (error) {
-        console.error("Error in adding StorageLocation:", error);
-    
-        // Step 4: Show error from server (like Employee_ID already exists)
-        if (error.response && error.response.data && error.response.data.message) {
-          alert(error.response.data.message);
-        } else {
-          alert("An error occurred while adding the Storage Location.");
-        }
-      }
-    };
-
- const handleUpdate = async () => {
-     const data = {
-      UserID:UserID,
-     Module_ID: Module_ID,
-     Module_Name: Module_Name,
-       Active_Status: ActiveStatus,
-     };
-     console.log("Data being sent:", data); // Log data to verify it before sending
- 
-     try {
-       const response = await getUpdates(data);
- 
-      // If success
-      if (response.data.success) {
-       alert(response.data.message);
-       getData(); // Refresh data
-       handleCloseEditModal(); // Close modal
-     } else {
-       // If success is false, show the backend message
-       alert(response.data.message);
-     }
-   } catch (error) {
-     console.error("Error details:", error.response?.data);
- 
-     if (error.response && error.response.data && error.response.data.message) {
-       alert(error.response.data.message); // Specific error from backend
-     } else {
-       alert("An error occurred while updating the StorageLocation. Please try again.");
-     }
-   }
- };
-
+  
 
   const handleDownloadExcel = () => {
       if (data.length === 0) {
@@ -399,287 +285,71 @@ const StoreDashboard = () => {
           </IconButton>
         </div>
       </div>
-
-      {/* DataGrid */}
-      <div
-        style={{
-          flexGrow: 1, // Ensures it grows to fill the remaining space
-          backgroundColor: "#fff",
-          borderRadius: 8,
-          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-          height: "calc(5 * 48px)",
+    <Box sx={{ p: 2 }}>
+      <Box
+        sx={{
+          border: '1px solid #ccc',
+          borderRadius: 0,
+          backgroundColor: '#f5f5f5',
         }}
       >
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          pageSize={5} // Set the number of rows per page to 8
-          rowsPerPageOptions={[5]}
-          getRowId={(row) => row.Module_ID} // Specify a custom id field
-          onRowClick={handleRowClick}
-          disableSelectionOnClick
-          slots={{ toolbar: CustomToolbar }}
-          sx={{
-            // Header Style
-            "& .MuiDataGrid-columnHeader": {
-              backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
-              color: "black",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-columnHeaderTitle": {
-              fontSize: "16px",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-row": {
-              backgroundColor: "#f5f5f5", // Default row background
-              "&:hover": {
-                backgroundColor: "#f5f5f5",
-              },
-            },
-            // ✅ Remove Selected Row Background
-            "& .MuiDataGrid-row.Mui-selected": {
-              backgroundColor: "inherit", // No background on selection
-            },
+        {/* 🔹 Tabs as Page Links */}
+        <Tabs
+          value={tabIndex}
+          textColor="primary"
+          indicatorColor="primary"
+          sx={{ borderBottom: '1px solid #ccc' }}
+        >
+          <Tab label="Page 1" component={Link} to="/home/StoreDashboard" />
+          <Tab label="Page 2" component={Link} to="/home/StoreDashboard" />
+        </Tabs>
 
-            "& .MuiDataGrid-cell": {
-              color: "#333",
-              fontSize: "14px",
-            },
+        {/* 🔹 Info Row */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            p: 1,
+            borderBottom: '1px solid #ccc',
           }}
-        />
-      </div>
-       {/* {Add Model} */}
-            <Modal open={openAddModal} onClose={() => setOpenAddModal(false)}>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  width: 400,
-                  bgcolor: "background.paper",
-                  borderRadius: 2,
-                  boxShadow: 24,
-                  p: 4,
-                  margin: "auto",
-                  marginTop: "10%",
-                  gap: "15px",
-                }}
-              >
-                <h3
-                  style={{
-                    gridColumn: "span 2",
-                    textAlign: "center",
-                    color: "#2e59d9",
-                    textDecoration: "underline",
-                    textDecorationColor: "#88c57a",
-                    textDecorationThickness: "3px",
-                  }}
-                >
-                  Add Module Master
-                </h3>
-                
-                <FormControl fullWidth>
-            <InputLabel>Plant Code</InputLabel>
-            <Select
-              label="Plant Code"
-              name="PlantCode"
-              value={PlantCode}
-              onChange={(e) => setPlantCode(e.target.value)}
-              required
-            >
-              {PlantTable.map((item, index) => (
-                <MenuItem key={index} value={item.Plant_Id}>{item.Plant_Code}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-           <FormControl fullWidth>
-                      <InputLabel>Department</InputLabel>
-                      <Select
-                        label="Department"
-                        name="Department"
-                        value={Dept_Name}
-                        onChange={(e) => setDept_Name(e.target.value)}
-                        required
-                      >
-                        {DepartmentTable.map((item, index) => (
-                          <MenuItem key={index} value={item.Dept_ID}>
-                            {item.Dept_Name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-          
-             
-                <TextField
-                  label="Module Name"
-                  name="Module_Name"
-                  value={Module_Name} 
-                  onChange={(e) => setModule_Name(e.target.value)}
-                  fullWidth
-                  
-                  required
-                />
-      
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={ActiveStatus}
-                      onChange={(e) => setActiveStatus(e.target.checked)}
-                      color="success" // Always use 'success' to keep the thumb green when active
-                      sx={{
-                        "& .MuiSwitch-track": {
-                          backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                          backgroundImage: "none !important", // Disable background image
-                        },
-                        "& .MuiSwitch-thumb": {
-                          backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                          borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                        },
-                      }}
-                    />
-                  }
-                  label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-                  labelPlacement="end"
-                  style={{
-                    color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-                    fontWeight: "bold",
-                  }}
-                />
-                <Box
-                  sx={{
-                    gridColumn: "span 2",
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "10px",
-                    marginTop: "15px",
-                  }}
-                >
-                  <Button
-                    variant="contained"
-                    color="error"
-                    onClick={() => handleCloseAddModal(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    style={{ width: "90px" }}
-                    variant="contained"
-                    color="primary"
-                    onClick={handleAdd}
-                  >
-                    Add
-                  </Button>
-                </Box>
-              </Box>
-            </Modal>
-      
-            {/* ✅ Edit Modal */}
-            <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  width: 400,
-                  bgcolor: "background.paper",
-                  borderRadius: 2,
-                  boxShadow: 24,
-                  p: 4,
-                  margin: "auto",
-                  marginTop: "10%",
-                  gap: "15px",
-                }}
-              >
-                <h3
-                  style={{
-                    gridColumn: "span 2",
-                    textAlign: "center",
-                    color: "#2e59d9",
-                    textDecoration: "underline",
-                    textDecorationColor: "#88c57a",
-                    textDecorationThickness: "3px",
-                  }}
-                >
-                  Edit Module Master
-                </h3>
-                <TextField
-                  label="Plant"
-                  name="Plant"
-                  value={PlantCode} // Use the current value of PlantCode
-                  fullWidth
-                  InputProps={{
-                    readOnly: true, // Make it read-only
-                  }}
-                  required
-                />
-      
-      <TextField
-                  label="Department Name"
-                  name="Department Name"
-                  value={Dept_Name} // Use the current value of PlantCode
-                  fullWidth
-                  InputProps={{
-                    readOnly: true, // Make it read-only
-                  }}
-                  required
-                />
-                <TextField
-                  label="Module Name"
-                  name="Module_Name"
-                  value={Module_Name} 
-                  onChange={(e) => setModule_Name(e.target.value)}
-                  fullWidth
-                  
-                  required
-                />
+        >
+          <Typography sx={{ fontSize: 14 }}>Shift A</Typography>
+          <Typography sx={{ fontSize: 14 }}>Main Store</Typography>
+          <Typography sx={{ fontSize: 14 }}>Date</Typography>
+        </Box>
+
+        {/* 🔹 Table */}
+        <Table sx={{ backgroundColor: '#f5f5f5' }}>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: '#bdbdbd' }}>
+              <TableCell sx={{ fontWeight: 'bold' }}>ID</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Module Name</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Module Name</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Module Name</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Module Name</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Module Name</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Module Name</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.Module_ID}>
+                <TableCell>{row.Module_ID}</TableCell>
+                <TableCell>{row.name}</TableCell>
+                <TableCell>{row.name}</TableCell>
+                <TableCell>{row.name}</TableCell>
+                <TableCell>{row.name}</TableCell>
+                <TableCell>{row.name}</TableCell>
+                <TableCell>{row.name}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Box>
+    </Box>
       
       
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={ActiveStatus}
-                      onChange={(e) => setActiveStatus(e.target.checked)}
-                      color="success" // Always use 'success' to keep the thumb green when active
-                      sx={{
-                        "& .MuiSwitch-track": {
-                          backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                          backgroundImage: "none !important", // Disable background image
-                        },
-                        "& .MuiSwitch-thumb": {
-                          backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                          borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                        },
-                      }}
-                    />
-                  }
-                  label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-                  labelPlacement="end"
-                  style={{
-                    color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-                    fontWeight: "bold",
-                  }}
-                />
-      
-                <Box
-                  sx={{
-                    gridColumn: "span 2",
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "10px",
-                    marginTop: "15px",
-                  }}
-                >
-                  <Button
-                    variant="contained"
-                    color="error"
-                    onClick={handleCloseEditModal}
-                  >
-                    Cancel
-                  </Button>
-                  <Button variant="contained" color="primary" onClick={handleUpdate}>
-                    Update
-                  </Button>
-                </Box>
-              </Box>
-            </Modal>
     </div>
   );
 };
