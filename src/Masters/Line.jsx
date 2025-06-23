@@ -621,12 +621,21 @@ console.log("🧾 Setting Supv_Code:", params.row.Supv_ID);
     value={Supv_Code}
     onChange={(e) => setSupv_Code(e.target.value)}
     required
+     MenuProps={{
+      PaperProps: {
+        sx: {
+          maxHeight: 300, // ⬅️ Smaller dropdown
+         
+        },
+      },
+    }}
   >
     {(SupvTable || []).map((item) => (
       <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
         {item.Sup_Code} - {item.Sup_Name}
       </MenuItem>
     ))}
+    
   </Select>
 </FormControl>
 
@@ -775,6 +784,14 @@ console.log("🧾 Setting Supv_Code:", params.row.Supv_ID);
     value={Supv_Code}
     onChange={(e) => setSupv_Code(e.target.value)}
     required
+     MenuProps={{
+      PaperProps: {
+        sx: {
+          maxHeight: 300, // ⬅️ Smaller dropdown
+         
+        },
+      },
+    }}
   >
     {filteredSupvs.map((item) => (
       <MenuItem key={item.Supv_ID} value={item.Supv_ID}>

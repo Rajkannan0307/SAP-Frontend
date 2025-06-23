@@ -37,6 +37,7 @@ import { CiLineHeight } from "react-icons/ci";
 import EmergencyIcon from '@mui/icons-material/Emergency';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import ProductionQuantityLimitsIcon from '@mui/icons-material/ProductionQuantityLimits';
+import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 const Sidebar = ({ setSidebarOpen }) => {
   const [open, setOpen] = useState(false);
   const [Masters, setMasterOpen] = useState(false);
@@ -273,7 +274,7 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "ValuationType", path: "/home/ValuationType", icon: <GrCubes style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "rosybrown" }} />, code: 'ValuationType' },
             { name: "SupvCode", path: "/home/SupvCode", icon: <MdSupervisedUserCircle style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "aquamarine" }} />, code: 'SupvCode' },
              { name: "Module", path: "/home/Module", icon: <GiRingMould style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "khaki" }} />, code: 'Module' },
-             { name: "Line", path: "/home/Line", icon: <CiLineHeight style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkseagreen" }} />, code: 'Line' },
+             { name: "Line", path: "/home/Line", icon: <PrecisionManufacturingIcon style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkseagreen" }} />, code: 'Line' },
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
@@ -333,7 +334,7 @@ const Sidebar = ({ setSidebarOpen }) => {
 
             onClick={() => {
               closeAllDropdowns(); // Close other sections
-              navigate("/home/SAP");
+              navigate("/home/StoreDashboard");
             }}
             style={{
               display: "flex",
@@ -357,7 +358,7 @@ const Sidebar = ({ setSidebarOpen }) => {
 
             onClick={() => {
               closeAllDropdowns(); // Close other sections
-              navigate("/home/SAP");
+              navigate("/home/ProductionPlan");
             }}
             style={{
               display: "flex",
