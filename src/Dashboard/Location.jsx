@@ -25,7 +25,7 @@ import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from 'sheetjs-style';
 import {
   Movement311, getresubmit, getTransactionData, getdetails, getPlants, getMaterial, getSLoc,
-  getMovement, getReasonForMovement, getCostCenter, getValuationType, get311ApprovalView, Edit311Record,
+  getMovement, getValuationType, get311ApprovalView, Edit311Record,
 } from "../controller/Movement311apiservice";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { api } from "../controller/constants";
@@ -248,14 +248,7 @@ const Location = () => {
     }
   };
 
-  const get_ReasonForMovement = async () => {
-    try {
-      const response = await getReasonForMovement();
-      setReasonForMovement(response.data);
-    } catch (error) {
-      // console.error("Error updating user:", error);
-    }
-  };
+
   const get_Movement = async () => {
     try {
       const response = await getMovement();
@@ -321,7 +314,7 @@ const handleUploadData = async () => {
 
     const response = await Movement311(formData);
     alert(response.data.message);
-
+ console.log('response', response.data)
     const newRecords = response.data.NewRecord || [];
     const errorRecords = response.data.ErrorRecords || [];
 
@@ -341,27 +334,28 @@ const downloadExcel = (newRecord = [], errRecord = []) => {
   const wb = XLSX.utils.book_new();
 
   const commonHeaders = [
-    'Plant_Code', 'Material_Code', 'SLoc_Code', 'Reason_For_Movt',
-    'Movement_Code', 'Rejection_Qty', 'Provision_Qty',
-    'Provision_Value', 'Rate', 'Remark'
+    "Plant_Code", "Material_Code", "From_SLoc_Code", "To_SLoc_Code",
+    "Reason_For_Movt", "Movement_Code", "Qty",
+    "Valuation_Type", "Batch", "Remark"
   ];
 
   const errorHeaders = [
     ...commonHeaders,
-    'Plant_Val', 'Material_Val', 'SLoc_Val', 'CostCenter_Val',
-    'Plant_SLoc_Val', 'Reason_Val', 'User_Plant_Val'
+    "Plant_Val", "Material_Val", "From_SLoc_Val", "To_SLoc_Val",
+    "From_SLoc_Plant_Val", "To_SLoc_Plant_Val", "Material_Plant_Val",
+    "Movement_Val", "User_Plant_Val"
   ];
 
   const formatRecord = (item) => ({
     Plant_Code: item.Plant_Code || '',
     Material_Code: item.Material_Code || '',
-    SLoc_Code: item.SLoc_Code || '',
+    From_SLoc_Code: item.From_SLoc_Code || '', // fixed from item.SLoc_Code
+    To_SLoc_Code: item.To_SLoc_Code || '',
     Reason_For_Movt: item.Reason_For_Movt || '',
     Movement_Code: item.Movement_Code || '',
-    Rejection_Qty: item.Rejection_Qty || '',
-    Provision_Qty: item.Provision_Qty || '',
-    Provision_Value: item.Provision_Value || '',
-    Rate: item.Rate || '',
+    Qty: item.Qty || '',
+    Valuation_Type: item.Valuation_Type || '',
+    Batch: item.Batch || '',
     Remark: item.Remark || item.Remarks || ''
   });
 
@@ -369,10 +363,12 @@ const downloadExcel = (newRecord = [], errRecord = []) => {
     ...formatRecord(item),
     Plant_Val: item.Plant_Val || '',
     Material_Val: item.Material_Val || '',
-    SLoc_Val: item.SLoc_Val || '',
-    CostCenter_Val: item.CostCenter_Val || '',
-    Plant_SLoc_Val: item.Plant_SLoc_Val || '',
-    Reason_Val: item.Reason_Val || '',
+    From_SLoc_Val: item.From_SLoc_Val || '',
+    To_SLoc_Val: item.To_SLoc_Val || '',
+    From_SLoc_Plant_Val: item.From_SLoc_Plant_Val || '',
+    To_SLoc_Plant_Val: item.To_SLoc_Plant_Val || '',
+    Material_Plant_Val: item.Material_Plant_Val || '',
+    Movement_Val: item.Movement_Val || '',
     User_Plant_Val: item.User_Plant_Val || ''
   });
 
@@ -393,7 +389,6 @@ const downloadExcel = (newRecord = [], errRecord = []) => {
   // Save Excel file
   XLSX.writeFile(wb, 'Trn311Movt Data UploadLog.xlsx');
 };
-
 
 const styleHeaders = (ws, headers) => {
   headers.forEach((_, colIdx) => {
@@ -431,6 +426,7 @@ const styleValidationColumns = (ws, headers, rowCount) => {
   }
 };
 
+
   useEffect(() => {
   }, [openRowEditModal]);
 
@@ -442,7 +438,6 @@ const styleValidationColumns = (ws, headers, rowCount) => {
       get_Material(),
       get_SLoc(),
       get_Movement(),
-      get_ReasonForMovement(),
     ]);
   };
 
@@ -578,6 +573,7 @@ const columns = [
   { field: "SLoc_Code", headerName: "From SLoc", width: 160 },
   { field: "To_SLoc_Code", headerName: "To SLoc", width: 160 },
   { field: "Qty", headerName: "Quantity", width: 150 },
+  { field: "Valuation_Type", headerName: "Valuation Type", width: 150 },
   { field: "Approval_Status", headerName: "Approval Status", width: 185 },
 
   {
@@ -798,13 +794,6 @@ const handleUpdate = async () => {
     getData();
     get_SLoc();
 
-  }, []);
-  useEffect(() => {
-    async function fetchReasonForMovement() {
-      const response = await getReasonForMovement(); // your function to call stored procedure
-      setReasonForMovementTable(response.data);
-    }
-    fetchReasonForMovement();
   }, []);
 
 

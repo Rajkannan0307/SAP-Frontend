@@ -186,19 +186,27 @@ const Approval551 = () => {
   };
   // Table columns for DataGrid
   const columns = [
-    { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
-    { field: "Doc_ID", headerName: "Doc ID ", flex: 1 },
-    { field: "Date", headerName: "Date", flex: 1 },
-    { field: "Movement_ID", headerName: "Movement Type", flex: 1 },
-    { field: "Request_By", headerName: "Requset By", flex: 1 },
-    { field: "Approver_Status", headerName: "Approver Status", flex: 1 },
+    { field: "Plant_Code", headerName: "Plant Code", width: 100 },
+    { field: "Doc_ID", headerName: "Doc ID ", width: 90 },
+    { field: "Date", headerName: "Date", width: 105 },
+    { field: "Movement_ID", headerName: "Movt Type", width: 100 },
+    { field: "Material_Code", headerName: "Material Code", width: 125 },
+    { field: "Rejection_Qty", headerName: "Rejection Qty", width: 125 },
+    { field: "Provision_Qty", headerName: "Provision Qty", width: 125 },
+    { field: "Rate_PerPart", headerName: "Rate", width: 58 },
+    { field: "Rejection_Value", headerName: "Rejection Value", width: 135 },
+    { field: "Provision_Value", headerName: "Provision Value", width: 135 },
+    { field: "Difference_Qty", headerName: "Different Qty", width: 125 },
+    { field: "Difference_Value", headerName: "Different Value", width: 130 },
+    { field: "Request_By", headerName: "Requset By", width: 100 },
+    { field: "Approver_Status", headerName: "Approver Status", width: 100 },
 
 
     // Approve Column
     {
       field: "action",
       headerName: "Action",
-      flex: 1,
+      width: 123,
       sortable: false,
       renderCell: (params) => (
         <div style={{ display: "flex", justifyContent: "center", gap: "8px" }}>
