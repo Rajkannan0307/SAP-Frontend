@@ -151,19 +151,20 @@ const Sidebar = ({ setSidebarOpen }) => {
   };
 
   return (
-    <div
-      style={{
-        width: open ? "250px" : "60px",
-        backgroundColor: "#595959",
-        transition: "width 0.3s ease",
-        height: "100vh",
-        position: "fixed",
-        top: "60px",
-        left: 0,
-        overflow: "hidden",
-        paddingTop: "10px",
-      }}
-    >
+   <div
+  style={{
+    width: open ? "250px" : "60px",
+    backgroundColor: "#595959",
+    transition: "width 0.3s ease",
+    height: "100vh",
+    position: "fixed",
+    top: "60px",
+    left: 0,
+    overflowY: "auto",        // ✅ only scrolls when needed
+    overflowX: "hidden",      // ✅ prevent horizontal scroll
+    paddingTop: "10px",
+  }}
+>
       {/* Sidebar Header */}
       <div
         style={{
