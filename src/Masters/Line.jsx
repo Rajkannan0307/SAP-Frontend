@@ -50,6 +50,9 @@ const Line = () => {
   const [Module_Name, setModule_Name] = useState("");
   const [PlantID, setPlantID] = useState("");
   const [DepartmentTable, setDepartmentTable] = useState([]);
+  const [loadingSupv, setLoadingSupv] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+
   const columns = [
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
     { field: "Dept_Name", headerName: "Department Name ", flex: 1 },
@@ -141,31 +144,31 @@ const Line = () => {
       setRows(filteredRows);
     }
   };
-
-  useEffect(() => {
-  if (PlantCode && PlantCode !== "") {
-    get_SupvCode(PlantCode); // this will populate SupvTable
-  } else {
-    setSupvTable([]);
+useEffect(() => {
+  if (PlantCode && !isEditMode) {
+    get_SupvCode(PlantCode); // ✅ only fetch for Add modal
   }
-}, [PlantCode]);
+}, [PlantCode, isEditMode]);
 
 const get_SupvCode = async (plantId, setStateDirectly = true) => {
   try {
+    
     if (!plantId) return [];
 
-    const response = await getSupvCode(plantId); // API call
+    const response = await getSupvCode(plantId);
+console.log("✅ Supv Data received:", response.data);
 
     if (setStateDirectly) {
-      setSupvTable(response.data); // ✅ this populates the dropdown
+      setSupvTable(response.data); // set supervisor list
     }
 
-    return response.data; // helpful for edit mode
+    return response.data;
   } catch (error) {
     console.error("❌ Error fetching supervisors:", error);
     return [];
   }
 };
+
 
 
   const get_Module = async () => {
@@ -188,28 +191,45 @@ const get_SupvCode = async (plantId, setStateDirectly = true) => {
   // ✅ Handle Add Modal
  const handleOpenAddModal = () => {
   setPlantCode("");  // or set a default
+  setIsEditMode(false);   
   setDept_Name("");
   setModule_Name("");
   setLine_Name("");
   setSupv_Code(""); // clear old selection
   setActiveStatus(true);
   setOpenAddModal(true);
+  GetDepartment();
+  get_Module();
+  get_Plant();
 };
 
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
+  const filteredSupvs = SupvTable.filter((item) => item.Plant_ID === PlantID);
+console.log("🧮 Filtered Supvs:", filteredSupvs);
+
 const handleRowClick = async (params) => {
+  setLoadingSupv(true);
+setIsEditMode(true); 
   setLine_ID(params.row.Line_ID);
-  setPlantCode(params.row.Plant_ID); // important: triggers useEffect
-  setDept_Name(params.row.Dept_ID);
-  setModule_Name(params.row.Module_ID);
+  setPlantCode(params.row.Plant_Code); // just for UI
+  setDept_Name(params.row.Dept_Name);
+  setModule_Name(params.row.Module_Name);
   setLine_Name(params.row.Line_Name);
-  setSupv_Code(params.row.Supv_ID); // populate selected supv
+  setSupv_Code(params.row.Supv_ID);
   setActiveStatus(params.row.Active_Status);
 
-  await get_SupvCode(params.row.Plant_ID); // ✅ load correct supervisors
-  setOpenEditModal(true);
+  setPlantID(params.row.Plant_ID);           // ✅ 1. Set this first
+  await get_SupvCode(params.row.Plant_ID);   // ✅ 2. Fetch data with correct ID
+
+  setLoadingSupv(false);
+  setOpenEditModal(true);       
+  console.log("🌱 PlantID:", params.row.Plant_ID);
+console.log("🧾 Setting Supv_Code:", params.row.Supv_ID);
+             // ✅ 3. Open modal after data is ready
 };
+
+
 
 
 
@@ -365,9 +385,9 @@ const handleRowClick = async (params) => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "StorageLocation");
     XLSX.writeFile(workbook, "LineMaster_Data.xlsx");
   };
-  console.log("🧪 Supv_Code:", Supv_Code);
-console.log("🧪 PlantCode:", PlantCode);
-console.log("🧪 Filtered SupvTable:", SupvTable.filter((item) => item.Plant_ID === PlantCode));
+//   console.log("🧪 Supv_Code:", Supv_Code);
+// console.log("🧪 PlantCode:", PlantCode);
+// console.log("🧪 Filtered SupvTable:", SupvTable.filter((item) => item.Plant_ID === PlantCode));
 
   return (
     <div
@@ -594,7 +614,7 @@ console.log("🧪 Filtered SupvTable:", SupvTable.filter((item) => item.Plant_ID
             </Select>
           </FormControl>
 
-         <FormControl fullWidth>
+       <FormControl fullWidth>
   <InputLabel>Supervisor Code</InputLabel>
   <Select
     label="Supervisor Code"
@@ -602,15 +622,14 @@ console.log("🧪 Filtered SupvTable:", SupvTable.filter((item) => item.Plant_ID
     onChange={(e) => setSupv_Code(e.target.value)}
     required
   >
-    {SupvTable
-      .filter((item) => item.Plant_ID === parseInt(PlantCode)) // Safe compare
-      .map((item) => (
-        <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
-          {item.Sup_Code} - {item.Sup_Name}
-        </MenuItem>
-      ))}
+    {(SupvTable || []).map((item) => (
+      <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
+        {item.Sup_Code} - {item.Sup_Name}
+      </MenuItem>
+    ))}
   </Select>
 </FormControl>
+
 
           <FormControl fullWidth>
             <InputLabel>Module Name</InputLabel>
@@ -749,7 +768,7 @@ console.log("🧪 Filtered SupvTable:", SupvTable.filter((item) => item.Plant_ID
               readOnly: true, // This makes the TextField read-only
             }}
           />
-         <FormControl fullWidth>
+       <FormControl fullWidth>
   <InputLabel>Supervisor Code</InputLabel>
   <Select
     label="Supervisor Code"
@@ -757,15 +776,15 @@ console.log("🧪 Filtered SupvTable:", SupvTable.filter((item) => item.Plant_ID
     onChange={(e) => setSupv_Code(e.target.value)}
     required
   >
-    {SupvTable
-      .filter((item) => item.Plant_ID === parseInt(PlantCode)) // Safe compare
-      .map((item) => (
-        <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
-          {item.Sup_Code} - {item.Sup_Name}
-        </MenuItem>
-      ))}
+    {filteredSupvs.map((item) => (
+      <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
+        {item.Sup_Code} - {item.Sup_Name}
+      </MenuItem>
+    ))}
   </Select>
 </FormControl>
+
+
 
 
 
