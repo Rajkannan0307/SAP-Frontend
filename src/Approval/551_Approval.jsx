@@ -186,27 +186,22 @@ const Approval551 = () => {
   };
   // Table columns for DataGrid
   const columns = [
-    { field: "Plant_Code", headerName: "Plant Code", width: 100 },
-    { field: "Doc_ID", headerName: "Doc ID ", width: 90 },
-    { field: "Date", headerName: "Date", width: 105 },
-    { field: "Movement_ID", headerName: "Movt Type", width: 100 },
-    { field: "Material_Code", headerName: "Material Code", width: 125 },
-    { field: "Rejection_Qty", headerName: "Rejection Qty", width: 125 },
-    { field: "Provision_Qty", headerName: "Provision Qty", width: 125 },
-    { field: "Rate_PerPart", headerName: "Rate", width: 58 },
-    { field: "Rejection_Value", headerName: "Rejection Value", width: 135 },
-    { field: "Provision_Value", headerName: "Provision Value", width: 135 },
-    { field: "Difference_Qty", headerName: "Different Qty", width: 125 },
-    { field: "Difference_Value", headerName: "Different Value", width: 130 },
-    { field: "Request_By", headerName: "Requset By", width: 100 },
-    { field: "Approver_Status", headerName: "Approver Status", width: 100 },
+    { field: "Plant_Code", headerName: "Plant Code", width: 150 },
+    { field: "Doc_ID", headerName: "Doc ID ", width: 130 },
+    { field: "Date", headerName: "Date", width: 125 },
+    { field: "Movement_Code", headerName: "Movement Type", width: 190 },
+    { field: "Total_Rejection_Value", headerName: "Rejection Value", width: 195 },
+    { field: "Total_Provision_Value", headerName: "Provision Value", width: 195 },
+    { field: "Difference_Value", headerName: "Different Value", width: 190 },
+    { field: "Request_By", headerName: "Requset By", width: 160 },
+    { field: "Approver_Status", headerName: "Approver Status", width: 180 },
 
 
     // Approve Column
     {
       field: "action",
       headerName: "Action",
-      width: 123,
+      width: 160,
       sortable: false,
       renderCell: (params) => (
         <div style={{ display: "flex", justifyContent: "center", gap: "8px" }}>
@@ -607,7 +602,7 @@ const Approval551 = () => {
             textUnderlineOffset: "6px",
           }}
         >
-          551 Approval
+          Scrap - 551 Approval
         </h2>
       </div>
 

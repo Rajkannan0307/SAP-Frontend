@@ -17,12 +17,11 @@ export const Movement551Reupload = async (data,docId) => {
 //     return response.data;
 // };
 
-export const getdetails = async (userId) => {
-  const response = await axios.get(`${api}/Movement311/get_details?UserID=${userId}`);
-  return response;
+export const getdetails = async (user) => {
+  const response = await axios.get(`${api}/Movement551/get_details?userid=${user}`);
+  // Assuming your API returns an object with 'data' as the array:
+  return response.data.data || [];  // fallback to empty array if no data
 };
-
-
 
 export const getAdd = async (data)=>{
     const response = await axios.post(`${api}/Movement551/Get_Add`, data);
@@ -115,8 +114,8 @@ export const getresubmit = async (data) => {
 };
 
 
-// export const getCancel = async (data) => {
-//   const response = await axios.post(`${api}/Movement551/HandleCancelAction551?Doc_ID`,data);
+export const getCancel = async (data) => {
+  const response = await axios.post(`${api}/Movement551/HandleCancelAction551?Doc_ID`,data);
   
-//   return response.data;
-// };
+  return response.data;
+};
