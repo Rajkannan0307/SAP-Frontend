@@ -1,98 +1,67 @@
-import React, { useState, useEffect, } from "react";
+import React, { useState, useEffect } from "react";
 import {
   TextField,
   Button,
   Modal,
   Box,
-  FormControlLabel,
   IconButton,
-
   Tabs,
   Tab,
-  Switch,
-  Typography,Table, TableBody, TableCell, TableHead, TableRow
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
 } from "@mui/material";
-import { Link, useLocation } from 'react-router-dom';
-import {
-  DataGrid,
-  GridToolbarContainer,
-  GridToolbarColumnsButton,
-  GridToolbarFilterButton,
-  GridToolbarExport,
-} from "@mui/x-data-grid";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
-import { getdetails,getAdd,getUpdates,getPlants,getDepartment} from "../controller/ModuleMasterapiservice";
-import { MenuItem, InputLabel, FormControl } from '@mui/material';
-const UserID = localStorage.getItem('UserID');
+import { getdetails, getPlants, getDepartment } from "../controller/ModuleMasterapiservice";
+
 const StoreDashboard = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
   const [originalRows, setOriginalRows] = useState([]);
   const [data, setData] = useState([]);
-  const [openAddModal, setOpenAddModal] = useState(false);
-  const [openEditModal, setOpenEditModal] = useState(false);
-  const [ActiveStatus, setActiveStatus] = useState(false);
-  const [PlantTable, setPlantTable] = useState([]);
-   const [PlantCode, setPlantCode] = useState([]);
-   const[Dept_Name,setDept_Name]=useState("");
-   const[Module_Name,setModule_Name]=useState("");
-   const [Module_ID, setModule_ID] = useState([]);
-    const [DepartmentTable, setDepartmentTable] = useState([]);
+  const [selectedStore, setSelectedStore] = useState("Store 1");
 
-    const [activeTab, setActiveTab] = useState(0);
-    const location = useLocation();
-
-  // Determine active tab based on URL
-  const currentPath = location.pathname;
-  const tabIndex = currentPath === '/page2' ? 1 : 0;
-
-  const handleTabChange = (_, newValue) => {
-    setActiveTab(newValue);
-    console.log(`Switched to tab ${newValue}`);
+  // Fetch data based on selected store
+  const getData = async (storeName) => {
+    try {
+      const response = await getdetails(storeName); // Modify your backend to accept store name
+      setData(response);
+      setOriginalRows(response);
+      setRows(response);
+    } catch (error) {
+      console.error(error);
+      setData([]);
+      setOriginalRows([]);
+      setRows([]);
+    }
   };
- 
-  const getData = async () => {
-     try {
-       const response = await getdetails();
-       console.log(response); // Check the structure of response
-       setData(response); // Ensure that this is correctly setting the data
-       setOriginalRows(response); // for reference during search
-       setRows(response);
-     } catch (error) {
-       console.error(error);
-       setData([]); // Handle error by setting empty data
-       setOriginalRows([]); // handle error case
-       setRows([]);
-     }
-   };
+
+  // Initial load
   useEffect(() => {
-    getData();
+    getData(selectedStore);
   }, []);
 
+  // Handle tab switching
+  const handleTabChange = (_, newValue) => {
+    const store = newValue === 0 ? "Store 1" : "Store 2";
+    setSelectedStore(store);
+    getData(store);
+  };
 
-  const get_Plant = async () => {
-      try {
-        const response = await getPlants();
-        setPlantTable(response.data);
-      } catch (error) {
-        console.error("Error updating user:", error);
-      }
-    };
-
-  // ✅ Custom Toolbar
- 
-  // ✅ Search Functionality
+  // Search functionality
   const handleSearch = () => {
     const text = searchText.trim().toLowerCase();
-
     if (!text) {
       setRows(originalRows);
     } else {
       const filteredRows = originalRows.filter((row) =>
-        ["Plant_Code","Dept_Name","Module_Name"].some((key) => {
+        ["Plant_Code", "Dept_Name", "Module_Name"].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
         })
@@ -101,97 +70,55 @@ const StoreDashboard = () => {
     }
   };
 
-   const GetDepartment = async () => {
-      try {
-        const response = await getDepartment();
-        setDepartmentTable(response.data);
-      } catch (error) {
-        console.error("Error updating user:", error);
-      }
-    };
-  // ✅ Handle Add Modal
-  const handleOpenAddModal = (item) => {
-    setPlantCode("");
-    setDept_Name("");
-    setModule_Name("");
-    setActiveStatus(true);
-    setOpenAddModal(true);
-    get_Plant();
-    GetDepartment();
-  };
-  const handleCloseAddModal = () => setOpenAddModal(false);
-  const handleCloseEditModal = () => setOpenEditModal(false);
-
-  
-
+  // Download Excel
   const handleDownloadExcel = () => {
-      if (data.length === 0) {
-        alert("No Data Found");
-        return;
-      }
-  
-      const DataColumns = [
-        "Plant_Code",
-         "Dept_Name",
-         "Module_Name",
-        "ActiveStatus",
-      ];
-  
-      const filteredData = data.map((item) => ({
-        Plant_Code: item.Plant_Code,
-        Dept_Name:item.Dept_Name,
-        Module_Name:item.Module_Name,
-  
-        ActiveStatus: item.Active_Status ? "Active" : "Inactive"
-  
-      }));
-  
-      const worksheet = XLSX.utils.json_to_sheet(filteredData, {
-        header: DataColumns,
-      });
-  
-      // Style header row
-      DataColumns.forEach((_, index) => {
-        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-        if (!worksheet[cellAddress]) return;
-        worksheet[cellAddress].s = {
-          font: {
-            bold: true,
-            color: { rgb: "000000" },
-          },
-          fill: {
-            fgColor: { rgb: "FFFF00" },
-          },
-          alignment: {
-            horizontal: "center",
-          },
-        };
-      });
-  
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "StorageLocation");
-      XLSX.writeFile(workbook, "ModuleMaster_Data.xlsx");
-    };
+    if (data.length === 0) {
+      alert("No Data Found");
+      return;
+    }
+
+    const DataColumns = ["Plant_Code", "Dept_Name", "Module_Name", "ActiveStatus"];
+
+    const filteredData = data.map((item) => ({
+      Plant_Code: item.Plant_Code,
+      Dept_Name: item.Dept_Name,
+      Module_Name: item.Module_Name,
+      ActiveStatus: item.Active_Status ? "Active" : "Inactive",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(filteredData, {
+      header: DataColumns,
+    });
+
+    // Style header row
+    DataColumns.forEach((_, index) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+      if (!worksheet[cellAddress]) return;
+      worksheet[cellAddress].s = {
+        font: { bold: true, color: { rgb: "000000" } },
+        fill: { fgColor: { rgb: "FFFF00" } },
+        alignment: { horizontal: "center" },
+      };
+    });
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, selectedStore);
+    XLSX.writeFile(workbook, `${selectedStore}_ModuleMaster_Data.xlsx`);
+  };
+
   return (
     <div
       style={{
         padding: 20,
         backgroundColor: "#F5F5F5",
         marginTop: "50px",
+        height: "calc(100vh - 90px)",
         display: "flex",
         flexDirection: "column",
-        height: "calc(100vh - 90px)", // or a specific height if necessary
       }}
     >
-      {/* Header Section */}
-      <div
-        style={{
-          marginBottom: 20,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
+      {/* Header */}
+      <div style={{ marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h2
           style={{
             margin: 0,
@@ -202,20 +129,12 @@ const StoreDashboard = () => {
             marginBottom: -7,
           }}
         >
-         Module Master
-        </h2>
+         Store Dashboard 
+         </h2>
       </div>
 
-      {/* Search and Icons */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 10,
-        }}
-      >
-        {/* Search Box */}
+      {/* Search + Icons */}
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", gap: "10px" }}>
           <TextField
             size="small"
@@ -227,19 +146,12 @@ const StoreDashboard = () => {
             sx={{
               width: "400px",
               "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  border: "2px solid grey", // No border by default
-                },
-                "&:hover fieldset": {
-                  border: "2px solid grey", // Optional: border on hover
-                },
-                "&.Mui-focused fieldset": {
-                  border: "2px solid grey", // Grey border on focus
-                },
+                "& fieldset": { border: "2px solid grey" },
+                "&:hover fieldset": { border: "2px solid grey" },
+                "&.Mui-focused fieldset": { border: "2px solid grey" },
               },
             }}
           />
-
           <Button
             onClick={handleSearch}
             style={{
@@ -254,9 +166,7 @@ const StoreDashboard = () => {
           </Button>
         </div>
 
-        {/* Icons */}
         <div style={{ display: "flex", gap: "10px" }}>
-          {/* Download Button */}
           <IconButton
             onClick={handleDownloadExcel}
             style={{
@@ -270,9 +180,7 @@ const StoreDashboard = () => {
             <FaFileExcel size={18} />
           </IconButton>
 
-          {/* Add Button */}
           <IconButton
-            onClick={handleOpenAddModal}
             style={{
               borderRadius: "50%",
               backgroundColor: "#0066FF",
@@ -285,71 +193,65 @@ const StoreDashboard = () => {
           </IconButton>
         </div>
       </div>
-    <Box sx={{ p: 2 }}>
-      <Box
-        sx={{
-          border: '1px solid #ccc',
-          borderRadius: 0,
-          backgroundColor: '#f5f5f5',
-        }}
-      >
-        {/* 🔹 Tabs as Page Links */}
-        <Tabs
-          value={tabIndex}
-          textColor="primary"
-          indicatorColor="primary"
-          sx={{ borderBottom: '1px solid #ccc' }}
-        >
-          <Tab label="Page 1" component={Link} to="/home/StoreDashboard" />
-          <Tab label="Page 2" component={Link} to="/home/StoreDashboard" />
-        </Tabs>
 
-        {/* 🔹 Info Row */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            p: 1,
-            borderBottom: '1px solid #ccc',
-          }}
-        >
-          <Typography sx={{ fontSize: 14 }}>Shift A</Typography>
-          <Typography sx={{ fontSize: 14 }}>Main Store</Typography>
-          <Typography sx={{ fontSize: 14 }}>Date</Typography>
-        </Box>
+      {/* Tabs */}
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ border: '1px solid #ccc', borderRadius: 0, backgroundColor: '#f5f5f5' }}>
+          <Tabs
+            value={selectedStore === "Store 1" ? 0 : 1}
+            onChange={handleTabChange}
+            textColor="primary"
+            indicatorColor="primary"
+            sx={{ borderBottom: '1px solid #ccc' }}
+          >
+            <Tab label="Store 1" />
+            <Tab label="Store 2" />
+          </Tabs>
 
-        {/* 🔹 Table */}
-        <Table sx={{ backgroundColor: '#f5f5f5' }}>
-          <TableHead>
-            <TableRow sx={{ backgroundColor: '#bdbdbd' }}>
-              <TableCell sx={{ fontWeight: 'bold' }}>ID</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Module Name</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Module Name</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Module Name</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Module Name</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Module Name</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Module Name</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((row) => (
-              <TableRow key={row.Module_ID}>
-                <TableCell>{row.Module_ID}</TableCell>
-                <TableCell>{row.name}</TableCell>
-                <TableCell>{row.name}</TableCell>
-                <TableCell>{row.name}</TableCell>
-                <TableCell>{row.name}</TableCell>
-                <TableCell>{row.name}</TableCell>
-                <TableCell>{row.name}</TableCell>
+          {/* Info Row */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              p: 1,
+              borderBottom: '1px solid #ccc',
+            }}
+          >
+            <Typography sx={{ fontSize: 14 }}>Shift A</Typography>
+            <Typography sx={{ fontSize: 14 }}>{selectedStore}</Typography>
+            <Typography sx={{ fontSize: 14 }}>{new Date().toLocaleDateString()}</Typography>
+          </Box>
+
+          {/* Table */}
+          <Table sx={{ backgroundColor: '#f5f5f5' }}>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: '#bdbdbd' }}>
+                <TableCell sx={{ fontWeight: 'bold' }}>Storage Code</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Material</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Plan</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>OrderQty</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Delivery Qty</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Balance</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Delay Time</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {rows.map((row) => (
+                <TableRow key={row.Module_ID}>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Box>
       </Box>
-    </Box>
-      
-      
     </div>
   );
 };
