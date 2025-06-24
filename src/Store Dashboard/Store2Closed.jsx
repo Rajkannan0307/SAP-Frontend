@@ -137,7 +137,9 @@ const Store2Closed = () => {
           <Typography variant="body1" sx={{ fontWeight: "bold", fontSize: "16px" }}>
             Store 2 - Closed Orders
           </Typography>
-          <Typography variant="body1">Date</Typography>
+          <Typography variant="h6">
+      Date: {new Date().toLocaleDateString()}
+    </Typography>
         </Box>
 
         {/* DataGrid */}

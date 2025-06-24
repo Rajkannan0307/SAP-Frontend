@@ -23,11 +23,12 @@ const Store1Open = () => {
 
   const columns = [
     { field: "Vendor_Code", headerName: "S.No", flex: 1 },
+    { field: "Vendor_Cod", headerName: "Line", flex: 1 },
     { field: "Vendor_Name", headerName: "Order Date", flex: 1 },
     { field: "Invoice_No", headerName: "Order No", flex: 1 },
     { field: "Invoice_Date", headerName: "Material", flex: 1 },
     { field: "Invoice_Value", headerName: "Description", flex: 1 },
-    { field: "Purchase_Order", headerName: "Requirement", flex: 1 },
+    { field: "Purchase_Order", headerName: "Order Qty", flex: 1 },
     { field: "Reason_For_Delay", headerName: "Issued Qty", flex: 1 },
     { field: "bal", headerName: "Balanced Qty", flex: 1 },
     { field: "dely", headerName: "Delay Time", flex: 1 },
@@ -92,7 +93,9 @@ const Store1Open = () => {
       >
         <Typography>Shift A</Typography>
         <Typography>Store 1 - Open Orders</Typography>
-        <Typography>Date</Typography>
+         <Typography variant="h6">
+      Date: {new Date().toLocaleDateString()}
+    </Typography>
       </Box>
 
       {/* DataGrid Container */}
