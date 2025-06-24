@@ -58,35 +58,6 @@ const Approval311 = () => {
 
   // Function to open the view modal
 
-  const [Trn309ID, setTrn309ID] = useState("");
-  const [DocID, setDocID] = useState("");
-  const [PlantID, setPlantID] = useState("");
-  const [MovementID, setMovementID] = useState("");
-  const [FromMatID, setFromMatID] = useState("");
-  const [FromQty, setFromQty] = useState("");
-  const [FromSLocID, setFromSLocID] = useState("");
-  const [FromValuationType, setFromValuationType] = useState("");
-  const [FromBatch, setFromBatch] = useState("");
-  const [FromRatePerUnit, setFromRatePerUnit] = useState("");
-  const [ToMatID, setToMatID] = useState("");
-  const [ToQty, setToQty] = useState("");
-  const [ToSLocID, setToSLocID] = useState("");
-  const [ToValuationType, setToValuationType] = useState("");
-  const [ToBatch, setToBatch] = useState("");
-  const [ToRatePerUnit, setToRatePerUnit] = useState("");
-  const [FromDescription, setDescription] = useState("");
-  const [Remark, setRemark] = useState("");
-  const [SAPTransactionStatus, setSAPTransactionStatus] = useState("");
-  const [FromPrice, setFromPrice] = useState("");
-  const [ToDescription, setToDescription] = useState("");
-  const [ToPrice, setToPrice] = useState("");
-  const [PlantCode, setPlantCode] = useState('');
-  const [Date, setDate] = useState("");
-  const [FromMatCode, setFromMatCode] = useState("");
-  const [ToMatCode, setToMatCode] = useState("");
-  const [NetDifferentPrice, setNetDifferentPrice] = useState("");
-  const [ApprovalStatus, setApprovalStatus] = useState([]);
-  const [Doc_ID, setDoc_ID] = useState(null);
 
   //ApprovalListView
   const [Role, setRole] = useState('');
@@ -191,27 +162,27 @@ const Approval311 = () => {
     { field: "Doc_ID", headerName: "Doc ID ", flex: 1 },
     { field: "Date", headerName: "Date", flex: 1 },
     { field: "Movement_ID", headerName: "Movement Type", flex: 1 },
-    { field: "Request_By", headerName: "Requset By", flex: 1 },
+    { field: "Requested_By", headerName: "Requset By", flex: 1 },
     { field: "Approver_Status", headerName: "Approver Status", flex: 1 },
 
-    // View Column
-    {
-      field: "view",
-      headerName: "View",
-      flex: 1,
-      sortable: false,
-      renderCell: (params) => (
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <IconButton
-            size="large"
-            color="primary"
-            onClick={() => handleOpenViewModal(params.row)} // Pass row data to the view modal
-          >
-            <VisibilityIcon fontSize="small" />
-          </IconButton>
-        </div>
-      ),
-    },
+    // // View Column
+    // {
+    //   field: "view",
+    //   headerName: "View",
+    //   flex: 1,
+    //   sortable: false,
+    //   renderCell: (params) => (
+    //     <div style={{ display: "flex", justifyContent: "center" }}>
+    //       <IconButton
+    //         size="large"
+    //         color="primary"
+    //         onClick={() => handleOpenViewModal(params.row)} // Pass row data to the view modal
+    //       >
+    //         <VisibilityIcon fontSize="small" />
+    //       </IconButton>
+    //     </div>
+    //   ),
+    // },
     // Approve Column
     {
       field: "action",
@@ -883,8 +854,8 @@ const Approval311 = () => {
         {viewStatusData.map((item, index) => (
           <TableRow key={index}>
             <TableCell sx={{ border: '1px solid #555555' }}>{item.Role}</TableCell>
-            <TableCell sx={{ border: '1px solid #555555' }}>{item.Date}</TableCell>
-            <TableCell sx={{ border: '1px solid #555555' }}>{item.Modified_By}</TableCell>
+            <TableCell sx={{ border: '1px solid #555555' }}>{item.Action_Date}</TableCell>
+            <TableCell sx={{ border: '1px solid #555555' }}>{item.Action_By}</TableCell>
             <TableCell sx={{ border: '1px solid #555555' }}>{item.Approver_Comment}</TableCell>
             <TableCell sx={{ border: '1px solid #555555' }}>
               {item.Status}

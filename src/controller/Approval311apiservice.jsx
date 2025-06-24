@@ -3,7 +3,7 @@ import axios from "axios";
 
 
 export const getdetails=async (Plant, role,Role,Doc_ID)=>{
-    const response = await axios.get(`${api}/Approval311/get_details?Plant=${Plant}&role=${role}&Role=${Role}`);
+    const response = await axios.get(`${api}/Approval311/get_details?Plant=${Plant}&role=${role}&Role=${Role}&Doc_ID=${Doc_ID}`);
     return response.data;
 };
 

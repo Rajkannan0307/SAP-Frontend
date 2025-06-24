@@ -5,12 +5,12 @@ import { decryptSessionData } from "../controller/StorageUtils";
 const accessMap = {
   1: [15, ], // REQUESTER can access Dashboard, Report1, Report2
   2: [14, 19,20,22], // PLANT MMD HEAD can access Approval_309, Report1, Report2
-  3: [14,19,20,22,23,26,27], // PLANT FINANCE HEAD can access Approval_309, Report1, Report2
+  3: [14,19,20,22,23,26,], // PLANT FINANCE HEAD can access Approval_309, Report1, Report2
   4: [14, 18,19,20,23,26,27], // PLANT MRPC can access Approval_309, Report1, Report2
-  5: [14, 19,20,23,26,27], // PLANT HEAD can access Approval_309, Report1, Report2
-  6: [14, 19,20,22,26,27], // CORP FINANCE HEAD can access Approval_309, Report1, Report2
-  7: [7, 8, 9, 10, 12, 13, 14, 16, 17,18,19,20,22,26,27], // CORP MRPC can access multiple screens
-  8: [14, 19,20,26,27], // BUSINESS HEAD can access Approval_309, Report1, Report2
+  5: [14, 19,20,23,26,], // PLANT HEAD can access Approval_309, Report1, Report2
+  6: [14, 19,20,22,26,], // CORP FINANCE HEAD can access Approval_309, Report1, Report2
+  7: [7, 8, 9, 10, 12, 13, 14, 16, 17,18,19,20,22,26,], // CORP MRPC can access multiple screens
+  8: [14, 19,20,26,], // BUSINESS HEAD can access Approval_309, Report1, Report2
   9: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,18,19,20,21,22,23,24,25,26,27,28,26,27],// CORP ADMIN (Full Access)
   10:[22] // CORP MMD HEAD
 };

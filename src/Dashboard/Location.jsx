@@ -64,35 +64,23 @@ const Location = () => {
   const [ValuationTypeTable, setValuationTypeTable] = useState([])
   const [MovementTypeTable, setMovementTypeTable] = useState([])
   const [ReasonForMovement, setReasonForMovement] = useState([])
-  const [CostCenterTable, setCostCenterTable] = useState([])
-  const [ReasonForMovementTable, setReasonForMovementTable] = useState([]);
   const [TrnSapID, setTrnSapID] = useState("");
   const [DocID, setDocID] = useState("");
   const [Qty, setQty] = useState("");
   const [SLocID, setSLocID] = useState("");
-  const [CostCenterID, setCostCenterID] = useState("");
-
-  const [CostCenterCode, setCostCenterCode] = useState("");
-  const [ValuationType, setValuationType] = useState("");
   const [MovtID, setMovtID] = useState("");
   const [Batch, setBatch] = useState("");
   const [MatCode, setMatCode] = useState('');
-  const [Price, setPrice] = useState("");
   const [items, setItems] = useState([]);
+  const [ToSLocID, setToSLocID] = useState('');
+const [ValuationType, setValuationType] = useState('');
+
+
   //click resubmit
   const [openChickResubmitModal, setOpenCheckResubmitModal] = useState(false);
   // Store header checkbox state
   const [selectedRowIds, setSelectedRowIds] = useState([]);
   const [headerChecked, setHeaderChecked] = useState(false);
-
-  const [Rejection_Qty, setRejection_Qty] = useState(0);
-  const [Provision_Qty, setProvision_Qty] = useState(0);
-  const [Difference_Qty, setDifference_Qty] = useState(0);
-  const [Difference_Value, setDifference_Value] = useState(0);
-  const [Rejection_Value, setRejection_Value] = useState(0);
-  const [Provision_Value, setProvision_Value] = useState(0);
-  const [Rate_PerPart, setRate_PerPart] = useState(0);
-
 
 
 
@@ -248,7 +236,14 @@ const Location = () => {
     }
   };
 
-
+  const get_ValuationTypeTable = async () => {
+    try {
+      const response = await getValuationType();
+      setValuationTypeTable(response.data);
+    } catch (error) {
+      //console.error("Error updating user:", error);
+    }
+  };
   const get_Movement = async () => {
     try {
       const response = await getMovement();
@@ -287,6 +282,25 @@ const Location = () => {
       console.log("userlevel", decryptedData.UserLevelName)
     }
   }, []);
+
+// useEffect(() => {
+//   const user = JSON.parse(localStorage.getItem("user"));
+//   if (user) {
+//     const { UserID } = user;
+//     getdetails(UserID)
+//       .then((res) => {
+//         if (res.data.success) {
+//           setTableData(res.data.data || []);
+//         } else {
+//           console.warn("⚠️ No movement records found.");
+//         }
+//       })
+//       .catch((err) => {
+//         console.error("❌ Error fetching movement data:", err);
+//       });
+//   }
+// }, []);
+
 
 
   const handleCloseUploadModal = () => {
@@ -436,6 +450,8 @@ const styleValidationColumns = (ws, headers, rowCount) => {
   const loadDropdownData = async () => {
     await Promise.all([
       get_Material(),
+      
+      get_ValuationTypeTable(),
       get_SLoc(),
       get_Movement(),
     ]);
@@ -527,23 +543,16 @@ const styleValidationColumns = (ws, headers, rowCount) => {
       setTrnSapID(params.row.Trn_Sap_ID);
       setMatCode(params.row.Material_Code);
       setQty(params.row.Qty);
-      setRejection_Qty(params.row.Rejection_Qty);  // Assuming Qty is Rejection_Qty
-      setProvision_Qty(params.row.Provision_Qty || 0);
-      setDifference_Qty(params.row.Difference_Qty || 0);
-      setDifference_Value(params.row.Difference_Value || 0);
-      setRejection_Value(params.row.Rejection_Value || 0);
-      setProvision_Value(params.row.Provision_Value || 0);
-      setRate_PerPart(params.row.Rate_PerPart || 0);
-      setPrice(params.row.Rate_PerPart); // Might be same as Rate_PerPart, keep if needed
       setSLocID(params.row.SLoc_Code);
       setMovtID(params.row.Movement_Code);
       setReasonForMovement(String(params.row.Reason_For_Movt));
-
+      setValuationType(params.row.Valuation_Type);
 
       setSelectedRow(params.row);
       setOpenRowEditModal(true);
     }
   };
+
 
 
   useEffect(() => {
@@ -565,21 +574,21 @@ const styleValidationColumns = (ws, headers, rowCount) => {
 
   //✅ DataGrid Columns with Edit Buttons
 const columns = [
-  { field: "Plant_Code", headerName: "Plant Code", width: 170 },
-  { field: "Doc_ID", headerName: "Doc ID", width: 140 },
+  { field: "Plant_Code", headerName: "Plant Code", width: 160 },
+  { field: "Doc_ID", headerName: "Doc ID", width: 120 },
   { field: "Date", headerName: "Date", width: 130 },
   { field: "Movement_Code", headerName: "Movement Type", width: 200 },
   { field: "Material_Code", headerName: "Material Code", width: 180 },
   { field: "SLoc_Code", headerName: "From SLoc", width: 160 },
   { field: "To_SLoc_Code", headerName: "To SLoc", width: 160 },
   { field: "Qty", headerName: "Quantity", width: 150 },
-  { field: "Valuation_Type", headerName: "Valuation Type", width: 150 },
-  { field: "Approval_Status", headerName: "Approval Status", width: 185 },
+ // { field: "Valuation_Type", headerName: "Valuation Type", width: 172 },
+  { field: "Approval_Status", headerName: "Approval Status", width: 180 },
 
   {
     field: "actions",
     headerName: "Actions",
-    width: 200, // Make room for icon + checkbox
+    width: 235, // Make room for icon + checkbox
     sortable: false,
     editable: false,
     disableColumnMenu: true,
@@ -732,18 +741,17 @@ const handleUpdate = async () => {
   setIsUpdating(true);
   try {
     const data = {
-  ModifiedBy: UserID,
-  DocID: String(DocID),
-  TrnSapID,
-  MatCode,
-  Qty: isNaN(Number(Rejection_Qty)) ? null : Number(Rejection_Qty),
-  Price: isNaN(Number(Rate_PerPart)) ? null : Number(Rate_PerPart),
-  ProvisionQty: isNaN(Number(Provision_Qty)) ? null : Number(Provision_Qty),
-  ProvisionValue: isNaN(Number(Provision_Value)) ? null : Number(Provision_Value),
-  SLocCode: String(SLocID),
-  ReasonForMovement
-};
-
+      ModifiedBy: UserID,
+      DocID: String(DocID),
+      TrnSapID,
+      MatCode,
+      Qty: isNaN(Number(Qty)) ? null : Number(Qty),
+      ValuationType,                   // ✅ add this
+      Batch,                           // ✅ optional, can be empty string or null
+      FromSLocCode: String(SLocID),    // ✅ this should be mapped correctly
+      ToSLocCode: String(ToSLocID),    // ✅ this too
+      ReasonForMovement
+    };
 
     console.log("🚀 Sending Edit311 payload:", data);
 
@@ -764,21 +772,20 @@ const handleUpdate = async () => {
   }
 };
 
-
-  React.useEffect(() => {
-    if (selectedRow) {
-      setPlantCode(selectedRow.Plant_Code);
-      setDocID(selectedRow.Doc_ID);
-      setTrnSapID(selectedRow.Trn_Sap_ID);
-      setMatCode(selectedRow.Material_Code);
-      setQty(selectedRow.Qty);
-      setSLocID(selectedRow.SLoc_Code);
-      setPrice(selectedRow.Rate_PerPart);
-      setProvision_Qty(selectedRow.Provision_Qty);      // ✅
-      setProvision_Value(selectedRow.Provision_Value);  // ✅
-      setReasonForMovement(selectedRow.Reason_For_Movt); // ✅
-    }
-  }, [selectedRow]);
+React.useEffect(() => {
+  if (selectedRow) {
+    setPlantCode(selectedRow.Plant_Code);
+    setDocID(selectedRow.Doc_ID);
+    setTrnSapID(selectedRow.Trn_Sap_ID);
+    setMatCode(selectedRow.Material_Code);
+    setQty(selectedRow.Qty);
+    setSLocID(selectedRow.SLoc_Code);      
+    setToSLocID(selectedRow.To_SLoc_Code); 
+      setValuationType(selectedRow.Valuation_Type); 
+    setBatch(selectedRow.Batch);        
+    setReasonForMovement(selectedRow.Reason_For_Movt);
+  }
+}, [selectedRow]);
 
 
   const fetchData = async () => {
@@ -949,6 +956,7 @@ const handleUpdate = async () => {
           rows={rows}
           columns={columns}
           pageSize={5}
+         // getRowId={(row) => row.Doc_ID}
           getRowId={(row) => row.Trn_Sap_ID}
           rowsPerPageOptions={[5]}
           onRowClick={handleConditionalRowClick}
@@ -1076,120 +1084,100 @@ const handleUpdate = async () => {
         </Box>
       </Modal>
 
-      {/* 🟨 View Status Modal */}
-      <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
-        <Box
-          sx={{
-            position: 'relative',
-            p: 4,
-            width: { xs: '90%', sm: 900 },
-            mx: 'auto',
-            mt: '5%',
-            bgcolor: 'background.paper',
-            borderRadius: 3,
-            boxShadow: 24,
-            maxHeight: '90vh',
-            overflowY: 'auto',
-          }}
-        >
-          {/* ❌ Top-right close (X) button */}
-          <IconButton
-            onClick={() => setOpenViewStatusModal(false)}
-            sx={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              color: '#f44336', // Red icon
-              '&:hover': {
-                backgroundColor: '#ffcdd2', // Light red background on hover
-                color: '#b71c1c', // Slightly darker red icon on hover (optional)
-              },
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
 
-          {/* 🔷 Title */}
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{
-                color: '#1976d2',
-                borderBottom: '2px solid limegreen',
-                display: 'inline-block',
-              }}
-            >
-              Approval Status
-            </Typography>
-          </Box>
+{/* 🟨 View Status Modal */}
+<Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
+  <Box
+    sx={{
+      position: 'relative',
+      p: 4,
+      width: { xs: '90%', sm: 900 },
+      mx: 'auto',
+      mt: '5%',
+      bgcolor: 'background.paper',
+      borderRadius: 3,
+      boxShadow: 24,
+      maxHeight: '90vh',
+      overflowY: 'auto',
+    }}
+  >
+    {/* ❌ Top-right close (X) button */}
+    <IconButton
+      onClick={() => setOpenViewStatusModal(false)}
+      sx={{
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        color: '#f44336',
+        '&:hover': {
+          backgroundColor: '#ffcdd2',
+          color: '#b71c1c',
+        },
+      }}
+    >
+      <CloseIcon />
+    </IconButton>
 
-          {/* 🧾 Status Table */}
-          <Table size="small" sx={{ borderCollapse: 'collapse' }}>
-            <TableHead>
-              <TableRow sx={{ bgcolor: '#bdbdbd' }}>
-                <TableCell sx={{ border: '1px solid #555555' }}>Role</TableCell>
-                <TableCell sx={{ border: '1px solid #555555' }}>Date</TableCell>
-                <TableCell sx={{ border: '1px solid #555555' }}>Name</TableCell>
-                <TableCell sx={{ border: '1px solid #555555' }}>Comment</TableCell>
-                <TableCell sx={{ border: '1px solid #555555' }}>Status</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {[
-                'Requester',
-                'Level 1 - Plant Finance Head',
-                'Level 2 - Plant MRPC',
-                'Level 3 - Plant Head',
-                'Level 4 - Corp Finance Head',
-                'Level 5 - Business Head',
-                'Level 6 - Corp MRPC',
-              ]
-                .map((displayRole, idx) => {
-                  // Map frontend display role to backend role string
+    {/* 🔷 Title */}
+    <Box sx={{ textAlign: 'center' }}>
+      <Typography
+        variant="h6"
+        gutterBottom
+        sx={{
+          color: '#1976d2',
+          borderBottom: '2px solid limegreen',
+          display: 'inline-block',
+        }}
+      >
+        Approval Status
+      </Typography>
+    </Box>
 
-                  const roleMap = {
-                    'Requester': 'Requester',
-                    'Level 1 - Plant Finance Head': 'Plant Finance Head',
-                    'Level 2 - Plant MRPC': 'Plant MRPC',
-                    'Level 3 - Plant Head': 'Plant Head',
-                    'Level 4 - Corp Finance Head': 'Corp Finance Head',
-                    'Level 5 - Business Head': 'Business Head',
-                    'Level 6 - Corp MRPC': 'Corp MRPC',
-                  };
+    {/* 🧾 Status Table */}
+    <Table size="small" sx={{ borderCollapse: 'collapse' }}>
+      <TableHead>
+        <TableRow sx={{ bgcolor: '#bdbdbd' }}>
+          <TableCell sx={{ border: '1px solid #555555' }}>Role</TableCell>
+          <TableCell sx={{ border: '1px solid #555555' }}>Date</TableCell>
+          <TableCell sx={{ border: '1px solid #555555' }}>Name</TableCell>
+          <TableCell sx={{ border: '1px solid #555555' }}>Comment</TableCell>
+          <TableCell sx={{ border: '1px solid #555555' }}>Status</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {['Requester', 'Plant MRPC'].map((roleKey, idx) => {
+          const backendRole = roleKey === 'Requester' ? 'Requester' : 'Plant MRPC';
+          const displayRole = roleKey === 'Requester' ? 'Requester' : 'Level  - Plant MRPC';
 
-                  const backendRole = roleMap[displayRole];
+          const row = viewStatusData.find(
+            r => r.Role?.toLowerCase() === backendRole.toLowerCase()
+          ) || {};
 
-                  // Find matching row from backend data, case insensitive match
-                  const row = viewStatusData.find(
-                    r => r.Role?.toLowerCase() === backendRole.toLowerCase()
-                  ) || {};
+          return (
+            <TableRow key={idx} sx={{ border: '1px solid #555555' }}>
+              <TableCell sx={{ border: '1px solid #555555' }}>{displayRole}</TableCell>
+              <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_Date || '—'}</TableCell>
+              <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_By || '—'}</TableCell>
+              <TableCell sx={{ border: '1px solid #555555' }}>{row.Approver_Comment || '—'}</TableCell>
+              <TableCell sx={{ border: '1px solid #555555' }}>{row.Status || '—'}</TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
 
-                  return (
-                    <TableRow key={idx} sx={{ border: '1px solid #555555' }}>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{displayRole}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_Date || '—'}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_By || '—'}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Approver_Comment || '—'}</TableCell>
-                      <TableCell sx={{ border: '1px solid #555555' }}>{row.Status || '—'}</TableCell>
-                    </TableRow>
-                  );
-                })}
-            </TableBody>
-          </Table>
-
-          {/* Close Button at Bottom */}
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-            <Button
-              onClick={() => setOpenViewStatusModal(false)}
-              variant="contained"
-              sx={{ textTransform: 'none' }}
-            >
-              Close
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+    {/* Close Button at Bottom */}
+    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+      <Button
+        onClick={() => setOpenViewStatusModal(false)}
+        variant="contained"
+        sx={{ textTransform: 'none' }}
+      >
+        Close
+      </Button>
+    </Box>
+  </Box>
+</Modal>
 
 
       {/* ExcelDownload From & To Date Modal */}
@@ -1272,141 +1260,167 @@ const handleUpdate = async () => {
 
 
       {/* Row edit modal */}
-      <Modal open={openRowEditModal} onClose={handleCloseRowEditModal}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            width: 450,
-            maxHeight: "85vh",
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 3,
-            p: 2,
-            mt: 4,
-            mx: "auto",
-            gap: 1.5,
-            overflowY: "auto",
-            transition: 'all 0.3s ease'
-          }}
-        >
-          <h3 style={{
-            gridColumn: "span 2",
-            textAlign: "center",
-            color: "#2e59d9",
-            textDecoration: "underline",
-            textDecorationColor: "#88c57a",
-            textDecorationThickness: "3px",
-          }}>
-            Edit 311 Record
-          </h3>
+{/* Row edit modal */}
+<Modal open={openRowEditModal} onClose={handleCloseRowEditModal}>
+  <Box
+    sx={{
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      width: 450,
+      maxHeight: "85vh",
+      bgcolor: "background.paper",
+      borderRadius: 2,
+      boxShadow: 3,
+      p: 2,
+      mt: 4,
+      mx: "auto",
+      gap: 1.5,
+      overflowY: "auto",
+      transition: 'all 0.3s ease'
+    }}
+  >
+    <h3 style={{
+      gridColumn: "span 2",
+      textAlign: "center",
+      color: "#2e59d9",
+      textDecoration: "underline",
+      textDecorationColor: "#88c57a",
+      textDecorationThickness: "3px",
+    }}>
+      Edit 311 Record
+    </h3>
 
-          {/* Read-only fields */}
-          <TextField label="Plant Code" value={PlantCode} fullWidth InputProps={{ readOnly: true }} {...compactFieldProps} />
-          <TextField label="Doc ID" value={DocID} fullWidth InputProps={{ readOnly: true }} {...compactFieldProps} />
-          <TextField label="Trn ID" value={TrnSapID} fullWidth InputProps={{ readOnly: true }} {...compactFieldProps} />
-          <TextField label="Movement Code" value={MovtID} fullWidth InputProps={{ readOnly: true }} {...compactFieldProps} />
+    {/* 🔒 Read-only fields */}
+    {[
+      ["Plant Code", PlantCode],
+      ["Doc ID", DocID],
+      ["Trn ID", TrnSapID],
+    ].map(([label, value]) => (
+      <TextField
+        key={label}
+        label={label}
+        value={value}
+        fullWidth
+        InputProps={{ readOnly: true }}
+        {...compactFieldProps}
+      />
+    ))}
 
-          {/* Editable fields below */}
+    <TextField
+      label="Movement Type"
+      value={MovtID}
+      fullWidth
+      InputProps={{ readOnly: true }}
+      {...compactFieldProps}
+    />
 
-          {/* Material Code (optional editable, but keeping it if needed) */}
-          <FormControl fullWidth size="small">
-            <InputLabel id="mat-label">Material Code</InputLabel>
-            <Select
-              labelId="mat-label"
-              label="Material Code"
-              value={MatCode}
-              onChange={e => setMatCode(e.target.value)}
-            >
-              {MaterialTable.map(item => (
-                <MenuItem key={item.Material_ID} value={item.Material_Code}>
-                  {item.Material_Code} - {item.Description}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+    {/* Material Code */}
+    <FormControl fullWidth size="small">
+      <InputLabel id="mat-label">Material Code</InputLabel>
+      <Select
+        labelId="mat-label"
+        label="Material Code"
+        value={MatCode}
+        onChange={e => setMatCode(e.target.value)}
+      >
+        {MaterialTable.map(item => (
+          <MenuItem key={item.Material_ID} value={item.Material_Code}>
+            {item.Material_Code} - {item.Description}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
 
-          {/* Storage Location - Editable */}
-          <FormControl fullWidth size="small">
-            <InputLabel id="sloc-label">SLoc Code</InputLabel>
-            <Select
-              labelId="sloc-label"
-              label="SLoc Code"
-              value={SLocID}
-              onChange={e => setSLocID(e.target.value)}
-            >
-              {SLocTable.map(item => (
-                <MenuItem key={item.SLoc_ID} value={item.Storage_Code}>
-                  {item.Storage_Code}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+    {/* Quantity */}
+    <TextField
+      label="Quantity"
+      type="number"
+      value={Qty}
+      onChange={e => setQty(Number(e.target.value))}
+      fullWidth
+      {...compactFieldProps}
+    />
 
-          {/* Editable Text Fields */}
-          <TextField
-            label="Rejection Qty"
-            type="number"
-            value={Rejection_Qty}
-            onChange={e => setRejection_Qty(Number(e.target.value))}
-            fullWidth
-            {...compactFieldProps}
-          />
+    {/* From SLoc Code */}
+    <FormControl fullWidth size="small">
+      <InputLabel id="from-sloc-label">From SLoc Code</InputLabel>
+      <Select
+        labelId="from-sloc-label"
+        label="From SLoc Code"
+        value={SLocID}
+        onChange={e => setSLocID(e.target.value)}
+      >
+        {SLocTable.map(item => (
+          <MenuItem key={item.SLoc_ID} value={item.Storage_Code}>
+            {item.Storage_Code}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
 
-          <TextField
-            label="Provision Qty"
-            type="number"
-            value={Provision_Qty}
-            onChange={e => setProvision_Qty(Number(e.target.value))}
-            fullWidth
-            {...compactFieldProps}
-          />
+    {/* To SLoc Code */}
+    <FormControl fullWidth size="small">
+      <InputLabel id="to-sloc-label">To SLoc Code</InputLabel>
+      <Select
+        labelId="to-sloc-label"
+        label="To SLoc Code"
+        value={ToSLocID}
+        onChange={e => setToSLocID(e.target.value)}
+      >
+        {SLocTable.map(item => (
+          <MenuItem key={item.SLoc_ID} value={item.Storage_Code}>
+            {item.Storage_Code}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
 
-          <TextField
-            label="Provision Value"
-            type="number"
-            value={Provision_Value}
-            onChange={e => setProvision_Value(Number(e.target.value))}
-            fullWidth
-            {...compactFieldProps}
-          />
+    {/* Valuation Type */}
+<FormControl fullWidth size="small">
+  <InputLabel id="valuation-label">Valuation Type</InputLabel>
+  <Select
+    labelId="valuation-label"
+    label="Valuation Type"
+    value={ValuationType}
+    onChange={e => setValuationType(e.target.value)}
+  >
+    {ValuationTypeTable.map(item => (
+      <MenuItem key={item.Valuation_ID} value={item.Valuation_Name}>
+        {item.Valuation_Name}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
 
-          <TextField
-            label="Rate"
-            type="number"
-            value={Rate_PerPart}
-            onChange={e => setRate_PerPart(Number(e.target.value))}
-            fullWidth
-            {...compactFieldProps}
-          />
 
-          {/* Reason For Movement */}
-          <FormControl fullWidth size="small">
-            <InputLabel id="reason-for-mov-label">Reason For Movement</InputLabel>
-            <Select
-              labelId="reason-for-mov-label"
-              label="Reason For Movement"
-              value={ReasonForMovement}
-              onChange={e => setReasonForMovement(e.target.value)}
-            >
-              {ReasonForMovementTable.map(item => (
-                <MenuItem
-                  key={item.Movt_List_ID}
-                  value={`${item.Movement_List_Code}-${item.Movement_List_Name}`}
-                >
-                  {item.Movement_List_Code} - {item.Movement_List_Name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+    {/* Batch */}
+    <TextField
+      label="Batch"
+      value={Batch}
+      onChange={e => setBatch(e.target.value)}
+      fullWidth
+      {...compactFieldProps}
+    />
 
-          {/* Buttons */}
-          <Box sx={{ gridColumn: "span 2", display: "flex", justifyContent: "center", gap: 2, mt: 1 }}>
-            <Button size="small" variant="contained" color="error" onClick={handleCloseRowEditModal}>Cancel</Button>
-            <Button size="small" variant="contained" color="primary" onClick={handleUpdate}>Update</Button>
-          </Box>
-        </Box>
-      </Modal>
+    {/* Reason for Movement */}
+<TextField
+  label="Reason for Movement"
+  value={ReasonForMovement}
+  onChange={e => setReasonForMovement(e.target.value)}
+  fullWidth
+  {...compactFieldProps}
+/>
+
+
+    {/* Buttons */}
+    <Box sx={{ gridColumn: "span 2", display: "flex", justifyContent: "center", gap: 2, mt: 1 }}>
+      <Button size="small" variant="contained" color="error" onClick={handleCloseRowEditModal}>Cancel</Button>
+      <Button size="small" variant="contained" color="primary" onClick={handleUpdate}>Update</Button>
+    </Box>
+  </Box>
+</Modal>
+
+
 
     </div>
   )
