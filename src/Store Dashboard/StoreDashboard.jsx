@@ -1,109 +1,26 @@
-import React, { useState, useEffect } from "react";
-import {
-  TextField,
-  Button,
-  Modal,
-  Box,
-  IconButton,
-  Tabs,
-  Tab,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-} from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import AddIcon from "@mui/icons-material/Add";
-import { FaFileExcel } from "react-icons/fa";
-import * as XLSX from "xlsx-js-style";
-import { getdetails, getPlants, getDepartment } from "../controller/ModuleMasterapiservice";
+import { Tabs, Tab, Box, Typography } from "@mui/material";
+import React, { useState } from "react";
+import Store1Open from "./Store1Open";
+import Store1Closed from "./Store1Closed";
+import Store2Open from "./Store2Open";
+import Store2Closed from "./Store2Closed";
+import Store3Open from "./Store3Open";
+import Store3Closed from "./Store3Closed";
 
 const StoreDashboard = () => {
-  const [searchText, setSearchText] = useState("");
-  const [rows, setRows] = useState([]);
-  const [originalRows, setOriginalRows] = useState([]);
-  const [data, setData] = useState([]);
-  const [selectedStore, setSelectedStore] = useState("Store 1");
+  const [tabIndex, setTabIndex] = useState(0);
 
-  // Fetch data based on selected store
-  const getData = async (storeName) => {
-    try {
-      const response = await getdetails(storeName); // Modify your backend to accept store name
-      setData(response);
-      setOriginalRows(response);
-      setRows(response);
-    } catch (error) {
-      console.error(error);
-      setData([]);
-      setOriginalRows([]);
-      setRows([]);
-    }
-  };
+  const tabConfig = [
+    { label: "Store1 (Open)", component: <Store1Open /> },
+    { label: "Store1 (Closed)", component: <Store1Closed /> },
+    { label: "Store2 (Open)", component: <Store2Open /> },
+    { label: "Store2 (Closed)", component: <Store2Closed /> },
+    { label: "Store3 (Open)", component: <Store3Open /> },
+    { label: "Store3 (Closed)", component: <Store3Closed /> },
+  ];
 
-  // Initial load
-  useEffect(() => {
-    getData(selectedStore);
-  }, []);
-
-  // Handle tab switching
-  const handleTabChange = (_, newValue) => {
-    const store = newValue === 0 ? "Store 1" : "Store 2";
-    setSelectedStore(store);
-    getData(store);
-  };
-
-  // Search functionality
-  const handleSearch = () => {
-    const text = searchText.trim().toLowerCase();
-    if (!text) {
-      setRows(originalRows);
-    } else {
-      const filteredRows = originalRows.filter((row) =>
-        ["Plant_Code", "Dept_Name", "Module_Name"].some((key) => {
-          const value = row[key];
-          return value && String(value).toLowerCase().includes(text);
-        })
-      );
-      setRows(filteredRows);
-    }
-  };
-
-  // Download Excel
-  const handleDownloadExcel = () => {
-    if (data.length === 0) {
-      alert("No Data Found");
-      return;
-    }
-
-    const DataColumns = ["Plant_Code", "Dept_Name", "Module_Name", "ActiveStatus"];
-
-    const filteredData = data.map((item) => ({
-      Plant_Code: item.Plant_Code,
-      Dept_Name: item.Dept_Name,
-      Module_Name: item.Module_Name,
-      ActiveStatus: item.Active_Status ? "Active" : "Inactive",
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(filteredData, {
-      header: DataColumns,
-    });
-
-    // Style header row
-    DataColumns.forEach((_, index) => {
-      const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-      if (!worksheet[cellAddress]) return;
-      worksheet[cellAddress].s = {
-        font: { bold: true, color: { rgb: "000000" } },
-        fill: { fgColor: { rgb: "FFFF00" } },
-        alignment: { horizontal: "center" },
-      };
-    });
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, selectedStore);
-    XLSX.writeFile(workbook, `${selectedStore}_ModuleMaster_Data.xlsx`);
+  const handleChange = (event, newValue) => {
+    setTabIndex(newValue);
   };
 
   return (
@@ -112,13 +29,19 @@ const StoreDashboard = () => {
         padding: 20,
         backgroundColor: "#F5F5F5",
         marginTop: "50px",
-        height: "calc(100vh - 90px)",
         display: "flex",
         flexDirection: "column",
+        height: "calc(100vh - 90px)",
       }}
     >
-      {/* Header */}
-      <div style={{ marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div
+        style={{
+          marginBottom: 20,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <h2
           style={{
             margin: 0,
@@ -129,128 +52,41 @@ const StoreDashboard = () => {
             marginBottom: -7,
           }}
         >
-         Store Dashboard 
-         </h2>
+          Store Dashboard
+        </h2>
       </div>
 
-      {/* Search + Icons */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <TextField
-            size="small"
-            variant="outlined"
-            placeholder="Type here..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onKeyUp={handleSearch}
-            sx={{
-              width: "400px",
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": { border: "2px solid grey" },
-                "&:hover fieldset": { border: "2px solid grey" },
-                "&.Mui-focused fieldset": { border: "2px solid grey" },
-              },
+      <Tabs
+        value={tabIndex}
+        onChange={handleChange}
+        TabIndicatorProps={{
+          style: {
+            backgroundColor: "#88c57a",
+            height: 4,
+            borderRadius: 2,
+          },
+        }}
+        style={{ marginTop: "20px" }}
+      >
+        {tabConfig.map((tab, index) => (
+          <Tab
+            key={index}
+            label={tab.label}
+            style={{
+              fontWeight: "bold",
+              textTransform: "none",
+              backgroundColor: tabIndex === index ? "rgb(2, 94, 122)" : "#f5f5f5",
+              color: tabIndex === index ? "#fff" : "#555",
+              marginRight: 8,
+              borderRadius: "5px 5px 0 0",
+              padding: "8px 20px",
             }}
           />
-          <Button
-            onClick={handleSearch}
-            style={{
-              borderRadius: "25px",
-              border: "2px solid grey",
-              color: "grey",
-              fontWeight: "bold",
-            }}
-          >
-            <SearchIcon style={{ marginRight: "5px" }} />
-            Search
-          </Button>
-        </div>
+        ))}
+      </Tabs>
 
-        <div style={{ display: "flex", gap: "10px" }}>
-          <IconButton
-            onClick={handleDownloadExcel}
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#339900",
-              color: "white",
-              width: "40px",
-              height: "40px",
-            }}
-          >
-            <FaFileExcel size={18} />
-          </IconButton>
-
-          <IconButton
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#0066FF",
-              color: "white",
-              width: "40px",
-              height: "40px",
-            }}
-          >
-            <AddIcon />
-          </IconButton>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ border: '1px solid #ccc', borderRadius: 0, backgroundColor: '#f5f5f5' }}>
-          <Tabs
-            value={selectedStore === "Store 1" ? 0 : 1}
-            onChange={handleTabChange}
-            textColor="primary"
-            indicatorColor="primary"
-            sx={{ borderBottom: '1px solid #ccc' }}
-          >
-            <Tab label="Store 1" />
-            <Tab label="Store 2" />
-          </Tabs>
-
-          {/* Info Row */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              p: 1,
-              borderBottom: '1px solid #ccc',
-            }}
-          >
-            <Typography sx={{ fontSize: 14 }}>Shift A</Typography>
-            <Typography sx={{ fontSize: 14 }}>{selectedStore}</Typography>
-            <Typography sx={{ fontSize: 14 }}>{new Date().toLocaleDateString()}</Typography>
-          </Box>
-
-          {/* Table */}
-          <Table sx={{ backgroundColor: '#f5f5f5' }}>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: '#bdbdbd' }}>
-                <TableCell sx={{ fontWeight: 'bold' }}>Storage Code</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Material</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Plan</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>OrderQty</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Delivery Qty</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Balance</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Delay Time</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.map((row) => (
-                <TableRow key={row.Module_ID}>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Box>
+      <Box sx={{ padding: 1, margin: -2 }}>
+        {tabConfig[tabIndex].component}
       </Box>
     </div>
   );

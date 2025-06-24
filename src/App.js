@@ -79,8 +79,8 @@ const App = () => {
              <Route path="SupvCode" element={<ProtectedRoute screenId={24}><SupvCode /></ProtectedRoute>} />
               <Route path="Module" element={<ProtectedRoute screenId={25}><Module /></ProtectedRoute>} />
                <Route path="Line" element={<ProtectedRoute screenId={28}><Line /></ProtectedRoute>} />
-                <Route path="ProductionPlan" element={<ProtectedRoute ><ProductionPlan /></ProtectedRoute>} />
-                <Route path="StoreDashboard" element={<ProtectedRoute ><StoreDashboard /></ProtectedRoute>} />
+                <Route path="ProductionPlan" element={<ProtectedRoute ><ProductionPlan screenId={32} /></ProtectedRoute>} />
+                <Route path="StoreDashboard" element={<ProtectedRoute ><StoreDashboard screenId={31} /></ProtectedRoute>} />
             <Route path="Movement_Type" element={<ProtectedRoute screenId={11}><Movement_Type /></ProtectedRoute>} />
             <Route path="MVT_LIST_ITEM" element={<ProtectedRoute screenId={12}><MVT_LIST_ITEM /></ProtectedRoute>} />
             <Route path="CostCenter" element={<ProtectedRoute screenId={13}><CostCenter /></ProtectedRoute>} />
