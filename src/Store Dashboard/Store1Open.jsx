@@ -12,8 +12,8 @@ import {
 } from "@mui/x-data-grid";
 
 import {
-  getdetailsService,
-} from "../controller/Inwardtransactionapiservice";
+  getdetailsStore1Open,
+} from "../controller/StoreDashboardapiservice";
 import { decryptSessionData } from "../controller/StorageUtils";
 
 const Store1Open = () => {
@@ -22,21 +22,27 @@ const Store1Open = () => {
   const [Plant_ID, setPlantID] = useState("");
 
   const columns = [
-    { field: "Vendor_Code", headerName: "S.No", flex: 1 },
-    { field: "Vendor_Cod", headerName: "Line", flex: 1 },
-    { field: "Vendor_Name", headerName: "Order Date", flex: 1 },
-    { field: "Invoice_No", headerName: "Order No", flex: 1 },
-    { field: "Invoice_Date", headerName: "Material", flex: 1 },
-    { field: "Invoice_Value", headerName: "Description", flex: 1 },
-    { field: "Purchase_Order", headerName: "Order Qty", flex: 1 },
-    { field: "Reason_For_Delay", headerName: "Issued Qty", flex: 1 },
-    { field: "bal", headerName: "Balanced Qty", flex: 1 },
-    { field: "dely", headerName: "Delay Time", flex: 1 },
-  ];
+  {
+    field: "S.No",
+    headerName: "S.No",
+    flex: 1,
+  
+  },
+  { field: "Line_Name", headerName: "Line", flex: 1 },
+  { field: "Order_Date", headerName: "Order Date", flex: 1 },
+  { field: "Order_No", headerName: "Order No", flex: 1 },
+  { field: "Material_No", headerName: "Material", flex: 1 },
+  { field: "Material_Description", headerName: "Description", flex: 1 },
+  { field: "Order_Qty", headerName: "Order Qty", flex: 1 },
+  { field: "Issued_Qty", headerName: "Issued Qty", flex: 1 },
+  { field: "Issued_Date", headerName: "Issued_Date", flex: 1 }, 
+  { field: "Balanced_Qty", headerName: "Balanced Qty", flex: 1 },
+  { field: "LeadTime", headerName: "Delay Time", flex: 1 },
+];
 
   const getData = async () => {
     try {
-      const response = await getdetailsService(UserID);
+      const response = await getdetailsStore1Open();
       setRows(response);
     } catch (error) {
       console.error(error);
@@ -112,7 +118,7 @@ const Store1Open = () => {
           columns={columns}
           pageSize={5}
           rowsPerPageOptions={[5]}
-          getRowId={(row) => row.Inward_ID}
+          getRowId={(row) => row.Prdord_ID}
           components={{ Toolbar: CustomToolbar }}
           sx={{
             "& .MuiDataGrid-columnHeader": {
