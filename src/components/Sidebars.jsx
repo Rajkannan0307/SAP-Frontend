@@ -34,8 +34,13 @@ import { TbReport } from "react-icons/tb";
 import { MdSupervisedUserCircle } from "react-icons/md";
 import { GiRingMould } from "react-icons/gi";
 import { CiLineHeight } from "react-icons/ci";
+import { SiMaterialformkdocs } from "react-icons/si";
+import { GiExplosiveMaterials } from "react-icons/gi";
+import { SiGoogleappsscript } from "react-icons/si";
 import EmergencyIcon from '@mui/icons-material/Emergency';
 import StorefrontIcon from '@mui/icons-material/Storefront';
+import { MdStorage } from "react-icons/md";
+import { RiMoneyRupeeCircleFill } from "react-icons/ri";
 import ProductionQuantityLimitsIcon from '@mui/icons-material/ProductionQuantityLimits';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 const Sidebar = ({ setSidebarOpen }) => {
@@ -280,7 +285,8 @@ const Sidebar = ({ setSidebarOpen }) => {
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
             'UserMaster', 'Role', 'Material', 'Vendor',
-            'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter','ValuationType','SupvCode','Module','Line'
+            'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter',
+            'ValuationType','SupvCode','Module','Line'
           ]}
         />
 
@@ -324,10 +330,11 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "311 Approval", path: "/home/Approval_311", icon: <SiScrapbox style={{ fontSize: "30px", marginRight: "3px", color: "rgb(171, 136, 228)" }} />, code: 'Approval_551' },
             { name: "Inward of Old Invoice Approval", path: "/home/InwardApproval", icon: <FaExternalLinkSquareAlt style={{ fontSize: "25px", marginRight: "3px", color: "rgb(240, 186, 117)" }} />, code: 'InwardApproval' },
             { name: "Emergency Procurement Approval", path: "/home/EmergencyApproval", icon: <EmergencyIcon style={{ fontSize: "29px", marginRight: "1px", color: "rgb(230, 123, 123)" }} />, code: 'EmergencyApproval' },
+            { name: "ConversionRs1", path: "/home/Approval_Rs1", icon: <RiMoneyRupeeCircleFill  style={{ fontSize: "30px", marginRight: "3px", color: "rgb(15, 196, 209)" }} />, code: 'ApprovalRs1' },
 
           ]}
           codeList={[
-            'Approval_309', 'Approval_201', 'Approval_202', 'Approval_551', 'Approval_311', 'InwardApproval', 'EmergencyApproval'
+            'Approval_309', 'Approval_201', 'Approval_202', 'Approval_551', 'Approval_311', 'InwardApproval', 'EmergencyApproval','ApprovalRs1'
           ]}
         />
  {Permissions.includes('Store') && (
@@ -399,9 +406,43 @@ const Sidebar = ({ setSidebarOpen }) => {
               icon: <MdCalendarMonth style={{ marginRight: "8px", color: "rgb(238, 106, 106)", fontSize: "23px", }} />,
               code: 'Report2'
             },
+                        {
+              name: "Approval 309 Report",
+              path: "/home/Report3",
+              icon: <SiMaterialformkdocs  style={{ marginRight: "8px", color: "rgb(110, 238, 159)", fontSize: "26px", }} />,
+              code: 'Report3'
+            },
+            {
+              name: "Approval 201 Report",
+              path: "/home/Report4",
+              icon: <MdStorage style={{ marginRight: "8px", color: "rgb(231, 229, 83)", fontSize: "28px", }} />,
+              code: 'Report4'
+            },            {
+              name: "Approval 202 Report",
+              path: "/home/Report5",
+              icon: <MdStorage style={{ marginRight: "8px", color: "rgb(245, 40, 159)", fontSize: "28px", }} />,
+              code: 'Report5'
+            },
+            {
+              name: "Approval 551 Report",
+              path: "/home/Report6",
+              icon: <GiExplosiveMaterials  style={{ marginRight: "8px", color: "rgb(80, 216, 17)", fontSize: "26px", }} />,
+              code: 'Report6'
+            },            {
+              name: "Approval 311 Report",
+              path: "/home/Report7",
+              icon: <SiGoogleappsscript  style={{ marginRight: "8px", color: "rgb(133, 241, 245)", fontSize: "26px", }} />,
+              code: 'Report7'
+            },
+            {
+              name: "Approval Conversion Rs1 Report",
+              path: "/home/Report8",
+              icon: <RiMoneyRupeeCircleFill style={{ marginRight: "8px", color: "rgb(225, 228, 78)", fontSize: "28px", }} />,
+              code: 'Report8'
+            },
           ]}
           codeList={[
-            'Report1', 'Report2'
+            'Report1', 'Report2', 'Report3', 'Report4', 'Report5', 'Report6', 'Report7', 'Report8'
           ]}
         />
         {Permissions.includes('sap') && (

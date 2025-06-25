@@ -24,13 +24,17 @@ import SearchIcon from "@mui/icons-material/Search";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from 'sheetjs-style';
 import {
-  Movement551, getresubmit, getTransactionData, getdetails, getPlants, getMaterial, getSLoc,
-  getMovement, getReasonForMovement, getCostCenter, getValuationType, get551ApprovalView, Edit551Record,
-} from "../controller/Movement551apiservice";
+  MovementRs1, getresubmit, getTransactionData, getdetails,
+  getPlants, getMaterial, getSLoc, getMovement, getReasonForMovement,
+  getCostCenter, getValuationType, EditRs1Record,getRs1ApprovalView
+} from "../controller/MovtCRs1apiservice"
+
+
+
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { api } from "../controller/constants";
 
-const Scrap551 = () => {
+const ConversionRs1 = () => {
 
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
@@ -248,14 +252,14 @@ const Scrap551 = () => {
     }
   };
 
-  const get_ReasonForMovement = async () => {
-    try {
-      const response = await getReasonForMovement();
-      setReasonForMovement(response.data);
-    } catch (error) {
-      // console.error("Error updating user:", error);
-    }
-  };
+  // const get_ReasonForMovement = async () => {
+  //   try {
+  //     const response = await getReasonForMovement();
+  //     setReasonForMovement(response.data);
+  //   } catch (error) {
+  //     // console.error("Error updating user:", error);
+  //   }
+  // };
   const get_Movement = async () => {
     try {
       const response = await getMovement();
@@ -319,7 +323,7 @@ const handleUploadData = async () => {
     formData.append("User_Add", uploadedFile);
     formData.append("UserID", UserID);
 
-    const response = await Movement551(formData);
+    const response = await MovementRs1(formData);
     alert(response.data.message);
 
     const newRecords = response.data.NewRecord || [];
@@ -391,7 +395,7 @@ const downloadExcel = (newRecord = [], errRecord = []) => {
   XLSX.utils.book_append_sheet(wb, wsErr, 'Error Records');
 
   // Save Excel file
-  XLSX.writeFile(wb, 'Trn551Movt Data UploadLog.xlsx');
+  XLSX.writeFile(wb, 'TrnConversionMovt Data UploadLog.xlsx');
 };
 
 
@@ -442,7 +446,7 @@ const styleValidationColumns = (ws, headers, rowCount) => {
       get_Material(),
       get_SLoc(),
       get_Movement(),
-      get_ReasonForMovement(),
+     // get_ReasonForMovement(),
     ]);
   };
 
@@ -468,7 +472,7 @@ const styleValidationColumns = (ws, headers, rowCount) => {
 
       const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
       const fileExtension = ".xlsx";
-      const fileName = "Trn_551_Movement_List";
+      const fileName = "Trn_Conversion_Movement_List";
 
       // Convert JSON response to worksheet
       const ws = XLSX.utils.json_to_sheet(response.data);
@@ -570,18 +574,18 @@ const styleValidationColumns = (ws, headers, rowCount) => {
 
   //✅ DataGrid Columns with Edit Buttons
   const columns = [
-    { field: "Plant_Code", headerName: "Plant Code", width: 100 },
+    { field: "Plant_Code", headerName: "Plant Code", width: 110 },
     { field: "Doc_ID", headerName: "Doc ID", width: 70 },
-    { field: "Date", headerName: "Date", width: 100 },
-    { field: "Movement_Code", headerName: "Movement Type", width: 135 },
-    { field: "Material_Code", headerName: "Material Code", width: 125 },
-    { field: "Rejection_Qty", headerName: "Rejection Qty", width: 125 },
+    { field: "Date", headerName: "Date", width: 90 },
+    { field: "Movement_Code", headerName: "Movement Type", width: 140 },
+    { field: "Material_Code", headerName: "Material Code", width: 130 },
+    { field: "Qty", headerName: "Quantity", width: 110 },
     { field: "Provision_Qty", headerName: "Provision Qty", width: 125 },
     { field: "Rate_PerPart", headerName: "Rate", width: 58 },
-    { field: "Rejection_Value", headerName: "Rejection Value", width: 135 },
-    { field: "Provision_Value", headerName: "Provision Value", width: 135 },
+    { field: "Value", headerName: "Value", width: 85 },
+    { field: "Provision_Value", headerName: "Provision Value", width: 145 },
     { field: "Difference_Qty", headerName: "Different Qty", width: 125 },
-    { field: "Difference_Value", headerName: "Different Value - INR", width: 130 },
+    { field: "Difference_Value", headerName: "Different Value - INR", width: 175 },
     { field: "Approval_Status", headerName: "Approval Status", width: 140 },
     {
       field: "actions",
@@ -707,7 +711,7 @@ const styleValidationColumns = (ws, headers, rowCount) => {
     console.log("Selected Doc ID:", docId);
 
     try {
-      const response = await get551ApprovalView(docId);
+      const response = await getRs1ApprovalView(docId);
       console.log("Approval View Response:", response); // fetches status history
       setViewStatusData(response);
 
@@ -747,9 +751,9 @@ const handleUpdate = async () => {
 };
 
 
-    console.log("🚀 Sending Edit551 payload:", data);
+    console.log("🚀 Sending EditConversion payload:", data);
 
-    const response = await Edit551Record(data);
+    const response = await EditRs1Record(data);
 
     if (response?.success === true) {
       alert(response.message);
@@ -797,13 +801,13 @@ const handleUpdate = async () => {
     get_SLoc();
 
   }, []);
-  useEffect(() => {
-    async function fetchReasonForMovement() {
-      const response = await getReasonForMovement(); // your function to call stored procedure
-      setReasonForMovementTable(response.data);
-    }
-    fetchReasonForMovement();
-  }, []);
+  // useEffect(() => {
+  //   async function fetchReasonForMovement() {
+  //     const response = await getReasonForMovement(); // your function to call stored procedure
+  //     setReasonForMovementTable(response.data);
+  //   }
+  //   fetchReasonForMovement();
+  // }, []);
 
 
   // ✅ Custom Toolbar
@@ -846,7 +850,7 @@ const handleUpdate = async () => {
             textUnderlineOffset: "6px",
           }}
         >
-          Scrap - 551 Movement Transaction
+           Conversion Movement Transaction
         </h2>
       </div>
 
@@ -1019,7 +1023,7 @@ const handleUpdate = async () => {
           >
             <a
               style={{ textDecoration: "none", color: "white" }}
-              href={`${api}/transaction/Template/Trn551Movt.xlsx`}
+              href={`${api}/transaction/Template/TrnConversionMovt.xlsx`}
             >
               {" "}
               <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
@@ -1307,7 +1311,7 @@ const handleUpdate = async () => {
             textDecorationColor: "#88c57a",
             textDecorationThickness: "3px",
           }}>
-            Edit 551 Record
+            Edit Conversion Record
           </h3>
 
           {/* Read-only fields */}
@@ -1335,26 +1339,10 @@ const handleUpdate = async () => {
             </Select>
           </FormControl>
 
-          {/* Storage Location - Editable */}
-          <FormControl fullWidth size="small">
-            <InputLabel id="sloc-label">SLoc Code</InputLabel>
-            <Select
-              labelId="sloc-label"
-              label="SLoc Code"
-              value={SLocID}
-              onChange={e => setSLocID(e.target.value)}
-            >
-              {SLocTable.map(item => (
-                <MenuItem key={item.SLoc_ID} value={item.Storage_Code}>
-                  {item.Storage_Code}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
 
           {/* Editable Text Fields */}
           <TextField
-            label="Rejection Qty"
+            label="Qty"
             type="number"
             value={Rejection_Qty}
             onChange={e => setRejection_Qty(Number(e.target.value))}
@@ -1389,26 +1377,6 @@ const handleUpdate = async () => {
             {...compactFieldProps}
           />
 
-          {/* Reason For Movement */}
-          <FormControl fullWidth size="small">
-            <InputLabel id="reason-for-mov-label">Reason For Movement</InputLabel>
-            <Select
-              labelId="reason-for-mov-label"
-              label="Reason For Movement"
-              value={ReasonForMovement}
-              onChange={e => setReasonForMovement(e.target.value)}
-            >
-              {ReasonForMovementTable.map(item => (
-                <MenuItem
-                  key={item.Movt_List_ID}
-                  value={`${item.Movement_List_Code}-${item.Movement_List_Name}`}
-                >
-                  {item.Movement_List_Code} - {item.Movement_List_Name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
           {/* Buttons */}
           <Box sx={{ gridColumn: "span 2", display: "flex", justifyContent: "center", gap: 2, mt: 1 }}>
             <Button size="small" variant="contained" color="error" onClick={handleCloseRowEditModal}>Cancel</Button>
@@ -1421,4 +1389,4 @@ const handleUpdate = async () => {
   )
 }
 
-export default Scrap551
+export default ConversionRs1

@@ -20,8 +20,14 @@ import Login from "./components/pages/login";
 import DashBoard from "./components/pages/dash";
 import Report1 from "./Report/Report 1";
 import Report2 from "./Report/Report 2";
+import Report3 from "./Report/Report 3";
+import Report4 from "./Report/Report 4";
+import Report5 from "./Report/Report 5";
+import Report6 from "./Report/Report 6";
+import Report7 from "./Report/Report 7";
+import Report8 from "./Report/Report 8";
 import Emergency from "./Dashboard/Emergency";
-import Rs from "./Dashboard/Rs";
+import ConversionRs1 from "./Dashboard/ConversionRs1";
 import RGP from "./Dashboard/RGP";
 import Stock201 from "./Dashboard/stock201";
 import Stock202 from "./Dashboard/stock202";
@@ -39,6 +45,8 @@ import Approval201 from "./Approval/201_Approval";
 import Approval202 from "./Approval/202_Approval";
 import Approval551 from "./Approval/551_Approval";
 import Approval311 from "./Approval/311_Approval";
+import ApprovalRs1 from "./Approval/Rs1_Approval";
+
 import Role from "./Masters/Role";
 import Admin from "./Masters/Admin";
 import SubMenu from "./Masters/Submenu";
@@ -89,13 +97,28 @@ const App = () => {
             <Route path="Approval_202" element={<ProtectedRoute screenId={20}><Approval202 /></ProtectedRoute>} />
             <Route path="Approval_551" element={<ProtectedRoute screenId={26}><Approval551 /></ProtectedRoute>} />
             <Route path="Approval_311" element={<ProtectedRoute screenId={27}><Approval311 /></ProtectedRoute>} />
+            {/* <Route path="Approval_Rs1" element={<ProtectedRoute screenId={33}><ApprovalRs1 /></ProtectedRoute>} /> */}
+            
+ <Route path="Approval_Rs1" element={<ProtectedRoute screenId={33}><ApprovalRs1 /></ProtectedRoute>} />
+ 
             <Route path="dashboard" element={<ProtectedRoute screenId={15}><DashBoard /></ProtectedRoute>} />
             <Route path="Report1" element={<ProtectedRoute screenId={16}><Report1 /></ProtectedRoute>} />
             <Route path="Report2" element={<ProtectedRoute screenId={17}><Report2 /></ProtectedRoute>} />
+            
+            <Route path="Report3" element={<ProtectedRoute screenId={16}><Report3 /></ProtectedRoute>} />
+            <Route path="Report4" element={<ProtectedRoute screenId={17}><Report4 /></ProtectedRoute>} />
+            
+            <Route path="Report5" element={<ProtectedRoute screenId={16}><Report5 /></ProtectedRoute>} />
+            <Route path="Report6" element={<ProtectedRoute screenId={17}><Report6 /></ProtectedRoute>} />
+            
+            <Route path="Report7" element={<ProtectedRoute screenId={16}><Report7 /></ProtectedRoute>} />
+            <Route path="Report8" element={<ProtectedRoute screenId={17}><Report8 /></ProtectedRoute>} />
+
             <Route path="phy" element={<ProtectedRoute><Phy /></ProtectedRoute>} />
             <Route path="Emergency" element={<ProtectedRoute><Emergency /></ProtectedRoute>} />
-            <Route path="Rs" element={<ProtectedRoute><Rs /></ProtectedRoute>} />
             <Route path="RGP" element={<ProtectedRoute><RGP /></ProtectedRoute>} />
+            
+           
             <Route path="Stock201" element={<ProtectedRoute><Stock201 /></ProtectedRoute>} />
             <Route path="Stock202" element={<ProtectedRoute><Stock202 /></ProtectedRoute>} />
             <Route path="Partno" element={<ProtectedRoute><Partno /></ProtectedRoute>} />
@@ -103,6 +126,8 @@ const App = () => {
             <Route path="manual" element={<ProtectedRoute><Manual /></ProtectedRoute>} />
             <Route path="Production" element={<ProtectedRoute><Production /></ProtectedRoute>} />
             <Route path="scrap551" element={<ProtectedRoute><Scrap /></ProtectedRoute>} />
+            
+            <Route path="ConversionRs1" element={<ProtectedRoute><ConversionRs1 /></ProtectedRoute>} />
             <Route path="SubContracting" element={<ProtectedRoute><SubContracting /></ProtectedRoute>} />
             <Route path="Inward" element={<ProtectedRoute><Inward /></ProtectedRoute>} />
             <Route path="Location" element={<ProtectedRoute><Location /></ProtectedRoute>} />

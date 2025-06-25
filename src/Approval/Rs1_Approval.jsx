@@ -29,13 +29,12 @@ import * as XLSX from 'sheetjs-style';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { getdetails, getApprovalView, HandleApprovalAction, getPlants,
-   getRole, get551ApprovalView, DownloadAllExcel } from '../controller/Approval551apiservice';
+   getRole, getRs1ApprovalView, DownloadAllExcel } from '../controller/ApprovalRs1apiservice';
 import { decryptSessionData } from "../controller/StorageUtils"
 import DownloadIcon from '@mui/icons-material/Download';
 
 
-
-const Approval551 = () => {
+const ApprovalRs1 = () => {
   // State to control the visibility of the modal
   const [openViewModal, setOpenViewModal] = useState(false);
   const [PlantTable, setPlantTable] = useState([]);
@@ -87,7 +86,7 @@ const Approval551 = () => {
   const handleViewStatus = async (docId) => {
     console.log("Fetching approval status for Doc_ID:", docId);
     try {
-      const response = await get551ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
+      const response = await getRs1ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
       console.log("API Response:", response);
       setViewStatusData(response);  // Update your state with the fetched data
     } catch (error) {
@@ -160,7 +159,7 @@ const Approval551 = () => {
     { field: "Doc_ID", headerName: "Doc ID ", width: 130 },
     { field: "Date", headerName: "Date", width: 125 },
     { field: "Movement_Code", headerName: "Movement Type", width: 190 },
-    { field: "Total_Rejection_Value", headerName: "Rejection Value - INR", width: 195 },
+    { field: "Total_Value", headerName: "Value - INR", width: 195 },
     { field: "Total_Provision_Value", headerName: "Provision Value - INR", width: 195 },
     { field: "Difference_Value", headerName: "Different Value - INR", width: 190 },
     { field: "Request_By", headerName: "Requset By", width: 160 },
@@ -235,7 +234,7 @@ const Approval551 = () => {
     try {
       const response = await getdetails(Plant_ID, RoleID, Role);
 
-      console.log('response 551', response);  // Check the structure of response
+      console.log('response Rs1', response);  // Check the structure of response
       setData(response);  // Ensure that this is correctly setting the data
       setOriginalRows(response); // for reference during search
       setRows(response);
@@ -305,7 +304,7 @@ const Approval551 = () => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Row_Details");
 
-    XLSX.writeFile(workbook, `Trn551Movt_${row.Doc_ID || 'Row'}.xlsx`);
+    XLSX.writeFile(workbook, `TrnRs1Movt_${row.Doc_ID || 'Row'}.xlsx`);
 
     alert("Refer To The XLSX sheet For The Particular DocID Details.");
   };
@@ -326,7 +325,7 @@ const Approval551 = () => {
 
       const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
       const fileExtension = ".xlsx";
-      const fileName = "Trn 551 Movement List";
+      const fileName = "Trn Rs1 Movement List";
 
       // Create worksheet from JSON data
       const ws = XLSX.utils.json_to_sheet(response.data);
@@ -572,7 +571,7 @@ const Approval551 = () => {
             textUnderlineOffset: "6px",
           }}
         >
-          Scrap - 551 Approval
+          Scrap - Rs1 Approval
         </h2>
       </div>
 
@@ -686,7 +685,7 @@ const Approval551 = () => {
                textUnderlineOffset: "6px",
             }}
           >
-            551 Approval
+            Rs1 Approval
           </Typography>
 
           <TextField
@@ -861,4 +860,4 @@ const Approval551 = () => {
   );
 };
 
-export default Approval551;
+export default ApprovalRs1;

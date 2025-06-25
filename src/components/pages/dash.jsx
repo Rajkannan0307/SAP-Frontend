@@ -53,7 +53,7 @@ const Dashboard = () => {
         navigate("/home/Material"); // Navigate on button click
       };
       const handleClickRs = () => {
-        navigate("/home/Rs"); // Navigate on button click
+        navigate("/home/ConversionRs1"); // Navigate on button click
       };
       const handleClickLocation = () => {
         navigate("/home/Location"); // Navigate on button click
