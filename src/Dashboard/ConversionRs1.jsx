@@ -574,19 +574,18 @@ const styleValidationColumns = (ws, headers, rowCount) => {
 
   //✅ DataGrid Columns with Edit Buttons
   const columns = [
-    { field: "Plant_Code", headerName: "Plant Code", width: 110 },
-    { field: "Doc_ID", headerName: "Doc ID", width: 70 },
-    { field: "Date", headerName: "Date", width: 90 },
-    { field: "Movement_Code", headerName: "Movement Type", width: 140 },
-    { field: "Material_Code", headerName: "Material Code", width: 130 },
+    { field: "Plant_Code", headerName: "Plant Code", width: 120 },
+    { field: "Doc_ID", headerName: "Doc ID", width: 83 },
+    { field: "Date", headerName: "Date", width: 110 },
+    { field: "Material_Code", headerName: "Material Code", width: 150 },
     { field: "Qty", headerName: "Quantity", width: 110 },
-    { field: "Provision_Qty", headerName: "Provision Qty", width: 125 },
-    { field: "Rate_PerPart", headerName: "Rate", width: 58 },
+    { field: "Provision_Qty", headerName: "Provision Qty", width: 135 },
+    { field: "Rate_PerPart", headerName: "Rate", width: 70 },
     { field: "Value", headerName: "Value", width: 85 },
-    { field: "Provision_Value", headerName: "Provision Value", width: 145 },
-    { field: "Difference_Qty", headerName: "Different Qty", width: 125 },
-    { field: "Difference_Value", headerName: "Different Value - INR", width: 175 },
-    { field: "Approval_Status", headerName: "Approval Status", width: 140 },
+    { field: "Provision_Value", headerName: "Provision Value", width: 160 },
+    { field: "Difference_Qty", headerName: "Different Qty", width: 130 },
+    { field: "Difference_Value", headerName: "Different Value - INR", width: 190 },
+    { field: "Approval_Status", headerName: "Approval Status", width: 160 },
     {
       field: "actions",
       headerName: "Actions",
@@ -1023,7 +1022,7 @@ const handleUpdate = async () => {
           >
             <a
               style={{ textDecoration: "none", color: "white" }}
-              href={`${api}/transaction/Template/TrnConversionMovt.xlsx`}
+              href={`${api}/transaction/Template/Conversion.Movt.xlsx`}
             >
               {" "}
               <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
@@ -1318,7 +1317,6 @@ const handleUpdate = async () => {
           <TextField label="Plant Code" value={PlantCode} fullWidth InputProps={{ readOnly: true }} {...compactFieldProps} />
           <TextField label="Doc ID" value={DocID} fullWidth InputProps={{ readOnly: true }} {...compactFieldProps} />
           <TextField label="Trn ID" value={TrnSapID} fullWidth InputProps={{ readOnly: true }} {...compactFieldProps} />
-          <TextField label="Movement Code" value={MovtID} fullWidth InputProps={{ readOnly: true }} {...compactFieldProps} />
 
           {/* Editable fields below */}
 
