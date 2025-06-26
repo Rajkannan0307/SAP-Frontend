@@ -3,12 +3,21 @@ import axios from "axios";
 
 
 
-export const MovementRs1 = async (data) => {
-    const response = await axios.post(`${api}/MovementRs1/File`, data);
-    return response;
+// export const MovementRs1 = async (data) => {
+//     const response = await axios.post(`${api}/MovementRs1/File`, data);
+//     return response;
+// };
+
+export const MovementRs1 = (formData) => {
+  return axios.post('/MovementRs1/File', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
 };
 
 
+// export const MovementRs1 = async (data) => {
+//   return await axios.post(`/MovementRs1/File`, data); // Update API base path if needed
+// };
 export const MovementRs1Reupload = async (data,docId) => {
     const response = await axios.post(`${api}/MovementRs1/FileReupload?Doc_ID=${docId}`, data);
     return response;
