@@ -629,80 +629,81 @@ const Partno = () => {
 
   };
 
-  const handleDownloadExcel = async () => {
-    if (fromDate === '') {
-      alert('Select From Date');
-      return;
-    } else if (toDate === '') {
-      alert('Select To Date');
-      return;
-    }
+  // const handleDownloadExcel = async () => {
+  //   if (fromDate === '') {
+  //     alert('Select From Date');
+  //     return;
+  //   } else if (toDate === '') {
+  //     alert('Select To Date');
+  //     return;
+  //   }
 
-    try {
-      const response = await getTransactionData(fromDate, toDate);
+  //   try {
+  //     const response = await getTransactionData(fromDate, toDate);
 
-      if (response.status === 400) {
-        // Show detailed error message from the backend
-        const errorMessage = response.data.message || 'Invalid input or date range.';
-        alert(`Error: ${errorMessage}`);
-        return;
-      }
+  //     if (response.status === 400) {
+  //       // Show detailed error message from the backend
+  //       const errorMessage = response.data.message || 'Invalid input or date range.';
+  //       alert(`Error: ${errorMessage}`);
+  //       return;
+  //     }
 
-      const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-      const fileExtension = ".xlsx";
-      const fileName = "Trn 309 Movement Data List";
+  //     const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+  //     const fileExtension = ".xlsx";
+  //     const fileName = "Trn 309 Movement Data List";
 
-      // Define worksheet and header style
-      const ws = XLSX.utils.json_to_sheet(response.data);
+  //     // Define worksheet and header style
+  //     const ws = XLSX.utils.json_to_sheet(response.data);
 
-      // Apply header style (row 0)
-      const headers = Object.keys(response.data[0] || {});
-      headers.forEach((_, colIdx) => {
-        const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
-        if (ws[cellAddress]) {
-          ws[cellAddress].s = {
-            font: { bold: true, color: { rgb: "000000" } },
-            fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
-            alignment: { horizontal: "center" },
-          };
-        }
-      });
+  //     // Apply header style (row 0)
+  //     const headers = Object.keys(response.data[0] || {});
+  //     headers.forEach((_, colIdx) => {
+  //       const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+  //       if (ws[cellAddress]) {
+  //         ws[cellAddress].s = {
+  //           font: { bold: true, color: { rgb: "000000" } },
+  //           fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
+  //           alignment: { horizontal: "center" },
+  //         };
+  //       }
+  //     });
 
-      // Create workbook
-      const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+  //     // Create workbook
+  //     const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
 
-      // Generate and trigger download
-      const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      const data = new Blob([excelBuffer], { type: fileType });
-      const url = window.URL.createObjectURL(data);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", fileName + fileExtension);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+  //     // Generate and trigger download
+  //     const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  //     const data = new Blob([excelBuffer], { type: fileType });
+  //     const url = window.URL.createObjectURL(data);
+  //     const link = document.createElement("a");
+  //     link.href = url;
+  //     link.setAttribute("download", fileName + fileExtension);
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     link.remove();
+  //     window.URL.revokeObjectURL(url);
 
-      alert("File downloaded successfully!");
+  //     alert("File downloaded successfully!");
 
-    } catch (error) {
-      console.error("Download failed:", error);
+  //   } catch (error) {
+  //     console.error("Download failed:", error);
 
-      // Check if AxiosError
-      if (error.response) {
-        // Backend returned a response with status code other than 2xx
-        alert(` ${error.response.data.message || 'Unknown error from backend'}`);
-      } else if (error.request) {
-        // No response was received from the server
-        alert('No response from server. Please try again later.');
-      } else {
-        // Something went wrong in setting up the request
-        alert(`Error: ${error.message}`);
-      }
-    }
-  };
+  //     // Check if AxiosError
+  //     if (error.response) {
+  //       // Backend returned a response with status code other than 2xx
+  //       alert(` ${error.response.data.message || 'Unknown error from backend'}`);
+  //     } else if (error.request) {
+  //       // No response was received from the server
+  //       alert('No response from server. Please try again later.');
+  //     } else {
+  //       // Something went wrong in setting up the request
+  //       alert(`Error: ${error.message}`);
+  //     }
+  //   }
+  // };
   
   // Download the data from the trn sap table to particular date
+  
   const handleDownloadReportExcel = async () => {
     if (!fromDate) {
       alert('Select From Date');

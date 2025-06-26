@@ -7,6 +7,8 @@ export const MovementRs1 = async (data) => {
     const response = await axios.post(`${api}/MovementRs1/File`, data);
     return response;
 };
+
+
 export const MovementRs1Reupload = async (data,docId) => {
     const response = await axios.post(`${api}/MovementRs1/FileReupload?Doc_ID=${docId}`, data);
     return response;
