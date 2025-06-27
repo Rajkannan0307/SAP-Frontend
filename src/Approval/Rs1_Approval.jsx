@@ -86,7 +86,7 @@ const ApprovalRs1 = () => {
   const handleViewStatus = async (docId) => {
     console.log("Fetching approval status for Doc_ID:", docId);
     try {
-      const response = await getRs1ApprovalView(docId);  // Make sure get309ApprovalView is set up properly
+      const response = await getRs1ApprovalView(docId);  // Make sure getRs1ApprovalView is set up properly
       console.log("API Response:", response);
       setViewStatusData(response);  // Update your state with the fetched data
     } catch (error) {
@@ -155,15 +155,15 @@ const ApprovalRs1 = () => {
   };
   // Table columns for DataGrid
   const columns = [
-    { field: "Plant_Code", headerName: "Plant Code", width: 150 },
-    { field: "Doc_ID", headerName: "Doc ID ", width: 130 },
-    { field: "Date", headerName: "Date", width: 125 },
-    { field: "Movement_Code", headerName: "Movement Type", width: 190 },
-    { field: "Total_Value", headerName: "Value - INR", width: 195 },
-    { field: "Total_Provision_Value", headerName: "Provision Value - INR", width: 195 },
-    { field: "Difference_Value", headerName: "Different Value - INR", width: 190 },
-    { field: "Request_By", headerName: "Requset By", width: 160 },
-    { field: "Approver_Status", headerName: "Approver Status", width: 180 },
+  { field: "Plant_Code", headerName: "Plant Code", width: 150 },
+  { field: "Doc_ID", headerName: "Doc ID", width: 130 },
+  { field: "Date", headerName: "Date", width: 125 },
+  { field: "Movement_Name", headerName: "Movement Type", width: 190 },
+  { field: "Total_Calculated_Value", headerName: "Value - INR", width: 195 },        // <-- changed here
+  { field: "Total_Provision_Value", headerName: "Provision Value - INR", width: 195 },
+  { field: "Difference_Value", headerName: "Different Value - INR", width: 190 },
+  { field: "Request_By", headerName: "Request By", width: 160 },
+  { field: "Approver_Status", headerName: "Approver Status", width: 180 },
 
 
     // Approve Column
@@ -325,7 +325,7 @@ const ApprovalRs1 = () => {
 
       const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
       const fileExtension = ".xlsx";
-      const fileName = "Trn Rs1 Movement List";
+      const fileName = "Trn Conversion Movement List";
 
       // Create worksheet from JSON data
       const ws = XLSX.utils.json_to_sheet(response.data);
@@ -571,7 +571,7 @@ const ApprovalRs1 = () => {
             textUnderlineOffset: "6px",
           }}
         >
-          Scrap - Rs1 Approval
+          Conversion - Rs1 Approval
         </h2>
       </div>
 
