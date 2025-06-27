@@ -47,6 +47,10 @@ import Approval551 from "./Approval/551_Approval";
 import Approval311 from "./Approval/311_Approval";
 import ApprovalRs1 from "./Approval/Rs1_Approval";
 
+import ApprovedReports from "./ApprovalReports/ApprovedReports";
+
+
+
 import Role from "./Masters/Role";
 import Admin from "./Masters/Admin";
 import SubMenu from "./Masters/Submenu";
@@ -59,11 +63,11 @@ import Service from "./Dashboard/service";
 import Purchase from "./Dashboard/Purchase";
 import InwardApproval from "./Approval/InwardApproval"
 import EmergencyApproval from "./Approval/EmergencyProcurementAprroval"
-import SupvCode from"./Masters/SupvCode"
-import Module from"./Masters/Module"
-import Line from"./Masters/Line"
-import ProductionPlan from"./Production plan/ProductionPlan"
-import StoreDashboard from"./Store Dashboard/StoreDashboard"
+import SupvCode from "./Masters/SupvCode"
+import Module from "./Masters/Module"
+import Line from "./Masters/Line"
+import ProductionPlan from "./Production plan/ProductionPlan"
+import StoreDashboard from "./Store Dashboard/StoreDashboard"
 const App = () => {
   return (
     <Router>
@@ -84,41 +88,39 @@ const App = () => {
             <Route path="Vendor" element={<ProtectedRoute screenId={8}><Vendor /></ProtectedRoute>} />
             <Route path="Customer" element={<ProtectedRoute screenId={9}><Customer /></ProtectedRoute>} />
             <Route path="StorageLocation" element={<ProtectedRoute screenId={10}><StorageLocation /></ProtectedRoute>} />
-             <Route path="SupvCode" element={<ProtectedRoute screenId={24}><SupvCode /></ProtectedRoute>} />
-              <Route path="Module" element={<ProtectedRoute screenId={25}><Module /></ProtectedRoute>} />
-               <Route path="Line" element={<ProtectedRoute screenId={28}><Line /></ProtectedRoute>} />
-                <Route path="ProductionPlan" element={<ProtectedRoute ><ProductionPlan screenId={32} /></ProtectedRoute>} />
-                <Route path="StoreDashboard" element={<ProtectedRoute ><StoreDashboard screenId={31} /></ProtectedRoute>} />
+            <Route path="SupvCode" element={<ProtectedRoute screenId={24}><SupvCode /></ProtectedRoute>} />
+            <Route path="Module" element={<ProtectedRoute screenId={25}><Module /></ProtectedRoute>} />
+            <Route path="Line" element={<ProtectedRoute screenId={28}><Line /></ProtectedRoute>} />
+            <Route path="ProductionPlan" element={<ProtectedRoute ><ProductionPlan screenId={32} /></ProtectedRoute>} />
+            <Route path="StoreDashboard" element={<ProtectedRoute ><StoreDashboard screenId={31} /></ProtectedRoute>} />
             <Route path="Movement_Type" element={<ProtectedRoute screenId={11}><Movement_Type /></ProtectedRoute>} />
             <Route path="MVT_LIST_ITEM" element={<ProtectedRoute screenId={12}><MVT_LIST_ITEM /></ProtectedRoute>} />
             <Route path="CostCenter" element={<ProtectedRoute screenId={13}><CostCenter /></ProtectedRoute>} />
+
             <Route path="Approval_309" element={<ProtectedRoute screenId={14}><Approval309 /></ProtectedRoute>} />
             <Route path="Approval_201" element={<ProtectedRoute screenId={19}><Approval201 /></ProtectedRoute>} />
             <Route path="Approval_202" element={<ProtectedRoute screenId={20}><Approval202 /></ProtectedRoute>} />
             <Route path="Approval_551" element={<ProtectedRoute screenId={26}><Approval551 /></ProtectedRoute>} />
             <Route path="Approval_311" element={<ProtectedRoute screenId={27}><Approval311 /></ProtectedRoute>} />
-            {/* <Route path="Approval_Rs1" element={<ProtectedRoute screenId={33}><ApprovalRs1 /></ProtectedRoute>} /> */}
-            
- <Route path="Approval_Rs1" element={<ProtectedRoute screenId={33}><ApprovalRs1 /></ProtectedRoute>} />
- 
+            <Route path="Approval_Rs1" element={<ProtectedRoute screenId={33}><ApprovalRs1 /></ProtectedRoute>} />
+
             <Route path="dashboard" element={<ProtectedRoute screenId={15}><DashBoard /></ProtectedRoute>} />
             <Route path="Report1" element={<ProtectedRoute screenId={16}><Report1 /></ProtectedRoute>} />
             <Route path="Report2" element={<ProtectedRoute screenId={17}><Report2 /></ProtectedRoute>} />
-            
             <Route path="Report3" element={<ProtectedRoute screenId={16}><Report3 /></ProtectedRoute>} />
             <Route path="Report4" element={<ProtectedRoute screenId={17}><Report4 /></ProtectedRoute>} />
-            
             <Route path="Report5" element={<ProtectedRoute screenId={16}><Report5 /></ProtectedRoute>} />
             <Route path="Report6" element={<ProtectedRoute screenId={17}><Report6 /></ProtectedRoute>} />
-            
             <Route path="Report7" element={<ProtectedRoute screenId={16}><Report7 /></ProtectedRoute>} />
             <Route path="Report8" element={<ProtectedRoute screenId={17}><Report8 /></ProtectedRoute>} />
+
+            <Route path="ApprovalReports" element={<ProtectedRoute screenId={34}><ApprovedReports /></ProtectedRoute>} />
 
             <Route path="phy" element={<ProtectedRoute><Phy /></ProtectedRoute>} />
             <Route path="Emergency" element={<ProtectedRoute><Emergency /></ProtectedRoute>} />
             <Route path="RGP" element={<ProtectedRoute><RGP /></ProtectedRoute>} />
-            
-           
+
+
             <Route path="Stock201" element={<ProtectedRoute><Stock201 /></ProtectedRoute>} />
             <Route path="Stock202" element={<ProtectedRoute><Stock202 /></ProtectedRoute>} />
             <Route path="Partno" element={<ProtectedRoute><Partno /></ProtectedRoute>} />
@@ -126,7 +128,7 @@ const App = () => {
             <Route path="manual" element={<ProtectedRoute><Manual /></ProtectedRoute>} />
             <Route path="Production" element={<ProtectedRoute><Production /></ProtectedRoute>} />
             <Route path="scrap551" element={<ProtectedRoute><Scrap /></ProtectedRoute>} />
-            
+
             <Route path="ConversionRs1" element={<ProtectedRoute><ConversionRs1 /></ProtectedRoute>} />
             <Route path="SubContracting" element={<ProtectedRoute><SubContracting /></ProtectedRoute>} />
             <Route path="Inward" element={<ProtectedRoute><Inward /></ProtectedRoute>} />

@@ -551,9 +551,9 @@ const styleValidationColumns = (ws, headers, rowCount) => {
     sx: {
       "& .MuiInputBase-input": {
         fontSize: 13,
-        height: 30,
+        height: 40,
 
-        padding: "4px 8px"
+        padding: "5px 10px"
       }
     }
   };
@@ -562,23 +562,23 @@ const styleValidationColumns = (ws, headers, rowCount) => {
   //✅ DataGrid Columns with Edit Buttons
   const columns = [
 
-    { field: "Plant_Code", headerName: "Plant Code", width: 120 },
-    { field: "Doc_ID", headerName: "Doc ID", width: 83 },
+    { field: "Plant_Code", headerName: "Plant Code", width: 115 },
+    { field: "Doc_ID", headerName: "Doc ID", width: 75 },
     { field: "Date", headerName: "Date", width: 110 },
-    { field: "Material_Code", headerName: "Material Code", width: 150 },
-    { field: "Rs1_Qty", headerName: "Quantity", width: 110 },
-    { field: "Provision_Qty", headerName: "Provision Qty", width: 135 },
-    { field: "Rate_PerPart", headerName: "Rate", width: 70 },
-    { field: "Calculated_Value", headerName: "Value", width: 85 },
-    { field: "Provision_Value", headerName: "Provision Value", width: 160 },
-    { field: "Difference_Qty", headerName: "Different Qty", width: 130 },
-    { field: "Difference_Value", headerName: "Different Value - INR", width: 190 },
-    { field: "Approval_Status", headerName: "Approval Status", width: 160 },
+    { field: "Material_Code", headerName: "Material Code", width: 135 },
+    { field: "Rs1_Qty", headerName: "Rs.1 ConversionQty", width: 166 },
+    { field: "Rate_PerPart", headerName: "Current Rate", width: 122 },  
+    { field: "Calculated_Value", headerName: "Rs.1 Value", width: 100 },
+    { field: "Provision_Qty", headerName: "Provision Qty", width: 123 },
+    { field: "Provision_Value", headerName: "Provision Value", width: 130 },
+    { field: "Difference_Qty", headerName: "Different Qty", width: 120 },
+    { field: "Difference_Value", headerName: "Different Value - INR", width: 175 },
+    { field: "Approval_Status", headerName: "Approval Status", width: 150 },
 
     {
       field: "actions",
       headerName: "Actions",
-      width: 173,
+      width: 155,
       sortable: false,
       editable: false,
       disableColumnMenu: true,
@@ -734,7 +734,7 @@ const handleUpdate = async () => {
 };
 
 
-    console.log("🚀 Sending Edit551 payload:", data);
+    console.log("🚀 Sending EditRs.1 Conversion payload:", data);
 
     const response = await EditRecord(data);
 
@@ -831,7 +831,7 @@ const handleUpdate = async () => {
             textUnderlineOffset: "6px",
           }}
         >
-          Scrap - 551 Movement Transaction
+          Rs.1 Conversion Transaction
         </h2>
       </div>
 
@@ -1290,17 +1290,13 @@ const handleUpdate = async () => {
             textDecorationColor: "#88c57a",
             textDecorationThickness: "3px",
           }}>
-            Edit 551 Record
+            Edit Rs.1 Conversion Record
           </h3>
 
           {/* Read-only fields */}
           <TextField label="Plant Code" value={PlantCode} fullWidth InputProps={{ readOnly: true }} {...compactFieldProps} />
           <TextField label="Doc ID" value={DocID} fullWidth InputProps={{ readOnly: true }} {...compactFieldProps} />
-          <TextField label="Trn ID" value={TrnSapID} fullWidth InputProps={{ readOnly: true }} {...compactFieldProps} />
-
-          {/* Editable fields below */}
-
-          {/* Material Code (optional editable, but keeping it if needed) */}
+                    {/* Material Code (optional editable, but keeping it if needed) */}
           <FormControl fullWidth size="small">
             <InputLabel id="mat-label">Material Code</InputLabel>
             <Select
@@ -1317,13 +1313,22 @@ const handleUpdate = async () => {
             </Select>
           </FormControl>
 
+          <TextField label="Trn ID" value={TrnSapID} fullWidth InputProps={{ readOnly: true }} {...compactFieldProps} />
 
           {/* Editable Text Fields */}
           <TextField
-            label="Qty"
+            label="Rs.1 Conversion Qty"
             type="number"
             value={Qty}
             onChange={e => setQty(Number(e.target.value))}
+            fullWidth
+            {...compactFieldProps}
+          />
+          <TextField
+            label="Current Rate"
+            type="number"
+            value={Rate_PerPart}
+            onChange={e => setRate_PerPart(Number(e.target.value))}
             fullWidth
             {...compactFieldProps}
           />
@@ -1346,14 +1351,6 @@ const handleUpdate = async () => {
             {...compactFieldProps}
           />
 
-          <TextField
-            label="Rate"
-            type="number"
-            value={Rate_PerPart}
-            onChange={e => setRate_PerPart(Number(e.target.value))}
-            fullWidth
-            {...compactFieldProps}
-          />
 
           {/* Buttons */}
           <Box sx={{ gridColumn: "span 2", display: "flex", justifyContent: "center", gap: 2, mt: 1 }}>
