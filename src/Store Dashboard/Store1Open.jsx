@@ -21,12 +21,12 @@ const Store1Open = () => {
   const [UserID, setUserID] = useState("");
   const [Plant_ID, setPlantID] = useState("");
 
-  const columns = [
+
+ const columns = [
   {
-    field: "S.No",
+    field: "sno",          // 👈 match with `sno` from processedData
     headerName: "S.No",
     flex: 1,
-  
   },
   { field: "Line_Name", headerName: "Line", flex: 1 },
   { field: "Order_Date", headerName: "Order Date", flex: 1 },
@@ -35,20 +35,29 @@ const Store1Open = () => {
   { field: "Material_Description", headerName: "Description", flex: 1 },
   { field: "Order_Qty", headerName: "Order Qty", flex: 1 },
   { field: "Issued_Qty", headerName: "Issued Qty", flex: 1 },
-  { field: "Issued_Date", headerName: "Issued_Date", flex: 1 }, 
+  { field: "Issued_Date", headerName: "Issued Date", flex: 1 },
   { field: "Balanced_Qty", headerName: "Balanced Qty", flex: 1 },
   { field: "LeadTime", headerName: "Delay Time", flex: 1 },
 ];
 
+
   const getData = async () => {
-    try {
-      const response = await getdetailsStore1Open();
-      setRows(response);
-    } catch (error) {
-      console.error(error);
-      setRows([]);
-    }
-  };
+  try {
+    const response = await getdetailsStore1Open(Plant_ID);
+console.log("store1open",response)
+    const processedData = response.map((row, index) => ({
+      id: index,       // Required by DataGrid
+      sno: index + 1,  // 👈 Serial number for display
+      ...row,
+    }));
+
+    setRows(processedData);
+  } catch (error) {
+    console.error(error);
+    setRows([]);
+  }
+};
+
 
   useEffect(() => {
     const encryptedData = sessionStorage.getItem("userData");

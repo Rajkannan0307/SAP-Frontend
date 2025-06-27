@@ -108,10 +108,12 @@ const handleLogin = async (e) => {
             case 6:
             case 7:
             case 8:
+              case 10:
               window.location.href = "/home/HomePage";
               break;
             case 1:
             case 9:
+              case 11:
               window.location.href = "/home/Home";
               break;
           }
