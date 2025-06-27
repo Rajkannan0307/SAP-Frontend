@@ -3,21 +3,12 @@ import axios from "axios";
 
 
 
-// export const MovementRs1 = async (data) => {
-//     const response = await axios.post(`${api}/MovementRs1/File`, data);
-//     return response;
-// };
-
-export const MovementRs1 = (formData) => {
-  return axios.post('/MovementRs1/File', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+export const MovementConversion = async (data) => {
+    const response = await axios.post(`${api}/MovementRs1/File`, data);
+    return response;
 };
 
 
-// export const MovementRs1 = async (data) => {
-//   return await axios.post(`/MovementRs1/File`, data); // Update API base path if needed
-// };
 export const MovementRs1Reupload = async (data,docId) => {
     const response = await axios.post(`${api}/MovementRs1/FileReupload?Doc_ID=${docId}`, data);
     return response;
@@ -68,11 +59,11 @@ export const getMovement = async ()=>{
     return response;
 };
 
-export const getReasonForMovement = async ()=>{
+// export const getReasonForMovement = async ()=>{
 
-    const response = await axios.get(`${api}/MovementRs1/Get_ReasonForMovementTypeRs1`);
-    return response;
-};
+//     const response = await axios.get(`${api}/MovementRs1/Get_ReasonForMovementTypeRs1`);
+//     return response;
+// };
 
 export const getCostCenter = async ()=>{
 
@@ -84,13 +75,11 @@ export const getView=async ()=>{
     return response.data;
 };
 
-
 export const getRs1ApprovalView = async (docId) => {
-  const response = await axios.get(`${api}/MovementRs1/ViewRs1ApprovalStatus?Doc_ID=${docId}`);
+  const response = await axios.get(`${api}/MovementRs1/ViewRePgApprovalStatus?Doc_ID=${docId}`);
   
   return response.data;
 };
-
 
 export const DownloadAllExcel = async (DocID) => {
   if (!DocID) {
@@ -112,14 +101,14 @@ export const getTransactionData = async (fromDate, toDate) => {
   return response;
 };
 
-export const EditRs1Record = async (data) => {
-  const response = await axios.post(`${api}/MovementRs1/EditRs1Record`, data);
+export const EditRecord = async (data) => {
+  const response = await axios.post(`${api}/MovementRs1/EditRs1MovementRs1Record`, data);
   return response.data;
 };
 
 
 export const getresubmit = async (data) => {
-  const response = await axios.post(`${api}/MovementRs1/HandleResubmitActionRs1`, data);
+  const response = await axios.post(`${api}/MovementRs1/HandleResubmitActionRs1MovementRs1`, data);
   
   return response.data;
 };
@@ -129,4 +118,11 @@ export const getCancel = async (data) => {
   const response = await axios.post(`${api}/MovementRs1/HandleCancelActionRs1?Doc_ID`,data);
   
   return response.data;
+};
+
+
+export const getApprovalView = async (user) => {
+  const response = await axios.get(`${api}/MovementRs1/get_details?userid=${user}`);
+  // Assuming your API returns an object with 'data' as the array:
+  return response.data.data || [];  // fallback to empty array if no data
 };

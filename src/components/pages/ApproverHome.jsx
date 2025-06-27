@@ -58,11 +58,11 @@ const ApproverHome = () => {
       icon: <FiCheckCircle />,
     },
     {
-      id: "5",
+      id: "7",
       title: "Rs1 Conversion",
-      path: "/approval/rs1",
-      endpoint: "/ApprovalHomePage/get_details_Rs1Approval",
-      movementId: 5,
+      path: "/home/Approval_Rs1",
+      endpoint: "/ApprovalHomePage/get_details_309Approval",
+      movementId: 7,
       icon: <FiCheckCircle />,
     },
     {
@@ -74,11 +74,11 @@ const ApproverHome = () => {
       icon: <FiCheckCircle />,
     },
     {
-      id: "7",
+      id: "10",
       title: "RGP/NRGP",
       path: "/approval/rgp",
       endpoint: "/ApprovalHomePage/get_details_RGPApproval",
-      movementId: 7,
+      movementId: 10,
       icon: <FiCheckCircle />,
     },
     {
