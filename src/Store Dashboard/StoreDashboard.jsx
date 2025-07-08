@@ -8,22 +8,33 @@ import Store2Closed from "./Store2Closed";
 import Store3Open from "./Store3Open";
 import Store3Closed from "./Store3Closed";
 
-// Plant to store name label
+// Label for each plant’s store
 const storeLabelMap = {
-  1: ["P2 Store 1", "P2 Store 2", "P2 Store 3"],
+  1:["P2 Store 1", "P2 Store 2", "P2 Store 3"],
   2: ["P3 Store 1", "P3 Store 2"],
   3: ["P4 Store 1", "P4 Store 2", "P4 Store 3"],
   5: ["P5 Store 1", "P5 Store 2"],
 };
 
-// Map specific store-status to the component
-const storeComponentMap = {
-  "Store1-Open": <Store1Open />,
-  "Store1-Closed": <Store1Closed />,
-  "Store2-Open": <Store2Open />,
-  "Store2-Closed": <Store2Closed />,
-  "Store3-Open": <Store3Open />,
-  "Store3-Closed": <Store3Closed />,
+// Mapping of plant to store numbers and storage codes
+const storeCodeMap = {
+  1: { Store1: "1200", Store2: "1201", Store3: "1202" },
+  2: { Store1: "1300", Store2: "1301" },
+  3: { Store1: "1150", Store2: "1151", Store3: "1152" },
+  5: { Store1: "1250", Store2: "1251" },
+};
+
+// Dynamic component selector
+const getStoreComponent = (storeKey, status) => {
+  const componentMap = {
+    "Store1-Open": Store1Open,
+    "Store1-Closed": Store1Closed,
+    "Store2-Open": Store2Open,
+    "Store2-Closed": Store2Closed,
+    "Store3-Open": Store3Open,
+    "Store3-Closed": Store3Closed,
+  };
+  return componentMap[`${storeKey}-${status}`];
 };
 
 const StoreDashboard = () => {
@@ -45,27 +56,33 @@ const StoreDashboard = () => {
 
   useEffect(() => {
     const generateTabs = () => {
+      const storeCodes = storeCodeMap[PlantId];
       const storeLabels = storeLabelMap[PlantId];
-      if (!storeLabels) {
+
+      if (!storeCodes) {
         setTabs([]);
         return;
       }
 
       const generatedTabs = [];
 
-      storeLabels.forEach((label, index) => {
-        const storeKey = `Store${index + 1}`;
-        const openKey = `${storeKey}-Open`;
-        const closedKey = `${storeKey}-Closed`;
+      Object.entries(storeCodes).forEach(([storeKey, storeCode], index) => {
+        const label = storeLabels?.[index] || `${storeKey}`;
 
         generatedTabs.push(
           {
             label: `${label} (Open)`,
-            component: storeComponentMap[openKey],
+            component: React.createElement(
+              getStoreComponent(storeKey, "Open"),
+              { storageCode: storeCode }
+            ),
           },
           {
             label: `${label} (Closed)`,
-            component: storeComponentMap[closedKey],
+            component: React.createElement(
+              getStoreComponent(storeKey, "Closed"),
+              { storageCode: storeCode }
+            ),
           }
         );
       });

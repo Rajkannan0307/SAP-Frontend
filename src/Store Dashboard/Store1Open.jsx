@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Typography,
-  Box,
-} from "@mui/material";
+import { Typography, Box } from "@mui/material";
 import {
   DataGrid,
   GridToolbarContainer,
@@ -10,69 +7,70 @@ import {
   GridToolbarFilterButton,
   GridToolbarExport,
 } from "@mui/x-data-grid";
-
-import {
-  getdetailsStore1Open,
-} from "../controller/StoreDashboardapiservice";
+import { getdetailsStore1Open } from "../controller/StoreDashboardapiservice";
 import { decryptSessionData } from "../controller/StorageUtils";
 
 const Store1Open = () => {
   const [rows, setRows] = useState([]);
   const [UserID, setUserID] = useState("");
   const [Plant_ID, setPlantID] = useState("");
+  const [StorageCode, setStorageCode] = useState("");
 
+  const columns = [
+    { field: "sno", headerName: "S.No", flex: 1 },
+    { field: "Line_Name", headerName: "Line", flex: 1 },
+    { field: "Order_Date", headerName: "Order Date", flex: 1 },
+    { field: "Order_No", headerName: "Order No", flex: 1 },
+    { field: "Material_No", headerName: "Material", flex: 1 },
+    { field: "Material_Description", headerName: "Description", flex: 1 },
+    { field: "Order_Qty", headerName: "Order Qty", flex: 1 },
+    { field: "Issued_Qty", headerName: "Issued Qty", flex: 1 },
+    { field: "Balanced_Qty", headerName: "Balanced Qty", flex: 1 },
+    { field: "LeadTime", headerName: "Delay Time", flex: 1 },
+  ];
 
- const columns = [
-  {
-    field: "sno",          // 👈 match with `sno` from processedData
-    headerName: "S.No",
-    flex: 1,
-  },
-  { field: "Line_Name", headerName: "Line", flex: 1 },
-  { field: "Order_Date", headerName: "Order Date", flex: 1 },
-  { field: "Order_No", headerName: "Order No", flex: 1 },
-  { field: "Material_No", headerName: "Material", flex: 1 },
-  { field: "Material_Description", headerName: "Description", flex: 1 },
-  { field: "Order_Qty", headerName: "Order Qty", flex: 1 },
-  { field: "Issued_Qty", headerName: "Issued Qty", flex: 1 },
-  { field: "Issued_Date", headerName: "Issued Date", flex: 1 },
-  { field: "Balanced_Qty", headerName: "Balanced Qty", flex: 1 },
-  { field: "LeadTime", headerName: "Delay Time", flex: 1 },
-];
+  const getData = async (plantId, code) => {
+    try {
+      const response = await getdetailsStore1Open(plantId, code);
+      console.log("📦 Store1Open Data:", response);
 
+      const processedData = response.map((row, index) => ({
+        id: row.Prdord_ID || index,
+        sno: index + 1,
+        ...row,
+      }));
 
-  const getData = async () => {
-  try {
-    const response = await getdetailsStore1Open(Plant_ID);
-console.log("store1open",response)
-    const processedData = response.map((row, index) => ({
-      id: index,       // Required by DataGrid
-      sno: index + 1,  // 👈 Serial number for display
-      ...row,
-    }));
-
-    setRows(processedData);
-  } catch (error) {
-    console.error(error);
-    setRows([]);
-  }
-};
-
+      setRows(processedData);
+    } catch (error) {
+      console.error("❌ Error loading Store1Open data:", error);
+      setRows([]);
+    }
+  };
 
   useEffect(() => {
     const encryptedData = sessionStorage.getItem("userData");
     if (encryptedData) {
-      const decryptedData = decryptSessionData(encryptedData);
-      setUserID(decryptedData.UserID);
-      setPlantID(decryptedData.PlantID);
+      const decrypted = decryptSessionData(encryptedData);
+      if (decrypted) {
+        const plantId = decrypted.PlantID;
+        setUserID(decrypted.UserID);
+        setPlantID(plantId);
+
+        // 🔒 Hardcoded storageCode for Store 1
+        let hardcodedStorageCode = "";
+        if (plantId === 1) hardcodedStorageCode = "1200"; // P2
+        else if (plantId === 2) hardcodedStorageCode = "1300"; // P3
+        else if (plantId === 3) hardcodedStorageCode = "1150"; // P4
+        else if (plantId === 5) hardcodedStorageCode = "1250"; // P5
+
+        setStorageCode(hardcodedStorageCode);
+
+        if (plantId && hardcodedStorageCode) {
+          getData(plantId, hardcodedStorageCode);
+        }
+      }
     }
   }, []);
-
-  useEffect(() => {
-    if (UserID) {
-      getData();
-    }
-  }, [UserID]);
 
   const CustomToolbar = () => (
     <GridToolbarContainer>
@@ -92,7 +90,6 @@ console.log("store1open",response)
         height: "calc(100vh - 250px)",
       }}
     >
-      {/* Top Header */}
       <Box
         sx={{
           backgroundColor: "#2e59d9",
@@ -108,12 +105,11 @@ console.log("store1open",response)
       >
         <Typography>Shift A</Typography>
         <Typography>Store 1 - Open Orders</Typography>
-         <Typography variant="h6">
-      Date: {new Date().toLocaleDateString()}
-    </Typography>
+        <Typography variant="h6">
+          Date: {new Date().toLocaleDateString()}
+        </Typography>
       </Box>
 
-      {/* DataGrid Container */}
       <div
         style={{
           flexGrow: 1,
@@ -127,7 +123,7 @@ console.log("store1open",response)
           columns={columns}
           pageSize={5}
           rowsPerPageOptions={[5]}
-          getRowId={(row) => row.Prdord_ID}
+          getRowId={(row) => row.id}
           components={{ Toolbar: CustomToolbar }}
           sx={{
             "& .MuiDataGrid-columnHeader": {
@@ -138,11 +134,8 @@ console.log("store1open",response)
             "& .MuiDataGrid-row": {
               backgroundColor: "#f5f5f5",
               "&:hover": {
-                backgroundColor: "#f5f5f5",
+                backgroundColor: "#f0f0f0",
               },
-            },
-            "& .MuiDataGrid-row.Mui-selected": {
-              backgroundColor: "inherit",
             },
             "& .MuiDataGrid-cell": {
               color: "#333",
