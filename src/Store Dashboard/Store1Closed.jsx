@@ -18,13 +18,14 @@ const Store1Closed = ({ storageCode }) => {
   const [Plant_ID, setPlantID] = useState("");
   const [UserID, setUserID] = useState("");
 
-  const columns = [
-    { field: "Vendor_Code", headerName: "Line Name", flex: 1 },
-    { field: "Vendor_Name", headerName: "No.Of Orders", flex: 1 },
-    { field: "Invoice_No", headerName: "No Order Close", flex: 1 },
-    { field: "Invoice_Date", headerName: "Issue Posted on Time", flex: 1 },
-    { field: "Invoice_Value", headerName: "Issue Posted Delay", flex: 1 },
+ const columns = [
+    { field: "Line_Name", headerName: "Line Name", flex: 1 },
+    { field: "No.Of Orders", headerName: "No.Of Orders", flex: 1 },
+    { field: "No Order Close", headerName: "No Order Close", flex: 1 },
+    { field: "Issue Posted on Time", headerName: "Issue Posted on Time", flex: 1 },
+    { field: "Issue Posted Delay", headerName: "Issue Posted Delay", flex: 1 },
   ];
+
 
   const getData = async () => {
     try {
