@@ -227,6 +227,7 @@ const Stock201 = () => {
       //console.error("Error updating user:", error);
     }
   };
+  
   const get_Material = async () => {
     try {
       const response = await getMaterial();

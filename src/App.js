@@ -47,9 +47,9 @@ import Approval551 from "./Approval/551_Approval";
 import Approval311 from "./Approval/311_Approval";
 import ApprovalRs1 from "./Approval/Rs1_Approval";
 
-// import ApprovedReports from "./ApprovalReports/ApprovedReports";
+//import ApprovedReports from "./ApprovalReports/ApprovedReports";
 
-
+import ApprovedReports from './ApprovalReports/ApprovedReports';
 
 import Role from "./Masters/Role";
 import Admin from "./Masters/Admin";
@@ -112,9 +112,9 @@ const App = () => {
             <Route path="Report5" element={<ProtectedRoute screenId={16}><Report5 /></ProtectedRoute>} />
             <Route path="Report6" element={<ProtectedRoute screenId={17}><Report6 /></ProtectedRoute>} />
             <Route path="Report7" element={<ProtectedRoute screenId={16}><Report7 /></ProtectedRoute>} />
-            <Route path="Report8" element={<ProtectedRoute screenId={17}><Report8 /></ProtectedRoute>} />
-{/* 
-           // <Route path="ApprovalReports" element={<ProtectedRoute screenId={34}><ApprovedReports /></ProtectedRoute>} /> */}
+          <Route path="Report8" element={<ProtectedRoute screenId={17}><Report8 /></ProtectedRoute>} />
+
+          <Route path="ApprovalReports" element={<ProtectedRoute screenId={34}><ApprovedReports /></ProtectedRoute>} /> 
 
             <Route path="phy" element={<ProtectedRoute><Phy /></ProtectedRoute>} />
             <Route path="Emergency" element={<ProtectedRoute><Emergency /></ProtectedRoute>} />

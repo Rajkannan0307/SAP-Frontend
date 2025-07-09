@@ -24,6 +24,8 @@ import { MdBusinessCenter } from "react-icons/md";
 import usePermissions from "../controller/usePermission";
 import { decryptSessionData } from "../controller/StorageUtils";
 import { FaExchangeAlt } from "react-icons/fa";
+
+import { TbReportSearch } from "react-icons/tb";
 import { SiSap } from "react-icons/si";
 import { GiAmericanShield } from "react-icons/gi";
 import { BsFillSignpostFill } from "react-icons/bs";
@@ -289,7 +291,7 @@ const Sidebar = ({ setSidebarOpen }) => {
             'ValuationType','SupvCode','Module','Line'
           ]}
         />
-
+        {/* Transaction Section */}
         {Permissions.includes('dashboard') && (
           <button
             onClick={() => {
@@ -337,6 +339,8 @@ const Sidebar = ({ setSidebarOpen }) => {
             'Approval_309', 'Approval_201', 'Approval_202', 'Approval_551', 'Approval_311', 'InwardApproval', 'EmergencyApproval','ApprovalRs1'
           ]}
         />
+
+
  {Permissions.includes('Store') && (
           <button
 
@@ -385,7 +389,35 @@ const Sidebar = ({ setSidebarOpen }) => {
             {open && "Production Plan"}
           </button>
         )}
-        {/* Transactions Section */}
+
+        {/* Approved Report  Section */}
+        {Permissions.includes('ApprovedReports') && (
+          <button
+            onClick={() => {
+              closeAllDropdowns(); // Close other sections
+              navigate("/home/ApprovalReports");
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "none",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              fontWeight: "bold",
+              fontSize: "17px",
+              margin: "10px 0",
+              marginBottom: "10px"
+            }}>
+            <TbReportSearch style={{ color: "turquoise", fontSize: "28px" }} />
+            {open && "Approved Report"}
+          </button>
+        )}
+
+
+
+        {/* Report Section */}
         <SidebarSection
           open={open}
           isOpen={Report}
@@ -470,6 +502,7 @@ const Sidebar = ({ setSidebarOpen }) => {
           </button>
         )}
       </div>
+
     </div>
   );
 };
