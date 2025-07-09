@@ -33,7 +33,7 @@ import { MenuItem, InputLabel, FormControl } from "@mui/material";
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { Tooltip } from '@mui/material';
-
+import { PiUploadDuotone } from "react-icons/pi";
 import {
   getdetails,
   getVendor,
@@ -116,7 +116,7 @@ const Emergency = () => {
                  size="small"
                  onClick={() => handleOpenResubmitModal(params.row.Inward_ID)}
                >
-                 <AutorenewIcon />
+                 <PiUploadDuotone />
                </IconButton>
              </Tooltip>
            )}

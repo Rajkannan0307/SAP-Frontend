@@ -38,7 +38,7 @@ import {
   getServiceData,Resubmit
 } from "../controller/Inwardtransactionapiservice";
 import { decryptSessionData } from "../controller/StorageUtils";
-import AutorenewIcon from '@mui/icons-material/Autorenew';
+import { PiUploadDuotone } from "react-icons/pi";
 const Service = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
@@ -125,7 +125,7 @@ const [selectedInwardId, setSelectedInwardId] = useState(null);
               size="small"
               onClick={() => handleOpenResubmitModal(params.row.Inward_ID)}
             >
-              <AutorenewIcon />
+              <PiUploadDuotone />
             </IconButton>
           </Tooltip>
         )}
