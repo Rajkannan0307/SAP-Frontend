@@ -70,41 +70,142 @@ const ApprovedReports = () => {
     }
   };
 
-    // Download the data from the trn sap table to particular date
+const movementMapping = {
+  'Scrap Posting': { code: '551', name: 'Scrap Posting' },
+  'Stock Posting - 201 Mvmt (-)': { code: '201', name: 'Stock Posting - 201 Mvmt (-)' },
+  'Stock Posting - 202 Mvmt (+)': { code: '202', name: 'Stock Posting - 202 Mvmt (+)' },
+  'Material to Material Conversion': { code: '309', name: 'Material to Material Conversion' },
+  'Storage Location Transfer': { code: '311', name: 'Storage Location Transfer' },
+  'Conversion Rs1': { code: 'NA', name: 'Conversion Rs1' },
+  'Emergency Procurement': { code: 'NA', name: 'Emergency Procurement' },
+  'Inward Old Invoice': { code: 'NA', name: 'Inward Old Invoice' }
+};
 
-// const handleDownloadReportExcel = async (index) => {
+const handleDownloadReportExcel = async (index) => {
+  const fromDate = fromDates[index];
+  const toDate = toDates[index];
+  const reportType = report;
+
+  if (!reportType) {
+    alert("Please select a report type.");
+    return;
+  }
+
+  if (!fromDate || !toDate) {
+    alert("Select both From Date and To Date.");
+    return;
+  }
+
+  try {
+    const response = await getReportData(reportType, fromDate, toDate);
+    const reportData = response.data?.data;
+
+    if (!Array.isArray(reportData) || reportData.length === 0) {
+      alert("No data available for download.");
+      return;
+    }
+
+    const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+    const fileExtension = ".xlsx";
+
+    const movementInfo = movementMapping[reportType] || { code: "NA", name: reportType };
+    const sheetName = `${movementInfo.code !== "NA" ? movementInfo.code : reportType} DATA`;
+    const fileName = `${sheetName.replace(/\s+/g, "_")}_Report`;
+
+    const ws = XLSX.utils.json_to_sheet(reportData);
+
+    // Style headers
+    const headers = Object.keys(reportData[0]);
+    headers.forEach((_, colIdx) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+      if (ws[cellAddress]) {
+        ws[cellAddress].s = {
+          font: { bold: true, color: { rgb: "000000" } },
+          fill: { fgColor: { rgb: "FFFF00" } },
+          alignment: { horizontal: "center" },
+        };
+      }
+    });
+
+    const wb = { Sheets: { [sheetName]: ws }, SheetNames: [sheetName] };
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+
+    const data = new Blob([excelBuffer], { type: fileType });
+    const url = window.URL.createObjectURL(data);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", fileName + fileExtension);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    alert(`${movementInfo.name} - File downloaded successfully!`);
+  } catch (error) {
+    console.error("Download failed:", error);
+    if (error.response) {
+      alert(error.response.data.message || "Unknown error from backend");
+    } else if (error.request) {
+      alert("No response from server. Please try again later.");
+    } else {
+      alert(`Error: ${error.message}`);
+    }
+  }
+};
+
+  
+//-------------------------------------//
+
+
+//   const handleDownloadReportExcel = async (index) => {
 //   const fromDate = fromDates[index];
 //   const toDate = toDates[index];
-//   const reportType = report; // get selected report type
+//   const reportType = report;
 
 //   if (!reportType) {
 //     alert("Please select a report type.");
 //     return;
 //   }
 
-//   if (!fromDate) {
-//     alert("Select From Date");
-//     return;
-//   }
-//   if (!toDate) {
-//     alert("Select To Date");
+//   if (!fromDate || !toDate) {
+//     alert("Select both From Date and To Date.");
 //     return;
 //   }
 
 //   try {
-//     const response = await getReportData(reportType, fromDate, toDate); 
-//     if (response.status === 400) {
-//       alert(`Error: ${response.data.message || 'Invalid input or date range.'}`);
+//     const response = await getReportData(reportType, fromDate, toDate);
+//     const reportData = response.data?.data;
+
+//     if (!Array.isArray(reportData) || reportData.length === 0) {
+//       alert("No data available for download.");
 //       return;
 //     }
 
+//     // ✅ Map reportType to short sheet name
+//     const sheetNameMap = {
+//       'Stock Posting - 201 Mvmt (-)': '201 DATA',
+//       'Stock Posting - 202 Mvmt (+)': '202 DATA',
+//       'Material to Material Conversion': '309 DATA',
+//       'Storage Location Transfer': '311 DATA',
+//       'Scrap Posting': '551 DATA',
+//       'Conversion Rs1': 'RS1 DATA',
+//       'Emergency Procurement': 'EMRY INV DATA',
+//       'Inward Old Invoice': 'OLD INV DATA',
+//     };
+
+//     const sheetName = sheetNameMap[reportType] || 'Report DATA';
+
+//     // ✅ Use movement name for file name (clean label)
+//     const cleanFileName = reportType.replace(/\s+/g, '_').replace(/[^\w]/g, '');
+//     const fileName = `${cleanFileName}_Report`;
+
 //     const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
 //     const fileExtension = ".xlsx";
-//     const fileName = "Transaction_Movement_Report";
 
-//     const ws = XLSX.utils.json_to_sheet(response.data);
+//     const ws = XLSX.utils.json_to_sheet(reportData);
 
-//     const headers = Object.keys(response.data[0] || {});
+//     // ✅ Style headers
+//     const headers = Object.keys(reportData[0]);
 //     headers.forEach((_, colIdx) => {
 //       const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
 //       if (ws[cellAddress]) {
@@ -116,7 +217,7 @@ const ApprovedReports = () => {
 //       }
 //     });
 
-//     const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+//     const wb = { Sheets: { [sheetName]: ws }, SheetNames: [sheetName] };
 //     const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
 
 //     const data = new Blob([excelBuffer], { type: fileType });
@@ -142,77 +243,6 @@ const ApprovedReports = () => {
 //   }
 // };
 
-
-const handleDownloadReportExcel = async (index) => {
-  const fromDate = fromDates[index];
-  const toDate = toDates[index];
-  const reportType = report;
-
-  if (!reportType) {
-    alert("Please select a report type.");
-    return;
-  }
-
-  if (!fromDate || !toDate) {
-    alert("Select both From Date and To Date.");
-    return;
-  }
-
-  try {
-    const response = await getReportData(reportType, fromDate, toDate);
-
-    // 🛠 Fix here: extract array from response.data.data
-    const reportData = response.data?.data;
-
-    if (!Array.isArray(reportData) || reportData.length === 0) {
-      alert("No data available for download.");
-      return;
-    }
-
-    const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-    const fileExtension = ".xlsx";
-    const fileName = "Transaction_Movement_Report";
-
-    const ws = XLSX.utils.json_to_sheet(reportData);
-
-    // Apply header styles
-    const headers = Object.keys(reportData[0]);
-    headers.forEach((_, colIdx) => {
-      const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
-      if (ws[cellAddress]) {
-        ws[cellAddress].s = {
-          font: { bold: true, color: { rgb: "000000" } },
-          fill: { fgColor: { rgb: "FFFF00" } },
-          alignment: { horizontal: "center" },
-        };
-      }
-    });
-
-    const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
-    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-
-    const data = new Blob([excelBuffer], { type: fileType });
-    const url = window.URL.createObjectURL(data);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", fileName + fileExtension);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
-
-    alert("File downloaded successfully!");
-  } catch (error) {
-    console.error("Download failed:", error);
-    if (error.response) {
-      alert(error.response.data.message || "Unknown error from backend");
-    } else if (error.request) {
-      alert("No response from server. Please try again later.");
-    } else {
-      alert(`Error: ${error.message}`);
-    }
-  }
-};
 
 
   return (
@@ -285,26 +315,26 @@ const handleDownloadReportExcel = async (index) => {
 
 
 
-<Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-  <Button
-    variant="contained"
-    onClick={() => handleDownloadReportExcel(idx)}
-    sx={{
-      width: 200,
-      height: 50,
-      fontSize: '18px',
-      backgroundColor: '#1976d2',        // Normal Blue
-      '&:hover': {
-        backgroundColor: '#115293',      // Hover Dark Blue
-      },
-      '&:active': {
-        backgroundColor: '#0d3c73',      // Click Deep Dark Blue
-      },
-    }}
-  >
-    Download
-  </Button>
-</Box>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <Button
+                  variant="contained"
+                  onClick={() => handleDownloadReportExcel(idx)}
+                  sx={{
+                    width: 200,
+                    height: 50,
+                    fontSize: '18px',
+                    backgroundColor: '#1976d2',        // Normal Blue
+                    '&:hover': {
+                      backgroundColor: '#115293',      // Hover Dark Blue
+                    },
+                    '&:active': {
+                      backgroundColor: '#0d3c73',      // Click Deep Dark Blue
+                    },
+                  }}
+                >
+                  Download
+                </Button>
+              </Box>
 
             </Box>
           </TabPanel>
