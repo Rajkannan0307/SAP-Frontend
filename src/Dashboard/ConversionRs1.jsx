@@ -782,13 +782,6 @@ const handleUpdate = async () => {
     get_SLoc();
 
   }, []);
-//   useEffect(() => {
-//     async function fetchReasonForMovement() {
-//       const response = await getReasonForMovement(); // your function to call stored procedure
-//       setReasonForMovementTable(response.data);
-//     }
-//     fetchReasonForMovement();
-//   }, []);
 
 
   // ✅ Custom Toolbar

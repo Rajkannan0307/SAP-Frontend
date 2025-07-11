@@ -24,6 +24,8 @@ import { MdBusinessCenter } from "react-icons/md";
 import usePermissions from "../controller/usePermission";
 import { decryptSessionData } from "../controller/StorageUtils";
 import { FaExchangeAlt } from "react-icons/fa";
+
+import { TbReportSearch } from "react-icons/tb";
 import { SiSap } from "react-icons/si";
 import { GiAmericanShield } from "react-icons/gi";
 import { BsFillSignpostFill } from "react-icons/bs";
@@ -289,7 +291,7 @@ const Sidebar = ({ setSidebarOpen }) => {
             'ValuationType','SupvCode','Module','Line'
           ]}
         />
-
+        {/* Transaction Section */}
         {Permissions.includes('dashboard') && (
           <button
             onClick={() => {
@@ -337,6 +339,8 @@ const Sidebar = ({ setSidebarOpen }) => {
             'Approval_309', 'Approval_201', 'Approval_202', 'Approval_551', 'Approval_311', 'InwardApproval', 'EmergencyApproval','ApprovalRs1'
           ]}
         />
+
+
  {Permissions.includes('Store') && (
           <button
 
@@ -385,7 +389,35 @@ const Sidebar = ({ setSidebarOpen }) => {
             {open && "Production Plan"}
           </button>
         )}
-        {/* Transactions Section */}
+
+        {/* Approved Report  Section */}
+        {Permissions.includes('ApprovedReports') && (
+          <button
+            onClick={() => {
+              closeAllDropdowns(); // Close other sections
+              navigate("/home/ApprovalReports");
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "none",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              fontWeight: "bold",
+              fontSize: "17px",
+              margin: "10px 0",
+              marginBottom: "10px"
+            }}>
+            <TbReportSearch style={{ color: "turquoise", fontSize: "28px" }} />
+            {open && "Approved Report"}
+          </button>
+        )}
+
+
+
+        {/* Report Section */}
         <SidebarSection
           open={open}
           isOpen={Report}
@@ -394,52 +426,54 @@ const Sidebar = ({ setSidebarOpen }) => {
           Permissions={Permissions}
           label="Report"
           links={[
-            {
-              name: "Inward of Old Invoice Report",
-              path: "/home/Report1",
-              icon: <MdCalendarMonth style={{ marginRight: "8px", color: "rgb(238, 110, 110)", fontSize: "23px", }} />,
-              code: 'Report1'
-            },
-            {
-              name: "Emergency Procurement Report",
-              path: "/home/Report2",
-              icon: <MdCalendarMonth style={{ marginRight: "8px", color: "rgb(238, 106, 106)", fontSize: "23px", }} />,
-              code: 'Report2'
-            },
-                        {
-              name: "Approval 309 Report",
-              path: "/home/Report3",
-              icon: <SiMaterialformkdocs  style={{ marginRight: "8px", color: "rgb(110, 238, 159)", fontSize: "26px", }} />,
-              code: 'Report3'
-            },
-            {
-              name: "Approval 201 Report",
-              path: "/home/Report4",
-              icon: <MdStorage style={{ marginRight: "8px", color: "rgb(231, 229, 83)", fontSize: "28px", }} />,
-              code: 'Report4'
-            },            {
-              name: "Approval 202 Report",
-              path: "/home/Report5",
-              icon: <MdStorage style={{ marginRight: "8px", color: "rgb(245, 40, 159)", fontSize: "28px", }} />,
-              code: 'Report5'
-            },
-            {
-              name: "Approval 551 Report",
-              path: "/home/Report6",
-              icon: <GiExplosiveMaterials  style={{ marginRight: "8px", color: "rgb(80, 216, 17)", fontSize: "26px", }} />,
-              code: 'Report6'
-            },            {
-              name: "Approval 311 Report",
-              path: "/home/Report7",
-              icon: <SiGoogleappsscript  style={{ marginRight: "8px", color: "rgb(133, 241, 245)", fontSize: "26px", }} />,
-              code: 'Report7'
-            },
-            {
-              name: "Approval Conversion Rs1 Report",
-              path: "/home/Report8",
-              icon: <RiMoneyRupeeCircleFill style={{ marginRight: "8px", color: "rgb(225, 228, 78)", fontSize: "28px", }} />,
-              code: 'Report8'
-            },
+   {
+      name: "Inward of Old Invoice Report",
+      path: "/home/Report1",
+      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#D8BFD8", fontSize: "28px" }} />, // Dodger Blue
+      code: 'Report1'
+    },
+    {
+      name: "Emergency Procurement Report",
+      path: "/home/Report2",
+      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#FF6347", fontSize: "28px" }} />, // Orange Red
+      code: 'Report2'
+    },
+    {
+      name: "309 Report",
+      path: "/home/Report3",
+      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#32CD32", fontSize: "28px" }} />, // Lime Green
+      code: 'Report3'
+    },
+    {
+      name: "201 Report",
+      path: "/home/Report4",
+      icon: <MdCalendarMonth style={{ marginRight: "8px", color:  "#FF8C00", fontSize: "28px" }} />, // Dark Violet
+      code: 'Report4'
+    },
+    {
+      name: "202 Report",
+      path: "/home/Report5",
+      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#FFD700", fontSize: "28px" }} />, // Gold
+      code: 'Report5'
+    },
+    {
+      name: "551 Report",
+      path: "/home/Report6",
+      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#00CED1", fontSize: "28px" }} />, // Dark Turquoise
+      code: 'Report6'
+    },
+    {
+      name: "311 Report",
+      path: "/home/Report7",
+      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#FF69B4", fontSize: "28px" }} />, // Hot Pink
+      code: 'Report7'
+    },
+    {
+      name: "Conversion Rs1 Report",
+      path: "/home/Report8",
+      icon: <RiMoneyRupeeCircleFill style={{ marginRight: "8px", color: "#1ABC9C", fontSize: "28px" }} />, // Saddle Brown
+      code: 'Report8'
+    },
           ]}
           codeList={[
             'Report1', 'Report2', 'Report3', 'Report4', 'Report5', 'Report6', 'Report7', 'Report8'
@@ -470,6 +504,7 @@ const Sidebar = ({ setSidebarOpen }) => {
           </button>
         )}
       </div>
+
     </div>
   );
 };
