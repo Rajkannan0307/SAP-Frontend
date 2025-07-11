@@ -21,16 +21,15 @@ const Store3Open = () => {
   const [Plant_ID, setPlantID] = useState("");
   const [storageCode, setStorageCode] = useState("");
 
-  const columns = [
+ const columns = [
     { field: "sno", headerName: "S.No", flex: 1 },
-    { field: "Line_Name", headerName: "Line", flex: 1 },
+    { field: "Sup_Name", headerName: "Supervisor Name", flex: 1 },
     { field: "Order_Date", headerName: "Order Date", flex: 1 },
     { field: "Order_No", headerName: "Order No", flex: 1 },
     { field: "Material_No", headerName: "Material", flex: 1 },
     { field: "Material_Description", headerName: "Description", flex: 1 },
     { field: "Order_Qty", headerName: "Order Qty", flex: 1 },
-    { field: "Issued_Qty", headerName: "Issued Qty", flex: 1 },
-    { field: "Balanced_Qty", headerName: "Balanced Qty", flex: 1 },
+    
     { field: "LeadTime", headerName: "Delay Time", flex: 1 },
   ];
 
