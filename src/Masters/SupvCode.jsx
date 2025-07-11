@@ -35,11 +35,13 @@ const SupvCode = () => {
    const [PlantCode, setPlantCode] = useState([]);
    const[Sup_Code,setSup_Code]=useState("");
    const[Sup_Name,setSup_Name]=useState("");
+   const[Supv_Lead_Time,setSupv_Lead_Time]=useState("");
    const [Supv_ID, setSupv_ID] = useState([]);
  const columns = [
      { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
      { field: "Sup_Code", headerName: "Supervisor Code ", flex: 1 },
      { field: "Sup_Name", headerName: "Supervisor Name", flex: 1 },
+     { field: "Supv_Lead_Time", headerName: "Supervisor Lead Time", flex: 1 },
     
      {
        field: "ActiveStatus",
@@ -125,6 +127,7 @@ const SupvCode = () => {
     setPlantCode("");
     setSup_Code("");
     setSup_Name("");
+    setSupv_Lead_Time("")
     setActiveStatus(true);
     setOpenAddModal(true);
     get_Plant();
@@ -137,6 +140,7 @@ const SupvCode = () => {
     setSupv_ID(params.row.Supv_ID);
     setSup_Code(params.row.Sup_Code);
     setSup_Name(params.row.Sup_Name);
+    setSupv_Lead_Time(params.row.Supv_Lead_Time)
     setActiveStatus(params.row.Active_Status);
     setOpenEditModal(true); // Open the modal
   };
@@ -145,7 +149,7 @@ const SupvCode = () => {
     const handleAdd = async () => {
       console.log("Data being sent to the server:", {
         PlantCode,
-         Sup_Code,Sup_Name,UserID
+         Sup_Code,Sup_Name,Supv_Lead_Time,UserID
        
       });
       console.log("Add button clicked");
@@ -154,8 +158,8 @@ const SupvCode = () => {
       if (
         PlantCode === "" ||
         Sup_Code === "" ||
-        Sup_Name === "" 
-        
+        Sup_Name === "" ||
+        Supv_Lead_Time===""
       ) {
         alert("Please fill in all required fields");
         return;
@@ -203,6 +207,7 @@ const SupvCode = () => {
       UserID:UserID,
      Supv_ID: Supv_ID,
      Sup_Name: Sup_Name,
+     Supv_Lead_Time:Supv_Lead_Time,
        Active_Status: ActiveStatus,
      };
      console.log("Data being sent:", data); // Log data to verify it before sending
@@ -513,6 +518,25 @@ const SupvCode = () => {
                   
                   required
                 />
+                <TextField
+                  label="Supervisor Lead Time"
+                  name="Supv_Lead_Time"
+                  value={Supv_Lead_Time} 
+                  type="text"
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Remove any non-digit character
+                    if (/^\d*$/.test(value)) {
+                      setSupv_Lead_Time(value);
+                    }
+                  }}
+                  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
+                    // maxLength: 3,
+                
+                  }}
+                  required
+                 
+                />
       
                 <FormControlLabel
                   control={
@@ -626,6 +650,25 @@ const SupvCode = () => {
                   required
                 />
       
+              <TextField
+                  label="Supervisor Lead Time"
+                  name="Supv_Lead_Time"
+                  value={Supv_Lead_Time} 
+                  type="text"
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Remove any non-digit character
+                    if (/^\d*$/.test(value)) {
+                      setSupv_Lead_Time(value);
+                    }
+                  }}
+                  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
+                    // maxLength: 3,
+                
+                  }}
+                  required
+                 
+                />
       
                 <FormControlLabel
                   control={

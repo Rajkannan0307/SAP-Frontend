@@ -251,63 +251,61 @@ const Company = () => {
   };
 
   const handleUpdate = async () => {
-    try {
-      const data = {
-        UserID: UserID,
-        Com_ID: CompanyID,
-        Com_Code: CompanyCode,
-        Com_Name: CompanyName,
-        Active_Status: ActiveStatus,
-        CompanyLogo: CompanyLogo,
-      };
+  try {
+    const data = {
+      UserID: UserID,
+      Com_ID: CompanyID,
+      Com_Code: CompanyCode,
+      Com_Name: CompanyName,
+      Active_Status: ActiveStatus,
+      CompanyLogo: CompanyLogo,
+    };
 
-      console.log("Data being sent for update:", data);
+    console.log("Data being sent for update:", data);
 
-      // First API call - Updating the company data (without image)
-      const response = await getUpdates(data);
+    // First API call - Updating the company data (without image)
+    const response = await getUpdates(data);
 
-      if (response.data.success) {
-        // If a new company logo is selected, proceed with image upload
-        if (uploadedFile) {
-          console.log("File to be uploaded:", uploadedFile);
+    if (response.data.success) {
+      // If a new company logo is selected, proceed with image upload
+      if (uploadedFile) {
+        console.log("File to be uploaded:", uploadedFile);
 
-          // Prepare FormData for image upload
-          const formData = new FormData();
-          formData.append("Com_ID", CompanyID);
-          formData.append("UserID", UserID);
-          formData.append("User_Image", uploadedFile); // Assuming uploadedFile is the selected file
+        const formData = new FormData();
+        formData.append("Com_ID", CompanyID);
+        formData.append("UserID", UserID);
+        formData.append("User_Image", uploadedFile);
 
-          // Second API call - Uploading the new CompanyLogo
-          const response2 = await User_Img(formData);
-          console.log("Image upload response:", response2.data); // Log the response
+        const response2 = await User_Img(formData);
+        console.log("Image upload response:", response2.data);
 
-          if (response2.data.message === "Image Uploaded Successfully") {
-            alert("Company and image updated successfully!");
-            getData(); // Refresh the UI
-            handleCloseEditModal(); // Close modal
-          } else {
-            console.log("Error in image upload response:", response2.data);
-            alert("Error while uploading image. Please try again.");
-          }
+        if (response2.data.message === "Image Uploaded Successfully") {
+          alert("Company and image updated successfully!");
         } else {
-          alert("No new image selected for upload.");
+          console.log("Error in image upload response:", response2.data);
+          alert("Error while uploading image. Please try again.");
         }
       } else {
-        // If updating the company fails, show backend message
-        alert(response.data.message);
+        alert("Company updated successfully!");
       }
-    } catch (error) {
-      console.error("Error in updating Company:", error);
 
-      if (error.response?.data?.message) {
-        alert(error.response.data.message); // Specific error from backend
-      } else {
-        alert(
-          "An error occurred while updating the Company. Please try again."
-        );
-      }
+      getData(); // Refresh the UI
+      handleCloseEditModal(); // Close modal
+
+    } else {
+      alert(response.data.message);
     }
-  };
+  } catch (error) {
+    console.error("Error in updating Company:", error);
+
+    if (error.response?.data?.message) {
+      alert(error.response.data.message);
+    } else {
+      alert("An error occurred while updating the Company. Please try again.");
+    }
+  }
+};
+
 
   const handleFileUpload = (event) => {
     setUploadedFile(event.target.files[0]);
@@ -677,7 +675,7 @@ const Company = () => {
               textDecorationThickness: "3px",
             }}
           >
-            Edit Business Division
+            Edit Company
           </h3>
           <TextField
             label="Company Code"

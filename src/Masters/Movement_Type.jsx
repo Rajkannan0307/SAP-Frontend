@@ -473,7 +473,7 @@ const Movement_Type = () => {
                maxLength: 3,
           
             }}
-            required
+           
           />
           <TextField
             label="Movement Name"
@@ -573,7 +573,7 @@ const Movement_Type = () => {
             InputProps={{
               readOnly: true, // Make it read-only
             }}
-            required
+            
           />
 
           <TextField
