@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Typography, Box } from "@mui/material";
+import {
+  Typography,
+  Box,
+  TextField,
+  IconButton,
+} from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
 import {
   DataGrid,
   GridToolbarContainer,
@@ -7,69 +13,87 @@ import {
   GridToolbarFilterButton,
   GridToolbarExport,
 } from "@mui/x-data-grid";
-import { getdetailsStore1Open } from "../controller/StoreDashboardapiservice";
+import {
+  getdetailsStore1Open,
+  getdetailsStore1OpenByDate,
+} from "../controller/StoreDashboardapiservice";
 import { decryptSessionData } from "../controller/StorageUtils";
 
-const Store1Open = () => {
+const Store1Open = ({ storageCode }) => {
   const [rows, setRows] = useState([]);
+  const [filteredRows, setFilteredRows] = useState([]);
+  const [isFiltered, setIsFiltered] = useState(false);
+
   const [UserID, setUserID] = useState("");
   const [Plant_ID, setPlantID] = useState("");
-  const [StorageCode, setStorageCode] = useState("");
+
+  const today = new Date().toISOString().split("T")[0];
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
 
   const columns = [
     { field: "sno", headerName: "S.No", flex: 1 },
-     { field: "Sup_Name", headerName: "Supervisor Name", flex: 1 },
+    { field: "Sup_Name", headerName: "Supervisor Name", flex: 1 },
     { field: "Order_Date", headerName: "Order Date", flex: 1 },
     { field: "Order_No", headerName: "Order No", flex: 1 },
     { field: "Material_No", headerName: "Material", flex: 1 },
     { field: "Material_Description", headerName: "Description", flex: 1 },
     { field: "Order_Qty", headerName: "Order Qty", flex: 1 },
-    
-    { field: "LeadTime", headerName: "Delay Time", flex: 1 },
+    { field: "Delay_Time", headerName: "Delay Time", flex: 1 },
   ];
 
   const getData = async (plantId, code) => {
     try {
       const response = await getdetailsStore1Open(plantId, code);
-      console.log("📦 Store1Open Data:", response);
-
-      const processedData = response.map((row, index) => ({
+      const processed = response.map((row, index) => ({
         id: row.Prdord_ID || index,
         sno: index + 1,
         ...row,
       }));
+      setRows(processed);
+      setIsFiltered(false);
+    } catch (err) {
+      console.error("Error fetching open orders:", err);
+    }
+  };
 
-      setRows(processedData);
-    } catch (error) {
-      console.error("❌ Error loading Store1Open data:", error);
-      setRows([]);
+  const getDataByDate = async (plantId, code, from, to) => {
+    try {
+      const response = await getdetailsStore1OpenByDate(plantId, code, from, to);
+      const processed = response.map((row, index) => ({
+        id: row.Prdord_ID || index,
+        sno: index + 1,
+        ...row,
+      }));
+      setFilteredRows(processed);
+      setIsFiltered(true);
+    } catch (err) {
+      console.error("Error fetching date-filtered open orders:", err);
     }
   };
 
   useEffect(() => {
-    const encryptedData = sessionStorage.getItem("userData");
-    if (encryptedData) {
-      const decrypted = decryptSessionData(encryptedData);
-      if (decrypted) {
-        const plantId = decrypted.PlantID;
-        setUserID(decrypted.UserID);
-        setPlantID(plantId);
+  // Auto-refresh every 2 minutes
+  const interval = setInterval(() => {
+    window.location.reload();
+  }, 120000); // 2 minutes in ms
 
-        // 🔒 Hardcoded storageCode for Store 1
-        let hardcodedStorageCode = "";
-        if (plantId === 1) hardcodedStorageCode = "1200"; // P2
-        else if (plantId === 2) hardcodedStorageCode = "1300"; // P3
-        else if (plantId === 3) hardcodedStorageCode = "1150"; // P4
-        else if (plantId === 5) hardcodedStorageCode = "1250"; // P5
-
-        setStorageCode(hardcodedStorageCode);
-
-        if (plantId && hardcodedStorageCode) {
-          getData(plantId, hardcodedStorageCode);
-        }
+  // Session decryption and data fetching
+  const encryptedData = sessionStorage.getItem("userData");
+  if (encryptedData) {
+    const decrypted = decryptSessionData(encryptedData);
+    if (decrypted) {
+      setUserID(decrypted.UserID);
+      setPlantID(decrypted.PlantID);
+      if (decrypted.PlantID && storageCode) {
+        getData(decrypted.PlantID, storageCode);
       }
     }
-  }, []);
+  }
+
+  // Cleanup on unmount or storageCode change
+  return () => clearInterval(interval);
+}, [storageCode]);
 
   const CustomToolbar = () => (
     <GridToolbarContainer>
@@ -80,45 +104,111 @@ const Store1Open = () => {
   );
 
   return (
-    <div
-      style={{
-        padding: 20,
-        backgroundColor: "#F5F5F5",
+    <div style={{
+      padding: 20,
+      backgroundColor: "#F5F5F5",
+      display: "flex",
+      flexDirection: "column",
+      height: "calc(100vh - 250px)",
+    }}>
+      <Box sx={{
+        backgroundColor: "#2e59d9",
+        color: "white",
+        fontWeight: "bold",
+        padding: "10px 16px",
+        borderRadius: "8px 8px 0 0",
         display: "flex",
-        flexDirection: "column",
-        height: "calc(100vh - 250px)",
-      }}
-    >
-      <Box
-        sx={{
-          backgroundColor: "#2e59d9",
-          color: "white",
-          fontWeight: "bold",
-          padding: "10px 16px",
-          borderRadius: "8px 8px 0 0",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          fontSize: "16px",
-        }}
-      >
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}>
         <Typography>Shift A</Typography>
         <Typography>Store 1 - Open Orders</Typography>
-        <Typography variant="h6">
-          Date: {new Date().toLocaleDateString()}
-        </Typography>
+
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          <Typography variant="h6" sx={{ fontSize: "14px" }}>From</Typography>
+          <TextField
+            type="date"
+            size="small"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            sx={{
+              backgroundColor: "white",
+              borderRadius: 1,
+              input: { padding: "10px" },
+            }}
+          />
+          <Typography variant="h6" sx={{ fontSize: "14px" }}>To</Typography>
+          <TextField
+            type="date"
+            size="small"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            sx={{
+              backgroundColor: "white",
+              borderRadius: 1,
+              input: { padding: "10px" },
+            }}
+          />
+         <IconButton
+  onClick={() => {
+    if (!fromDate || !toDate) {
+      alert("Please select both From and To dates.");
+      return;
+    }
+
+    if (fromDate > toDate) {
+      alert("From date cannot be after To date.");
+      return;
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+    if (fromDate > today || toDate > today) {
+      alert("Future dates are not allowed.");
+      return;
+    }
+
+    if (Plant_ID && storageCode) {
+      getDataByDate(Plant_ID, storageCode, fromDate, toDate);
+    }
+  }}
+  sx={{ backgroundColor: "white", borderRadius: 1, padding: 1 }}
+>
+  <SearchIcon sx={{ color: "#2e59d9" }} />
+</IconButton>
+
+         <IconButton
+  onClick={() => {
+    const today = new Date().toISOString().split("T")[0];
+    setFromDate(today);         // Reset fromDate
+    setToDate(today);           // Reset toDate
+    setIsFiltered(false);       // Reset filter flag
+    if (Plant_ID && storageCode) {
+      getData(Plant_ID, storageCode); // Reload all data
+    }
+  }}
+  sx={{
+    backgroundColor: "white",
+    borderRadius: 1,
+    padding: "6px 12px",
+    border: "1px solid #2e59d9",
+  }}
+>
+  <Typography sx={{ fontSize: "12px", color: "#2e59d9" }}>
+    Reset
+  </Typography>
+</IconButton>
+
+        </Box>
       </Box>
 
-      <div
-        style={{
-          flexGrow: 1,
-          backgroundColor: "#fff",
-          borderRadius: "0 0 8px 8px",
-          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-        }}
-      >
+      <div style={{
+        flexGrow: 1,
+        backgroundColor: "#fff",
+        borderRadius: "0 0 8px 8px",
+        boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+      }}>
         <DataGrid
-          rows={rows}
+          rows={isFiltered ? filteredRows : rows}
           columns={columns}
           pageSize={5}
           rowsPerPageOptions={[5]}

@@ -20,3 +20,43 @@ export const getdetailsStoreClosed = async (plantId, storageCode) => {
   });
   return response.data;
 };
+
+export const getdetailsStore1OpenByDate = async (plantId, storageCode, fromDate, toDate) => {
+  try {
+    const response = await axios.get(
+      `${api}/StoreDashboard/StoreOpendate`, // Replace this with your actual endpoint
+      {
+        params: {
+          plantId,
+          storageCode,
+          fromDate,
+          toDate,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("API error fetching Store1 Open Orders by date:", error);
+    throw error;
+  }
+};
+
+export const getdetailsStoreClosedByDate = async (plantId, storageCode, fromDate, toDate) => {
+  try {
+    const response = await axios.get(
+      `${api}/StoreDashboard/StoreCloseddate`, // Replace this with your actual endpoint
+      {
+        params: {
+          plantId,
+          storageCode,
+          fromDate,
+          toDate,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("API error fetching Store1 Open Orders by date:", error);
+    throw error;
+  }
+};
