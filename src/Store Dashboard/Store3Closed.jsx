@@ -66,9 +66,9 @@ const getData = async (plantId, code) => {
   };
 
    useEffect(() => {
-       const interval = setInterval(() => {
-      window.location.reload();
-    }, 120000); // 2 minutes in ms
+    //    const interval = setInterval(() => {
+    //   window.location.reload();
+    // }, 60000); // 2 minutes in ms
   
       const encryptedData = sessionStorage.getItem("userData");
       if (encryptedData) {
@@ -81,7 +81,7 @@ const getData = async (plantId, code) => {
           }
         }
       }
-      return () => clearInterval(interval);
+      //return () => clearInterval(interval);
     }, [storageCode]);
   const CustomToolbar = () => (
     <GridToolbarContainer>
@@ -109,7 +109,7 @@ const getData = async (plantId, code) => {
         alignItems: "center",
         justifyContent: "space-between",
       }}>
-        <Typography>Shift A</Typography>
+       
         <Typography>Store 3 - Closed Orders</Typography>
 
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>

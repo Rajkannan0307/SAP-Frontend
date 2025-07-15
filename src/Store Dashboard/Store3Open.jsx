@@ -18,12 +18,12 @@ import {
   getdetailsStore1OpenByDate,
 } from "../controller/StoreDashboardapiservice";
 import { decryptSessionData } from "../controller/StorageUtils";
+import "../App.css"; // ⬅️ Add this if using external styles
 
 const Store3Open = ({ storageCode }) => {
   const [rows, setRows] = useState([]);
   const [filteredRows, setFilteredRows] = useState([]);
   const [isFiltered, setIsFiltered] = useState(false);
-
   const [UserID, setUserID] = useState("");
   const [Plant_ID, setPlantID] = useState("");
 
@@ -33,12 +33,13 @@ const Store3Open = ({ storageCode }) => {
 
   const columns = [
     { field: "sno", headerName: "S.No", flex: 1 },
-    { field: "Sup_Name", headerName: "Supervisor Name", flex: 1 },
+     { field: "Sup_Name", headerName: "Work Scheduler Name", flex: 1 },
     { field: "Order_Date", headerName: "Order Date", flex: 1 },
     { field: "Order_No", headerName: "Order No", flex: 1 },
     { field: "Material_No", headerName: "Material", flex: 1 },
     { field: "Material_Description", headerName: "Description", flex: 1 },
     { field: "Order_Qty", headerName: "Order Qty", flex: 1 },
+    { field: "Supv_Lead_Time", headerName: "Lead Time", flex: 1 },
     { field: "Delay_Time", headerName: "Delay Time", flex: 1 },
   ];
 
@@ -57,44 +58,40 @@ const Store3Open = ({ storageCode }) => {
     }
   };
 
-  const getDataByDate = async (plantId, code, from, to) => {
-    try {
-      const response = await getdetailsStore1OpenByDate(plantId, code, from, to);
-      const processed = response.map((row, index) => ({
-        id: row.Prdord_ID || index,
-        sno: index + 1,
-        ...row,
-      }));
-      setFilteredRows(processed);
-      setIsFiltered(true);
-    } catch (err) {
-      console.error("Error fetching date-filtered open orders:", err);
-    }
-  };
+  // const getDataByDate = async (plantId, code, from, to) => {
+  //   try {
+  //     const response = await getdetailsStore1OpenByDate(plantId, code, from, to);
+  //     const processed = response.map((row, index) => ({
+  //       id: row.Prdord_ID || index,
+  //       sno: index + 1,
+  //       ...row,
+  //     }));
+  //     setFilteredRows(processed);
+  //     setIsFiltered(true);
+  //   } catch (err) {
+  //     console.error("Error fetching date-filtered open orders:", err);
+  //   }
+  // };
 
   useEffect(() => {
-  // Auto-refresh every 2 minutes
-  const interval = setInterval(() => {
-    window.location.reload();
-  }, 120000); // 2 minutes in ms
+    // const interval = setInterval(() => {
+    //   window.location.reload();
+    // }, 60000); // 1 min refresh
 
-  // Session decryption and data fetching
-  const encryptedData = sessionStorage.getItem("userData");
-  if (encryptedData) {
-    const decrypted = decryptSessionData(encryptedData);
-    if (decrypted) {
-      setUserID(decrypted.UserID);
-      setPlantID(decrypted.PlantID);
-      if (decrypted.PlantID && storageCode) {
-        getData(decrypted.PlantID, storageCode);
+    const encryptedData = sessionStorage.getItem("userData");
+    if (encryptedData) {
+      const decrypted = decryptSessionData(encryptedData);
+      if (decrypted) {
+        setUserID(decrypted.UserID);
+        setPlantID(decrypted.PlantID);
+        if (decrypted.PlantID && storageCode) {
+          getData(decrypted.PlantID, storageCode);
+        }
       }
     }
-  }
 
-  // Cleanup on unmount or storageCode change
-  return () => clearInterval(interval);
-}, [storageCode]);
-
+    //return () => clearInterval(interval);
+  }, [storageCode]);
 
   const CustomToolbar = () => (
     <GridToolbarContainer>
@@ -122,10 +119,19 @@ const Store3Open = ({ storageCode }) => {
         alignItems: "center",
         justifyContent: "space-between",
       }}>
-        <Typography>Shift A</Typography>
+       
         <Typography>Store 3 - Open Orders</Typography>
+        <Typography variant="h6">
+  Date: {(() => {
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+    const yyyy = today.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  })()}
+</Typography>
 
-        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+        {/* <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           <Typography variant="h6" sx={{ fontSize: "14px" }}>From</Typography>
           <TextField
             type="date"
@@ -150,56 +156,43 @@ const Store3Open = ({ storageCode }) => {
               input: { padding: "10px" },
             }}
           />
-         <IconButton
-  onClick={() => {
-    if (!fromDate || !toDate) {
-      alert("Please select both From and To dates.");
-      return;
-    }
+          <IconButton
+            onClick={() => {
+              if (!fromDate || !toDate) return alert("Select From and To dates.");
+              if (fromDate > toDate) return alert("From date cannot be after To date.");
+              if (fromDate > today || toDate > today) return alert("Future dates not allowed.");
 
-    if (fromDate > toDate) {
-      alert("From date cannot be after To date.");
-      return;
-    }
+              if (Plant_ID && storageCode) {
+                getDataByDate(Plant_ID, storageCode, fromDate, toDate);
+              }
+            }}
+            sx={{ backgroundColor: "white", borderRadius: 1, padding: 1 }}
+          >
+            <SearchIcon sx={{ color: "#2e59d9" }} />
+          </IconButton>
 
-    const today = new Date().toISOString().split("T")[0];
-    if (fromDate > today || toDate > today) {
-      alert("Future dates are not allowed.");
-      return;
-    }
-
-    if (Plant_ID && storageCode) {
-      getDataByDate(Plant_ID, storageCode, fromDate, toDate);
-    }
-  }}
-  sx={{ backgroundColor: "white", borderRadius: 1, padding: 1 }}
->
-  <SearchIcon sx={{ color: "#2e59d9" }} />
-</IconButton>
-
-         <IconButton
-  onClick={() => {
-    const today = new Date().toISOString().split("T")[0];
-    setFromDate(today);         // Reset fromDate
-    setToDate(today);           // Reset toDate
-    setIsFiltered(false);       // Reset filter flag
-    if (Plant_ID && storageCode) {
-      getData(Plant_ID, storageCode); // Reload all data
-    }
-  }}
-  sx={{
-    backgroundColor: "white",
-    borderRadius: 1,
-    padding: "6px 12px",
-    border: "1px solid #2e59d9",
-  }}
->
-  <Typography sx={{ fontSize: "12px", color: "#2e59d9" }}>
-    Reset
-  </Typography>
-</IconButton>
-
-        </Box>
+          <IconButton
+            onClick={() => {
+              const today = new Date().toISOString().split("T")[0];
+              setFromDate(today);
+              setToDate(today);
+              setIsFiltered(false);
+              if (Plant_ID && storageCode) {
+                getData(Plant_ID, storageCode);
+              }
+            }}
+            sx={{
+              backgroundColor: "white",
+              borderRadius: 1,
+              padding: "6px 12px",
+              border: "1px solid #2e59d9",
+            }}
+          >
+            <Typography sx={{ fontSize: "12px", color: "#2e59d9" }}>
+              Reset
+            </Typography>
+          </IconButton>
+        </Box> */}
       </Box>
 
       <div style={{
@@ -208,31 +201,44 @@ const Store3Open = ({ storageCode }) => {
         borderRadius: "0 0 8px 8px",
         boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
       }}>
-        <DataGrid
-          rows={isFiltered ? filteredRows : rows}
-          columns={columns}
-          pageSize={5}
-          rowsPerPageOptions={[5]}
-          getRowId={(row) => row.id}
-          components={{ Toolbar: CustomToolbar }}
-          sx={{
-            "& .MuiDataGrid-columnHeader": {
-              backgroundColor: "#bdbdbd",
-              color: "black",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-row": {
-              backgroundColor: "#f5f5f5",
-              "&:hover": {
-                backgroundColor: "#f0f0f0",
-              },
-            },
-            "& .MuiDataGrid-cell": {
-              color: "#333",
-              fontSize: "14px",
-            },
-          }}
-        />
+      <DataGrid
+  rows={isFiltered ? filteredRows : rows}
+  columns={columns}
+  pageSize={5}
+  rowsPerPageOptions={[5]}
+  getRowId={(row) => row.id}
+  components={{ Toolbar: CustomToolbar }}
+  getRowClassName={(params) => {
+    const color = params.row.Delay_Color;
+    if (color === "Green") return "row-green";
+    if (color === "Yellow") return "row-yellow";
+    if (color === "Red") return "row-red";
+    return "";
+  }}
+  sx={{
+    "& .MuiDataGrid-columnHeader": {
+      backgroundColor: "#bdbdbd",
+      
+      color: "black",
+      fontWeight: "bold",
+    },
+    "& .MuiDataGrid-cell": {
+      color: "#333",
+      fontSize: "14px",
+    },
+    // Inline row color styles
+    "& .row-green": {
+      backgroundColor: "#d0f0c0", // light green
+    },
+    "& .row-yellow": {
+      backgroundColor: "#fff9c4", // light yellow
+    },
+    "& .row-red": {
+      backgroundColor: "#ffcdd2", // light red
+    },
+  }}
+/>
+
       </div>
     </div>
   );

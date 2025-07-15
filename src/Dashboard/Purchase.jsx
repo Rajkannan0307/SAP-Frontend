@@ -339,7 +339,7 @@ console.log("params purchase",params.row)
   }
 
   setInwardID(params.row.Inward_ID);
- setVendorCode(params.row.Vendor_ID);
+ setVendorCode(params.row.Vendor_Code);
   //setVendorID(params.row.Vendor_ID)
   setInvoiceDate(formattedDate);
   setMaterialCode(params.row.Material_ID)

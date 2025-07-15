@@ -60,3 +60,18 @@ export const getdetailsStoreClosedByDate = async (plantId, storageCode, fromDate
     throw error;
   }
 };
+
+// ✅ Get active stores for a plant
+export const getActiveStores = async (plantId) => {
+  try {
+    const response = await axios.get(`${api}/StoreDashboard/getActiveStores`, {
+      params: {
+        plantId,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching active stores:", error);
+    throw error;
+  }
+};

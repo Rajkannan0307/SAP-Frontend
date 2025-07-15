@@ -29,10 +29,10 @@ const Store1Closed = ({ storageCode }) => {
   const [toDate, setToDate] = useState(today);
  const columns = [
      { field: "Sup_Name", headerName: "Supervisor Name", flex: 1 },
-    { field: "No.Of Orders", headerName: "No.Of Orders", flex: 1 },
-    { field: "No Order Close", headerName: "No Order Close", flex: 1 },
-    { field: "Issue Posted on Time", headerName: "Issue Posted on Time", flex: 1 },
-    { field: "Issue Posted Delay", headerName: "Issue Posted Delay", flex: 1 },
+    { field: "No_Of_Orders", headerName: "No.Of Orders", flex: 1 },
+    { field: "No_Order_Close", headerName: "No Order Close", flex: 1 },
+    { field: "Issue_Posted_on_Time", headerName: "Issue Posted on Time", flex: 1 },
+    { field: "Issue_Posted_Delay", headerName: "Issue Posted Delay", flex: 1 },
   ];
 
 const getData = async (plantId, code) => {
@@ -66,9 +66,9 @@ const getData = async (plantId, code) => {
   };
 
   useEffect(() => {
-     const interval = setInterval(() => {
-    window.location.reload();
-  }, 120000); // 2 minutes in ms
+  //    const interval = setInterval(() => {
+  //   window.location.reload();
+  // }, 60000); // 2 minutes in ms
 
     const encryptedData = sessionStorage.getItem("userData");
     if (encryptedData) {
@@ -81,7 +81,7 @@ const getData = async (plantId, code) => {
         }
       }
     }
-    return () => clearInterval(interval);
+   // return () => clearInterval(interval);
   }, [storageCode]);
 
   const CustomToolbar = () => (
@@ -110,7 +110,7 @@ const getData = async (plantId, code) => {
         alignItems: "center",
         justifyContent: "space-between",
       }}>
-        <Typography>Shift A</Typography>
+       
         <Typography>Store 1 -  Closed Orders</Typography>
 
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>

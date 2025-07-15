@@ -1,5 +1,6 @@
 import { Tabs, Tab, Box } from "@mui/material";
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { decryptSessionData } from "../controller/StorageUtils";
 import Store1Open from "./Store1Open";
 import Store1Closed from "./Store1Closed";
@@ -7,23 +8,10 @@ import Store2Open from "./Store2Open";
 import Store2Closed from "./Store2Closed";
 import Store3Open from "./Store3Open";
 import Store3Closed from "./Store3Closed";
+import {
+  getActiveStores,
 
-// Label for each plant’s store
-const storeLabelMap = {
-  1:["P2 Store 1", "P2 Store 2", "P2 Store 3"],
-  2: ["P3 Store 1", "P3 Store 2"],
-  3: ["P4 Store 1", "P4 Store 2", "P4 Store 3"],
-  5: ["P5 Store 1", "P5 Store 2"],
-};
-
-// Mapping of plant to store numbers and storage codes
-const storeCodeMap = {
-  1: { Store1: "1200", Store2: "1201", Store3: "1202" },
-  2: { Store1: "1300", Store2: "1301" },
-  3: { Store1: "1150", Store2: "1151", Store3: "1152" },
-  5: { Store1: "1250", Store2: "1251" },
-};
-
+} from "../controller/StoreDashboardapiservice";
 // Dynamic component selector
 const getStoreComponent = (storeKey, status) => {
   const componentMap = {
@@ -41,57 +29,55 @@ const StoreDashboard = () => {
   const [tabIndex, setTabIndex] = useState(0);
   const [tabs, setTabs] = useState([]);
   const [PlantId, setPlantId] = useState(null);
-  const [UserID, setUserID] = useState("");
 
   useEffect(() => {
     const encryptedData = sessionStorage.getItem("userData");
     if (encryptedData) {
       const decrypted = decryptSessionData(encryptedData);
       if (decrypted) {
-        setUserID(decrypted.UserID);
         setPlantId(decrypted.PlantID);
       }
     }
   }, []);
 
   useEffect(() => {
-    const generateTabs = () => {
-      const storeCodes = storeCodeMap[PlantId];
-      const storeLabels = storeLabelMap[PlantId];
+    const fetchStores = async () => {
+  try {
+    const stores = await getActiveStores(PlantId); // directly get the array
 
-      if (!storeCodes) {
-        setTabs([]);
-        return;
-      }
+    if (!Array.isArray(stores)) {
+      console.warn("Invalid store response:", stores);
+      return;
+    }
 
-      const generatedTabs = [];
+    const generatedTabs = stores.flatMap((store, index) => {
+      const storeKey = `Store${index + 1}`;
+      return [
+        {
+          label: `${store.SLoc_Name} (Open)`,
+          component: React.createElement(
+            getStoreComponent(storeKey, "Open"),
+            { storageCode: store.Storage_Code }
+          ),
+        },
+        {
+          label: `${store.SLoc_Name} (Closed)`,
+          component: React.createElement(
+            getStoreComponent(storeKey, "Closed"),
+            { storageCode: store.Storage_Code }
+          ),
+        },
+      ];
+    });
 
-      Object.entries(storeCodes).forEach(([storeKey, storeCode], index) => {
-        const label = storeLabels?.[index] || `${storeKey}`;
-
-        generatedTabs.push(
-          {
-            label: `${label} (Open)`,
-            component: React.createElement(
-              getStoreComponent(storeKey, "Open"),
-              { storageCode: storeCode }
-            ),
-          },
-          {
-            label: `${label} (Closed)`,
-            component: React.createElement(
-              getStoreComponent(storeKey, "Closed"),
-              { storageCode: storeCode }
-            ),
-          }
-        );
-      });
-
-      setTabs(generatedTabs);
-    };
+    setTabs(generatedTabs);
+  } catch (error) {
+    console.error("Failed to fetch stores:", error);
+  }
+};
 
     if (PlantId) {
-      generateTabs();
+      fetchStores();
     }
   }, [PlantId]);
 
