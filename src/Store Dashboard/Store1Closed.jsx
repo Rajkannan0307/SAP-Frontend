@@ -15,6 +15,8 @@ import {
 } from "@mui/x-data-grid";
 import { getdetailsStoreClosed,getdetailsStoreClosedByDate } from "../controller/StoreDashboardapiservice"; // make sure this accepts plantId + storageCode
 import { decryptSessionData } from "../controller/StorageUtils";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import * as XLSX from 'xlsx-js-style';
 
 const Store1Closed = ({ storageCode }) => {
  const [rows, setRows] = useState([]);
@@ -29,15 +31,16 @@ const Store1Closed = ({ storageCode }) => {
   const [toDate, setToDate] = useState(today);
  const columns = [
      { field: "Sup_Name", headerName: "Supervisor Name", flex: 1 },
+       { field: "No_Of_Open_Orders", headerName: "No.Of Open Orders", flex: 1 },
     { field: "No_Of_Orders", headerName: "No.Of Orders", flex: 1 },
     { field: "No_Order_Close", headerName: "No Order Close", flex: 1 },
-    { field: "Issue_Posted_on_Time", headerName: "Issue Posted on Time", flex: 1 },
-    { field: "Issue_Posted_Delay", headerName: "Issue Posted Delay", flex: 1 },
+    { field: "Issue_Posted_on_Time", headerName: "Material Issued  onTime", flex: 1 },
+    { field: "Issue_Posted_Delay", headerName: "Material Issued  Delay", flex: 1 },
   ];
-
 const getData = async (plantId, code) => {
     try {
       const response = await getdetailsStoreClosed(plantId, code);
+      console.log("closed 1 ordrs",response)
       const processed = response.map((row, index) => ({
         id: row.Prdord_ID || index,
         sno: index + 1,
@@ -53,6 +56,7 @@ const getData = async (plantId, code) => {
   const getDataByDate = async (plantId, code, from, to) => {
     try {
       const response = await getdetailsStoreClosedByDate(plantId, code, from, to);
+
       const processed = response.map((row, index) => ({
         id: row.Prdord_ID || index,
         sno: index + 1,
@@ -64,6 +68,63 @@ const getData = async (plantId, code) => {
       console.error("Error fetching date-filtered open orders:", err);
     }
   };
+const handleExcelDownload = () => {
+  const exportData = isFiltered ? filteredRows : rows;
+
+  if (exportData.length === 0) {
+    alert("No Data Found");
+    return;
+  }
+
+  const DataColumns = [
+    "Sup_Name",
+    "No_Of_Open_Orders",
+    "No_Of_Orders",
+    "No_Order_Close",
+    "Issue_Posted_on_Time",
+    "Issue_Posted_Delay",
+  ];
+
+  const formattedData = exportData.map((item) => ({
+    Sup_Name: item.Sup_Name,
+    No_Of_Open_Orders: item.No_Of_Open_Orders,
+    No_Of_Orders: item.No_Of_Orders,
+    No_Order_Close: item.No_Order_Close,
+    Issue_Posted_on_Time: item.Issue_Posted_on_Time,
+    Issue_Posted_Delay: item.Issue_Posted_Delay,
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(formattedData, {
+    header: DataColumns,
+  });
+
+  // Style header row
+  DataColumns.forEach((_, index) => {
+    const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+    if (!worksheet[cellAddress]) return;
+    worksheet[cellAddress].s = {
+      font: {
+        bold: true,
+        color: { rgb: "000000" },
+      },
+      fill: {
+        fgColor: { rgb: "FFFF00" }, // Light orange header
+      },
+      alignment: {
+        horizontal: "center",
+      },
+    };
+  });
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Closed Orders");
+
+  const today = new Date();
+  const fileName = `Store1_ClosedOrders_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}.xlsx`;
+
+  XLSX.writeFile(workbook, fileName);
+};
+
 
   useEffect(() => {
   //    const interval = setInterval(() => {
@@ -125,6 +186,9 @@ const getData = async (plantId, code) => {
               borderRadius: 1,
               input: { padding: "10px" },
             }}
+            inputProps={{
+    max: new Date().toISOString().split("T")[0],
+  }}
           />
           <Typography variant="h6" sx={{ fontSize: "14px" }}>To</Typography>
           <TextField
@@ -137,6 +201,9 @@ const getData = async (plantId, code) => {
               borderRadius: 1,
               input: { padding: "10px" },
             }}
+            inputProps={{
+    max: new Date().toISOString().split("T")[0],
+  }}
           />
          <IconButton
   onClick={() => {
@@ -162,7 +229,13 @@ const getData = async (plantId, code) => {
   }}
   sx={{ backgroundColor: "white", borderRadius: 1, padding: 1 }}
 >
-  <SearchIcon sx={{ color: "#2e59d9" }} />
+  <SearchIcon sx={{ color: "#2e59d9", width:"12px" ,height:"12px"}} />
+</IconButton>
+<IconButton
+  onClick={handleExcelDownload}
+  sx={{ backgroundColor: "white", borderRadius: 1, padding: 1 }}
+>
+  <FileDownloadIcon sx={{ color: "#2e59d9" ,width:"12px" ,height:"12px"}} />
 </IconButton>
 
          <IconButton
@@ -182,6 +255,7 @@ const getData = async (plantId, code) => {
     border: "1px solid #2e59d9",
   }}
 >
+  
   <Typography sx={{ fontSize: "12px", color: "#2e59d9" }}>
     Reset
   </Typography>
