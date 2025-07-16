@@ -263,7 +263,13 @@ const Module = () => {
       const worksheet = XLSX.utils.json_to_sheet(filteredData, {
         header: DataColumns,
       });
-  
+  worksheet['!cols'] = [
+  { wch: 20 },
+ 
+  { wch: 30 }, 
+   { wch: 30 }, 
+    { wch: 20 },
+];
       // Style header row
       DataColumns.forEach((_, index) => {
         const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });

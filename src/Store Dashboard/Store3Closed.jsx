@@ -94,27 +94,37 @@ const handleExcelDownload = () => {
     Issue_Posted_Delay: item.Issue_Posted_Delay,
   }));
 
-  const worksheet = XLSX.utils.json_to_sheet(formattedData, {
-    header: DataColumns,
-  });
+ const worksheet = XLSX.utils.json_to_sheet(formattedData, {
+  header: DataColumns,
+});
 
-  // Style header row
-  DataColumns.forEach((_, index) => {
-    const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-    if (!worksheet[cellAddress]) return;
-    worksheet[cellAddress].s = {
-      font: {
-        bold: true,
-        color: { rgb: "000000" },
-      },
-      fill: {
-        fgColor: { rgb: "FFFF00" }, // Light orange header
-      },
-      alignment: {
-        horizontal: "center",
-      },
-    };
-  });
+// ✅ Set column widths
+worksheet['!cols'] = [
+  { wch: 30 }, // Sup_Name
+  { wch: 20 }, // No_Of_Open_Orders
+  { wch: 20 }, // No_Of_Orders
+  { wch: 20 }, // No_Order_Close
+  { wch: 25 }, // Issue_Posted_on_Time
+  { wch: 25 }, // Issue_Posted_Delay
+];
+
+// ✅ Style header row
+DataColumns.forEach((_, index) => {
+  const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+  if (!worksheet[cellAddress]) return;
+  worksheet[cellAddress].s = {
+    font: {
+      bold: true,
+      color: { rgb: "000000" },
+    },
+    fill: {
+      fgColor: { rgb: "FFFF00" },
+    },
+    alignment: {
+      horizontal: "center",
+    },
+  };
+});
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Closed Orders");

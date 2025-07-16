@@ -237,74 +237,86 @@ useEffect(() => {
  }
 const handleCloseExcelModal=()=>setOpenExcelDownloadModal(false);
    const handleDownloadReportExcel = async () => {
-      if (!fromDate) {
-        alert('Select From Date');
-        return;
+  if (!fromDate) {
+    alert('Select From Date');
+    return;
+  }
+  if (!toDate) {
+    alert('Select To Date');
+    return;
+  }
+
+  try {
+    const response = await getPurchaseData(fromDate, toDate, UserID);
+
+    if (response.status === 400) {
+      alert(`Error: ${response.data.message || 'Invalid input or date range.'}`);
+      return;
+    }
+
+    const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+    const fileExtension = ".xlsx";
+    const fileName = "Purchase Invoice";
+
+    const jsonData = response.data;
+    if (!jsonData || jsonData.length === 0) {
+      alert("No data to export.");
+      return;
+    }
+
+    const ws = XLSX.utils.json_to_sheet(jsonData);
+
+    // Set column widths (adjust as needed based on your columns)
+    const headers = Object.keys(jsonData[0]);
+    ws["!cols"] = headers.map((header) => {
+      // Example: longer columns get more width
+      if (header.toLowerCase().includes("date")) return { wch: 15 };
+      if (header.toLowerCase().includes("invoice")) return { wch: 25 };
+      if (header.toLowerCase().includes("amount")) return { wch: 15 };
+      return { wch: 20 }; // default width
+    });
+
+    // Apply header styling
+    headers.forEach((_, colIdx) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+      if (ws[cellAddress]) {
+        ws[cellAddress].s = {
+          font: { bold: true, color: { rgb: "000000" } },
+          fill: { fgColor: { rgb: "FFFF00" } },
+          alignment: { horizontal: "center" },
+        };
       }
-      if (!toDate) {
-        alert('Select To Date');
-        return;
-      }
-  
-      try {
-        // Call backend API with fromDate and toDate as query params
-        const response = await getPurchaseData(fromDate, toDate,UserID);
-  
-        if (response.status === 400) {
-          alert(`Error: ${response.data.message || 'Invalid input or date range.'}`);
-          return;
-        }
-  
-        const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-        const fileExtension = ".xlsx";
-        const fileName = "Purchase Invoice";
-  
-        // Convert JSON response to worksheet
-        const ws = XLSX.utils.json_to_sheet(response.data);
-  
-        // Style header row (row 0)
-        const headers = Object.keys(response.data[0] || {});
-        headers.forEach((_, colIdx) => {
-          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
-          if (ws[cellAddress]) {
-            ws[cellAddress].s = {
-              font: { bold: true, color: { rgb: "000000" } },
-              fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
-              alignment: { horizontal: "center" },
-            };
-          }
-        });
-  
-        // Create workbook
-        const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
-  
-        // Write workbook to binary array
-        const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-  
-        // Create Blob and trigger download
-        const data = new Blob([excelBuffer], { type: fileType });
-        const url = window.URL.createObjectURL(data);
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", fileName + fileExtension);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
-  
-        alert("File downloaded successfully!");
-        handleCloseExcelModal();
-      } catch (error) {
-        console.error("Download failed:", error);
-        if (error.response) {
-          alert(error.response.data.message || "Unknown error from backend");
-        } else if (error.request) {
-          alert("No response from server. Please try again later.");
-        } else {
-          alert(`Error: ${error.message}`);
-        }
-      }
-    };
+    });
+
+    // Workbook setup
+    const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+
+    // Create download link
+    const data = new Blob([excelBuffer], { type: fileType });
+    const url = window.URL.createObjectURL(data);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", fileName + fileExtension);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    alert("File downloaded successfully!");
+    handleCloseExcelModal();
+  } catch (error) {
+    console.error("Download failed:", error);
+    if (error.response) {
+      alert(error.response.data.message || "Unknown error from backend");
+    } else if (error.request) {
+      alert("No response from server. Please try again later.");
+    } else {
+      alert(`Error: ${error.message}`);
+    }
+  }
+};
+
 
     const handleOpenViewModal = (row) => {
   setSelectedRow(row);
@@ -339,7 +351,7 @@ console.log("params purchase",params.row)
   }
 
   setInwardID(params.row.Inward_ID);
- setVendorCode(params.row.Vendor_Code);
+ setVendorCode(params.row.Vendor_ID);
   //setVendorID(params.row.Vendor_ID)
   setInvoiceDate(formattedDate);
   setMaterialCode(params.row.Material_ID)
