@@ -18,7 +18,7 @@ import {
   getdetailsStore1OpenByDate,
 } from "../controller/StoreDashboardapiservice";
 import { decryptSessionData } from "../controller/StorageUtils";
-import "../App.css"; // ⬅️ Add this if using external styles
+import "../App.css";
 
 const Store1Open = ({ storageCode }) => {
   const [rows, setRows] = useState([]);
@@ -31,17 +31,19 @@ const Store1Open = ({ storageCode }) => {
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
 
-  const columns = [
-    { field: "sno", headerName: "S.No", flex: 1 },
-    { field: "Sup_Name", headerName: "Work Scheduler Name", flex: 1 },
-    { field: "Order_Date", headerName: "Order Date", flex: 1 },
-    { field: "Order_No", headerName: "Order No", flex: 1 },
-    { field: "Material_No", headerName: "Material", flex: 1 },
-    { field: "Material_Description", headerName: "Description", flex: 1 },
-    { field: "Order_Qty", headerName: "Order Qty", flex: 1 },
-    { field: "Supv_Lead_Time", headerName: "Lead Time", flex: 1 },
-    { field: "Delay_Time", headerName: "Delay Time", flex: 1 },
-  ];
+ const columns = [
+  { field: "sno", headerName: "S.No", width: 80 },
+  { field: "Sup_Name", headerName: "Work Scheduler Name", width: 320 },
+  
+  { field: "Order_No", headerName: "Order No", width: 240 },
+  { field: "Material_No", headerName: "Material", width: 280 },
+  { field: "Material_Description", headerName: "Description", width: 350 },
+  { field: "Order_Qty", headerName: "Order Qty", width: 130 },
+  { field: "Order_Date", headerName: "Order Date", width: 180 },
+  { field: "Supv_Lead_Time", headerName: "Lead Time", width: 130 },
+  { field: "Delay_Time", headerName: "Delay Time", width: 122 },
+];
+
 
   const getData = async (plantId, code) => {
     try {
@@ -74,10 +76,6 @@ const Store1Open = ({ storageCode }) => {
   };
 
   useEffect(() => {
-    // const interval = setInterval(() => {
-    //   window.location.reload();
-    // }, 60000); // 1 min refresh
-
     const encryptedData = sessionStorage.getItem("userData");
     if (encryptedData) {
       const decrypted = decryptSessionData(encryptedData);
@@ -89,8 +87,6 @@ const Store1Open = ({ storageCode }) => {
         }
       }
     }
-
-   // return () => clearInterval(interval);
   }, [storageCode]);
 
   const CustomToolbar = () => (
@@ -103,12 +99,32 @@ const Store1Open = ({ storageCode }) => {
 
   return (
     <div style={{
-      padding: 20,
+      padding: 1,
       backgroundColor: "#F5F5F5",
       display: "flex",
       flexDirection: "column",
       height: "calc(100vh - 250px)",
     }}>
+
+     {/* 🔹 Color Legend */}
+                 <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 ,mt:-2}}>
+                   <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                       <Box sx={{ width: 20, height: 20, backgroundColor: "#d0f0c0", border: "1px solid #ccc" }} />
+                       <Typography variant="body2">On Time</Typography>
+                     </Box>
+                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                       <Box sx={{ width: 20, height: 20, backgroundColor: "#fff9c4", border: "1px solid #ccc" }} />
+                       <Typography variant="body2"> Delay 60minutes</Typography>
+                     </Box>
+                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                       <Box sx={{ width: 20, height: 20, backgroundColor: "#ffcdd2", border: "1px solid #ccc" }} />
+                     <Typography variant="body2">Delay &gt; 60 minutes</Typography>
+     
+                     </Box>
+                   </Box>
+                 </Box>
+      {/* 🔹 Header */}
       <Box sx={{
         backgroundColor: "#2e59d9",
         color: "white",
@@ -119,124 +135,66 @@ const Store1Open = ({ storageCode }) => {
         alignItems: "center",
         justifyContent: "space-between",
       }}>
-        
         <Typography>Store 1 - Open Orders</Typography>
-         <Typography variant="h6">
-          Date: {(() => {
-            const today = new Date();
-            const dd = String(today.getDate()).padStart(2, '0');
-            const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-            const yyyy = today.getFullYear();
-            return `${dd}/${mm}/${yyyy}`;
-          })()}
-        </Typography>
-        {/* <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-          <Typography variant="h6" sx={{ fontSize: "14px" }}>From</Typography>
-          <TextField
-            type="date"
-            size="small"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            sx={{
-              backgroundColor: "white",
-              borderRadius: 1,
-              input: { padding: "10px" },
-            }}
-          />
-          <Typography variant="h6" sx={{ fontSize: "14px" }}>To</Typography>
-          <TextField
-            type="date"
-            size="small"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            sx={{
-              backgroundColor: "white",
-              borderRadius: 1,
-              input: { padding: "10px" },
-            }}
-          />
-          <IconButton
-            onClick={() => {
-              if (!fromDate || !toDate) return alert("Select From and To dates.");
-              if (fromDate > toDate) return alert("From date cannot be after To date.");
-              if (fromDate > today || toDate > today) return alert("Future dates not allowed.");
 
-              if (Plant_ID && storageCode) {
-                getDataByDate(Plant_ID, storageCode, fromDate, toDate);
-              }
-            }}
-            sx={{ backgroundColor: "white", borderRadius: 1, padding: 1 }}
-          >
-            <SearchIcon sx={{ color: "#2e59d9" }} />
-          </IconButton>
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+         <Typography variant="h6" sx={{ fontSize: "16px" }}>
+  Date & Time: {new Date().toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true, // or false for 24h format
+  })}
+</Typography>
 
-          <IconButton
-            onClick={() => {
-              const today = new Date().toISOString().split("T")[0];
-              setFromDate(today);
-              setToDate(today);
-              setIsFiltered(false);
-              if (Plant_ID && storageCode) {
-                getData(Plant_ID, storageCode);
-              }
-            }}
-            sx={{
-              backgroundColor: "white",
-              borderRadius: 1,
-              padding: "6px 12px",
-              border: "1px solid #2e59d9",
-            }}
-          >
-            <Typography sx={{ fontSize: "12px", color: "#2e59d9" }}>
-              Reset
-            </Typography>
-          </IconButton>
-        </Box> */}
+        </Box>
       </Box>
 
+      {/* 🔹 DataGrid */}
       <div style={{
         flexGrow: 1,
         backgroundColor: "#fff",
         borderRadius: "0 0 8px 8px",
         boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
       }}>
-      <DataGrid
-  rows={isFiltered ? filteredRows : rows}
-  columns={columns}
-  pageSize={5}
-  rowsPerPageOptions={[5]}
-  getRowId={(row) => row.id}
-  components={{ Toolbar: CustomToolbar }}
-  getRowClassName={(params) => {
-    const color = params.row.Delay_Color;
-    if (color === "Green") return "row-green";
-    if (color === "Yellow") return "row-yellow";
-    if (color === "Red") return "row-red";
-    return "";
-  }}
-  sx={{
-    "& .MuiDataGrid-columnHeader": {
-      backgroundColor: "#bdbdbd",
-      color: "black",
-      fontWeight: "bold",
-    },
-    "& .MuiDataGrid-cell": {
-      color: "#333",
-      fontSize: "14px",
-    },
-    // Inline row color styles
-    "& .row-green": {
-      backgroundColor: "#d0f0c0", // light green
-    },
-    "& .row-yellow": {
-      backgroundColor: "#fff9c4", // light yellow
-    },
-    "& .row-red": {
-      backgroundColor: "#ffcdd2", // light red
-    },
-  }}
-/>
-
+        <DataGrid
+          rows={isFiltered ? filteredRows : rows}
+          columns={columns}
+          pageSize={5}
+          rowsPerPageOptions={[5]}
+          getRowId={(row) => row.id}
+          components={{ Toolbar: CustomToolbar }}
+          getRowClassName={(params) => {
+            const color = params.row.Delay_Color;
+            if (color === "Green") return "row-green";
+            if (color === "Yellow") return "row-yellow";
+            if (color === "Red") return "row-red";
+            return "";
+          }}
+          sx={{
+            "& .MuiDataGrid-columnHeader": {
+              backgroundColor: "#bdbdbd",
+              color: "black",
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-cell": {
+              color: "#333",
+              fontSize: "14px",
+            },
+            "& .row-green": {
+              backgroundColor: "#d0f0c0",
+            },
+            "& .row-yellow": {
+              backgroundColor: "#fff9c4",
+            },
+            "& .row-red": {
+              backgroundColor: "#ffcdd2",
+            },
+          }}
+        />
       </div>
     </div>
   );

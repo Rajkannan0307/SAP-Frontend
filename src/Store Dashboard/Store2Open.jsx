@@ -31,17 +31,18 @@ const Store2Open = ({ storageCode }) => {
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
 
-  const columns = [
-    { field: "sno", headerName: "S.No", flex: 1 },
-    { field: "Sup_Name", headerName: "Work Scheduler Name", flex: 1 },
-    { field: "Order_Date", headerName: "Order Date", flex: 1 },
-    { field: "Order_No", headerName: "Order No", flex: 1 },
-    { field: "Material_No", headerName: "Material", flex: 1 },
-    { field: "Material_Description", headerName: "Description", flex: 1 },
-    { field: "Order_Qty", headerName: "Order Qty", flex: 1 },
-    { field: "Supv_Lead_Time", headerName: "Lead Time", flex: 1 },
-    { field: "Delay_Time", headerName: "Delay Time", flex: 1 },
-  ];
+ const columns = [
+  { field: "sno", headerName: "S.No", width: 80 },
+  { field: "Sup_Name", headerName: "Work Scheduler Name", width: 320 },
+  
+  { field: "Order_No", headerName: "Order No", width: 240 },
+  { field: "Material_No", headerName: "Material", width: 280 },
+  { field: "Material_Description", headerName: "Description", width: 350 },
+  { field: "Order_Qty", headerName: "Order Qty", width: 130 },
+  { field: "Order_Date", headerName: "Order Date", width: 180 },
+  { field: "Supv_Lead_Time", headerName: "Lead Time", width: 130 },
+  { field: "Delay_Time", headerName: "Delay Time", width: 122 },
+];
 
   const getData = async (plantId, code) => {
     try {
@@ -103,12 +104,30 @@ const Store2Open = ({ storageCode }) => {
 
   return (
     <div style={{
-      padding: 20,
+      padding: 1,
       backgroundColor: "#F5F5F5",
       display: "flex",
       flexDirection: "column",
       height: "calc(100vh - 250px)",
     }}>
+     {/* 🔹 Color Legend */}
+                 <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 ,mt:-2}}>
+                   <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                       <Box sx={{ width: 20, height: 20, backgroundColor: "#d0f0c0", border: "1px solid #ccc" }} />
+                       <Typography variant="body2">On Time</Typography>
+                     </Box>
+                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                       <Box sx={{ width: 20, height: 20, backgroundColor: "#fff9c4", border: "1px solid #ccc" }} />
+                       <Typography variant="body2"> Delay 60minutes</Typography>
+                     </Box>
+                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                       <Box sx={{ width: 20, height: 20, backgroundColor: "#ffcdd2", border: "1px solid #ccc" }} />
+                     <Typography variant="body2">Delay &gt; 60 minutes</Typography>
+     
+                     </Box>
+                   </Box>
+                 </Box>
       <Box sx={{
         backgroundColor: "#2e59d9",
         color: "white",
@@ -119,16 +138,18 @@ const Store2Open = ({ storageCode }) => {
         alignItems: "center",
         justifyContent: "space-between",
       }}>
-        <Typography>Shift A</Typography>
+       
         <Typography>Store 2 - Open Orders</Typography>
-         <Typography variant="h6">
-          Date: {(() => {
-            const today = new Date();
-            const dd = String(today.getDate()).padStart(2, '0');
-            const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-            const yyyy = today.getFullYear();
-            return `${dd}/${mm}/${yyyy}`;
-          })()}
+         <Typography variant="h6" sx={{ fontSize: "16px" }}>
+          Date & Time: {new Date().toLocaleString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: true, // or false for 24h format
+          })}
         </Typography>
         {/* <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           <Typography variant="h6" sx={{ fontSize: "14px" }}>From</Typography>

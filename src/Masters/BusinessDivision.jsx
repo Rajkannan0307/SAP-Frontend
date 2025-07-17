@@ -102,7 +102,7 @@ const BusinessDivision = () => {
     try {
       const response = await getdetails();
       console.log(response); // Check the structure of response
-      //  setData(response); // Ensure that this is correctly setting the data
+       setData(response); // Ensure that this is correctly setting the data
       setOriginalRows(response); // for reference during search
        setRows(response);//Sets the displayed data, possibly filtered or modified
     } catch (error) {
@@ -269,10 +269,10 @@ const BusinessDivision = () => {
   
   // excel download
   const handleDownloadExcel = () => {
-    // if (data.length === 0) {
-    //   alert("No Data Found");
-    //   return;
-    // }
+    if (data.length === 0) {
+      alert("No Data Found");
+      return;
+    }
 
     const DataColumns = [
       "Company_Code",
@@ -294,7 +294,13 @@ const BusinessDivision = () => {
     const worksheet = XLSX.utils.json_to_sheet(filteredData, {
       header: DataColumns,
     });
-
+worksheet['!cols'] = [
+  { wch: 20 },
+  { wch: 20 },
+  { wch: 30 }, 
+   { wch: 30 }, 
+    { wch: 20 },
+];
     // Style header row
     DataColumns.forEach((_, index) => {
       const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });

@@ -209,193 +209,7 @@ setMaterialDescription("");
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
 
-  // // ✅ Handle Upload Modal
-  // const handleOpenUploadModal = () => setOpenUploadModal(true);
-  // const handleCloseUploadModal = () => {
-  //   setOpenUploadModal(false);
-  //   setUploadStatus("");
-  //   setUploadedFile(null);
-  //   setUploadProgress(0);
-  //   setUploadedFileData(null);
-  //   setIsUploading(false);
-  // };
-
-  // const handleFileUpload = (event) => {
-  //   setUploadedFile(event.target.files[0]);
-  // };
-
-  // const handleUploadData = async () => {
-  //   if (!uploadedFile) {
-  //     alert("Please select a file first.");
-  //     return;
-  //   } else {
-  //     try {
-  //       const formData = new FormData();
-  //       console.log("file", uploadedFile);
-  //       formData.append("User_Add", uploadedFile);
-  //       formData.append("UserID", UserID);
-  //       const response = await MaterialMaster(formData);
-  //       console.log("response", response.data);
-  //       alert(response.data.message);
-  //       // console.log('response', response.data)
-  //       if (
-  //         response.data.NewRecord.length > 0 ||
-  //         response.data.UpdatedData.length > 0 ||
-  //         response.data.ErrorRecords.length > 0
-  //       ) {
-  //         downloadExcel(
-  //           response.data.NewRecord,
-  //           response.data.UpdatedData,
-  //           response.data.ErrorRecords
-  //         );
-  //       }
-  //       getData();
-  //     } catch (error) {
-  //       if (error.response && error.response.status === 400) {
-  //         alert(error.response.data.message);
-  //       }
-  //     }
-  //   }
-  //   handleCloseUploadModal();
-  // };
-
-  // const downloadExcel = (newRecord, updateRecord, errRecord) => {
-  //   const wb = XLSX.utils.book_new();
-
-  //   const newRecordsColumns = [
-  //     "Plant_Code",
-  //     "Material_Type",
-  //     "Material_Code",
-  //     "Description",
-  //     "Rate",
-  //     "ActiveStatus",
-  //     "Status",
-  //   ];
-  //   const UpdatedColumns = [
-  //     "Plant_Code",
-  //     "Material_Type",
-  //     "Material_Code",
-  //     "Description",
-  //     "Rate",
-  //     "ActiveStatus",
-  //     "Status",
-  //   ];
-  //   const ErrorColumns = [
-  //     "Plant_Code",
-  //     "Material_Type",
-  //     "Material_Code",
-  //     "Description",
-  //     "Rate",
-  //     "ActiveStatus",
-  //     "PlantCode_Validation",
-  //     "Material_Type_Validation",
-  //   ];
-
-  //   const filteredNewData = newRecord.map((item) => ({
-  //     Plant_Code: item.Plant_Code,
-  //     Material_Type: item.Material_Type,
-  //     Material_Code: item.Material_Code,
-  //     Description: item.Description,
-  //     Rate: item.Rate,
-  //     ActiveStatus: item.Active_Status,
-  //     Status: item.Status,
-  //   }));
-
-  //   const filteredUpdate = updateRecord.map((item) => ({
-  //     Plant_Code: item.Plant_Code,
-  //     Material_Type: item.Material_Type,
-  //     Material_Code: item.Material_Code,
-  //     Description: item.Description,
-  //     Rate: item.Rate,
-  //     ActiveStatus: item.Active_Status,
-  //     Status: item.Status,
-  //   }));
-
-  //   const filteredError = errRecord.map((item) => ({
-  //     Plant_Code: item.Plant_Code,
-  //     Material_Type: item.Material_Type,
-  //     Material_Code: item.Material_Code,
-  //     Description: item.Description,
-  //     Rate: item.Rate,
-  //     ActiveStatus: item.Active_Status,
-  //     PlantCode_Validation: item.Plant_Val,
-  //     Material_Type_Validation: item.Material_Val,
-  //   }));
-
-  //   // 🔹 Helper to style header cells
-  //   const styleHeaders = (worksheet, columns) => {
-  //     columns.forEach((_, index) => {
-  //       const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-  //       if (worksheet[cellAddress]) {
-  //         worksheet[cellAddress].s = {
-  //           font: { bold: true, color: { rgb: "000000" } },
-  //           fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
-  //           alignment: { horizontal: "center" },
-  //         };
-  //       }
-  //     });
-  //   };
-
-  //   // 🔴 Style red text for validation columns only
-  //   const styleValidationColumns = (worksheet, columns, dataLength) => {
-  //     const validationCols = [
-  //       "PlantCode_Validation",
-  //       "Material_Type_Validation",
-  //     ];
-
-  //     for (let row = 1; row <= dataLength; row++) {
-  //       validationCols.forEach((colName) => {
-  //         const colIdx = columns.indexOf(colName);
-  //         if (colIdx === -1) return;
-
-  //         const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-  //         const cell = worksheet[cellAddress];
-
-  //         if (cell && typeof cell.v === "string") {
-  //           const value = cell.v.trim().toLowerCase();
-
-  //           // Apply green if value is "valid", otherwise red
-  //           cell.s = {
-  //             font: {
-  //               color: { rgb: value === "valid" ? "2e7d32" : "FF0000" }, // green or red
-  //             },
-  //           };
-  //         }
-  //       });
-  //     }
-  //   };
-
-  //   // 📄 New Records Sheet
-  //   if (filteredNewData.length === 0) filteredNewData.push({});
-  //   const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, {
-  //     header: newRecordsColumns,
-  //   });
-  //   styleHeaders(wsNewRecords, newRecordsColumns);
-  //   XLSX.utils.book_append_sheet(wb, wsNewRecords, "New Records");
-
-  //   // 📄 Updated Records Sheet
-  //   if (filteredUpdate.length === 0) filteredUpdate.push({});
-  //   const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, {
-  //     header: UpdatedColumns,
-  //   });
-  //   styleHeaders(wsUpdated, UpdatedColumns);
-  //   XLSX.utils.book_append_sheet(wb, wsUpdated, "Updated Records");
-
-  //   // 📄 Error Records Sheet
-  //   if (filteredError.length === 0) filteredError.push({});
-  //   const wsError = XLSX.utils.json_to_sheet(filteredError, {
-  //     header: ErrorColumns,
-  //   });
-  //   styleHeaders(wsError, ErrorColumns);
-  //   styleValidationColumns(wsError, ErrorColumns, filteredError.length);
-  //   XLSX.utils.book_append_sheet(wb, wsError, "Error Records");
-
-  //   // 📦 Export the Excel file
-  //   const fileName = "Material Data Upload Log.xlsx";
-  //   XLSX.writeFile(wb, fileName);
-  // };
-
-  // ✅ Handle Row Click for Edit
+    // ✅ Handle Row Click for Edit
 const handleResubmit = async (InwardID) => {
   try {
    const data = {
@@ -562,74 +376,86 @@ const handleResubmit = async (InwardID) => {
  }
 const handleCloseExcelModal=()=>setOpenExcelDownloadModal(false);
 const handleDownloadReportExcel = async () => {
-      if (!fromDate) {
-        alert('Select From Date');
-        return;
+  if (!fromDate) {
+    alert('Select From Date');
+    return;
+  }
+  if (!toDate) {
+    alert('Select To Date');
+    return;
+  }
+
+  try {
+    const response = await getEmergencyData(fromDate, toDate, UserID);
+
+    if (response.status === 400) {
+      alert(`Error: ${response.data.message || 'Invalid input or date range.'}`);
+      return;
+    }
+
+    const jsonData = response.data;
+
+    if (!jsonData || jsonData.length === 0) {
+      alert("No data available for the selected range.");
+      return;
+    }
+
+    const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+    const fileExtension = ".xlsx";
+    const fileName = "Emergency Procurement";
+
+    const ws = XLSX.utils.json_to_sheet(jsonData);
+
+    // Get headers and set column widths
+    const headers = Object.keys(jsonData[0]);
+    ws["!cols"] = headers.map(header => {
+      if (header.toLowerCase().includes("date")) return { wch: 18 };
+      if (header.toLowerCase().includes("amount") || header.toLowerCase().includes("qty")) return { wch: 12 };
+      if (header.toLowerCase().includes("desc") || header.toLowerCase().includes("remarks")) return { wch: 30 };
+      return { wch: 20 }; // default width
+    });
+
+    // Style header row (row 0)
+    headers.forEach((_, colIdx) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+      if (ws[cellAddress]) {
+        ws[cellAddress].s = {
+          font: { bold: true, color: { rgb: "000000" } },
+          fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
+          alignment: { horizontal: "center" },
+        };
       }
-      if (!toDate) {
-        alert('Select To Date');
-        return;
-      }
-  
-      try {
-        // Call backend API with fromDate and toDate as query params
-        const response = await getEmergencyData(fromDate, toDate,UserID);
-  
-        if (response.status === 400) {
-          alert(`Error: ${response.data.message || 'Invalid input or date range.'}`);
-          return;
-        }
-  
-        const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-        const fileExtension = ".xlsx";
-        const fileName = "Emergency Procurement";
-  
-        // Convert JSON response to worksheet
-        const ws = XLSX.utils.json_to_sheet(response.data);
-  
-        // Style header row (row 0)
-        const headers = Object.keys(response.data[0] || {});
-        headers.forEach((_, colIdx) => {
-          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
-          if (ws[cellAddress]) {
-            ws[cellAddress].s = {
-              font: { bold: true, color: { rgb: "000000" } },
-              fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
-              alignment: { horizontal: "center" },
-            };
-          }
-        });
-  
-        // Create workbook
-        const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
-  
-        // Write workbook to binary array
-        const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-  
-        // Create Blob and trigger download
-        const data = new Blob([excelBuffer], { type: fileType });
-        const url = window.URL.createObjectURL(data);
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", fileName + fileExtension);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
-  
-        alert("File downloaded successfully!");
-        handleCloseExcelModal();
-      } catch (error) {
-        console.error("Download failed:", error);
-        if (error.response) {
-          alert(error.response.data.message || "Unknown error from backend");
-        } else if (error.request) {
-          alert("No response from server. Please try again later.");
-        } else {
-          alert(`Error: ${error.message}`);
-        }
-      }
-    }; 
+    });
+
+    // Create workbook
+    const wb = { Sheets: { data: ws }, SheetNames: ["data"] };
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+
+    // Create Blob and trigger download
+    const blobData = new Blob([excelBuffer], { type: fileType });
+    const url = window.URL.createObjectURL(blobData);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", fileName + fileExtension);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    alert("File downloaded successfully!");
+    handleCloseExcelModal();
+  } catch (error) {
+    console.error("Download failed:", error);
+    if (error.response) {
+      alert(error.response.data.message || "Unknown error from backend");
+    } else if (error.request) {
+      alert("No response from server. Please try again later.");
+    } else {
+      alert(`Error: ${error.message}`);
+    }
+  }
+};
+
   return (
     <div
       style={{

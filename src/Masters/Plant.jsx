@@ -289,7 +289,13 @@ const Plant = () => {
     const worksheet = XLSX.utils.json_to_sheet(filteredData, {
       header: DataColumns,
     });
-
+worksheet['!cols'] = [
+  { wch: 20 }, // Sup_Name
+  { wch: 20 }, // No_Of_Open_Orders
+  { wch: 30 }, // No_Of_Orders
+  { wch: 20 }, // No_Order_Close
+  
+];
     // Style header row
     DataColumns.forEach((_, index) => {
       const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });

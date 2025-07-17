@@ -352,7 +352,7 @@ const getMappingData = async () => {
 
 const handleDownloadExcel = () => {
   console.log("📦 StorageData:", storageData);
-console.log("🗺️ MappingData:", mappingData);
+  console.log("🗺️ MappingData:", mappingData);
 
   if (storageData.length === 0 || mappingData.length === 0) {
     alert("No Data Found");
@@ -364,7 +364,6 @@ console.log("🗺️ MappingData:", mappingData);
     Storage_Code: item.Storage_Code,
     SLoc_Name: item.SLoc_Name,
     ActiveStatus: item.Active_Status ? "Active" : "Inactive",
-  
   }));
 
   const mappingSheetData = mappingData.map((item) => ({
@@ -379,31 +378,39 @@ console.log("🗺️ MappingData:", mappingData);
   const storageSheet = XLSX.utils.json_to_sheet(storageSheetData);
   const mappingSheet = XLSX.utils.json_to_sheet(mappingSheetData);
 
-  // ✅ Apply yellow background to header of storage sheet
-  const storageHeaders = Object.keys(storageSheetData[0]);
-  storageHeaders.forEach((_, i) => {
-    const cellAddress = XLSX.utils.encode_cell({ c: i, r: 0 });
-    if (storageSheet[cellAddress]) {
-      storageSheet[cellAddress].s = {
-        font: { bold: true },
-        alignment: { horizontal: "center" },
-        fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
-      };
-    }
-  });
+  // 🔶 Set column widths
+  storageSheet['!cols'] = [
+    { wch: 12 }, // Plant_Code
+    { wch: 15 }, // Storage_Code
+    { wch: 25 }, // SLoc_Name
+    { wch: 12 }, // ActiveStatus
+  ];
 
-  // ✅ Apply yellow background to header of mapping sheet
-  const mappingHeaders = Object.keys(mappingSheetData[0]);
-  mappingHeaders.forEach((_, i) => {
-    const cellAddress = XLSX.utils.encode_cell({ c: i, r: 0 });
-    if (mappingSheet[cellAddress]) {
-      mappingSheet[cellAddress].s = {
-        font: { bold: true },
-        alignment: { horizontal: "center" },
-        fill: { fgColor: { rgb: "FFFF00" } }, // Yellow background
-      };
-    }
-  });
+  mappingSheet['!cols'] = [
+    { wch: 12 }, // Plant_Code
+    { wch: 15 }, // Storage_Code
+    { wch: 25 }, // SLoc_Name
+    { wch: 12 }, // Sup_Code
+    { wch: 40 }, // Sup_Name
+    { wch: 15 }, // Active_Status
+  ];
+
+  // 🎨 Style headers (yellow background, bold, centered)
+  const styleHeaderCells = (sheet, headers) => {
+    headers.forEach((_, i) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: i, r: 0 });
+      if (sheet[cellAddress]) {
+        sheet[cellAddress].s = {
+          font: { bold: true },
+          alignment: { horizontal: "center" },
+          fill: { fgColor: { rgb: "FFFF00" } },
+        };
+      }
+    });
+  };
+
+  styleHeaderCells(storageSheet, Object.keys(storageSheetData[0]));
+  styleHeaderCells(mappingSheet, Object.keys(mappingSheetData[0]));
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, storageSheet, "Storage_Location");
@@ -411,6 +418,7 @@ console.log("🗺️ MappingData:", mappingData);
 
   XLSX.writeFile(workbook, "Storage_and_Mapping_Data.xlsx");
 };
+
 
 
 
