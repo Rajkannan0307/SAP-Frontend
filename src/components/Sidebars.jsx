@@ -426,18 +426,7 @@ const Sidebar = ({ setSidebarOpen }) => {
           Permissions={Permissions}
           label="Report"
           links={[
-   {
-      name: "Inward of Old Invoice Report",
-      path: "/home/Report1",
-      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#D8BFD8", fontSize: "28px" }} />, // Dodger Blue
-      code: 'Report1'
-    },
-    {
-      name: "Emergency Procurement Report",
-      path: "/home/Report2",
-      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#FF6347", fontSize: "28px" }} />, // Orange Red
-      code: 'Report2'
-    },
+
     {
       name: "309 Report",
       path: "/home/Report3",
@@ -467,6 +456,18 @@ const Sidebar = ({ setSidebarOpen }) => {
       path: "/home/Report7",
       icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#FF69B4", fontSize: "28px" }} />, // Hot Pink
       code: 'Report7'
+    },
+       {
+      name: "Inward of Old Invoice Report",
+      path: "/home/Report1",
+      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#D8BFD8", fontSize: "28px" }} />, // Dodger Blue
+      code: 'Report1'
+    },
+    {
+      name: "Emergency Procurement Report",
+      path: "/home/Report2",
+      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#FF6347", fontSize: "28px" }} />, // Orange Red
+      code: 'Report2'
     },
     {
       name: "Conversion Rs1 Report",

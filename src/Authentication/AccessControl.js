@@ -3,7 +3,7 @@ import { decryptSessionData } from "../controller/StorageUtils";
 
 // Simulating your database table (Access Control Mapping)
 const accessMap = {
-  1: [15, ], // REQUESTER can access Dashboard, Report1, Report2
+  1: [15, 34,35,36,37,38,39,16,17], // REQUESTER can access Dashboard, Report1, Report2
   2: [14, 19,20,22], // PLANT MMD HEAD can access Approval_309, Report1, Report2
   3: [14,19,20,22,23,26,33], // PLANT FINANCE HEAD can access Approval_309, Report1, Report2
   4: [14, 18,19,20,23,26,27], // PLANT MRPC can access Approval_309, Report1, Report2
