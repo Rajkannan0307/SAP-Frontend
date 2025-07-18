@@ -68,6 +68,9 @@ import Module from "./Masters/Module"
 import Line from "./Masters/Line"
 import ProductionPlan from "./Production plan/ProductionPlan"
 import StoreDashboard from "./Store Dashboard/StoreDashboard"
+import Store1 from"./StoreUrl/store1url"
+
+
 const App = () => {
   return (
     <Router>
@@ -75,7 +78,9 @@ const App = () => {
         <Routes>
 
           <Route path="/" element={<Login />} />
+ <Route path="/:plantCode/:storageCodes" element={<Store1 />} />
 
+           
           {/* Protected Routes with Role-Based Access */}
           <Route path="/home" element={<ProtectedRoute><Main /></ProtectedRoute>}>
             <Route path="company" element={<ProtectedRoute screenId={1}><Company /></ProtectedRoute>} />
@@ -96,7 +101,6 @@ const App = () => {
             <Route path="Movement_Type" element={<ProtectedRoute screenId={11}><Movement_Type /></ProtectedRoute>} />
             <Route path="MVT_LIST_ITEM" element={<ProtectedRoute screenId={12}><MVT_LIST_ITEM /></ProtectedRoute>} />
             <Route path="CostCenter" element={<ProtectedRoute screenId={13}><CostCenter /></ProtectedRoute>} />
-
             <Route path="Approval_309" element={<ProtectedRoute screenId={14}><Approval309 /></ProtectedRoute>} />
             <Route path="Approval_201" element={<ProtectedRoute screenId={19}><Approval201 /></ProtectedRoute>} />
             <Route path="Approval_202" element={<ProtectedRoute screenId={20}><Approval202 /></ProtectedRoute>} />

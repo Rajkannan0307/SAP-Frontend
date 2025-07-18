@@ -17,7 +17,7 @@ import { getdetailsStoreClosed,getdetailsStoreClosedByDate } from "../controller
 import { decryptSessionData } from "../controller/StorageUtils";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import * as XLSX from 'xlsx-js-style';
-
+import { FaFileExcel } from "react-icons/fa";
 const Store1Closed = ({ storageCode }) => {
  const [rows, setRows] = useState([]);
   const [filteredRows, setFilteredRows] = useState([]);
@@ -272,16 +272,19 @@ const handleExcelDownload = () => {
     Material_Issued_Delayed: item.Issue_Posted_Delay,
   }));
 
-  // Add subtotal row
-  formattedData.push({
-    Sup_Name: "SubTotal",
-    No_Of_Open_Orders: subtotal.No_Of_Open_Orders,
-    No_Of_Orders: subtotal.No_Of_Orders,
-    No_Order_Close: subtotal.No_Order_Close,
-    Material_Issue_Posted_on_Time: subtotal.Issue_Posted_on_Time,
-    Material_Issue_Posted_Delay60: subtotal.Issue_Posted_Delay60,
-    Material_Issued_Delayed: subtotal.Issue_Posted_Delay,
-  });
+  // Add blank row before subtotal
+formattedData.push({});
+
+// Add subtotal row after the blank row
+formattedData.push({
+  Sup_Name: "SubTotal",
+  No_Of_Open_Orders: subtotal.No_Of_Open_Orders,
+  No_Of_Orders: subtotal.No_Of_Orders,
+  No_Order_Close: subtotal.No_Order_Close,
+  Material_Issue_Posted_on_Time: subtotal.Issue_Posted_on_Time,
+  Material_Issue_Posted_Delay60: subtotal.Issue_Posted_Delay60,
+  Material_Issued_Delayed: subtotal.Issue_Posted_Delay,
+});
 
   const worksheet = XLSX.utils.json_to_sheet(formattedData, {
     header: DataColumns,
@@ -292,9 +295,9 @@ const handleExcelDownload = () => {
     { wch: 20 },
     { wch: 20 },
     { wch: 20 },
-    { wch: 25 },
-    { wch: 25 },
-    { wch: 25 },
+    { wch: 35 },
+    { wch: 35 },
+    { wch: 35 },
   ];
 
   // Header styling
@@ -476,10 +479,11 @@ const handleExcelDownload = () => {
 </IconButton>
 <IconButton
   onClick={handleExcelDownload}
-  sx={{ backgroundColor: "white", borderRadius: 1, padding: 1 }}
+  sx={{ backgroundColor: "white",   }}
 >
-  <FileDownloadIcon sx={{ color: "#2e59d9" ,width:"12px" ,height:"12px"}} />
+  <FaFileExcel style={{ color: "#06462b", width: "18px", height: "20px" }} />
 </IconButton>
+
 
          <IconButton
   onClick={() => {
