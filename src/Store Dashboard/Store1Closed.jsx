@@ -254,23 +254,24 @@ const handleExcelDownload = () => {
 
   const DataColumns = [
     "Sup_Name",
-    "No_Of_Open_Orders",
     "No_Of_Orders",
+    "No_Of_Open_Orders",
+    
     "No_Order_Close",
     "Material_Issue_Posted_on_Time",
-    "Material_Issue_Posted_Delay60",
-    "Material_Issued_Delayed",
+    "Material_Issue_Posted_Delay<60",
+    "Material_Issue_Posted_Delay>60",
   ];
 
-  const formattedData = exportData.map((item) => ({
-    Sup_Name: item.Sup_Name,
-    No_Of_Open_Orders: item.No_Of_Open_Orders,
-    No_Of_Orders: item.No_Of_Orders,
-    No_Order_Close: item.No_Order_Close,
-    Material_Issue_Posted_on_Time: item.Issue_Posted_on_Time,
-    Material_Issue_Posted_Delay60: item.Issue_Posted_Delay60,
-    Material_Issued_Delayed: item.Issue_Posted_Delay,
-  }));
+ const formattedData = exportData.map((item) => ({
+  Sup_Name: item.Sup_Name,
+  No_Of_Orders: item.No_Of_Orders,
+  No_Of_Open_Orders: item.No_Of_Open_Orders,
+  No_Order_Close: item.No_Order_Close,
+  Material_Issue_Posted_on_Time: item.Issue_Posted_on_Time,
+  "Material_Issue_Posted_Delay<60": item.Issue_Posted_Delay60,
+  "Material_Issue_Posted_Delay>60": item.Issue_Posted_Delay,
+}));
 
   // Add blank row before subtotal
 formattedData.push({});
@@ -282,8 +283,8 @@ formattedData.push({
   No_Of_Orders: subtotal.No_Of_Orders,
   No_Order_Close: subtotal.No_Order_Close,
   Material_Issue_Posted_on_Time: subtotal.Issue_Posted_on_Time,
-  Material_Issue_Posted_Delay60: subtotal.Issue_Posted_Delay60,
-  Material_Issued_Delayed: subtotal.Issue_Posted_Delay,
+  "Material_Issue_Posted_Delay<60": subtotal.Issue_Posted_Delay60,
+  "Material_Issue_Posted_Delay>60": subtotal.Issue_Posted_Delay,
 });
 
   const worksheet = XLSX.utils.json_to_sheet(formattedData, {
@@ -324,7 +325,7 @@ formattedData.push({
 
       if (col === 4) fillColor = "C6EFCE"; // Green for OnTime
       else if (col === 5) fillColor = "FFF9C4"; // Light Yellow for Delay60
-      else if (col === 6) fillColor = "F8CBAD"; // Light Red for Delayed
+      else if (col === 6) fillColor = "ffcdd2"; // Light Red for Delayed
 
       worksheet[cell].s = {
         alignment: { horizontal: "center" },
@@ -344,7 +345,7 @@ formattedData.push({
 
     if (col === 4) fillColor = "C6EFCE"; // Green for OnTime
     else if (col === 5) fillColor = "FFF9C4"; // Yellow for Delay60
-    else if (col === 6) fillColor = "F8CBAD"; // Red for Delayed
+    else if (col === 6) fillColor = "ffcdd2"; // Red for Delayed
 
     worksheet[cell].s = {
       font: { bold: true, color: { rgb: textColor } },
