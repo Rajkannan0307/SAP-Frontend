@@ -13,7 +13,7 @@ import {
   GridToolbarFilterButton,
   GridToolbarExport,
 } from "@mui/x-data-grid";
-import { getdetailsStoreClosed,getdetailsStoreClosedByDate } from "../controller/StoreDashboardapiservice"; // make sure this accepts plantId + storageCode
+import { getdetailsStoreClosed,getdetailsStoreClosedByDate,getdetailsExcelDownload } from "../controller/StoreDashboardapiservice"; // make sure this accepts plantId + storageCode
 import { decryptSessionData } from "../controller/StorageUtils";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import * as XLSX from 'xlsx-js-style';
@@ -244,7 +244,171 @@ calculateSubtotal(response);
 
   setSubtotal(total);
 };
-const handleExcelDownload = () => {
+// const handleExcelDownload = () => {
+//   const exportData = isFiltered ? filteredRows : rows;
+
+//   if (exportData.length === 0) {
+//     alert("No Data Found");
+//     return;
+//   }
+
+//   const DataColumns = [
+//     "Sup_Name",
+//     "No_Of_Orders",
+//     "No_Of_Open_Orders",
+//     "No_Order_Close",
+//     "Material_Issue_Posted_on_Time",
+//     "Material_Issue_Posted_Delay<60",
+//     "Material_Issue_Posted_Delay>60",
+//   ];
+
+//   const formattedData = exportData.map((item) => ({
+//     Sup_Name: item.Sup_Name,
+//     No_Of_Orders: item.No_Of_Orders,
+//     No_Of_Open_Orders: item.No_Of_Open_Orders,
+//     No_Order_Close: item.No_Order_Close,
+//     Material_Issue_Posted_on_Time: item.Issue_Posted_on_Time,
+//     "Material_Issue_Posted_Delay<60": item.Issue_Posted_Delay60,
+//     "Material_Issue_Posted_Delay>60": item.Issue_Posted_Delay,
+//   }));
+
+//   formattedData.push({});
+//   formattedData.push({
+//     Sup_Name: "SubTotal",
+//     No_Of_Orders: subtotal.No_Of_Orders,
+//     No_Of_Open_Orders: subtotal.No_Of_Open_Orders,
+//     No_Order_Close: subtotal.No_Order_Close,
+//     Material_Issue_Posted_on_Time: subtotal.Issue_Posted_on_Time,
+//     "Material_Issue_Posted_Delay<60": subtotal.Issue_Posted_Delay60,
+//     "Material_Issue_Posted_Delay>60": subtotal.Issue_Posted_Delay,
+//   });
+
+//   const metadataSheet = [
+//     ["", "", "Store 1", ""], // Row 1 (C1:D1 merged)
+//     ["", "From Date", fromDate, "To Date", toDate], // Row 2: B1-E1
+//     [],
+//     DataColumns,
+//     ...formattedData.map((row) => DataColumns.map((key) => row[key] ?? "")),
+//   ];
+
+//   const worksheetMain = XLSX.utils.aoa_to_sheet(metadataSheet);
+
+//   worksheetMain["!cols"] = [
+//     { wch: 35 }, // A
+//     { wch: 25 }, // B
+//     { wch: 25 }, // C
+//     { wch: 25 }, // D
+//     { wch: 25 }, // E
+//     ...DataColumns.map(() => ({ wch: 35 })),
+//   ];
+
+//   worksheetMain["!merges"] = [
+//     { s: { r: 0, c: 2 }, e: { r: 0, c: 3 } }, // C1:D1 merged for "Store 1"
+//   ];
+
+//   worksheetMain["C1"].s = {
+//     alignment: { horizontal: "center", vertical: "center" },
+//     font: { bold: true, sz: 14 },
+//     fill: { fgColor: { rgb: "D9E1F2" } }, // light blue
+//   };
+//   worksheetMain["D1"].s = worksheetMain["C1"].s;
+
+//   // Style From Date / To Date
+//   ["B2", "C2", "D2", "E2"].forEach((cell) => {
+//     worksheetMain[cell] = worksheetMain[cell] || {};
+//     worksheetMain[cell].s = {
+//       alignment: { horizontal: "center" },
+//       font: { bold: true },
+//       fill: { fgColor: { rgb: "FCE4D6" } },
+//     };
+//   });
+
+//   // Header Styling
+//   DataColumns.forEach((colName, colIndex) => {
+//     const cellRef = XLSX.utils.encode_cell({ c: colIndex, r: 3 }); // Row 4
+//     if (!worksheetMain[cellRef]) {
+//       worksheetMain[cellRef] = { t: "s", v: colName };
+//     }
+
+//     worksheetMain[cellRef].s = {
+//       font: { bold: true },
+//       alignment: { horizontal: "center", vertical: "center", wrapText: true },
+//       fill: { fgColor: { rgb: "FFD966" } }, // gold
+//       border: {
+//         top: { style: "thin", color: { rgb: "000000" } },
+//         bottom: { style: "thin", color: { rgb: "000000" } },
+//         left: { style: "thin", color: { rgb: "000000" } },
+//         right: { style: "thin", color: { rgb: "000000" } },
+//       },
+//     };
+//   });
+
+//   // Freeze top 4 rows
+//   worksheetMain["!freeze"] = { xSplit: 0, ySplit: 4 };
+
+//   // Style Data Rows
+//   const totalRows = metadataSheet.length;
+//   for (let row = 4; row < totalRows - 1; row++) {
+//     for (let col = 0; col < DataColumns.length; col++) {
+//       const cell = XLSX.utils.encode_cell({ c: col, r: row });
+//       if (!worksheetMain[cell]) continue;
+
+//       let fillColor = null;
+//       if (col === 4) fillColor = "C6EFCE";
+//       else if (col === 5) fillColor = "FFF9C4";
+//       else if (col === 6) fillColor = "FFC7CE";
+
+//       worksheetMain[cell].s = {
+//         alignment: {
+//           horizontal: col === 0 ? "left" : "center",
+//         },
+//         ...(fillColor && { fill: { fgColor: { rgb: fillColor } } }),
+//       };
+//     }
+//   }
+
+//   // Subtotal row styling
+//   const subtotalRowIndex = totalRows - 1;
+//   for (let col = 0; col < DataColumns.length; col++) {
+//     const cell = XLSX.utils.encode_cell({ c: col, r: subtotalRowIndex });
+//     if (!worksheetMain[cell]) continue;
+
+//     let fillColor = "DDEBF7";
+//     if (col === 4) fillColor = "C6EFCE";
+//     else if (col === 5) fillColor = "FFF9C4";
+//     else if (col === 6) fillColor = "FFC7CE";
+
+//     worksheetMain[cell].s = {
+//       font: { bold: true },
+//       alignment: {
+//         horizontal: col === 0 ? "left" : "center",
+//       },
+//       fill: { fgColor: { rgb: fillColor } },
+//       border: {
+//         top: { style: "medium", color: { rgb: "000000" } },
+//       },
+//     };
+//   }
+
+//   // === Split view sheet
+//   const splitSheet = XLSX.utils.json_to_sheet(exportData, {
+//     header: Object.keys(exportData[0] || {}),
+//   });
+//   splitSheet["!cols"] = Object.keys(exportData[0] || {}).map(() => ({ wch: 35 }));
+
+//   const workbook = XLSX.utils.book_new();
+//   XLSX.utils.book_append_sheet(workbook, worksheetMain, "Closed Orders");
+//   XLSX.utils.book_append_sheet(workbook, splitSheet, "Split View");
+
+//   const today = new Date();
+//   const fileName = `Store1_ClosedOrders_${today.getFullYear()}${String(
+//     today.getMonth() + 1
+//   ).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}.xlsx`;
+
+//   XLSX.writeFile(workbook, fileName);
+// };
+
+const handleExcelDownload = async () => {
   const exportData = isFiltered ? filteredRows : rows;
 
   if (exportData.length === 0) {
@@ -252,121 +416,161 @@ const handleExcelDownload = () => {
     return;
   }
 
+  const Plant_ID = sessionStorage.getItem("Plant_ID");
+  const StorageCode = sessionStorage.getItem("StorageCode");
+
+  let splitViewData = [];
+  try {
+    const response = await getdetailsExcelDownload(Plant_ID, fromDate, toDate, StorageCode);
+    splitViewData = response?.data || [];
+  } catch (err) {
+    console.error("Error fetching split view data:", err);
+    alert("Failed to load split view data.");
+    return;
+  }
+
   const DataColumns = [
     "Sup_Name",
     "No_Of_Orders",
     "No_Of_Open_Orders",
-    
     "No_Order_Close",
     "Material_Issue_Posted_on_Time",
     "Material_Issue_Posted_Delay<60",
     "Material_Issue_Posted_Delay>60",
   ];
 
- const formattedData = exportData.map((item) => ({
-  Sup_Name: item.Sup_Name,
-  No_Of_Orders: item.No_Of_Orders,
-  No_Of_Open_Orders: item.No_Of_Open_Orders,
-  No_Order_Close: item.No_Order_Close,
-  Material_Issue_Posted_on_Time: item.Issue_Posted_on_Time,
-  "Material_Issue_Posted_Delay<60": item.Issue_Posted_Delay60,
-  "Material_Issue_Posted_Delay>60": item.Issue_Posted_Delay,
-}));
+  const formattedData = exportData.map((item) => ({
+    Sup_Name: item.Sup_Name,
+    No_Of_Orders: item.No_Of_Orders,
+    No_Of_Open_Orders: item.No_Of_Open_Orders,
+    No_Order_Close: item.No_Order_Close,
+    Material_Issue_Posted_on_Time: item.Issue_Posted_on_Time,
+    "Material_Issue_Posted_Delay<60": item.Issue_Posted_Delay60,
+    "Material_Issue_Posted_Delay>60": item.Issue_Posted_Delay,
+  }));
 
-  // Add blank row before subtotal
-formattedData.push({});
-
-// Add subtotal row after the blank row
-formattedData.push({
-  Sup_Name: "SubTotal",
-  No_Of_Open_Orders: subtotal.No_Of_Open_Orders,
-  No_Of_Orders: subtotal.No_Of_Orders,
-  No_Order_Close: subtotal.No_Order_Close,
-  Material_Issue_Posted_on_Time: subtotal.Issue_Posted_on_Time,
-  "Material_Issue_Posted_Delay<60": subtotal.Issue_Posted_Delay60,
-  "Material_Issue_Posted_Delay>60": subtotal.Issue_Posted_Delay,
-});
-
-  const worksheet = XLSX.utils.json_to_sheet(formattedData, {
-    header: DataColumns,
+  formattedData.push({});
+  formattedData.push({
+    Sup_Name: "SubTotal",
+    No_Of_Orders: subtotal.No_Of_Orders,
+    No_Of_Open_Orders: subtotal.No_Of_Open_Orders,
+    No_Order_Close: subtotal.No_Order_Close,
+    Material_Issue_Posted_on_Time: subtotal.Issue_Posted_on_Time,
+    "Material_Issue_Posted_Delay<60": subtotal.Issue_Posted_Delay60,
+    "Material_Issue_Posted_Delay>60": subtotal.Issue_Posted_Delay,
   });
 
-  worksheet["!cols"] = [
-    { wch: 30 },
-    { wch: 20 },
-    { wch: 20 },
-    { wch: 20 },
-    { wch: 35 },
-    { wch: 35 },
-    { wch: 35 },
+  const metadataSheet = [
+    ["", "", "Store 1", ""],
+    ["", "From Date", fromDate, "To Date", toDate],
+    [],
+    DataColumns,
+    ...formattedData.map((row) => DataColumns.map((key) => row[key] ?? "")),
   ];
 
-  // Header styling
-  DataColumns.forEach((_, colIndex) => {
-    const cell = XLSX.utils.encode_cell({ c: colIndex, r: 0 });
-    if (worksheet[cell]) {
-      worksheet[cell].s = {
-        font: { bold: true },
-        fill: { fgColor: { rgb: "FFFF00" } }, // Yellow
-        alignment: { horizontal: "center" },
-      };
-    }
+  const worksheetMain = XLSX.utils.aoa_to_sheet(metadataSheet);
+
+  worksheetMain["!merges"] = [{ s: { r: 0, c: 2 }, e: { r: 0, c: 3 } }];
+  worksheetMain["!freeze"] = { xSplit: 0, ySplit: 4 };
+
+  worksheetMain["!cols"] = [
+    { wch: 5 },   // A
+    { wch: 18 },  // B
+    { wch: 20 },  // C
+    { wch: 20 },  // D
+    { wch: 20 },  // E
+    ...DataColumns.map(() => ({ wch: 35 })),
+  ];
+
+  const setCellStyle = (cell, style) => {
+    worksheetMain[cell] = worksheetMain[cell] || {};
+    worksheetMain[cell].s = style;
+  };
+
+  // Header styles
+  ["C1", "D1"].forEach(cell =>
+    setCellStyle(cell, {
+      alignment: { horizontal: "center", vertical: "center" },
+      font: { bold: true, sz: 14 },
+      fill: { fgColor: { rgb: "D9E1F2" } },
+    })
+  );
+
+  ["B2", "C2", "D2", "E2"].forEach(cell =>
+    setCellStyle(cell, {
+      alignment: { horizontal: "center" },
+      font: { bold: true },
+      fill: { fgColor: { rgb: "FCE4D6" } },
+    })
+  );
+
+  // Column header styling
+  DataColumns.forEach((col, i) => {
+    const cell = XLSX.utils.encode_cell({ r: 3, c: i });
+    setCellStyle(cell, {
+      font: { bold: true },
+      alignment: { horizontal: "center", vertical: "center", wrapText: true },
+      fill: { fgColor: { rgb: "FFD966" } },
+      border: {
+        top: { style: "thin", color: { rgb: "000000" } },
+        bottom: { style: "thin", color: { rgb: "000000" } },
+        left: { style: "thin", color: { rgb: "000000" } },
+        right: { style: "thin", color: { rgb: "000000" } },
+      },
+    });
   });
 
-  const totalRows = formattedData.length;
-
-  // Style regular data rows (1 to totalRows - 1)
-  for (let row = 1; row < totalRows; row++) {
-    for (let col = 1; col < DataColumns.length; col++) {
-      const cell = XLSX.utils.encode_cell({ c: col, r: row });
-      if (!worksheet[cell]) continue;
-
+  // Data rows styling
+  const totalRows = metadataSheet.length;
+  for (let r = 4; r < totalRows - 1; r++) {
+    for (let c = 0; c < DataColumns.length; c++) {
+      const cellRef = XLSX.utils.encode_cell({ r, c });
       let fillColor = null;
+      if (c === 4) fillColor = "C6EFCE";
+      else if (c === 5) fillColor = "FFF9C4";
+      else if (c === 6) fillColor = "FFC7CE";
 
-      if (col === 4) fillColor = "C6EFCE"; // Green for OnTime
-      else if (col === 5) fillColor = "FFF9C4"; // Light Yellow for Delay60
-      else if (col === 6) fillColor = "ffcdd2"; // Light Red for Delayed
-
-      worksheet[cell].s = {
-        alignment: { horizontal: "center" },
+      setCellStyle(cellRef, {
+        alignment: { horizontal: c === 0 ? "left" : "center" },
         ...(fillColor && { fill: { fgColor: { rgb: fillColor } } }),
-      };
+      });
     }
   }
 
-  // Style subtotal row (bold + fill colors)
-    const subtotalRowIndex = totalRows;
-  for (let col = 0; col < DataColumns.length; col++) {
-    const cell = XLSX.utils.encode_cell({ c: col, r: subtotalRowIndex });
-    if (!worksheet[cell]) continue;
+  // Subtotal row
+  const subtotalRowIndex = totalRows - 1;
+  for (let c = 0; c < DataColumns.length; c++) {
+    const cell = XLSX.utils.encode_cell({ r: subtotalRowIndex, c });
+    let fillColor = "DDEBF7";
+    if (c === 4) fillColor = "C6EFCE";
+    else if (c === 5) fillColor = "FFF9C4";
+    else if (c === 6) fillColor = "FFC7CE";
 
-    let fillColor = "DDEBF7"; // Light blue for full subtotal row background
-    let textColor = "000000"; // Black text
-
-    if (col === 4) fillColor = "C6EFCE"; // Green for OnTime
-    else if (col === 5) fillColor = "FFF9C4"; // Yellow for Delay60
-    else if (col === 6) fillColor = "ffcdd2"; // Red for Delayed
-
-    worksheet[cell].s = {
-      font: { bold: true, color: { rgb: textColor } },
-      alignment: { horizontal: col === 0 ? "left" : "center" },
+    setCellStyle(cell, {
+      font: { bold: true },
+      alignment: { horizontal: c === 0 ? "left" : "center" },
       fill: { fgColor: { rgb: fillColor } },
-      border: {
-        top: { style: "medium", color: { rgb: "000000" } }, // Bold top border
-      },
-    };
+      border: { top: { style: "medium", color: { rgb: "000000" } } },
+    });
   }
 
+  // 📄 Split View Sheet
+  const splitSheet = XLSX.utils.json_to_sheet(splitViewData);
+  splitSheet["!cols"] = Object.keys(splitViewData[0] || {}).map(() => ({ wch: 30 }));
+
+  // Build Workbook
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Closed Orders");
+  XLSX.utils.book_append_sheet(workbook, worksheetMain, "Closed Orders");
+  XLSX.utils.book_append_sheet(workbook, splitSheet, "Split View");
 
   const today = new Date();
-  const fileName = `Store1_ClosedOrders_${today.getFullYear()}${String(
-    today.getMonth() + 1
-  ).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}.xlsx`;
-
+  const fileName = `Store1_ClosedOrders_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}.xlsx`;
   XLSX.writeFile(workbook, fileName);
 };
+
+
+
+
 
 
 
