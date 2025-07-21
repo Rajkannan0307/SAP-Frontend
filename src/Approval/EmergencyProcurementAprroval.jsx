@@ -29,7 +29,7 @@ import { MenuItem, InputLabel, FormControl } from "@mui/material";
 
 import {
   getdetailsEmergency,
- getUpdates,getRejected
+ EmergencyAprrove,getRejected
 
 } from "../controller/InwardApprovalservice";
 import { decryptSessionData } from "../controller/StorageUtils";
@@ -98,7 +98,7 @@ const EmergencyApproval = () => {
           headerName: "Action",
           flex: 1,
           renderCell: (params) => (
-             <div style={{ display: "flex", justifyContent: "center" }}>
+             <div style={{ display: "flex",}}>
              <IconButton
                         size="large"
                         color="success"
@@ -107,10 +107,7 @@ const EmergencyApproval = () => {
                         <CheckCircleIcon fontSize="small" />
                       </IconButton>
             
-            <Checkbox
-              checked={selectedRows.includes(params.row)}
-              onChange={() => handleCheckboxChange(params.row)}
-            />
+            
             </div>
           ),
         },
@@ -148,18 +145,7 @@ const EmergencyApproval = () => {
      }
    }, [UserID,RoleID,EmployeeID,PlantID]);
  
-      const handleCheckboxChange = (row) => {
-    setSelectedRows((prevSelected) => {
-      const isSelected = prevSelected.some(
-        (item) => item.Inward_ID === row.Inward_ID
-      );
-      if (isSelected) {
-        return prevSelected.filter((item) => item.Inward_ID !== row.Inward_ID);
-      } else {
-        return [...prevSelected, row];
-      }
-    });
-  };
+      
 
   
 
@@ -232,10 +218,10 @@ const EmergencyApproval = () => {
     
         console.log("Update payload:", data);
     
-        const response = await getUpdates(data);
+        const response = await EmergencyAprrove(data);
     
         if (response.data.success) {
-          alert(response.data.message);
+          alert('Emergency Procurement Approved');
           getData(); // Refresh table
           handleCloseModal(); // Close modal
         } else {
@@ -276,7 +262,7 @@ const EmergencyApproval = () => {
     const response = await getRejected(data);
 
     if (response.data.success) {
-      alert(response.data.message);
+      alert('Emergency Procurement Rejected');
       getData(); // Refresh table
       handleCloseModal(); // Close modal
     } else {

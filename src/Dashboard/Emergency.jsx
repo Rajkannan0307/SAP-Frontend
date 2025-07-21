@@ -62,7 +62,9 @@ const Emergency = () => {
   const [comment, setComment] = useState('');// const [updateRecord] = useState([]);
   // const [errRecord] = useState([]);
  const [Plant_ID, setPlantID] = useState("");
- 
+ const [isOnlyPurchaseOrderEditable, setIsOnlyPurchaseOrderEditable] = useState(false);
+
+
   const [MaterialDescription, setMaterialDescription] = useState("");
   const [openExcelDownloadModal, setOpenExcelDownloadModal] = useState(false);
   const [fromDate, setFromDate] = useState('');
@@ -228,21 +230,33 @@ const handleResubmit = async (InwardID) => {
     alert("Failed to resubmit. Please try again.");
   }
 };
-  const handleRowClick = (params) => {
-    get_Vendor();
+const handleRowClick = (params) => {
+  const approval1Status = params.row.Approval1_Status;
+  const approval2Status = params.row.Approval2_Status;
+
+  if (approval2Status === "Approved") {
+    // Allow only Purchase Order to be edited
+    setIsOnlyPurchaseOrderEditable(true);
+  } else {
+    // Allow all fields
+    setIsOnlyPurchaseOrderEditable(false);
+  }
+
+  get_Vendor();
+  setInwardID(params.row.Inward_ID);
+  setVendorCode(params.row.Vendor_ID);
+  setInvoiceQty(params.row.Invoice_Qty);
+  setMaterialDescription(params.row.Material_Description);
+  setInvoiceValue(params.row.Invoice_Value);
+  setPurchaseOrder(params.row.Purchase_Order);
+  setReasonForDelay(params.row.Reason_For_Delay);
+
+  setOpenEditModal(true);
+};
 
 
-    setInwardID(params.row.Inward_ID);
-    setVendorCode(params.row.Vendor_ID);
-    setInvoiceQty(params.row.Invoice_Qty); // ✅ Correct format for date input
-   setMaterialDescription(params.row.Material_Description)
 
-    setInvoiceValue(params.row.Invoice_Value);
-    setPurchaseOrder(params.row.Purchase_Order);
 
-    setReasonForDelay(params.row.Reason_For_Delay);
-    setOpenEditModal(true);
-  };
 
   // ✅ Search Functionality
   const handleSearch = () => {
@@ -778,87 +792,93 @@ const handleDownloadReportExcel = async () => {
           </h3>
 
            {/* Vendor Code */}
-          <FormControl fullWidth>
-            <InputLabel>Vendor Code</InputLabel>
-            <Select
-              label="Vendor Code"
-              name="Vendor Code"
-              value={VendorCode}
-              onChange={(e) => setVendorCode(e.target.value)}
-              required
-            >
-              {VendorTable.map((item) => (
-                <MenuItem key={item.Vendor_ID} value={item.Vendor_ID}>
-                  {item.Vendor_Code}-{item.Vendor_Name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {/* Vendor Code */}
+<FormControl fullWidth>
+  <InputLabel>Vendor Code</InputLabel>
+  <Select
+    label="Vendor Code"
+    value={VendorCode}
+    onChange={(e) => {
+      if (!isOnlyPurchaseOrderEditable) {
+        setVendorCode(e.target.value);
+      }
+    }}
+    sx={{
+      pointerEvents: isOnlyPurchaseOrderEditable ? "none" : "auto",
+      backgroundColor: "inherit",
+    }}
+    required
+  >
+    {VendorTable.map((item) => (
+      <MenuItem key={item.Vendor_ID} value={item.Vendor_ID}>
+        {item.Vendor_Code}-{item.Vendor_Name}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
 
-        
 
-        
-          {/* Invoice No */}
-          <TextField
-            label="Material Description"
-            name="Material Description"
-            value={MaterialDescription}
-            onChange={(e) => setMaterialDescription(e.target.value)}
-            required
-          />
+{/* Material Description */}
+<TextField
+  label="Material Description"
+  value={MaterialDescription}
+  onChange={(e) => setMaterialDescription(e.target.value)}
+  required
+  inputProps={{
+    readOnly: isOnlyPurchaseOrderEditable
+  }}
+/>
 
-         <TextField
-           label="Quantity"
-           type="text"
-           value={InvoiceQty}
-           onChange={(e) => {
-             const value = e.target.value;
-             if (/^\d*$/.test(value)) {
-               setInvoiceQty(value);
-             }
-           }}
-           inputProps={{
-             inputMode: 'numeric',
-             pattern: '[0-9]*',
-           
-           }}
-           required
-         />
-         
-         {/* Invoice Value */}
-         <TextField
-           label="Total Value"
-           type="text"
-           value={InvoiceValue}
-           onChange={(e) => {
-             const value = e.target.value;
-             if (/^\d*$/.test(value)) {
-               setInvoiceValue(value);
-             }
-           }}
-           inputProps={{
-             inputMode: 'numeric',
-             pattern: '[0-9]*',
-             
-           }}
-           required
-         />
-           
-          {/* Reason For Delay */}
-          <TextField
-            label="Reason "
-            name="Reason"
-            value={ReasonForDelay}
-            onChange={(e) => setReasonForDelay(e.target.value)}
-          />
-          {/* Purchase Order */}
-          <TextField
-            label="Purchase Order"
-            name="PurchaseOrder"
-            value={PurchaseOrder}
-            onChange={(e) => setPurchaseOrder(e.target.value)}
-           
-          />
+{/* Quantity */}
+<TextField
+  label="Quantity"
+  type="text"
+  value={InvoiceQty}
+  onChange={(e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) {
+      setInvoiceQty(value);
+    }
+  }}
+  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', readOnly: isOnlyPurchaseOrderEditable }}
+  required
+  
+/>
+
+{/* Invoice Value */}
+<TextField
+  label="Total Value"
+  type="text"
+  value={InvoiceValue}
+  onChange={(e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) {
+      setInvoiceValue(value);
+    }
+  }}
+  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', readOnly: isOnlyPurchaseOrderEditable  }}
+  required
+  
+/>
+
+{/* Reason */}
+<TextField
+  label="Reason"
+  value={ReasonForDelay}
+  onChange={(e) => setReasonForDelay(e.target.value)}
+   inputProps={{
+    readOnly: isOnlyPurchaseOrderEditable
+  }}
+/>
+
+{/* ✅ Purchase Order (always editable) */}
+<TextField
+  label="Purchase Order"
+  value={PurchaseOrder}
+  onChange={(e) => setPurchaseOrder(e.target.value)}
+  disabled={false}
+/>
+
           <Box
             sx={{
               gridColumn: "span 2",
@@ -917,7 +937,7 @@ const handleDownloadReportExcel = async () => {
     <div style={{ display: "flex", justifyContent: "center", gap: "16px" }}>
       <Button
         onClick={handleCloseResubmitModal}
-        variant="outlined"
+        variant="contained"
         color="error"
         style={{ textTransform: "none" }}
       >

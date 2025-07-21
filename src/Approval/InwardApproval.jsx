@@ -76,7 +76,7 @@ const InwardApproval = () => {
       headerName: "Action",
       flex: 1,
       renderCell: (params) => (
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex",gap: 8 }}>
           {/* Approve Icon */}
           <IconButton
             size="large"
@@ -98,10 +98,7 @@ const InwardApproval = () => {
           )}
 
           {/* Checkbox */}
-          <Checkbox
-            checked={selectedRows.includes(params.row)}
-            onChange={() => handleCheckboxChange(params.row)}
-          />
+         
         </div>
       ),
     },
@@ -156,18 +153,7 @@ const InwardApproval = () => {
     </GridToolbarContainer>
   );
 
-  const handleCheckboxChange = (row) => {
-    setSelectedRows((prevSelected) => {
-      const isSelected = prevSelected.some(
-        (item) => item.Inward_ID === row.Inward_ID
-      );
-      if (isSelected) {
-        return prevSelected.filter((item) => item.Inward_ID !== row.Inward_ID);
-      } else {
-        return [...prevSelected, row];
-      }
-    });
-  };
+
 
   const handleSearch = () => {
     const text = searchText.trim().toLowerCase();

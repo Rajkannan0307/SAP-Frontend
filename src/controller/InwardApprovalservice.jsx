@@ -32,6 +32,10 @@ export const getdetailsEmergency = async (UserID, RoleID, PlantID, EmployeeID) =
     const response = await axios.put(`${api}/InwardApproval/Get_Updates`, data);
     return response;
   };
+ export const EmergencyAprrove = async (data)=>{
+    const response = await axios.put(`${api}/InwardApproval/EmergencyAprrove`, data);
+    return response;
+  };
 
   export const getRejected = async (data)=>{
     const response = await axios.put(`${api}/InwardApproval/Rejected`, data);

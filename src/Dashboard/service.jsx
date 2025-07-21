@@ -1025,7 +1025,7 @@ const handleDownloadReportExcel = async () => {
     <div style={{ display: "flex", justifyContent: "center", gap: "16px" }}>
       <Button
         onClick={handleCloseResubmitModal}
-        variant="outlined"
+        variant="contained"
         color="error"
         style={{ textTransform: "none" }}
       >

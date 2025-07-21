@@ -163,19 +163,19 @@ const handleLogin = async (e) => {
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundAttachment: "fixed",
-          backgroundColor: "#E0F7FA ",
+          backgroundColor: "#f5f5f5 ",
         }}
       >
         {/* Centered Header */}
        <h1
   style={{
     textAlign: "center",
-    marginBottom: "20px",
+    marginBottom: "30px",
     color: "#1B5088",
-    fontSize: "65px",
+    fontSize: "55px",
     fontFamily:"serif",
     //marginBottom:"70px", // Increase the font size here
-    marginTop:-23
+    marginTop:-75
   }}
 >
   SAP-APPROVAL WORKFLOW
