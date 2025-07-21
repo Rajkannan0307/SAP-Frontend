@@ -995,7 +995,7 @@ const handleDownloadReportExcel = async () => {
         fontWeight: 'bold', // ✅ Correct way to set bold font
       }}
     >
-      Inward Approval Status
+      Emergency Approval Status
     </Typography>
 
     {selectedRow && (
