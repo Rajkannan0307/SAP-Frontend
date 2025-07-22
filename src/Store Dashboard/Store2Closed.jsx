@@ -303,7 +303,7 @@ const handleExcelDownload = async (code, fromDate, toDate) => {
     const wb = XLSX.utils.book_new();
 
     const metadata = [
-      ["", "", "Store 1", ""], // C1:D1
+      ["", "", "Store 2", ""], // C1:D1
       ["", "From Date", fromDate, "To Date", toDate], // C2–F2
       [],
     ];
