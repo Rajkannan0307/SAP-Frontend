@@ -21,10 +21,10 @@ export const getdetailsStoreClosed = async (plantId, storageCode) => {
   return response.data;
 };
 
-export const getdetailsExcelDownload = async (plantId, fromDate, toDate, storageCode) => {
+export const getdetailsExcelDownload = async (fromDate, toDate, storageCode) => {
   const response = await axios.get(`${api}/StoreDashboard/get_detailsStoreExcelDownload`, {
     params: {
-      plantId,
+      
       fromDate,
       toDate,
       storageCode,
@@ -32,6 +32,7 @@ export const getdetailsExcelDownload = async (plantId, fromDate, toDate, storage
   });
   return response.data;
 };
+
 
 
 
