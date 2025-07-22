@@ -355,7 +355,7 @@ const handleExcelDownload = async (code, fromDate, toDate) => {
         const cell = wsSummary[cellRef];
         if (!cell) continue;
 
-        // Title styling
+        // Title styling (C1:D1)
         if (R === 0 && (C === 2 || C === 3)) {
           cell.s = {
             font: { bold: true, sz: 14 },
@@ -364,7 +364,7 @@ const handleExcelDownload = async (code, fromDate, toDate) => {
           };
         }
 
-        // Date row styling
+        // From/To Date Row Styling (C2–F2)
         if (R === 1 && C >= 1 && C <= 4) {
           cell.s = {
             font: { bold: true },
@@ -373,10 +373,10 @@ const handleExcelDownload = async (code, fromDate, toDate) => {
           };
         }
 
-        // Header row
+        // Header row styling
         if (R === headerRowIndex) {
           cell.s = {
-            font: { bold: true, color: { rgb: "000000" } },
+            font: { bold: true },
             alignment: { horizontal: "center", vertical: "center", wrapText: true },
             fill: { fgColor: { rgb: "FFD966" } },
             border: {
@@ -388,12 +388,12 @@ const handleExcelDownload = async (code, fromDate, toDate) => {
           };
         }
 
-        // Subtotal row styling with conditional colors
+        // Subtotal row
         if (R === subtotalRowIndex) {
           let fillColor = "DDEBF7";
-          if (C === 4) fillColor = "C6EFCE";       // Green
-          else if (C === 5) fillColor = "FFF9C4";   // Yellow
-          else if (C === 6) fillColor = "FFC7CE";   // Red
+          if (C === 4) fillColor = "C6EFCE";
+          else if (C === 5) fillColor = "FFF9C4";
+          else if (C === 6) fillColor = "FFC7CE";
 
           cell.s = {
             font: { bold: true },
@@ -403,11 +403,11 @@ const handleExcelDownload = async (code, fromDate, toDate) => {
           };
         }
 
-        // Conditional coloring for data rows
+        // Data cell coloring (not subtotal)
         if (R > headerRowIndex && R < subtotalRowIndex) {
-          if (C === 4) cell.s = { fill: { fgColor: { rgb: "C6EFCE" } } }; // Green
-          if (C === 5) cell.s = { fill: { fgColor: { rgb: "FFEB9C" } } }; // Yellow
-          if (C === 6) cell.s = { fill: { fgColor: { rgb: "F4CCCC" } } }; // Red
+          if (C === 4) cell.s = { fill: { fgColor: { rgb: "C6EFCE" } } };
+          if (C === 5) cell.s = { fill: { fgColor: { rgb: "FFF9C4" } } };
+          if (C === 6) cell.s = { fill: { fgColor: { rgb: "FFC7CE" } } };
         }
       }
     }
@@ -419,9 +419,30 @@ const handleExcelDownload = async (code, fromDate, toDate) => {
 
     XLSX.utils.book_append_sheet(wb, wsSummary, "Closed Orders");
 
-    // SPLIT VIEW Sheet
-    const formattedSplit = splitViewData.map(row => ({ ...row }));
-    const wsSplit = XLSX.utils.json_to_sheet(formattedSplit);
+    // ✅ Split View: Use only specific columns
+    const splitColumns = [
+   
+      "Sup_Name",
+      "Order_No",
+      "Order_Qty",
+      "Material_No",
+      "Material_Description",
+      "Order_Created_Date",
+      "Order_Closed_Date",
+      "Supv_Lead_Time",
+      "TotalDuration",
+      "Ontime_or_Delay",
+      
+    ];
+
+    const splitFormatted = splitViewData.map(row =>
+      splitColumns.reduce((obj, col) => {
+        obj[col] = row[col] || "";
+        return obj;
+      }, {})
+    );
+
+    const wsSplit = XLSX.utils.json_to_sheet(splitFormatted);
 
     const splitRange = XLSX.utils.decode_range(wsSplit['!ref']);
     for (let C = splitRange.s.c; C <= splitRange.e.c; ++C) {
@@ -429,7 +450,7 @@ const handleExcelDownload = async (code, fromDate, toDate) => {
       if (!wsSplit[cellRef]) continue;
 
       wsSplit[cellRef].s = {
-        font: { bold: true, color: { rgb: "000000" } },
+        font: { bold: true },
         alignment: { horizontal: "center", vertical: "center", wrapText: true },
         fill: { fgColor: { rgb: "FFD966" } },
         border: {
@@ -441,7 +462,7 @@ const handleExcelDownload = async (code, fromDate, toDate) => {
       };
     }
 
-    wsSplit['!cols'] = Object.keys(formattedSplit[0] || {}).map(() => ({ wch: 20 }));
+    wsSplit['!cols'] = splitColumns.map(() => ({ wch: 20 }));
     XLSX.utils.book_append_sheet(wb, wsSplit, "Order Details");
 
     XLSX.writeFile(wb, `Store1_Closed_${fromDate}_to_${toDate}.xlsx`, {
@@ -453,6 +474,7 @@ const handleExcelDownload = async (code, fromDate, toDate) => {
     alert("Download failed");
   }
 };
+
 
 
 

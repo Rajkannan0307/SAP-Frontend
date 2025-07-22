@@ -13,7 +13,7 @@ import {
   GridToolbarFilterButton,
   GridToolbarExport,
 } from "@mui/x-data-grid";
-import { getdetailsStoreClosed,getdetailsStoreClosedByDate } from "../controller/StoreDashboardapiservice"; // make sure this accepts plantId + storageCode
+import { getdetailsStoreClosed,getdetailsStoreClosedByDate,getdetailsExcelDownload } from "../controller/StoreDashboardapiservice"; // make sure this accepts plantId + storageCode
 import { decryptSessionData } from "../controller/StorageUtils";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import * as XLSX from 'xlsx-js-style';
@@ -187,23 +187,25 @@ const displayRows = [
 
 
 const getData = async (plantId, code) => {
-    try {
-      const response = await getdetailsStoreClosed(plantId, code);
-      console.log("closed 1 ordrs",response)
-      const processed = response.map((row, index) => ({
-        id: row.Prdord_ID || index,
-        sno: index + 1,
-        ...row,
-      }));
-      setRows(processed);
-      setIsFiltered(false);
-      setFilteredRows(response);
-calculateSubtotal(response);
+  const storageCode = typeof code === "object" && code?.value ? code.value : code;
 
-    } catch (err) {
-      console.error("Error fetching open orders:", err);
-    }
-  };
+  try {
+    const response = await getdetailsStoreClosed(plantId, storageCode);
+    console.log("closed 1 ordrs", response);
+    const processed = response.map((row, index) => ({
+      id: row.Prdord_ID || index,
+      sno: index + 1,
+      ...row,
+    }));
+    setRows(processed);
+    setIsFiltered(false);
+    setFilteredRows(response);
+    calculateSubtotal(response);
+  } catch (err) {
+    console.error("Error fetching open orders:", err);
+  }
+};
+
 
  const getDataByDate = async (plantId, code, from, to) => {
   try {
@@ -221,6 +223,31 @@ calculateSubtotal(response);
     console.error("Error fetching date-filtered open orders:", err);
   }
 };
+
+const getExcel = async (plantId, code, from, to) => {
+  try {
+    const response = await getdetailsExcelDownload(plantId, from, to, code);
+    console.log("Excel API raw response", response);
+
+    const summaryData = response.summaryData || [];
+    const splitViewData = response.splitViewData || [];
+
+    const subtotal = {
+      No_Of_Orders: summaryData.reduce((acc, cur) => acc + (cur.No_Of_Orders || 0), 0),
+      No_Of_Open_Orders: summaryData.reduce((acc, cur) => acc + (cur.No_Of_Open_Orders || 0), 0),
+      No_Order_Close: summaryData.reduce((acc, cur) => acc + (cur.No_Order_Close || 0), 0),
+      Issue_Posted_on_Time: summaryData.reduce((acc, cur) => acc + (cur.Issue_Posted_on_Time || 0), 0),
+      Issue_Posted_Delay60: summaryData.reduce((acc, cur) => acc + (cur.Issue_Posted_Delay60 || 0), 0),
+      Issue_Posted_Delay: summaryData.reduce((acc, cur) => acc + (cur.Issue_Posted_Delay || 0), 0),
+    };
+
+    return { summaryData, splitViewData, subtotal };
+  } catch (err) {
+    console.error("Error fetching excel data:", err);
+    return { summaryData: [], splitViewData: [], subtotal: {} };
+  }
+};
+
 
 
   const calculateSubtotal = (rowsData) => {
@@ -244,128 +271,235 @@ calculateSubtotal(response);
 
   setSubtotal(total);
 };
-const handleExcelDownload = () => {
-  const exportData = isFiltered ? filteredRows : rows;
 
-  if (exportData.length === 0) {
-    alert("No Data Found");
-    return;
-  }
 
-  const DataColumns = [
-    "Sup_Name",
-    "No_Of_Open_Orders",
-    "No_Of_Orders",
-    "No_Order_Close",
-    "Material_Issue_Posted_on_Time",
-    "Material_Issue_Posted_Delay60",
-    "Material_Issued_Delayed",
-  ];
-
-  const formattedData = exportData.map((item) => ({
-    Sup_Name: item.Sup_Name,
-    No_Of_Open_Orders: item.No_Of_Open_Orders,
-    No_Of_Orders: item.No_Of_Orders,
-    No_Order_Close: item.No_Order_Close,
-    Material_Issue_Posted_on_Time: item.Issue_Posted_on_Time,
-    Material_Issue_Posted_Delay60: item.Issue_Posted_Delay60,
-    Material_Issued_Delayed: item.Issue_Posted_Delay,
-  }));
-
-  // Add blank row before subtotal
-formattedData.push({});
-
-// Add subtotal row after the blank row
-formattedData.push({
-  Sup_Name: "SubTotal",
-  No_Of_Open_Orders: subtotal.No_Of_Open_Orders,
-  No_Of_Orders: subtotal.No_Of_Orders,
-  No_Order_Close: subtotal.No_Order_Close,
-  Material_Issue_Posted_on_Time: subtotal.Issue_Posted_on_Time,
-  Material_Issue_Posted_Delay60: subtotal.Issue_Posted_Delay60,
-  Material_Issued_Delayed: subtotal.Issue_Posted_Delay,
-});
-
-  const worksheet = XLSX.utils.json_to_sheet(formattedData, {
-    header: DataColumns,
-  });
-
-  worksheet["!cols"] = [
-    { wch: 30 },
-    { wch: 20 },
-    { wch: 20 },
-    { wch: 20 },
-    { wch: 35 },
-    { wch: 35 },
-    { wch: 35 },
-  ];
-
-  // Header styling
-  DataColumns.forEach((_, colIndex) => {
-    const cell = XLSX.utils.encode_cell({ c: colIndex, r: 0 });
-    if (worksheet[cell]) {
-      worksheet[cell].s = {
-        font: { bold: true },
-        fill: { fgColor: { rgb: "FFFF00" } }, // Yellow
-        alignment: { horizontal: "center" },
-      };
+const handleExcelDownload = async (code, fromDate, toDate) => {
+  try {
+    const storageCode = typeof code === "object" && code?.value ? code.value : code;
+    if (!fromDate || !toDate || !storageCode) {
+      alert("Missing required parameters.");
+      return;
     }
-  });
 
-  const totalRows = formattedData.length;
+    const response = await getdetailsExcelDownload(fromDate, toDate, storageCode);
+    console.log("excel data",response)
+    const summaryData = response.summaryData || [];
+    const splitViewData = response.splitViewData || [];
 
-  // Style regular data rows (1 to totalRows - 1)
-  for (let row = 1; row < totalRows; row++) {
-    for (let col = 1; col < DataColumns.length; col++) {
-      const cell = XLSX.utils.encode_cell({ c: col, r: row });
-      if (!worksheet[cell]) continue;
-
-      let fillColor = null;
-
-      if (col === 4) fillColor = "C6EFCE"; // Green for OnTime
-      else if (col === 5) fillColor = "FFF9C4"; // Light Yellow for Delay60
-      else if (col === 6) fillColor = "F8CBAD"; // Light Red for Delayed
-
-      worksheet[cell].s = {
-        alignment: { horizontal: "center" },
-        ...(fillColor && { fill: { fgColor: { rgb: fillColor } } }),
-      };
+    if (summaryData.length === 0 && splitViewData.length === 0) {
+      alert("No Data Found");
+      return;
     }
-  }
 
-  // Style subtotal row (bold + fill colors)
-    const subtotalRowIndex = totalRows;
-  for (let col = 0; col < DataColumns.length; col++) {
-    const cell = XLSX.utils.encode_cell({ c: col, r: subtotalRowIndex });
-    if (!worksheet[cell]) continue;
-
-    let fillColor = "DDEBF7"; // Light blue for full subtotal row background
-    let textColor = "000000"; // Black text
-
-    if (col === 4) fillColor = "C6EFCE"; // Green for OnTime
-    else if (col === 5) fillColor = "FFF9C4"; // Yellow for Delay60
-    else if (col === 6) fillColor = "F8CBAD"; // Red for Delayed
-
-    worksheet[cell].s = {
-      font: { bold: true, color: { rgb: textColor } },
-      alignment: { horizontal: col === 0 ? "left" : "center" },
-      fill: { fgColor: { rgb: fillColor } },
-      border: {
-        top: { style: "medium", color: { rgb: "000000" } }, // Bold top border
-      },
+    const subtotal = {
+      No_Of_Orders: summaryData.reduce((a, b) => a + (b.No_Of_Orders || 0), 0),
+      No_Of_Open_Orders: summaryData.reduce((a, b) => a + (b.No_Of_Open_Orders || 0), 0),
+      No_Order_Close: summaryData.reduce((a, b) => a + (b.No_Order_Close || 0), 0),
+      Issue_Posted_on_Time: summaryData.reduce((a, b) => a + (b.Issue_Posted_on_Time || 0), 0),
+      Issue_Posted_Delay60: summaryData.reduce((a, b) => a + (b.Issue_Posted_Delay60 || 0), 0),
+      Issue_Posted_Delay: summaryData.reduce((a, b) => a + (b.Issue_Posted_Delay || 0), 0),
     };
+
+    const wb = XLSX.utils.book_new();
+
+    const metadata = [
+      ["", "", "Store 1", ""], // C1:D1
+      ["", "From Date", fromDate, "To Date", toDate], // C2–F2
+      [],
+    ];
+
+    const summaryHeaders = [
+      "Sup_Name",
+      "No_Of_Orders",
+      "No_Of_Open_Orders",
+      "No_Order_Close",
+      "Issue_Posted_on_Time",
+      "Issue_Posted_Delay60",
+      "Issue_Posted_Delay",
+    ];
+
+    const summaryRows = summaryData.map(row => [
+      row.Sup_Name,
+      row.No_Of_Orders,
+      row.No_Of_Open_Orders,
+      row.No_Order_Close,
+      row.Issue_Posted_on_Time,
+      row.Issue_Posted_Delay60,
+      row.Issue_Posted_Delay,
+    ]);
+
+    const subtotalRow = [
+      "SubTotal",
+      subtotal.No_Of_Orders,
+      subtotal.No_Of_Open_Orders,
+      subtotal.No_Order_Close,
+      subtotal.Issue_Posted_on_Time,
+      subtotal.Issue_Posted_Delay60,
+      subtotal.Issue_Posted_Delay,
+    ];
+
+    const summarySheetData = [...metadata, summaryHeaders, ...summaryRows, subtotalRow];
+    const wsSummary = XLSX.utils.aoa_to_sheet(summarySheetData);
+
+    // Merge C1:D1
+    wsSummary["!merges"] = [{ s: { r: 0, c: 2 }, e: { r: 0, c: 3 } }];
+
+    const range = XLSX.utils.decode_range(wsSummary['!ref']);
+    const totalRows = summarySheetData.length;
+    const headerRowIndex = metadata.length;
+    const subtotalRowIndex = totalRows - 1;
+
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+        const cell = wsSummary[cellRef];
+        if (!cell) continue;
+
+        // Title styling (C1:D1)
+        if (R === 0 && (C === 2 || C === 3)) {
+          cell.s = {
+            font: { bold: true, sz: 14 },
+            alignment: { horizontal: "center", vertical: "center" },
+            fill: { fgColor: { rgb: "D9E1F2" } },
+          };
+        }
+
+        // From/To Date Row Styling (C2–F2)
+        if (R === 1 && C >= 1 && C <= 4) {
+          cell.s = {
+            font: { bold: true },
+            alignment: { horizontal: "center" },
+            fill: { fgColor: { rgb: "FCE4D6" } },
+          };
+        }
+
+        // Header row styling
+        if (R === headerRowIndex) {
+          cell.s = {
+            font: { bold: true },
+            alignment: { horizontal: "center", vertical: "center", wrapText: true },
+            fill: { fgColor: { rgb: "FFD966" } },
+            border: {
+              top: { style: "thin", color: { rgb: "000000" } },
+              bottom: { style: "thin", color: { rgb: "000000" } },
+              left: { style: "thin", color: { rgb: "000000" } },
+              right: { style: "thin", color: { rgb: "000000" } },
+            },
+          };
+        }
+
+        // Subtotal row
+        if (R === subtotalRowIndex) {
+          let fillColor = "DDEBF7";
+          if (C === 4) fillColor = "C6EFCE";
+          else if (C === 5) fillColor = "FFF9C4";
+          else if (C === 6) fillColor = "FFC7CE";
+
+          cell.s = {
+            font: { bold: true },
+            alignment: { horizontal: C === 0 ? "left" : "center" },
+            fill: { fgColor: { rgb: fillColor } },
+            border: { top: { style: "medium", color: { rgb: "000000" } } },
+          };
+        }
+
+        // Data cell coloring (not subtotal)
+        if (R > headerRowIndex && R < subtotalRowIndex) {
+          if (C === 4) cell.s = { fill: { fgColor: { rgb: "C6EFCE" } } };
+          if (C === 5) cell.s = { fill: { fgColor: { rgb: "FFF9C4" } } };
+          if (C === 6) cell.s = { fill: { fgColor: { rgb: "FFC7CE" } } };
+        }
+      }
+    }
+
+    wsSummary['!cols'] = [
+      { wch: 30 }, { wch: 18 }, { wch: 20 },
+      { wch: 20 }, { wch: 25 }, { wch: 25 }, { wch: 25 }
+    ];
+
+    XLSX.utils.book_append_sheet(wb, wsSummary, "Closed Orders");
+
+    // ✅ Split View: Use only specific columns
+    const splitColumns = [
+   
+      "Sup_Name",
+      "Order_No",
+      "Order_Qty",
+      "Material_No",
+      "Material_Description",
+      "Order_Created_Date",
+      "Order_Closed_Date",
+      "Supv_Lead_Time",
+      "TotalDuration",
+      "Ontime_or_Delay",
+      
+    ];
+
+    const splitFormatted = splitViewData.map(row =>
+      splitColumns.reduce((obj, col) => {
+        obj[col] = row[col] || "";
+        return obj;
+      }, {})
+    );
+
+    const wsSplit = XLSX.utils.json_to_sheet(splitFormatted);
+
+    const splitRange = XLSX.utils.decode_range(wsSplit['!ref']);
+    for (let C = splitRange.s.c; C <= splitRange.e.c; ++C) {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: C });
+      if (!wsSplit[cellRef]) continue;
+
+      wsSplit[cellRef].s = {
+        font: { bold: true },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        fill: { fgColor: { rgb: "FFD966" } },
+        border: {
+          top: { style: "thin", color: { rgb: "000000" } },
+          bottom: { style: "thin", color: { rgb: "000000" } },
+          left: { style: "thin", color: { rgb: "000000" } },
+          right: { style: "thin", color: { rgb: "000000" } },
+        },
+      };
+    }
+
+    wsSplit['!cols'] = splitColumns.map(() => ({ wch: 20 }));
+    XLSX.utils.book_append_sheet(wb, wsSplit, "Order Details");
+
+    XLSX.writeFile(wb, `Store3_Closed_${fromDate}_to_${toDate}.xlsx`, {
+      bookType: "xlsx",
+      cellStyles: true,
+    });
+  } catch (err) {
+    console.error("Excel download error:", err);
+    alert("Download failed");
   }
-
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Closed Orders");
-
-  const today = new Date();
-  const fileName = `Store3_ClosedOrders_${today.getFullYear()}${String(
-    today.getMonth() + 1
-  ).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}.xlsx`;
-
-  XLSX.writeFile(workbook, fileName);
 };
+
+
+
+
+
+
+
+
+
+
+
+// ✅ Helper: Format date to YYYY-MM-DD
+const formatDate = (date) => {
+  const d = new Date(date);
+  if (isNaN(d)) return "";
+  return d.toISOString().split("T")[0];
+};
+
+
+
+
+
+
+
+
+
 
 
 
@@ -478,8 +612,8 @@ formattedData.push({
   <SearchIcon sx={{ color: "#2e59d9", width:"12px" ,height:"12px"}} />
 </IconButton>
 <IconButton
-  onClick={handleExcelDownload}
-  sx={{ backgroundColor: "white",   }}
+  onClick={() => handleExcelDownload(storageCode, fromDate, toDate)}
+  sx={{ backgroundColor: "white" }}
 >
   <FaFileExcel style={{ color: "#06462b", width: "18px", height: "20px" }} />
 </IconButton>
