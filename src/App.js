@@ -78,7 +78,7 @@ const App = () => {
         <Routes>
 
           <Route path="/" element={<Login />} />
- <Route path="/:plantCode/:storageCodes" element={<Store1 />} />
+ <Route path="Store/:plantCode/:storageCodes" element={<Store1 />} />
 
            
           {/* Protected Routes with Role-Based Access */}
