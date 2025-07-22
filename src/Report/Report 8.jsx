@@ -31,7 +31,7 @@ const Report8 = () => {
 
       const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
       const fileExtension = ".xlsx";
-      const fileName = "Trn_311_Movement_List";
+      const fileName = "Trn_Rs1_Movement_List";
 
       // Convert JSON response to worksheet
       const ws = XLSX.utils.json_to_sheet(response.data);
