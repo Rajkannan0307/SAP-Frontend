@@ -24,11 +24,7 @@ export const getVendor = async ()=>{
   const response = await axios.get(`${api}/Emergency/Get_Vendor`);
   return response;
 };
-export const getMaterial = async ()=>{
 
-  const response = await axios.get(`${api}/Emergency/Get_Material`);
-  return response;
-};
 
 
    export const Resubmit = async (data) => {

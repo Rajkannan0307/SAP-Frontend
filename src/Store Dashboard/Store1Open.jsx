@@ -75,7 +75,12 @@ const Store1Open = ({ storageCode }) => {
     }
   };
 
+ 
   useEffect(() => {
+    const interval = setInterval(() => {
+      window.location.reload();
+    }, 600000); // 10 min refresh
+
     const encryptedData = sessionStorage.getItem("userData");
     if (encryptedData) {
       const decrypted = decryptSessionData(encryptedData);
@@ -87,7 +92,10 @@ const Store1Open = ({ storageCode }) => {
         }
       }
     }
+
+  return () => clearInterval(interval);
   }, [storageCode]);
+
 
   const CustomToolbar = () => (
     <GridToolbarContainer>

@@ -509,9 +509,9 @@ const formatDate = (date) => {
 
 
   useEffect(() => {
-  //    const interval = setInterval(() => {
-  //   window.location.reload();
-  // }, 60000); // 2 minutes in ms
+     const interval = setInterval(() => {
+    window.location.reload();
+  }, 600000); //  minutes in ms
 
     const encryptedData = sessionStorage.getItem("userData");
     if (encryptedData) {
@@ -524,7 +524,7 @@ const formatDate = (date) => {
         }
       }
     }
-   // return () => clearInterval(interval);
+    return () => clearInterval(interval);
   }, [storageCode]);
 
   const CustomToolbar = () => (

@@ -75,9 +75,9 @@ const Store3Open = ({ storageCode }) => {
   // };
 
   useEffect(() => {
-    // const interval = setInterval(() => {
-    //   window.location.reload();
-    // }, 60000); // 1 min refresh
+    const interval = setInterval(() => {
+      window.location.reload();
+    }, 600000); // 1 min refresh
 
     const encryptedData = sessionStorage.getItem("userData");
     if (encryptedData) {
@@ -91,7 +91,7 @@ const Store3Open = ({ storageCode }) => {
       }
     }
 
-    //return () => clearInterval(interval);
+    return () => clearInterval(interval);
   }, [storageCode]);
 
   const CustomToolbar = () => (
