@@ -16,17 +16,7 @@ export const getReportOptions = async () => {
 };
 
 
-// ✅ FIXED: Update this path to match backend
 
-// export const getReportData = async (fromDate, toDate) => {
-//   const response = await axios.get(`${api}/ApprovedReports/getReportData`, {
-//     params: {
-//       From: fromDate,
-//       to: toDate,
-//     }
-//   });
-//   return response;
-// };
 
 export const getReportData = async (reportType, fromDate, toDate) => {
   const response = await axios.get(`${api}/ApprovedReports/getReportData`, {
