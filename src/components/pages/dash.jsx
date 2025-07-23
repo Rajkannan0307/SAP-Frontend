@@ -50,7 +50,7 @@ const Dashboard = () => {
         navigate("/home/Emergency"); // Navigate on button click
       };
       const handleClickMaterial = () => {
-        navigate("/home/Material"); // Navigate on button click
+        navigate("/home/MaterialStatus"); // Navigate on button click
       };
       const handleClickRs = () => {
         navigate("/home/ConversionRs1"); // Navigate on button click

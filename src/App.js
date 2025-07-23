@@ -69,7 +69,7 @@ import Line from "./Masters/Line"
 import ProductionPlan from "./Production plan/ProductionPlan"
 import StoreDashboard from "./Store Dashboard/StoreDashboard"
 import Store1 from"./StoreUrl/store1url"
-
+import MaterialStatus from"./Dashboard/MaterialStatus"
 
 const App = () => {
   return (
@@ -123,6 +123,7 @@ const App = () => {
             <Route path="phy" element={<ProtectedRoute><Phy /></ProtectedRoute>} />
             <Route path="Emergency" element={<ProtectedRoute><Emergency /></ProtectedRoute>} />
             <Route path="RGP" element={<ProtectedRoute><RGP /></ProtectedRoute>} />
+              <Route path="MaterialStatus" element={<ProtectedRoute><MaterialStatus /></ProtectedRoute>} />
 
 
             <Route path="Stock201" element={<ProtectedRoute><Stock201 /></ProtectedRoute>} />
