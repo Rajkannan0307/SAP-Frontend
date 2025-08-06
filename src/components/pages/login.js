@@ -18,6 +18,7 @@ import {
   decryptSessionData,
 } from "../../controller/StorageUtils";
 import { AuthContext } from "../../Authentication/AuthContext";
+import { IoHome } from "react-icons/io5";
 
 const Login = () => {
   const [username, setUserName] = useState("");
@@ -33,110 +34,110 @@ const Login = () => {
     setOpenError(false);
     setOpenSuccess(false);
   };
-const handleLogin = async (e) => {
-  e.preventDefault();
+  const handleLogin = async (e) => {
+    e.preventDefault();
 
-  if (!username || !password) {
-    setError("Enter Username and Password");
-    setOpenError(true);
-    return;
-  }
+    if (!username || !password) {
+      setError("Enter Username and Password");
+      setOpenError(true);
+      return;
+    }
 
-  try {
-    const response = await getLogin({
-      Employee_ID: username,
-      Password: password,
-    });
+    try {
+      const response = await getLogin({
+        Employee_ID: username,
+        Password: password,
+      });
 
-    if (response.data.message === "success") {
-      const data = response.data.resultLocalStorage[0];
-      if (data) {
-        localStorage.setItem("Active", data.Active_Status);
-        localStorage.setItem("DeptId", data.Dept_Id);
-        localStorage.setItem("UserName", data.User_Name);
-        localStorage.setItem("UserID", data.User_ID);
-        localStorage.setItem("Deptname", data.Dept_Name);
-        localStorage.setItem("PlantName", data.Plant_Name);
-        localStorage.setItem("Email", data.User_Email);
-        localStorage.setItem("Plantcode", data.Plant_Code);
-        localStorage.setItem("EmpId", data.Employee_ID);
-        localStorage.setItem("RoleID", data.Role_ID);
-        localStorage.setItem("Approval_Level", data.User_Level_ID);
-        localStorage.setItem("UserLevel", data.User_Level);
-        localStorage.setItem("Permission", data.Screen_Codes);
-        localStorage.setItem("Plant_ID", data.Plant_ID);
-        localStorage.setItem("CompanyId", data.Com_ID);
+      if (response.data.message === "success") {
+        const data = response.data.resultLocalStorage[0];
+        if (data) {
+          localStorage.setItem("Active", data.Active_Status);
+          localStorage.setItem("DeptId", data.Dept_Id);
+          localStorage.setItem("UserName", data.User_Name);
+          localStorage.setItem("UserID", data.User_ID);
+          localStorage.setItem("Deptname", data.Dept_Name);
+          localStorage.setItem("PlantName", data.Plant_Name);
+          localStorage.setItem("Email", data.User_Email);
+          localStorage.setItem("Plantcode", data.Plant_Code);
+          localStorage.setItem("EmpId", data.Employee_ID);
+          localStorage.setItem("RoleID", data.Role_ID);
+          localStorage.setItem("Approval_Level", data.User_Level_ID);
+          localStorage.setItem("UserLevel", data.User_Level);
+          localStorage.setItem("Permission", data.Screen_Codes);
+          localStorage.setItem("Plant_ID", data.Plant_ID);
+          localStorage.setItem("CompanyId", data.Com_ID);
 
-        const selectedData = {
-          Active: data.Active_Status,
-          DeptId: data.Dept_Id,
-          UserName: data.User_Name,
-          UserID: data.User_ID,
-          DeptName: data.Dept_Name,
-          PlantName: data.Plant_Name,
-          Email: data.User_Email,
-          PlantCode: data.Plant_Code,
-          EmpId: data.Employee_ID,
-          RoleId: data.Role_ID,
-          UserLevelName: data.User_Level_Name,
-          CompanyCode: data.Company_code,
-          CompanyName: data.Company_name,
-          CompanyId: data.Com_ID,
-          PlantID: data.Plant_ID,
-          UserLevel: data.User_Level,
-          Role: data.Role_Name,
-          Permissions: data.Screen_Codes,
-          login: true,
-        };
+          const selectedData = {
+            Active: data.Active_Status,
+            DeptId: data.Dept_Id,
+            UserName: data.User_Name,
+            UserID: data.User_ID,
+            DeptName: data.Dept_Name,
+            PlantName: data.Plant_Name,
+            Email: data.User_Email,
+            PlantCode: data.Plant_Code,
+            EmpId: data.Employee_ID,
+            RoleId: data.Role_ID,
+            UserLevelName: data.User_Level_Name,
+            CompanyCode: data.Company_code,
+            CompanyName: data.Company_name,
+            CompanyId: data.Com_ID,
+            PlantID: data.Plant_ID,
+            UserLevel: data.User_Level,
+            Role: data.Role_Name,
+            Permissions: data.Screen_Codes,
+            login: true,
+          };
 
-        const encryptedData = encryptSessionData(selectedData);
-        sessionStorage.setItem("userData", encryptedData);
+          const encryptedData = encryptSessionData(selectedData);
+          sessionStorage.setItem("userData", encryptedData);
 
-        const encryptedUserData = sessionStorage.getItem("userData");
-        const decryptedUserData = decryptSessionData(encryptedUserData);
-        console.log("decrypted userdata:", decryptedUserData);
-        setSuccessMessage("Login successful!");
-        setOpenSuccess(true);
+          const encryptedUserData = sessionStorage.getItem("userData");
+          const decryptedUserData = decryptSessionData(encryptedUserData);
+          console.log("decrypted userdata:", decryptedUserData);
+          setSuccessMessage("Login successful!");
+          setOpenSuccess(true);
 
-        // Role-based redirection
-        setTimeout(() => {
-          switch (data.Role_ID) {
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-            case 8:
+          // Role-based redirection
+          setTimeout(() => {
+            switch (data.Role_ID) {
+              case 2:
+              case 3:
+              case 4:
+              case 5:
+              case 6:
+              case 7:
+              case 8:
               case 10:
-              window.location.href = "/home/HomePage";
-              break;
-            case 1:
-            case 9:
+                window.location.href = "/home/HomePage";
+                break;
+              case 1:
+              case 9:
               case 11:
-              window.location.href = "/home/Home";
-              break;
-          }
-        }, 100);
+                window.location.href = "/home/Home";
+                break;
+            }
+          }, 100);
+        }
+      } else {
+        setError(response.data.message || "Login failed. Please try again.");
+        setOpenError(true);
       }
-    } else {
-      setError(response.data.message || "Login failed. Please try again.");
+    } catch (error) {
+      console.log("Error Logging in:", error);
+
+      if (error.response && error.response.status === 401) {
+        setError(error.response.data.message || "Invalid credentials.");
+      } else if (error.response && error.response.data && error.response.data.message) {
+        setError(error.response.data.message);
+      } else {
+        setError("Something went wrong. Try again.");
+      }
+
       setOpenError(true);
     }
-  } catch (error) {
-    console.log("Error Logging in:", error);
-
-    if (error.response && error.response.status === 401) {
-      setError(error.response.data.message || "Invalid credentials.");
-    } else if (error.response && error.response.data && error.response.data.message) {
-      setError(error.response.data.message);
-    } else {
-      setError("Something went wrong. Try again.");
-    }
-
-    setOpenError(true);
-  }
-};
+  };
 
   useEffect(() => {
     const encryptedData = sessionStorage.getItem("userData");
@@ -144,7 +145,7 @@ const handleLogin = async (e) => {
     if (encryptedData) {
       const decryptedData = decryptSessionData(encryptedData);
       setUserID(decryptedData.UserID);
-     // console.log("us", decryptedData.UserID);
+      // console.log("us", decryptedData.UserID);
     }
   }, []);
 
@@ -152,48 +153,71 @@ const handleLogin = async (e) => {
     <>
       <div
         style={{
-         minHeight:"calc(100vh - 1px)" ,
-
+          minHeight: "calc(100vh - 1px)",
           width: "100vw",
           display: "flex",
-          flexDirection: "column", // For vertical stacking (header + content)
+          flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          // background: "linear-gradient(to right, #33ccff 10%,rgb(218, 172, 195) 100%)",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundAttachment: "fixed",
           backgroundColor: "#f5f5f5 ",
         }}
       >
-        {/* Centered Header */}
-       <h1
-  style={{
-    textAlign: "center",
-    marginBottom: "30px",
-    color: "#1B5088",
-    fontSize: "55px",
-    fontFamily:"serif",
-    //marginBottom:"70px", // Increase the font size here
-    marginTop:-75
-  }}
->
-  SAP-APPROVAL WORKFLOW
-</h1>
+        {/* Centered Header with Home Icon on Right */}
+        {/* Header Wrapper */}
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: "30px",
+          }}
+        >
+          <h1
+            style={{
+              textAlign: "center",
+              color: "#1B5088",
+              fontSize: "40px",
+              fontFamily: "serif",
+              margin: "15px 0",
+            }}
+          >
+            MANUFACTURING WORKSPACE
+          </h1>
+
+          {/* Home Icon aligned to right end */}
+          <IoHome
+            style={{
+              position: "absolute",
+              right: "20px",
+              fontSize: "40px",
+              color: "black",
+              cursor: "pointer",
+              marginRight: '2%'
+            }}
+            onClick={() => navigate("/")}
+          />
+        </div>
+
+
 
 
         {/* Outer Centered Box */}
         <div
           style={{
-            width: "700px",
+            width: "600px",
             height: "450px",
             backgroundColor: "#1B5088",
             display: "flex",
             borderRadius: "12px",
             overflow: "hidden",
             boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-            marginBottom:"30px",
-            marginTop:"15px"
+            marginBottom: "30px",
+            marginTop: "15px"
           }}
         >
           <div
@@ -234,7 +258,7 @@ const handleLogin = async (e) => {
             <div
               style={{
                 height: "220px", // Increased height
-                width: "290px",
+                width: "250px",
                 backgroundColor: "white",
                 padding: "20px",
                 borderRadius: "20px",
@@ -246,9 +270,9 @@ const handleLogin = async (e) => {
                 style={{
                   textAlign: "center",
                   marginBottom: "10px",
-                  marginTop:"20px",
+                  marginTop: "20px",
                   color: "#2994d1",
-                  fontSize:"25px"
+                  fontSize: "25px"
                 }}
               >
                 Login
@@ -257,22 +281,6 @@ const handleLogin = async (e) => {
                 onSubmit={handleLogin}
                 style={{ display: "flex", flexDirection: "column" }}
               >
-                {/* <input
-            type="text"
-            placeholder="Login ID"
-            value={username}
-            onChange={(e) => setUserName(e.target.value)}
-            style={{
-              padding: "10px",
-              borderRadius: "20px",
-              border: "1px solid #ccc",
-              marginBottom: "15px",
-              Width: "360px",
-              textAlign: "center",
-              margin: "5px auto",
-               display: "block", 
-            }}
-          /> */}
 
                 <input
                   type="text"

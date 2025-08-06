@@ -24,7 +24,7 @@ const Store1url = () => {
   const [filteredRows, setFilteredRows] = useState([]);
   const [isFiltered, setIsFiltered] = useState(false);
   const [storeNames, setStoreNames] = useState([]); // Separate fetch for sloc_Name
-const [lastRefreshed, setLastRefreshed] = useState("");
+  const [lastRefreshed, setLastRefreshed] = useState("");
 
   const columns = [
     { field: "sno", headerName: "S.No", width: 80 },
@@ -53,16 +53,16 @@ const [lastRefreshed, setLastRefreshed] = useState("");
         }));
         allData = [...allData, ...processed];
         setRows(allData);
-setIsFiltered(false);
-setLastRefreshed(new Date().toLocaleString("en-GB", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-  hour12: true,
-}));
+        setIsFiltered(false);
+        setLastRefreshed(new Date().toLocaleString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true,
+        }));
 
       } catch (err) {
         console.error(`Error fetching open orders for ${code}:`, err);
@@ -74,55 +74,55 @@ setLastRefreshed(new Date().toLocaleString("en-GB", {
   };
 
   // 🟢 Fetch Store Names Separately
- const fetchStoreNames = async () => {
-  const names = [];
+  const fetchStoreNames = async () => {
+    const names = [];
 
-  for (let i = 0; i < storageCodeList.length; i++) {
-    const code = storageCodeList[i].trim();
-    try {
-      const res = await getActiveStores(plantId, code);
-      console.log(`Fetched store for ${plantId}-${code} =>`, res);
+    for (let i = 0; i < storageCodeList.length; i++) {
+      const code = storageCodeList[i].trim();
+      try {
+        const res = await getActiveStores(plantId, code);
+        console.log(`Fetched store for ${plantId}-${code} =>`, res);
 
-      // Since it's an array and uses 'SLoc_Name'
-      if (Array.isArray(res) && res.length > 0) {
-        res.forEach((item) => {
-          if (item?.SLoc_Name) {
-            names.push(item.SLoc_Name.trim());
-          }
-        });
+        // Since it's an array and uses 'SLoc_Name'
+        if (Array.isArray(res) && res.length > 0) {
+          res.forEach((item) => {
+            if (item?.SLoc_Name) {
+              names.push(item.SLoc_Name.trim());
+            }
+          });
+        }
+      } catch (err) {
+        console.error(`Error fetching SLoc_Name for ${code}:`, err);
       }
-    } catch (err) {
-      console.error(`Error fetching SLoc_Name for ${code}:`, err);
     }
-  }
 
-  setStoreNames(names);
-};
-useEffect(() => {
-  // Fetch data initially
-  const fetchAll = () => {
-    fetchData();
-    fetchStoreNames();
-    setLastRefreshed(
-      new Date().toLocaleString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: true,
-      })
-    );
+    setStoreNames(names);
   };
+  useEffect(() => {
+    // Fetch data initially
+    const fetchAll = () => {
+      fetchData();
+      fetchStoreNames();
+      setLastRefreshed(
+        new Date().toLocaleString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true,
+        })
+      );
+    };
 
-  fetchAll(); // initial load
+    fetchAll(); // initial load
 
-  // Auto-refresh every 10 minutes
-  const interval = setInterval(fetchAll, 600000);
+    // Auto-refresh every 10 minutes
+    const interval = setInterval(fetchAll, 300000);
 
-  return () => clearInterval(interval); // cleanup
-}, [plantCode, storageCodes]);
+    return () => clearInterval(interval); // cleanup
+  }, [plantCode, storageCodes]);
 
   const CustomToolbar = () => (
     <GridToolbarContainer>
@@ -136,64 +136,65 @@ useEffect(() => {
     <div
       style={{
         padding: 1,
-       // backgroundColor: "#F5F5F5",
+        // backgroundColor: "#F5F5F5",
         display: "flex",
         flexDirection: "column",
         height: "calc(100vh - 40px)",
         overflow: "hidden",
       }}
     >
-{/* Header with Blue Background, Logo, and Title */}
-<Box
-  sx={{
-    backgroundColor: "#2e59d9",
-    color: "white",
-    padding: "12px 0px 12px 0px", // removed side padding
-    borderRadius: "6px",
-    marginBottom: 2,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-  }}
->
-  {/* 🔷 Logo and Title */}
-  <Box sx={{ display: "flex", alignItems: "center", gap: 2, pl: 1 }}>
-    <img
-      src={logo} // or "/logo.png" if using from public
-      alt="Company Logo"
-      style={{
-        height: "43px",
-        background: "white",
-        border: "2px solid white",
-        borderRadius: "6px",
-        marginLeft: 0, // explicitly no left margin
-      }}
-    />
-    <Typography
-      variant="h5"
-      sx={{
-        fontWeight: "bold",
-        //textDecoration: "underline",
-        textDecorationColor: "#88c57a",
-        //textDecorationThickness: "2px",
-        color: "white",
-      }}
-    >
-      {storeNames.length > 0
-        ? `${storeNames.join(", ")} - Open Orders`
-        : "Store - Open Orders"}
-    </Typography>
-  </Box>
-</Box>
- <Box sx={{ mt: 1, textAlign: "left", fontSize: "20px", fontWeight: "bold", color: "#022c47ff" }}>
-  Last Refreshed: {lastRefreshed}
-</Box>
+      {/* Header with Blue Background, Logo, and Title */}
+      <Box
+        sx={{
+          backgroundColor: "#2e59d9",
+          color: "white",
+          padding: "12px 0px 12px 0px", // removed side padding
+          borderRadius: "6px",
+          marginBottom: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        {/* 🔷 Logo and Title */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, pl: 1 }}>
+          <img
+            src={logo} // or "/logo.png" if using from public
+            alt="Company Logo"
+            style={{
+              height: "43px",
+              background: "white",
+              border: "2px solid white",
+              borderRadius: "6px",
+              marginLeft: 0, // explicitly no left margin
+            }}
+          />
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: "bold",
+              //textDecoration: "underline",
+              textDecorationColor: "#88c57a",
+              //textDecorationThickness: "2px",
+              color: "white",
+            }}
+          >
+            {storeNames.length > 0
+              ? `${storeNames.join(", ")} - Open Orders`
+              : "Store - Open Orders"}
+          </Typography>
+        </Box>
+      </Box>
+
 
 
       {/* Color Legend */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1, mt: 1 }}>
+      {/* <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1, mt: 1 }}>
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ textAlign: "left", fontSize: "20px", fontWeight: "bold", color: "#022c47ff" }}>
+              Last Refreshed: {lastRefreshed}
+            </Box>
             <Box sx={{ width: 20, height: 20, backgroundColor: "#d0f0c0", border: "1px solid #ccc" }} />
             <Typography variant="body2">On Time</Typography>
           </Box>
@@ -201,8 +202,70 @@ useEffect(() => {
             <Box sx={{ width: 20, height: 20, backgroundColor: "#fff9c4", border: "1px solid #ccc" }} />
             <Typography variant="body2">Delay 60 mins</Typography>
           </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1,marginRight:1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, marginRight: 1 }}>
             <Box sx={{ width: 20, height: 20, backgroundColor: "#ffcdd2", border: "1px solid #ccc" }} />
+            <Typography variant="body2">Delay &gt; 60 mins</Typography>
+          </Box>
+        </Box>
+      </Box> */}
+
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 1,
+        }}
+      >
+        {/* Left Side: Last Refreshed */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            fontSize: "20px",
+            fontWeight: "bold",
+            color: "#022c47ff",
+          }}
+        >
+          Last Refreshed: {lastRefreshed}
+        </Box>
+
+        {/* Right Side: Legends */}
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box
+              sx={{
+                width: 20,
+                height: 20,
+                backgroundColor: "#d0f0c0",
+                border: "1px solid #ccc",
+              }}
+            />
+            <Typography variant="body2">On Time</Typography>
+          </Box>
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box
+              sx={{
+                width: 20,
+                height: 20,
+                backgroundColor: "#fff9c4",
+                border: "1px solid #ccc",
+              }}
+            />
+            <Typography variant="body2">Delay 60 mins</Typography>
+          </Box>
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mr: 1 }}>
+            <Box
+              sx={{
+                width: 20,
+                height: 20,
+                backgroundColor: "#ffcdd2",
+                border: "1px solid #ccc",
+              }}
+            />
             <Typography variant="body2">Delay &gt; 60 mins</Typography>
           </Box>
         </Box>
@@ -210,30 +273,30 @@ useEffect(() => {
 
       {/* Grid Header */}
       <Box
-  sx={{
-    backgroundColor: "#2e59d9",
-    color: "white",
-    fontWeight: "bold",
-    padding: "10px 16px",
-    borderRadius: "8px 8px 0 0",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "flex-end", // Align to right only
-  }}
->
-  <Typography variant="h6" sx={{ fontSize: "16px" }}>
-    Date & Time:{" "}
-    {new Date().toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: true,
-    })}
-  </Typography>
-</Box>
+        sx={{
+          backgroundColor: "#2e59d9",
+          color: "white",
+          fontWeight: "bold",
+          padding: "10px 16px",
+          borderRadius: "8px 8px 0 0",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end", // Align to right only
+        }}
+      >
+        <Typography variant="h6" sx={{ fontSize: "16px" }}>
+          Date & Time:{" "}
+          {new Date().toLocaleString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: true,
+          })}
+        </Typography>
+      </Box>
 
 
       {/* DataGrid */}
@@ -283,7 +346,7 @@ useEffect(() => {
           }}
         />
       </div>
-   
+
 
     </div>
   );

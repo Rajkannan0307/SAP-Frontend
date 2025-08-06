@@ -68,8 +68,9 @@ import Module from "./Masters/Module"
 import Line from "./Masters/Line"
 import ProductionPlan from "./Production plan/ProductionPlan"
 import StoreDashboard from "./Store Dashboard/StoreDashboard"
-import Store1 from"./StoreUrl/store1url"
-import MaterialStatus from"./Dashboard/MaterialStatus"
+import Store1 from "./StoreUrl/store1url"
+import MaterialStatus from "./Dashboard/MaterialStatus"
+import Landing from "./components/pages/landing";
 
 const App = () => {
   return (
@@ -77,11 +78,12 @@ const App = () => {
       <AuthProvider>
         <Routes>
 
-          <Route path="/" element={<Login />} />
- <Route path="Store/:plantCode/:storageCodes" element={<Store1 />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="Store/:plantCode/:storageCodes" element={<Store1 />} />
 
-           
+
           {/* Protected Routes with Role-Based Access */}
+          <Route path="/login" element={<Login />} />
           <Route path="/home" element={<ProtectedRoute><Main /></ProtectedRoute>}>
             <Route path="company" element={<ProtectedRoute screenId={1}><Company /></ProtectedRoute>} />
             <Route path="BusinessDivision" element={<ProtectedRoute screenId={2}><BusinessDivision /></ProtectedRoute>} />
@@ -116,14 +118,14 @@ const App = () => {
             <Route path="Report5" element={<ProtectedRoute screenId={16}><Report5 /></ProtectedRoute>} />
             <Route path="Report6" element={<ProtectedRoute screenId={17}><Report6 /></ProtectedRoute>} />
             <Route path="Report7" element={<ProtectedRoute screenId={16}><Report7 /></ProtectedRoute>} />
-          <Route path="Report8" element={<ProtectedRoute screenId={17}><Report8 /></ProtectedRoute>} />
+            <Route path="Report8" element={<ProtectedRoute screenId={17}><Report8 /></ProtectedRoute>} />
 
-          <Route path="ApprovalReports" element={<ProtectedRoute screenId={34}><ApprovedReports /></ProtectedRoute>} /> 
+            <Route path="ApprovalReports" element={<ProtectedRoute screenId={34}><ApprovedReports /></ProtectedRoute>} />
 
             <Route path="phy" element={<ProtectedRoute><Phy /></ProtectedRoute>} />
             <Route path="Emergency" element={<ProtectedRoute><Emergency /></ProtectedRoute>} />
             <Route path="RGP" element={<ProtectedRoute><RGP /></ProtectedRoute>} />
-              <Route path="MaterialStatus" element={<ProtectedRoute><MaterialStatus /></ProtectedRoute>} />
+            <Route path="MaterialStatus" element={<ProtectedRoute><MaterialStatus /></ProtectedRoute>} />
 
 
             <Route path="Stock201" element={<ProtectedRoute><Stock201 /></ProtectedRoute>} />
