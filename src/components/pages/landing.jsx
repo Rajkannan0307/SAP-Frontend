@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 const Landing = () => {
-    const api = "http://localhost:2003";
+    const api = "http://rmlvlcyawsapps:2003";
 
     return (
         <div

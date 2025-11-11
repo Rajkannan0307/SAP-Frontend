@@ -13,116 +13,169 @@ import {
 import { getdetailsStoreOpen, getActiveStores } from "./StoreUrlapiservice";
 import "../App.css";
 import { useParams } from "react-router-dom";
-import logo from "../components/images/ranelogo.png"; // use this path if image is inside src
+import logo from "../components/images/ranelogo.png";
+import { getdetailsStoreClosed } from "../controller/StoreDashboardapiservice";
 
 const Store1url = () => {
   const { plantCode, storageCodes } = useParams();
   const plantId = plantCode;
   const storageCodeList = storageCodes.split(",");
-
-  const [rows, setRows] = useState([]);
   const [filteredRows, setFilteredRows] = useState([]);
   const [isFiltered, setIsFiltered] = useState(false);
-  const [storeNames, setStoreNames] = useState([]); // Separate fetch for sloc_Name
+  const [storeNames, setStoreNames] = useState([]);
   const [lastRefreshed, setLastRefreshed] = useState("");
+  const [displayRows, setDisplayRows] = useState([]);
+  const [activeScreen, setActiveScreen] = useState(1); // 1 = Open Orders, 2 = Closed Orders
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // ✅ Utility to calculate subtotals and return object
+  const calculateSubtotal = (rowsData) => {
+    return rowsData.reduce(
+      (acc, row) => {
+        acc.No_Of_Orders += Number(row.No_Of_Orders || 0);
+        acc.No_Of_Open_Orders += Number(row.No_Of_Open_Orders || 0);
+        acc.No_Order_Close += Number(row.No_Order_Close || 0);
+        acc.Issue_Posted_on_Time += Number(row.Issue_Posted_on_Time || 0);
+        acc.Issue_Posted_Delay60 += Number(row.Issue_Posted_Delay60 || 0);
+        acc.Issue_Posted_Delay += Number(row.Issue_Posted_Delay || 0);
+        return acc;
+      },
+      {
+        No_Of_Orders: 0,
+        No_Of_Open_Orders: 0,
+        No_Order_Close: 0,
+        Issue_Posted_on_Time: 0,
+        Issue_Posted_Delay60: 0,
+        Issue_Posted_Delay: 0,
+      }
+    );
+  };
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000); // Update every second
+
+    return () => clearInterval(timer); // Cleanup on unmount
+  }, []);
 
   const columns = [
-    { field: "sno", headerName: "S.No", width: 80 },
-    { field: "Sup_Name", headerName: "Work Scheduler Name", width: 375 },
-    { field: "Order_No", headerName: "Order No", width: 240 },
-    { field: "Material_No", headerName: "Material", width: 280 },
-    { field: "Material_Description", headerName: "Description", width: 365 },
-    { field: "Order_Qty", headerName: "Order Qty", width: 130 },
-    { field: "Order_Date", headerName: "Order Date", width: 180 },
-    { field: "Supv_Lead_Time", headerName: "Lead Time", width: 130 },
-    { field: "Delay_Time", headerName: "Delay Time", width: 135 },
+    { field: "sno", headerName: "S.No", headerAlign: "center", width: 80 },
+    { field: "Sup_Name", headerName: "Work Scheduler Name", flex: 1, headerAlign: "center" },
+    { field: "Order_Date", headerName: "Order Date", headerAlign: "center", width: 150 },
+    { field: "Order_No", headerName: "Order No", flex: 1, headerAlign: "center" },
+    { field: "Material_No", headerName: "Material", flex: 1, headerAlign: "center" },
+    { field: "Material_Description", headerName: "Description", flex: 1, headerAlign: "center" },
+    { field: "Order_Qty", headerName: "Ord Qty", headerAlign: "center", width: 80 },
+    // { field: "Issue_Qty", headerName: "Issue Qty", headerAlign: "center", width: 80 },
+    { field: "Supv_Lead_Time", headerName: "Lead Time", headerAlign: "center", width: 120 },
+    { field: "Delay_Time", headerName: "Actual Time", headerAlign: "center", width: 120 },
   ];
 
-  // 🟢 Fetch Order Data
-  const fetchData = async () => {
+  const columns1 = [
+    { field: "Sup_Name", headerName: "Supervisor Name", flex: 1, headerAlign: "center", },
+    { field: "No_Of_Orders", headerName: "No. Of Total Orders", flex: 1, headerAlign: "center" },
+    { field: "No_Of_Open_Orders", headerName: "No. Of Open Orders", flex: 1, headerAlign: "center" },
+    { field: "No_Order_Close", headerName: "No. Of Orders Closed", flex: 1, headerAlign: "center" },
+    { field: "Issue_Posted_on_Time", headerName: "Issued On Time", flex: 1, headerAlign: "center" },
+    { field: "Issue_Posted_Delay60", headerName: "Issued Delay < 60 Mins", flex: 1, headerAlign: "center" },
+    { field: "Issue_Posted_Delay", headerName: "Issued Delay > 60 Mins", flex: 1, headerAlign: "center" },
+  ];
+
+  // ✅ Fetch data depending on screen
+  const fetchData = async (screen) => {
     let allData = [];
 
     for (let i = 0; i < storageCodeList.length; i++) {
       const code = storageCodeList[i].trim();
       try {
-        const response = await getdetailsStoreOpen(plantId, code);
-        const processed = response.map((row, index) => ({
+        const response =
+          screen === 1
+            ? await getdetailsStoreOpen(plantId, code)
+            : await getdetailsStoreClosed(code, plantId);
+
+        const dataset = response || [];
+        const processed = dataset.map((row, index) => ({
           id: `${code}-${row.Prdord_ID || index}`,
           sno: allData.length + index + 1,
           ...row,
         }));
-        allData = [...allData, ...processed];
-        setRows(allData);
-        setIsFiltered(false);
-        setLastRefreshed(new Date().toLocaleString("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: true,
-        }));
 
+        allData = [...allData, ...processed];
       } catch (err) {
-        console.error(`Error fetching open orders for ${code}:`, err);
+        console.error(`Error fetching ${screen === 1 ? "open" : "closed"} orders for ${code}:`, err);
       }
     }
-
-    setRows(allData);
     setIsFiltered(false);
+
+    if (screen === 2) {
+      // 👉 Add summary row for closed orders
+      const total = calculateSubtotal(allData);
+      const summaryRow = {
+        id: "subtotal-row",
+        Sup_Name: "Total",
+        No_Of_Orders: total.No_Of_Orders,
+        No_Of_Open_Orders: total.No_Of_Open_Orders,
+        No_Order_Close: total.No_Order_Close,
+        Issue_Posted_on_Time: total.Issue_Posted_on_Time,
+        Issue_Posted_Delay60: total.Issue_Posted_Delay60,
+        Issue_Posted_Delay: total.Issue_Posted_Delay,
+      };
+      setDisplayRows([...allData, summaryRow]);
+    } else {
+      setDisplayRows(allData);
+    }
+
+    setLastRefreshed(
+      new Date().toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      })
+    );
   };
 
-  // 🟢 Fetch Store Names Separately
   const fetchStoreNames = async () => {
     const names = [];
-
     for (let i = 0; i < storageCodeList.length; i++) {
       const code = storageCodeList[i].trim();
       try {
         const res = await getActiveStores(plantId, code);
-        console.log(`Fetched store for ${plantId}-${code} =>`, res);
-
-        // Since it's an array and uses 'SLoc_Name'
         if (Array.isArray(res) && res.length > 0) {
           res.forEach((item) => {
-            if (item?.SLoc_Name) {
-              names.push(item.SLoc_Name.trim());
-            }
+            if (item?.SLoc_Name) names.push(item.SLoc_Name.trim());
           });
         }
       } catch (err) {
         console.error(`Error fetching SLoc_Name for ${code}:`, err);
       }
     }
-
     setStoreNames(names);
   };
+
+  // 🟢 Load data when screen changes
   useEffect(() => {
-    // Fetch data initially
-    const fetchAll = () => {
-      fetchData();
-      fetchStoreNames();
-      setLastRefreshed(
-        new Date().toLocaleString("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: true,
-        })
-      );
-    };
+    fetchData(activeScreen);
+    fetchStoreNames();
+  }, [activeScreen, plantCode, storageCodes]);
 
-    fetchAll(); // initial load
+  useEffect(() => {
+    let timer;
 
-    // Auto-refresh every 10 minutes
-    const interval = setInterval(fetchAll, 300000);
+    if (activeScreen === 1) {
+      // 🟢 Stay on screen 1 for 2 mins
+      timer = setTimeout(() => setActiveScreen(2), 60000);
+    } else {
+      // 🟡 Stay on screen 2 for 15 sec
+      timer = setTimeout(() => setActiveScreen(1), 15000);
+    }
 
-    return () => clearInterval(interval); // cleanup
-  }, [plantCode, storageCodes]);
+    return () => clearTimeout(timer); // cleanup on unmount or state change
+  }, [activeScreen]);
 
   const CustomToolbar = () => (
     <GridToolbarContainer>
@@ -132,196 +185,147 @@ const Store1url = () => {
     </GridToolbarContainer>
   );
 
+  const colors = activeScreen === 1 ? ["white", "yellow"] : ["black", "blue"];
+
   return (
-    <div
-      style={{
-        padding: 1,
-        // backgroundColor: "#F5F5F5",
-        display: "flex",
-        flexDirection: "column",
-        height: "calc(100vh - 40px)",
-        overflow: "hidden",
-      }}
-    >
-      {/* Header with Blue Background, Logo, and Title */}
+    <div style={{ padding: 1, display: "flex", flexDirection: "column", height: "calc(100vh - 40px)", overflow: "hidden" }}>
+      {/* Header */}
       <Box
         sx={{
-          backgroundColor: "#2e59d9",
-          color: "white",
-          padding: "12px 0px 12px 0px", // removed side padding
-          borderRadius: "6px",
-          marginBottom: 2,
+          backgroundColor: activeScreen === 1 ? "#2e59d9" : "#00CEC8",
+          color: activeScreen === 1 ? "white" : "black",
+          borderRadius: "8px",
+          marginBottom: 1,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          padding: "6px 12px",
         }}
       >
-        {/* 🔷 Logo and Title */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, pl: 1 }}>
+        {/* Left section: Logo + text */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
           <img
-            src={logo} // or "/logo.png" if using from public
+            src={logo}
             alt="Company Logo"
             style={{
-              height: "43px",
+              height: "38px",
               background: "white",
               border: "2px solid white",
               borderRadius: "6px",
-              marginLeft: 0, // explicitly no left margin
+              flexShrink: 0,
             }}
           />
           <Typography
-            variant="h5"
+            variant="h6"
             sx={{
               fontWeight: "bold",
-              //textDecoration: "underline",
-              textDecorationColor: "#88c57a",
-              //textDecorationThickness: "2px",
-              color: "white",
+              animation: "zoomColor 4s ease-in-out infinite", // ✅ zoom + color
+              display: "inline-block",
+              marginLeft: "1.5%",
             }}
+            noWrap
           >
             {storeNames.length > 0
-              ? `${storeNames.join(", ")} - Open Orders`
-              : "Store - Open Orders"}
+              ? `${storeNames.join(", ")} - ${activeScreen === 1 ? "Open Orders" : "Closed Orders"
+              }`
+              : activeScreen === 1
+                ? "Store - Open Orders"
+                : "Store - Closed Orders"}
+          </Typography>
+
+          <style>
+        {`
+          @keyframes zoomColor {
+            0% {
+              transform: scale(1);
+              color: ${colors[0]};
+            }
+            25% {
+              transform: scale(1.15);
+              color: ${colors[0]};
+            }
+            50% {
+              transform: scale(1);
+              color: ${colors[1]};
+            }
+            75% {
+              transform: scale(1.15);
+              color: ${colors[1]};
+            }
+            100% {
+              transform: scale(1);
+              color: ${colors[0]};
+            }
+          }
+        `}
+      </style>
+
+
+        </Box>
+
+        {/* Center section: Last Refreshed */}
+        <Box sx={{ flex: 1, textAlign: "center" }}>
+          {activeScreen === 1 && (
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: "bold", color: "white", whiteSpace: "nowrap" }}
+            >
+              Last Refreshed: {lastRefreshed}
+            </Typography>
+          )}
+        </Box>
+
+        <Box sx={{ flex: 1, textAlign: "right" }}>
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: "bold",
+              color: activeScreen === 1 ? "white" : "black",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {currentTime.toLocaleString("en-GB", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+              hour12: true,
+            })}
           </Typography>
         </Box>
       </Box>
 
-
-
-      {/* Color Legend */}
-      {/* <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1, mt: 1 }}>
-        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Box sx={{ textAlign: "left", fontSize: "20px", fontWeight: "bold", color: "#022c47ff" }}>
-              Last Refreshed: {lastRefreshed}
-            </Box>
-            <Box sx={{ width: 20, height: 20, backgroundColor: "#d0f0c0", border: "1px solid #ccc" }} />
-            <Typography variant="body2">On Time</Typography>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Box sx={{ width: 20, height: 20, backgroundColor: "#fff9c4", border: "1px solid #ccc" }} />
-            <Typography variant="body2">Delay 60 mins</Typography>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, marginRight: 1 }}>
-            <Box sx={{ width: 20, height: 20, backgroundColor: "#ffcdd2", border: "1px solid #ccc" }} />
-            <Typography variant="body2">Delay &gt; 60 mins</Typography>
-          </Box>
-        </Box>
-      </Box> */}
-
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 1,
-        }}
-      >
-        {/* Left Side: Last Refreshed */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            fontSize: "20px",
-            fontWeight: "bold",
-            color: "#022c47ff",
-          }}
-        >
-          Last Refreshed: {lastRefreshed}
-        </Box>
-
-        {/* Right Side: Legends */}
-        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Box
-              sx={{
-                width: 20,
-                height: 20,
-                backgroundColor: "#d0f0c0",
-                border: "1px solid #ccc",
-              }}
-            />
-            <Typography variant="body2">On Time</Typography>
-          </Box>
-
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Box
-              sx={{
-                width: 20,
-                height: 20,
-                backgroundColor: "#fff9c4",
-                border: "1px solid #ccc",
-              }}
-            />
-            <Typography variant="body2">Delay 60 mins</Typography>
-          </Box>
-
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mr: 1 }}>
-            <Box
-              sx={{
-                width: 20,
-                height: 20,
-                backgroundColor: "#ffcdd2",
-                border: "1px solid #ccc",
-              }}
-            />
-            <Typography variant="body2">Delay &gt; 60 mins</Typography>
-          </Box>
-        </Box>
-      </Box>
-
-      {/* Grid Header */}
-      <Box
-        sx={{
-          backgroundColor: "#2e59d9",
-          color: "white",
-          fontWeight: "bold",
-          padding: "10px 16px",
-          borderRadius: "8px 8px 0 0",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-end", // Align to right only
-        }}
-      >
-        <Typography variant="h6" sx={{ fontSize: "16px" }}>
-          Date & Time:{" "}
-          {new Date().toLocaleString("en-GB", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            hour12: true,
-          })}
-        </Typography>
-      </Box>
-
-
-      {/* DataGrid */}
-      <div
-        style={{
-          flexGrow: 1,
-          minHeight: 0,
-          overflow: "auto",
-          backgroundColor: "#fff",
-          borderRadius: "0 0 8px 8px",
-          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-        }}
-      >
+      {/* Data Table */}
+      <div style={{ flexGrow: 1, minHeight: 0, overflow: "auto", backgroundColor: "#fff", borderRadius: "0 0 8px 8px", boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}>
         <DataGrid
-          rows={isFiltered ? filteredRows : rows}
-          columns={columns}
+          rows={isFiltered ? filteredRows : displayRows}
+          columns={activeScreen === 1 ? columns : columns1}
           pageSize={5}
           rowsPerPageOptions={[5]}
           getRowId={(row) => row.id}
           components={{ Toolbar: CustomToolbar }}
+          columnHeaderHeight={35}   // ✅ Use this instead of headerHeight
           getRowClassName={(params) => {
+            if (params.row.isSubtotal) return "subtotal-row";
+
             const color = params.row.Delay_Color;
             if (color === "Green") return "row-green";
             if (color === "Yellow") return "row-yellow";
             if (color === "Red") return "row-red";
+
+            return "";
+          }}
+          getCellClassName={(params) => {
+            if (params.field === "Issue_Posted_on_Time") return "cell-green";
+            if (params.field === "Issue_Posted_Delay60") return "cell-yellow";
+            if (params.field === "Issue_Posted_Delay") return "cell-red";
+            if (
+              ["No_Of_Orders", "No_Of_Open_Orders", "No_Order_Close", "sno", "Order_Qty", "Issue_Qty", "Supv_Lead_Time", "Delay_Time"].includes(params.field)
+            ) {
+              return "cell-center";
+            }
             return "";
           }}
           sx={{
@@ -329,25 +333,42 @@ const Store1url = () => {
               backgroundColor: "#bdbdbd",
               color: "black",
               fontWeight: "bold",
+              lineHeight: "35px", // ✅ vertically align text
+              padding: 0,         // ✅ remove extra padding
+            },
+            "& .MuiDataGrid-row.subtotal-row": {
+              backgroundColor: "#f5f5f5",
+              fontWeight: "bold",
+              borderTop: "2px solid #999",
             },
             "& .MuiDataGrid-cell": {
               color: "#333",
               fontSize: "14px",
             },
-            "& .row-green": {
-              backgroundColor: "#d0f0c0",
+            "& .row-green": { backgroundColor: "#d0f0c0" },
+            "& .row-yellow": { backgroundColor: "#fff9c4" },
+            "& .row-red": { backgroundColor: "#ffcdd2" },
+            "& .cell-green": {
+              backgroundColor: "#c8e6c9",
+              fontWeight: "bold",
+              textAlign: "center",
             },
-            "& .row-yellow": {
+            "& .cell-yellow": {
               backgroundColor: "#fff9c4",
+              fontWeight: "bold",
+              textAlign: "center",
             },
-            "& .row-red": {
+            "& .cell-red": {
               backgroundColor: "#ffcdd2",
+              fontWeight: "bold",
+              textAlign: "center",
+            },
+            "& .cell-center": {
+              textAlign: "center",
             },
           }}
         />
       </div>
-
-
     </div>
   );
 };

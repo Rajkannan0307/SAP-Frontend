@@ -12,6 +12,16 @@ export const getdetailsStoreOpen = async (plantId, storageCode) => {
   return response.data;
 };
 
+// export const getdetailsStoreClosed = async (plantId, storageCode) => {
+//   const response = await axios.get(`${api}/StoreUrl/get_StoreCloseddetails`, {
+//     params: {
+//       plantId,
+//       storageCode,  // ✅ Now passing it to the backend
+//     },
+//   });
+//   return response.data;
+// };
+
 
 // ✅ Get active stores for a plant
 export const getActiveStores = async (plantId,Storage_Code) => {
