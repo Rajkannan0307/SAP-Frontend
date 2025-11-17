@@ -36,7 +36,7 @@ const Topbar = () => {
     if (encryptedUserData) {
       const decryptedUserData = decryptSessionData(encryptedUserData);
       setRoleID(decryptedUserData.RoleId);
-        console.log('rrr:', RoleID);
+      console.log('rrr:', RoleID);
       setRole(decryptedUserData.Role);
       setUserLevel(decryptedUserData.UserLevelName);
     }
@@ -134,7 +134,7 @@ const Topbar = () => {
               borderRadius: "6px",
             }}
           />
-          <h1 style={{ fontSize: "30px", color: "white" }}>SAP APPROVAL WORKFLOW</h1>
+          <h1 style={{ fontSize: "30px", color: "white" }}>Manufacturing Workspace</h1>
         </div>
 
         <div

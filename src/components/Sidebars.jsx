@@ -45,6 +45,11 @@ import { MdStorage } from "react-icons/md";
 import { RiMoneyRupeeCircleFill } from "react-icons/ri";
 import ProductionQuantityLimitsIcon from '@mui/icons-material/ProductionQuantityLimits';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
+import { MdScience } from "react-icons/md";
+import { GiChemicalDrop } from "react-icons/gi";
+import { FaFlask } from "react-icons/fa";
+import { MdOutlineSensors } from "react-icons/md";
+
 const Sidebar = ({ setSidebarOpen }) => {
   const [open, setOpen] = useState(false);
   const [Masters, setMasterOpen] = useState(false);
@@ -52,6 +57,7 @@ const Sidebar = ({ setSidebarOpen }) => {
   const [Dashboard, setDashboardOpen] = useState(false);
   const [Report, setReportOpen] = useState(false);
   const [SAP, setSapOpen] = useState(false);
+  const [testLabOpen, setTestLabOpen] = useState(false);
   const [employeeName, setEmployeeName] = useState('');
   const [Role, setRole] = useState('');
   const navigate = useNavigate();
@@ -117,6 +123,7 @@ const Sidebar = ({ setSidebarOpen }) => {
     setDashboardOpen(false);
     setReportOpen(false);
     setApprovalOpen(false);
+    setTestLabOpen(false)
   };
   const toggleSAP = () => {
     setSapOpen(!SAP);
@@ -124,6 +131,7 @@ const Sidebar = ({ setSidebarOpen }) => {
     setDashboardOpen(false);
     setReportOpen(false);
     setApprovalOpen(false);
+    setTestLabOpen(false)
   };
 
   const toggleApproval = () => {
@@ -132,10 +140,20 @@ const Sidebar = ({ setSidebarOpen }) => {
     setDashboardOpen(false);
     setReportOpen(false);
     setSapOpen(false);
+    setTestLabOpen(false)
   };
 
   const toggleReport = () => {
     setReportOpen(!Report);
+    setMasterOpen(false);
+    setDashboardOpen(false);
+    setApprovalOpen(false);
+    setSapOpen(false);
+    setTestLabOpen(false)
+  };
+
+  const toggleTestLab = () => {
+    setTestLabOpen(!testLabOpen);
     setMasterOpen(false);
     setDashboardOpen(false);
     setApprovalOpen(false);
@@ -158,20 +176,20 @@ const Sidebar = ({ setSidebarOpen }) => {
   };
 
   return (
-   <div
-  style={{
-    width: open ? "250px" : "60px",
-    backgroundColor: "#595959",
-    transition: "width 0.3s ease",
-    height: "100vh",
-    position: "fixed",
-    top: "60px",
-    left: 0,
-    overflowY: "auto",        // ✅ only scrolls when needed
-    overflowX: "hidden",      // ✅ prevent horizontal scroll
-    paddingTop: "10px",
-  }}
->
+    <div
+      style={{
+        width: open ? "250px" : "60px",
+        backgroundColor: "#595959",
+        transition: "width 0.3s ease",
+        height: "100vh",
+        position: "fixed",
+        top: "60px",
+        left: 0,
+        overflowY: "auto",        // ✅ only scrolls when needed
+        overflowX: "hidden",      // ✅ prevent horizontal scroll
+        paddingTop: "10px",
+      }}
+    >
       {/* Sidebar Header */}
       <div
         style={{
@@ -281,14 +299,15 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "Cost Center", path: "/home/CostCenter", icon: <FaDollarSign style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkorange" }} />, code: 'CostCenter' },
             { name: "ValuationType", path: "/home/ValuationType", icon: <GrCubes style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "rosybrown" }} />, code: 'ValuationType' },
             { name: "SupvCode", path: "/home/SupvCode", icon: <MdSupervisedUserCircle style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "aquamarine" }} />, code: 'SupvCode' },
-             { name: "Module", path: "/home/Module", icon: <GiRingMould style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "khaki" }} />, code: 'Module' },
-             { name: "Line", path: "/home/Line", icon: <PrecisionManufacturingIcon style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkseagreen" }} />, code: 'Line' },
+            { name: "Module", path: "/home/Module", icon: <GiRingMould style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "khaki" }} />, code: 'Module' },
+            { name: "Line", path: "/home/Line", icon: <PrecisionManufacturingIcon style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkseagreen" }} />, code: 'Line' },
+            // { name: "Machine", path: "/home/Machine", icon: <PrecisionManufacturingIcon style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkseagreen" }} />, code: 'Machine' },
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
             'UserMaster', 'Role', 'Material', 'Vendor',
             'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter',
-            'ValuationType','SupvCode','Module','Line'
+            'ValuationType', 'SupvCode', 'Module', 'Line', 'Machine'
           ]}
         />
         {/* Transaction Section */}
@@ -332,16 +351,16 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "311 Approval", path: "/home/Approval_311", icon: <SiScrapbox style={{ fontSize: "30px", marginRight: "3px", color: "rgb(171, 136, 228)" }} />, code: 'Approval_551' },
             { name: "Inward of Old Invoice Approval", path: "/home/InwardApproval", icon: <FaExternalLinkSquareAlt style={{ fontSize: "25px", marginRight: "3px", color: "rgb(240, 186, 117)" }} />, code: 'InwardApproval' },
             { name: "Emergency Procurement Approval", path: "/home/EmergencyApproval", icon: <EmergencyIcon style={{ fontSize: "29px", marginRight: "1px", color: "rgb(230, 123, 123)" }} />, code: 'EmergencyApproval' },
-            { name: "ConversionRs1", path: "/home/Approval_Rs1", icon: <RiMoneyRupeeCircleFill  style={{ fontSize: "30px", marginRight: "3px", color: "rgb(15, 196, 209)" }} />, code: 'ApprovalRs1' },
+            { name: "ConversionRs1", path: "/home/Approval_Rs1", icon: <RiMoneyRupeeCircleFill style={{ fontSize: "30px", marginRight: "3px", color: "rgb(15, 196, 209)" }} />, code: 'ApprovalRs1' },
 
           ]}
           codeList={[
-            'Approval_309', 'Approval_201', 'Approval_202', 'Approval_551', 'Approval_311', 'InwardApproval', 'EmergencyApproval','ApprovalRs1'
+            'Approval_309', 'Approval_201', 'Approval_202', 'Approval_551', 'Approval_311', 'InwardApproval', 'EmergencyApproval', 'ApprovalRs1'
           ]}
         />
 
 
- {Permissions.includes('Store') && (
+        {Permissions.includes('Store') && (
           <button
 
             onClick={() => {
@@ -365,7 +384,7 @@ const Sidebar = ({ setSidebarOpen }) => {
             {open && "Store Dashboard"}
           </button>
         )}
-         {Permissions.includes('Production') && (
+        {Permissions.includes('Production') && (
           <button
 
             onClick={() => {
@@ -427,54 +446,54 @@ const Sidebar = ({ setSidebarOpen }) => {
           label="Report"
           links={[
 
-    {
-      name: "309 Report",
-      path: "/home/Report3",
-      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#32CD32", fontSize: "28px" }} />, // Lime Green
-      code: 'Report3'
-    },
-    {
-      name: "201 Report",
-      path: "/home/Report4",
-      icon: <MdCalendarMonth style={{ marginRight: "8px", color:  "#FF8C00", fontSize: "28px" }} />, // Dark Violet
-      code: 'Report4'
-    },
-    {
-      name: "202 Report",
-      path: "/home/Report5",
-      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#FFD700", fontSize: "28px" }} />, // Gold
-      code: 'Report5'
-    },
-    {
-      name: "551 Report",
-      path: "/home/Report6",
-      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#00CED1", fontSize: "28px" }} />, // Dark Turquoise
-      code: 'Report6'
-    },
-    {
-      name: "311 Report",
-      path: "/home/Report7",
-      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#FF69B4", fontSize: "28px" }} />, // Hot Pink
-      code: 'Report7'
-    },
-       {
-      name: "Inward of Old Invoice Report",
-      path: "/home/Report1",
-      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#D8BFD8", fontSize: "28px" }} />, // Dodger Blue
-      code: 'Report1'
-    },
-    {
-      name: "Emergency Procurement Report",
-      path: "/home/Report2",
-      icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#FF6347", fontSize: "28px" }} />, // Orange Red
-      code: 'Report2'
-    },
-    {
-      name: "Conversion Rs1 Report",
-      path: "/home/Report8",
-      icon: <RiMoneyRupeeCircleFill style={{ marginRight: "8px", color: "#1ABC9C", fontSize: "28px" }} />, // Saddle Brown
-      code: 'Report8'
-    },
+            {
+              name: "309 Report",
+              path: "/home/Report3",
+              icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#32CD32", fontSize: "28px" }} />, // Lime Green
+              code: 'Report3'
+            },
+            {
+              name: "201 Report",
+              path: "/home/Report4",
+              icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#FF8C00", fontSize: "28px" }} />, // Dark Violet
+              code: 'Report4'
+            },
+            {
+              name: "202 Report",
+              path: "/home/Report5",
+              icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#FFD700", fontSize: "28px" }} />, // Gold
+              code: 'Report5'
+            },
+            {
+              name: "551 Report",
+              path: "/home/Report6",
+              icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#00CED1", fontSize: "28px" }} />, // Dark Turquoise
+              code: 'Report6'
+            },
+            {
+              name: "311 Report",
+              path: "/home/Report7",
+              icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#FF69B4", fontSize: "28px" }} />, // Hot Pink
+              code: 'Report7'
+            },
+            {
+              name: "Inward of Old Invoice Report",
+              path: "/home/Report1",
+              icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#D8BFD8", fontSize: "28px" }} />, // Dodger Blue
+              code: 'Report1'
+            },
+            {
+              name: "Emergency Procurement Report",
+              path: "/home/Report2",
+              icon: <MdCalendarMonth style={{ marginRight: "8px", color: "#FF6347", fontSize: "28px" }} />, // Orange Red
+              code: 'Report2'
+            },
+            {
+              name: "Conversion Rs1 Report",
+              path: "/home/Report8",
+              icon: <RiMoneyRupeeCircleFill style={{ marginRight: "8px", color: "#1ABC9C", fontSize: "28px" }} />, // Saddle Brown
+              code: 'Report8'
+            },
           ]}
           codeList={[
             'Report1', 'Report2', 'Report3', 'Report4', 'Report5', 'Report6', 'Report7', 'Report8'
@@ -504,6 +523,57 @@ const Sidebar = ({ setSidebarOpen }) => {
             {open && "SAP LOGIN"}
           </button>
         )}
+        {/* {Permissions.includes('TestLab') && (
+          <button
+
+            onClick={() => {
+              closeAllDropdowns(); // Close other sections
+              navigate("/home/TestLab");
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "none",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              fontWeight: "bold",
+              fontSize: "17px",
+              margin: "10px 0", // Space above and below
+              marginBottom: "16px"
+            }}>
+            <MdScience style={{ fontSize: "25px" }} />
+            {open && "Test Lab"}
+          </button>
+        )} */}
+
+        <SidebarSection
+          open={open}
+          isOpen={testLabOpen}
+          toggleSection={toggleTestLab}
+          icon={<GiChemicalDrop style={{ marginRight: "8px", color: "#ffcc00", fontSize: "27px", }} />}
+          Permissions={Permissions}
+          label="TestLab"
+          links={[
+            {
+              name: "Start Testing",
+              path: "/home/start_testing",
+              icon: <FaFlask style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              code: 'StartTesting'
+              // code: "Report1"
+            },
+            {
+              name: "Rig Status",
+              path: "/home/testLabDashbaord",
+              icon: <MdOutlineSensors style={{ marginRight: "8px", color: "#FF8C00", fontSize: "18px" }} />, // Lime Green
+              code: 'RigStatus'
+              // code: "Report1"
+            },
+          ]}
+          // codeList={['Report1', 'Report1']}
+          codeList={['StartTesting', 'RigStatus']}
+        />
       </div>
 
     </div>
