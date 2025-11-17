@@ -157,8 +157,8 @@ const App = () => {
             <Route path="Role/:roleId" element={<ProtectedRoute screenId={6}><Admin /></ProtectedRoute>} />
             <Route path="Role/:roleId/:menuId" element={<ProtectedRoute screenId={6}><SubMenu /></ProtectedRoute>} />
 
-            <Route path="start_testing" element={<ProtectedRoute screenId={40}><TestLabScreen /></ProtectedRoute>} />
-            <Route path="testLabDashbaord" element={<ProtectedRoute screenId={41}><TestLabDashboard /></ProtectedRoute>} />
+            <Route path="start_testing" element={<ProtectedRoute screenId={39}><TestLabScreen /></ProtectedRoute>} />
+            <Route path="testLabDashbaord" element={<ProtectedRoute screenId={40}><TestLabDashboard /></ProtectedRoute>} />
             {/* <Route path="start_testing" element={<ProtectedRoute ><TestLabScreen /></ProtectedRoute>} />
             <Route path="testLabDashbaord" element={<ProtectedRoute ><TestLabDashboard /></ProtectedRoute>} /> */}
             <Route path="testLabDashbaord/:machineId" element={<TestLabViewDashboard />} />
