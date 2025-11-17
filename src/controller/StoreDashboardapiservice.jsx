@@ -12,6 +12,8 @@ export const getdetailsStore1Open = async (plantId, storageCode) => {
   return response.data;
 };
 export const getdetailsStoreClosed = async (plantId, storageCode) => {
+  console.log('plant code', plantId, storageCode);
+  
   const response = await axios.get(`${api}/StoreDashboard/get_detailsStoreClosed`, {
     params: {
       plantId,
