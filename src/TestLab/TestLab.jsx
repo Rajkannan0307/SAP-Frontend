@@ -397,20 +397,18 @@ const TestLabScreen = () => {
                     </IconButton>
 
                     {/* Add Button */}
-                    {isCorp && (
-                        <IconButton
-                            onClick={handleOpenAddModal}
-                            style={{
-                                borderRadius: "50%",
-                                backgroundColor: "#0066FF",
-                                color: "white",
-                                width: "40px",
-                                height: "40px",
-                            }}
-                        >
-                            <AddIcon />
-                        </IconButton>
-                    )}
+                    <IconButton
+                        onClick={handleOpenAddModal}
+                        style={{
+                            borderRadius: "50%",
+                            backgroundColor: "#0066FF",
+                            color: "white",
+                            width: "40px",
+                            height: "40px",
+                        }}
+                    >
+                        <AddIcon />
+                    </IconButton>
                 </div>
             </div>
 

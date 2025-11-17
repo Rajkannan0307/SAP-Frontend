@@ -10,7 +10,7 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { AddTestRigStatusApi, EditTestRigStatusApi, getMachine, GetMstTestSpecification, GetTestRigResultApi } from "../controller/TestLabService";
+import { AddTestRigStatusApi, EditTestRigStatusApi, getMachine, GetMstTestSpecification, getRigMachine, GetTestRigResultApi } from "../controller/TestLabService";
 import { format, parse } from "date-fns";
 import CloseIcon from '@mui/icons-material/Close';
 import { api } from "../controller/constants";
@@ -118,7 +118,9 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
         if (open) {
             const fetchData = async () => {
                 try {
-                    const response = await getMachine();
+                    const userPlantCode = localStorage.getItem("Plantcode")
+                    const response = await getRigMachine(userPlantCode);
+                    console.log(response)
                     setMachineList(response);
                     formik.setFieldValue("machine_id", editData?.machine_id)
                 } catch (error) {
@@ -142,9 +144,9 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
 
     const handleSpecChange = (id, field, value) => {
         setTestValues((prev) =>
-            prev.map((row) =>
+            prev?.map((row) =>
                 row.trn_rig_test_result_id === id ? { ...row, [field]: value } : row
-            )
+            ) || []
         );
     };
 
@@ -254,7 +256,6 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                     <CloseIcon fontSize="small" />
                 </Box>
 
-
                 {/* {JSON.stringify(editData || "data")} */}
                 <div style={{
                     display: "grid",
@@ -291,11 +292,11 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                         error={formik.touched.machine_id && Boolean(formik.errors.machine_id)}
                         helperText={formik.touched.machine_id && formik.errors.machine_id}
                     >
-                        {machineList.map((option, i) => (
+                        {machineList?.map((option, i) => (
                             <MenuItem key={i} value={Number(option.Machine_Id)}>
                                 {option.Machine_Name}
                             </MenuItem>
-                        ))}
+                        )) || []}
                     </TextField>
 
                     {/* Part Description */}
