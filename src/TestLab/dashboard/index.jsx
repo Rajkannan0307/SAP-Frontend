@@ -121,6 +121,11 @@ const TestLabDashboard = () => {
 
             </Box>
 
+            {machineList?.length === 0 && (
+                <div style={{ textAlign: "center", padding: "20px", color: "#888" }}>
+                    No machine data available.
+                </div>
+            )}
 
             {/* Card Grid */}
             <Grid container spacing={3}>
