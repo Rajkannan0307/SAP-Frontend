@@ -11,6 +11,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { DataGrid } from "@mui/x-data-grid";
 import { api } from "../controller/constants";
 import { GetTestRigResultApi } from "../controller/TestLabService";
+import { CommonMuiStyles } from "../Styles/CommonStyles";
 
 const ViewTestRigStatus = ({ open, setOpen, editData }) => {
     const [specList, setSpecList] = useState([]);
@@ -189,6 +190,12 @@ const ViewTestRigStatus = ({ open, setOpen, editData }) => {
                         disableRowSelectionOnClick
                         disableColumnMenu
                         sortingOrder={[]}
+                        hideFooter
+                        columnHeaderHeight={32} // smaller header
+                        rowHeight={30} // smaller row height
+                        sx={{
+                            ...CommonMuiStyles.dataGridSmallSx
+                        }}
                     />
                 </Box>
             </Box>

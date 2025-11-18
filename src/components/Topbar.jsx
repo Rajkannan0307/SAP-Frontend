@@ -94,6 +94,8 @@ const Topbar = () => {
     </TableContainer>
   );
 
+  const HearTitle = localStorage.getItem("Deptname") === 'R&D - TestLab' ? "R&D - TestLab" : "Manufacturing Workspace"
+
   return (
     <div
       style={{
@@ -134,7 +136,7 @@ const Topbar = () => {
               borderRadius: "6px",
             }}
           />
-          <h1 style={{ fontSize: "30px", color: "white" }}>Manufacturing Workspace</h1>
+          <h1 style={{ fontSize: "30px", color: "white" }}>{HearTitle}</h1>
         </div>
 
         <div

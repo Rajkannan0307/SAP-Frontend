@@ -212,6 +212,15 @@ const TestLabDashboard = () => {
                                         <Typography variant="body2">{item.test_end_date || "--"}</Typography>
                                     </Grid2>
 
+                                    <Grid2 size={6}>
+                                        <Typography variant="body2" fontWeight="bold">% of Completion :</Typography>
+                                    </Grid2>
+                                    <Grid2 size={6}>
+                                        <Typography variant="body2" sx={{ fontWeight: "bold", color: item.test_progress_percent >= 100 ? "green" : "red" }}>
+                                            {item.test_progress_percent ? `${item.test_progress_percent}%` : "--"}
+                                        </Typography>
+                                    </Grid2>
+
                                 </Grid2>
 
                                 {/* <Typography variant="body2" sx={{ color: "#555", marginTop: 1 }}>

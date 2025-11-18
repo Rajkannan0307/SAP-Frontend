@@ -11,6 +11,7 @@ import { DataGrid } from "@mui/x-data-grid";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { AddTestRigStatusApi, getMachine, GetMstTestSpecification, getRigMachine } from "../controller/TestLabService";
+import { CommonMuiStyles } from "../Styles/CommonStyles";
 
 // Mock API imports (replace later)
 
@@ -159,6 +160,9 @@ const AddTestRigStatus = ({ openAddModal, setOpenAddModal, setRefreshData }) => 
                     onChange={(e) =>
                         handleSpecChange(params.row.mst_test_spec_id, "test_spec_value", e.target.value)
                     }
+                    sx={{
+                        ...CommonMuiStyles.textFieldSmallSx
+                    }}
                 />
             ),
         },
@@ -319,59 +323,6 @@ const AddTestRigStatus = ({ openAddModal, setOpenAddModal, setRefreshData }) => 
                         error={formik.touched.test_end_date && Boolean(formik.errors.test_end_date)}
                         helperText={formik.touched.test_end_date && formik.errors.test_end_date}
                     />
-
-                    {/* <div>
-                        <Button variant="outlined" component="label" fullWidth sx={{
-                            py: 2,
-                            border: "1px solid rgb(118, 118, 118)"
-                        }}>
-                            <input
-                                type="file"
-                                // hidden
-                                id="file_attachment"
-                                name="file_attachment"
-                                accept=".pdf, .doc, .docx, .xls, .xlsx, .ppt, .pptx"
-                                onChange={(event) => {
-                                    const file = event.currentTarget.files[0];
-                                    if (file) {
-                                        const allowedTypes = [
-                                            "application/pdf",
-                                            "application/msword", // .doc
-                                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
-                                            "application/vnd.ms-excel", // .xls
-                                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
-                                            "application/vnd.ms-powerpoint", // .ppt
-                                            "application/vnd.openxmlformats-officedocument.presentationml.presentation" // .pptx
-                                        ];
-
-                                        if (!allowedTypes.includes(file.type)) {
-                                            alert("⚠️ Only PDF, Word, Excel, and PowerPoint files are allowed!");
-                                            event.target.value = ""; // reset input
-                                            return;
-                                        }
-
-                                        formik.setFieldValue("file_attachment", file);
-                                    }
-                                }}
-                                style={{
-                                    // padding: "8px",
-                                    backgroundColor: "white", // ✅ Blue background
-                                    color: "black",
-                                    border: "none",
-                                    // borderRadius: "5px",
-                                    cursor: "pointer",
-                                    width: "180px",
-                                    // marginTop: "10px",
-                                }}
-                            />
-                        </Button>
-                        {formik.errors.file_attachment && (
-                            <Typography color="error" variant="caption">
-                                {formik.errors.file_attachment}
-                            </Typography>
-                        )}
-                        </div>
-                        */}
                     <TextField
                         fullWidth
                         type="file"
@@ -443,7 +394,7 @@ const AddTestRigStatus = ({ openAddModal, setOpenAddModal, setRefreshData }) => 
 
                 {/* DataGrid for Specifications */}
                 <Typography
-                    sx={{ mt: 2, mb: 1, fontWeight: 600, color: "#2e59d9" }}
+                    sx={{ mt: 1, mb: 1, fontWeight: 600, color: "#2e59d9" }}
                 >
                     Test Specifications
                 </Typography>
@@ -455,7 +406,12 @@ const AddTestRigStatus = ({ openAddModal, setOpenAddModal, setRefreshData }) => 
                         disableRowSelectionOnClick
                         disableColumnMenu
                         sortingOrder={[]}
-                    // hideFooter
+                        hideFooter
+                        columnHeaderHeight={32} // smaller header
+                        rowHeight={30} // smaller row height
+                        sx={{
+                            ...CommonMuiStyles.dataGridSmallSx
+                        }}
                     />
                 </Box>
 

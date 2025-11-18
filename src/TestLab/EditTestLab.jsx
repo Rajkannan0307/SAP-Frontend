@@ -5,7 +5,12 @@ import {
     TextField,
     MenuItem,
     Button,
-    Typography
+    Typography,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogContentText,
+    DialogActions
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { useFormik } from "formik";
@@ -15,14 +20,27 @@ import { format, parse } from "date-fns";
 import CloseIcon from '@mui/icons-material/Close';
 import { api } from "../controller/constants";
 import { DownloadIcon } from "lucide-react";
+import { CommonMuiStyles } from "../Styles/CommonStyles";
+
+const TestLabStatusEnum = {
+    Running: "Running",
+    Completed: "Completed",
+    Canceled: "Canceled"
+}
 
 const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
     const [machineList, setMachineList] = useState([]);
     const [specList, setSpecList] = useState([]);
     const [testValues, setTestValues] = useState([]);
     const [submitLoading, setSubmitLoading] = useState(false)
+    const [openUpdateDialog, setOpenUpdateDialog] = useState(false)
 
-    const isRunningStatus = editData?.test_status === "Running"
+    const isRunningStatus = editData?.test_status === TestLabStatusEnum.Running
+
+    const handleOpenUpdateDialog = () => {
+        setOpenUpdateDialog(true)
+    }
+
 
     // ✅ Validation Schema
     const validationSchema = Yup.object({
@@ -33,23 +51,30 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
         file_attachment: Yup.mixed().required("File is required"),
         test_start_date: Yup.string().required("Start Date is required"),
         test_end_date: Yup.string().required("End Date is required"),
+        // test_progress_percent: Yup.string().required("Progress Percentage is required")
+        test_progress_percent: Yup.number()
+            .typeError("Progress Percentage must be a number")
+            .required("Progress Percentage is required")
+            .min(1, "Minimum value is 1")
+            .max(100, "Maximum value is 100")
     });
 
     // ✅ Formik Setup
     const formik = useFormik({
         initialValues: {
-            machine_id: Number(editData.machine_id),
-            part_description: editData.part_description,
-            operator_name: editData.operator_name,
-            rig_type: editData.rig_type_id,
+            machine_id: editData?.machine_id || "",
+            part_description: editData?.part_description || "",
+            operator_name: editData?.operator_name || "",
+            rig_type: editData?.rig_type_id || "",
             file_attachment: editData?.file_attachment,
-            test_start_date: editData.test_start_date
+            test_start_date: editData?.test_start_date
                 ? format(parse(editData.test_start_date, "dd-MM-yyyy", new Date()), "yyyy-MM-dd")
                 : "",
             test_end_date: editData.test_end_date
                 ? format(parse(editData.test_end_date, "dd-MM-yyyy", new Date()), "yyyy-MM-dd")
                 : "",
-            test_status: ""
+            test_status: "",
+            test_progress_percent: editData?.test_progress_percent || ""
         },
         validationSchema,
         enableReinitialize: true,
@@ -65,13 +90,16 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                     return;
                 }
 
-                console.log(testValues)
-                // ✅ 2️⃣ Check if all test specification values are filled
-                const unfilledSpecs = testValues.some(v => !v.test_spec_value || v.test_spec_value.trim() === "");
-                const unfilledSpecs2 = testValues.some(v => !v.test_result_value || v.test_result_value.trim() === "");
-                if (unfilledSpecs || unfilledSpecs2) {
-                    alert("⚠️ Please fill all test specification values before submitting.");
-                    return;
+                // If runninhg status it should be update one, don't have to validate, test spec
+                if (values.test_status !== TestLabStatusEnum.Running) {
+                    console.log(testValues)
+                    // ✅ 2️⃣ Check if all test specification values are filled
+                    const unfilledSpecs = testValues.some(v => !v.test_spec_value || v.test_spec_value.trim() === "");
+                    const unfilledSpecs2 = testValues.some(v => !v.test_result_value || v.test_result_value.trim() === "");
+                    if (unfilledSpecs || unfilledSpecs2) {
+                        alert("⚠️ Please fill all test specification values before submitting.");
+                        return;
+                    }
                 }
 
 
@@ -85,6 +113,7 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                 formData.append("operator_name", values.operator_name);
                 formData.append("created_by", localStorage.getItem("EmpId"));
                 formData.append("test_status", values.test_status);
+                formData.append("test_progress_percent", values.test_progress_percent);
 
                 if (values.file_attachment instanceof File) {
                     // user uploaded new file
@@ -104,6 +133,7 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                 setRefreshData((prev) => !prev)
                 alert("✅ Test Rig Status updated successfully!");
                 handleClose()
+                formik.resetForm()
 
             } catch (error) {
                 console.error("❌ Error submitting form:", error);
@@ -154,6 +184,7 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
         formik.resetForm();
         setTestValues([]);
         setOpen(false);
+        setOpenUpdateDialog(false)
     };
 
     const specColumns = [
@@ -170,6 +201,9 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                     onChange={(e) =>
                         handleSpecChange(params.row.trn_rig_test_result_id, "test_spec_value", e.target.value)
                     }
+                    sx={{
+                        ...CommonMuiStyles.textFieldSmallSx
+                    }}
                 />
             ),
         },
@@ -185,6 +219,9 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                     onChange={(e) =>
                         handleSpecChange(params.row.trn_rig_test_result_id, "test_result_value", e.target.value)
                     }
+                    sx={{
+                        ...CommonMuiStyles.textFieldSmallSx
+                    }}
                 />
             ),
         },
@@ -538,9 +575,16 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                         disableRowSelectionOnClick
                         disableColumnMenu
                         sortingOrder={[]}
-                    // hideFooter
+                        hideFooter
+                        columnHeaderHeight={32} // smaller header
+                        rowHeight={30} // smaller row height
+                        sx={{
+                            ...CommonMuiStyles.dataGridSmallSx
+                        }}
                     />
                 </Box>
+
+                {/* {formik.values.test_progress_percent} */}
 
                 {
                     isRunningStatus && (
@@ -554,22 +598,90 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                         >
                             <Button variant="contained" color="error"
                                 onClick={() => {
-                                    formik.setFieldValue("test_status", "Canceled")
+                                    // formik.setFieldValue("test_status", "Canceled")
+                                    // required for submitting
+                                    formik.setFieldValue("test_status", TestLabStatusEnum.Canceled)
+                                    formik.setFieldValue("test_progress_percent", editData?.test_progress_percent)
                                     formik.handleSubmit()
                                 }} >
                                 Test - Canceled
                             </Button>
-                            <Button variant="contained" color="primary"
+                            <Button variant="contained" color="success"
                                 onClick={() => {
-                                    formik.setFieldValue("test_status", "Completed")
+                                    // formik.setFieldValue("test_status", "Completed")
+                                    formik.setFieldValue("test_status", TestLabStatusEnum.Completed)
+                                    formik.setFieldValue("test_progress_percent", 100)
                                     formik.handleSubmit()
                                 }}
                             >
                                 Test - Completed
                             </Button>
+                            <Button variant="contained" color="primary"
+                                onClick={() => {
+                                    // formik.setFieldValue("test_status", "Running")
+                                    // formik.setFieldValue("test_status", TestLabStatusEnum.Running)
+                                    // formik.handleSubmit()
+                                    // Open the dialog
+                                    handleOpenUpdateDialog()
+                                }}
+                            >
+                                Update
+                            </Button>
                         </Box>
                     )
                 }
+
+
+                <Dialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} >
+                    <DialogTitle sx={{ fontSize: 15, mb: 0, pb: 1 }}>Enter The Test Completion %</DialogTitle>
+                    <DialogContent>
+                        {/* <DialogContentText>
+                        </DialogContentText> */}
+                        <TextField
+                            autoFocus
+                            required
+                            fullWidth
+                            id="test_progress_percent"
+                            name="test_progress_percent"
+                            label="Progress percent"
+                            slotProps={{
+                                inputLabel: {
+                                    shrink: true
+                                }
+                            }}
+                            type="number"
+                            size="small"
+                            sx={{ mt: 2 }}
+                            value={formik.values.test_progress_percent}
+                            onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                            error={formik.touched.test_progress_percent && Boolean(formik.errors.test_progress_percent)}
+                            helperText={formik.touched.test_progress_percent && formik.errors.test_progress_percent}
+                        />
+
+                        <Box sx={{
+                            display: "flex",
+                            justifyContent: "end",
+                            alignItems: "center",
+                            gap: 2,
+                            mt: 2
+                        }}>
+                            <Button size="small" variant="contained" color="error" onClick={() => { setOpenUpdateDialog(false) }}>Cancel</Button>
+                            <Button
+                                size="small"
+                                variant="contained" color="primary"
+                                type="submit" form="subscription-form" onClick={() => {
+                                    formik.setFieldValue("test_status", TestLabStatusEnum.Running)
+                                    formik.handleSubmit()
+                                }}>
+                                Update
+                            </Button>
+                        </Box>
+                    </DialogContent>
+                    {/* <DialogActions >
+                        
+                    </DialogActions> */}
+                </Dialog>
             </Box>
         </Modal>
     );

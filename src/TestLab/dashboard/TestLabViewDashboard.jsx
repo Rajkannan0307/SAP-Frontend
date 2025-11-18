@@ -5,7 +5,37 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { GetRigStatusDashboard } from '../../controller/TestLabService';
 import { api } from '../../controller/constants';
 import DownloadIcon from "@mui/icons-material/Download";
-import { getTestRigStatusColor } from '.';
+import { getTestRigStatusColor } from './index';
+
+import { styled } from '@mui/material/styles';
+import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
+
+const BorderLinearProgress = styled(LinearProgress)(({ theme }) => ({
+    height: 15,
+    borderRadius: 5,
+    border: "1px solid #dddedbff",
+    [`&.${linearProgressClasses.colorPrimary}`]: {
+        backgroundColor: theme.palette.grey[200],
+        ...theme.applyStyles('dark', {
+            backgroundColor: theme.palette.grey[800],
+        }),
+    },
+    [`& .${linearProgressClasses.bar}`]: {
+        borderRadius: 5,
+        // backgroundColor: '#1a90ff',
+        backgroundColor: 'orange',
+        ...theme.applyStyles('dark', {
+            // backgroundColor: '#308fe8',
+            backgroundColor: 'orange',
+        }),
+    },
+}));
+
+
+const typograpySx = {
+    fontSize: 12
+}
+
 
 const TestLabViewDashboard = () => {
 
@@ -24,15 +54,24 @@ const TestLabViewDashboard = () => {
             setTestResultData(response);
         };
         if (machineId) fetchData();
+
+        // 🔹 Set 1-hour interval refresh
+        const interval = setInterval(() => {
+            fetchData();
+        }, 3600000); // 1 hour = 3,600,000 ms
+
+        // 🔹 Cleanup
+        return () => clearInterval(interval);
+
     }, [machineId]);
 
     const machineInfo = testResultData.length > 0 ? testResultData[0] : null;
 
-    const tableRows = testResultData.map(row => ({
+    const tableRows = testResultData?.map(row => ({
         specification_name: row.specification_name,
         test_spec_value: row.test_spec_value,
         test_result_value: row.test_result_value
-    }));
+    })) || [];
 
     const getStatusColor = (status) => {
         if (!status) return "default";
@@ -66,6 +105,7 @@ const TestLabViewDashboard = () => {
                     style={{
                         margin: 0,
                         color: "#2e59d9",
+                        // color: "white",
                         textDecoration: "underline",
                         textDecorationColor: "#88c57a",
                         textDecorationThickness: "3px",
@@ -90,13 +130,16 @@ const TestLabViewDashboard = () => {
                     boxShadow: 3,
                     overflowY: "auto",
                     // background: "#d5ef95"
-                    background: "#f1fbd7ff"
+                    // background: "#f1fbd7ff"
+                    // background: "#001BB7"
+                    background: "#2e59d9"
                 }}>
                     <Box sx={{
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
                         mb: 2,
+                        color: "white"
                     }}>
                         <Typography variant="h6" sx={{ fontWeight: "bold" }}>
                             Machine Details
@@ -110,58 +153,66 @@ const TestLabViewDashboard = () => {
                         />
                     </Box>
                     <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mb: 3, mt: 2 }}>
-                        <img src={`${api}/uploads/${machineInfo?.machine_file_attachment}`} style={{ width: "50%", height: "fit-content", borderRadius: 10 }} />
+                        <img
+                            src={`${api}/uploads/${machineInfo?.machine_file_attachment}`}
+                            // src={"/test.jpg"}
+                            style={{
+                                width: "55%",
+                                // height: "200px",
+                                borderRadius: 10,
+                                objectFit: "contain"
+                            }} />
                     </Box>
 
                     {machineInfo && (
-                        <Grid2 container spacing={1} alignItems="flex-start" justifyContent={"center"}>
+                        <Grid2 container spacing={1} alignItems="flex-start" justifyContent={"center"} color={"white"} >
                             <Grid2 size={4}>
-                                <Typography fontWeight="bold">Machine Name :</Typography>
+                                <Typography fontWeight="bold" sx={{ ...typograpySx }}>Machine Name :</Typography>
                             </Grid2>
                             <Grid2 size={8}>
-                                <Typography>{machineInfo.Machine_Name}</Typography>
+                                <Typography sx={{ ...typograpySx }}>{machineInfo.Machine_Name}</Typography>
                             </Grid2>
 
                             <Grid2 size={4}>
-                                <Typography fontWeight="bold">Rig Type :</Typography>
+                                <Typography fontWeight="bold" sx={{ ...typograpySx }}>Rig Type :</Typography>
                             </Grid2>
                             <Grid2 size={8}>
-                                <Typography>{machineInfo.rig_name}</Typography>
+                                <Typography sx={{ ...typograpySx }}>{machineInfo.rig_name}</Typography>
                             </Grid2>
 
                             <Grid2 size={4}>
-                                <Typography fontWeight="bold">Part Description :</Typography>
+                                <Typography fontWeight="bold" sx={{ ...typograpySx }}>Part Description :</Typography>
                             </Grid2>
                             <Grid2 size={8}>
-                                <Typography>{machineInfo.part_description}</Typography>
+                                <Typography sx={{ ...typograpySx }}>{machineInfo.part_description}</Typography>
                             </Grid2>
 
                             <Grid2 size={4}>
-                                <Typography fontWeight="bold">Test Number :</Typography>
+                                <Typography fontWeight="bold" sx={{ ...typograpySx }}>Test Number :</Typography>
                             </Grid2>
                             <Grid2 size={8}>
-                                <Typography>{machineInfo.test_number}</Typography>
+                                <Typography sx={{ ...typograpySx }}>{machineInfo.test_number}</Typography>
                             </Grid2>
 
                             <Grid2 size={4}>
-                                <Typography fontWeight="bold">Operator :</Typography>
+                                <Typography fontWeight="bold" sx={{ ...typograpySx }}>Operator :</Typography>
                             </Grid2>
                             <Grid2 size={8}>
-                                <Typography>{machineInfo.operator_name}</Typography>
+                                <Typography sx={{ ...typograpySx }}>{machineInfo.operator_name}</Typography>
                             </Grid2>
 
                             <Grid2 size={4}>
-                                <Typography fontWeight="bold">Start Date :</Typography>
+                                <Typography fontWeight="bold" sx={{ ...typograpySx }}>Start Date :</Typography>
                             </Grid2>
                             <Grid2 size={8}>
-                                <Typography>{machineInfo.test_start_date}</Typography>
+                                <Typography sx={{ ...typograpySx }}>{machineInfo.test_start_date}</Typography>
                             </Grid2>
 
                             <Grid2 size={4}>
-                                <Typography fontWeight="bold">Planned End Date :</Typography>
+                                <Typography fontWeight="bold" sx={{ ...typograpySx }}>Planned End Date :</Typography>
                             </Grid2>
                             <Grid2 size={8}>
-                                <Typography>{machineInfo.test_end_date}</Typography>
+                                <Typography sx={{ ...typograpySx }}>{machineInfo.test_end_date}</Typography>
                             </Grid2>
                         </Grid2>
                     )}
@@ -184,7 +235,7 @@ const TestLabViewDashboard = () => {
                         alignItems: "center",
                         mb: 2,
                     }}>
-                        <Typography variant="h6" sx={{ fontWeight: "bold", color: "blue" }}>
+                        <Typography variant="h6" sx={{ fontWeight: "bold", color: "blue", textDecoration: "underline" }}>
                             Test Details
                         </Typography>
                         <a
@@ -244,6 +295,62 @@ const TestLabViewDashboard = () => {
                             ))}
                         </TableBody>
                     </Table>
+                    {/* <Box sx={{
+                        mx: 10
+                    }}>
+                        <BorderLinearProgress
+                            variant="determinate"
+                            value={50}
+                            sx={{ mt: 3 }}
+                            title={machineInfo?.test_progress_percent || 0}
+                        />
+                        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                            <Typography sx={{ ...typograpySx }}>0%</Typography>
+                            <Typography>100%</Typography>
+                        </Box>
+                    </Box> */}
+                    <Box sx={{
+                        mx: 10, mt: 3,
+                        position: "relative", background: "white",
+                        p: 2, borderRadius: 2,
+                        boxShadow: "3px 6px #888888"
+                    }}>
+                        <Typography
+                            sx={{
+                                fontSize: 12,
+                                fontWeight: 600,
+                                color: "#6e6d6dff",
+                            }}
+                        >
+                            % of test completion
+                        </Typography>
+
+                        <BorderLinearProgress
+                            variant="determinate"
+                            value={machineInfo?.test_progress_percent || 0}
+                        />
+
+                        <Typography
+                            sx={{
+                                position: "absolute",
+                                top: "50%",
+                                left: "50%",
+                                transform: "translate(-50%, -50%)",
+                                fontSize: 12,
+                                fontWeight: 600,
+                                color: "#000",
+                                mt: 2
+                            }}
+                        >
+                            {machineInfo?.test_progress_percent || 0}%
+                        </Typography>
+
+                        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
+                            <Typography variant='caption'>0%</Typography>
+                            <Typography variant='caption'>100%</Typography>
+                        </Box>
+                    </Box>
+
                 </Paper>
             </Box >
         </Box >
