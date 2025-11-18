@@ -50,6 +50,15 @@ import { GiChemicalDrop } from "react-icons/gi";
 import { FaFlask } from "react-icons/fa";
 import { MdOutlineSensors } from "react-icons/md";
 
+
+// Testing
+
+import EngineeringIcon from "@mui/icons-material/Engineering";
+import MiscellaneousServicesIcon from "@mui/icons-material/MiscellaneousServices";
+import ConstructionIcon from "@mui/icons-material/Construction";
+
+
+
 const Sidebar = ({ setSidebarOpen }) => {
   const [open, setOpen] = useState(false);
   const [Masters, setMasterOpen] = useState(false);
@@ -552,21 +561,24 @@ const Sidebar = ({ setSidebarOpen }) => {
           open={open}
           isOpen={testLabOpen}
           toggleSection={toggleTestLab}
-          icon={<GiChemicalDrop style={{ marginRight: "8px", color: "#ffcc00", fontSize: "27px", }} />}
+          // icon={<GiChemicalDrop style={{ marginRight: "8px", color: "#ffcc00", fontSize: "27px", }} />}
+          icon={<EngineeringIcon style={{ marginRight: "8px", color: "#ffcc00", fontSize: "27px", }} />}
+
           Permissions={Permissions}
           label="TestLab"
           links={[
             {
               name: "Start Testing",
               path: "/home/start_testing",
-              icon: <FaFlask style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              // icon: <FaFlask style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              icon: <MiscellaneousServicesIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
               code: 'StartTesting'
               // code: "Report1"
             },
             {
               name: "Rig Status",
               path: "/home/testLabDashbaord",
-              icon: <MdOutlineSensors style={{ marginRight: "8px", color: "#FF8C00", fontSize: "18px" }} />, // Lime Green
+              icon: <ConstructionIcon style={{ marginRight: "8px", color: "#FF8C00", fontSize: "18px" }} />, // Lime Green
               code: 'RigStatus'
               // code: "Report1"
             },

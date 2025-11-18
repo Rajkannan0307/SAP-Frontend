@@ -219,8 +219,9 @@ const AddTestRigStatus = ({ openAddModal, setOpenAddModal, setRefreshData }) => 
 
                 {/* {JSON.stringify(formik.errors)} */}
                 <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
+                    // display: "grid",
+                    // gridTemplateColumns: "1fr 1fr",
+                    display: "flex",
                     width: "100%",
                     gap: "15px"
                 }}>
@@ -250,9 +251,13 @@ const AddTestRigStatus = ({ openAddModal, setOpenAddModal, setRefreshData }) => 
                         onBlur={formik.handleBlur}
                         error={formik.touched.machine_id && Boolean(formik.errors.machine_id)}
                         helperText={formik.touched.machine_id && formik.errors.machine_id}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            // maxWidth: 300
+                        }}
                     >
                         {machineList.map((option, i) => (
-                            <MenuItem key={i} value={option.Machine_Id}>
+                            <MenuItem sx={{ fontSize: 12 }} key={i} value={option.Machine_Id}>
                                 {option.Machine_Name}
                             </MenuItem>
                         ))}
@@ -269,15 +274,11 @@ const AddTestRigStatus = ({ openAddModal, setOpenAddModal, setRefreshData }) => 
                         onBlur={formik.handleBlur}
                         error={formik.touched.part_description && Boolean(formik.errors.part_description)}
                         helperText={formik.touched.part_description && formik.errors.part_description}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            // maxWidth: 300
+                        }}
                     />
-
-                </div>
-
-                <div style={{
-                    display: "flex",
-                    gap: "15px",
-                    width: "100%"
-                }}>
                     <TextField
                         id="operator_name"
                         name="operator_name"
@@ -288,7 +289,29 @@ const AddTestRigStatus = ({ openAddModal, setOpenAddModal, setRefreshData }) => 
                         onBlur={formik.handleBlur}
                         error={formik.touched.operator_name && Boolean(formik.errors.operator_name)}
                         helperText={formik.touched.operator_name && formik.errors.operator_name}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            // maxWidth: 300
+                        }}
                     />
+                </div>
+
+                <div style={{
+                    display: "flex",
+                    gap: "15px",
+                    width: "100%"
+                }}>
+                    {/* <TextField
+                        id="operator_name"
+                        name="operator_name"
+                        label="Operator Name"
+                        fullWidth
+                        value={formik.values.operator_name}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.operator_name && Boolean(formik.errors.operator_name)}
+                        helperText={formik.touched.operator_name && formik.errors.operator_name}
+                    /> */}
                     <TextField
                         id="test_start_date"
                         name="test_start_date"
@@ -305,6 +328,10 @@ const AddTestRigStatus = ({ openAddModal, setOpenAddModal, setRefreshData }) => 
                         onBlur={formik.handleBlur}
                         error={formik.touched.test_start_date && Boolean(formik.errors.test_start_date)}
                         helperText={formik.touched.test_start_date && formik.errors.test_start_date}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            // maxWidth: 300
+                        }}
                     />
                     <TextField
                         id="test_end_date"
@@ -322,6 +349,10 @@ const AddTestRigStatus = ({ openAddModal, setOpenAddModal, setRefreshData }) => 
                         onBlur={formik.handleBlur}
                         error={formik.touched.test_end_date && Boolean(formik.errors.test_end_date)}
                         helperText={formik.touched.test_end_date && formik.errors.test_end_date}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            // maxWidth: 300
+                        }}
                     />
                     <TextField
                         fullWidth
@@ -375,6 +406,7 @@ const AddTestRigStatus = ({ openAddModal, setOpenAddModal, setRefreshData }) => 
                             "& .MuiFormHelperText-root": {
                                 fontSize: 11, // ✅ Helper/error text font size
                             },
+                            mt: 0.2
                         }}
                         error={Boolean(formik.errors.file_attachment)}
                         helperText={formik.errors.file_attachment}

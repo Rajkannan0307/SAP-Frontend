@@ -296,7 +296,8 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                 {/* {JSON.stringify(editData || "data")} */}
                 <div style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    // display: "flex",
                     width: "100%",
                     gap: "15px"
                 }}>
@@ -328,9 +329,12 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                         onBlur={formik.handleBlur}
                         error={formik.touched.machine_id && Boolean(formik.errors.machine_id)}
                         helperText={formik.touched.machine_id && formik.errors.machine_id}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                        }}
                     >
                         {machineList?.map((option, i) => (
-                            <MenuItem key={i} value={Number(option.Machine_Id)}>
+                            <MenuItem sx={{ fontSize: 12 }} key={i} value={Number(option.Machine_Id)}>
                                 {option.Machine_Name}
                             </MenuItem>
                         )) || []}
@@ -348,15 +352,10 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                         error={formik.touched.part_description && Boolean(formik.errors.part_description)}
                         helperText={formik.touched.part_description && formik.errors.part_description}
                         disabled={!isRunningStatus}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                        }}
                     />
-
-                </div>
-
-                <div style={{
-                    display: "flex",
-                    gap: "15px",
-                    width: "100%"
-                }}>
                     <TextField
                         id="operator_name"
                         name="operator_name"
@@ -368,7 +367,19 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                         error={formik.touched.operator_name && Boolean(formik.errors.operator_name)}
                         helperText={formik.touched.operator_name && formik.errors.operator_name}
                         disabled={!isRunningStatus}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                        }}
                     />
+                </div>
+
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    // display: "flex",
+                    gap: "15px",
+                    width: "100%"
+                }}>
                     <TextField
                         id="test_start_date"
                         name="test_start_date"
@@ -386,6 +397,9 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                         error={formik.touched.test_start_date && Boolean(formik.errors.test_start_date)}
                         helperText={formik.touched.test_start_date && formik.errors.test_start_date}
                         disabled={!isRunningStatus}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                        }}
                     />
                     <TextField
                         id="test_end_date"
@@ -404,59 +418,15 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                         error={formik.touched.test_end_date && Boolean(formik.errors.test_end_date)}
                         helperText={formik.touched.test_end_date && formik.errors.test_end_date}
                         disabled={!isRunningStatus}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                        }}
                     />
+                    <Box sx={{
+                        display: "flex",
+                        flexDirection: "column",
 
-                    <div>
-                        {/* <Button variant="outlined" component="label" fullWidth sx={{
-                            py: 2,
-                            border: "1px solid rgb(118, 118, 118)"
-                        }}>
-
-                            <input
-                                type="file"
-                                // hidden
-                                id="file_attachment"
-                                name="file_attachment"
-                                accept=".pdf, .doc, .docx, .xls, .xlsx, .ppt, .pptx"
-                                onChange={(event) => {
-                                    const file = event.currentTarget.files[0];
-                                    if (file) {
-                                        const allowedTypes = [
-                                            "application/pdf",
-                                            "application/msword", // .doc
-                                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
-                                            "application/vnd.ms-excel", // .xls
-                                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
-                                            "application/vnd.ms-powerpoint", // .ppt
-                                            "application/vnd.openxmlformats-officedocument.presentationml.presentation" // .pptx
-                                        ];
-
-                                        if (!allowedTypes.includes(file.type)) {
-                                            alert("⚠️ Only PDF, Word, Excel, and PowerPoint files are allowed!");
-                                            event.target.value = ""; // reset input
-                                            return;
-                                        }
-
-                                        formik.setFieldValue("file_attachment", file);
-                                    }
-                                }}
-                                style={{
-                                    // padding: "8px",
-                                    backgroundColor: "white", // ✅ Blue background
-                                    color: "black",
-                                    border: "none",
-                                    // borderRadius: "5px",
-                                    cursor: "pointer",
-                                    width: "180px",
-                                    // marginTop: "10px",
-                                }}
-                            />
-                        </Button>
-                        {formik.errors.file_attachment && (
-                            <Typography color="error" variant="caption">
-                                {formik.errors.file_attachment}
-                            </Typography>
-                        )} */}
+                    }}>
                         <TextField
                             fullWidth
                             type="file"
@@ -509,7 +479,7 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                                 "& .MuiFormHelperText-root": {
                                     fontSize: 11, // ✅ Helper/error text font size
                                 },
-                                minWidth: 300
+                                // minWidth: 300
                             }}
                             error={Boolean(formik.errors.file_attachment)}
                             helperText={formik.errors.file_attachment}
@@ -557,13 +527,14 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                                 </Box>
                             )
                         }
+                    </Box>
 
-                    </div>
+
                 </div>
 
                 {/* DataGrid for Specifications */}
                 <Typography
-                    sx={{ mt: 2, mb: 1, fontWeight: 600, color: "#2e59d9" }}
+                    sx={{ mt: 0, mb: 1, fontWeight: 600, color: "#2e59d9" }}
                 >
                     Test Specifications
                 </Typography>
@@ -593,7 +564,7 @@ const EditTestRigStatus = ({ open, setOpen, editData, setRefreshData }) => {
                                 display: "flex",
                                 justifyContent: "center",
                                 gap: "20px",
-                                marginTop: "20px",
+                                marginTop: "0px",
                             }}
                         >
                             <Button variant="contained" color="error"

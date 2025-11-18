@@ -10,6 +10,44 @@ export const CommonMuiStyles = {
             height: "28px",
         }
     },
+    textFieldSmallSx2: {
+        fontSize: "12px",
+
+        // Label style
+        "& .MuiInputLabel-root": {
+            fontSize: "12px",
+            top: "-0px"               // fix misalignment
+        },
+
+        // Shrinked floating label
+        "& .MuiInputLabel-shrink": {
+            transform: "translate(14px, -6px) scale(0.75)",
+        },
+
+        // Input box
+        "& .MuiOutlinedInput-root": {
+            height: "42px",           // full height
+            fontSize: "12px",
+
+            "& fieldset": {
+                top: 0
+            },
+
+            // Fix the legend (label border space)
+            "& legend": {
+                fontSize: "8px"
+            }
+        },
+
+        // Input text
+        "& .MuiInputBase-input": {
+            padding: "4px 8px",       // compact input padding
+            fontSize: "12px",
+            height: "20px",
+            boxSizing: "border-box",
+        }
+    },
+
     dataGridSmallSx: {
         fontSize: "12px",
 

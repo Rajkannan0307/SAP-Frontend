@@ -11,7 +11,7 @@ import { styled } from '@mui/material/styles';
 import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
 
 const BorderLinearProgress = styled(LinearProgress)(({ theme }) => ({
-    height: 15,
+    height: 10,
     borderRadius: 5,
     border: "1px solid #dddedbff",
     [`&.${linearProgressClasses.colorPrimary}`]: {
@@ -98,21 +98,84 @@ const TestLabViewDashboard = () => {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                mb: 3
+                mb: 1
             }}>
 
-                <h2
-                    style={{
-                        margin: 0,
-                        color: "#2e59d9",
-                        // color: "white",
-                        textDecoration: "underline",
-                        textDecorationColor: "#88c57a",
-                        textDecorationThickness: "3px",
-                    }}
-                >
-                    Rig Name - {machineName}
-                </h2>
+                <Box sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 3
+                }}>
+                    <h2
+                        style={{
+                            margin: 0,
+                            color: "#2e59d9",
+                            // color: "white",
+                            textDecoration: "underline",
+                            textDecorationColor: "#88c57a",
+                            textDecorationThickness: "3px",
+                        }}
+                    >
+                        Rig Name - {machineName} -
+                    </h2>
+                    <Chip
+                        label={machineInfo?.test_status}
+                        sx={{
+                            fontWeight: "bold", ...getTestRigStatusColor(machineInfo?.test_status),
+                            fontSize: 18
+                        }}
+                    />
+                </Box>
+
+
+                <Box sx={{
+                    mx: 10, mt: 0,
+                    mb: 2,
+                    position: "relative", background: "white",
+                    px: 2,
+                    py: 0,
+                    borderRadius: 2,
+                    boxShadow: "3px 6px #888888",
+                    // border: "1px solid #888888",
+                    width: 300
+                }}>
+                    <Typography
+                        sx={{
+                            fontSize: 10,
+                            fontWeight: 600,
+                            color: "#6e6d6dff",
+                        }}
+                    >
+                        % of test completion
+                    </Typography>
+
+                    <BorderLinearProgress
+                        variant="determinate"
+                        value={machineInfo?.test_progress_percent || 0}
+                    />
+
+                    <Typography
+                        sx={{
+                            position: "absolute",
+                            top: "50%",
+                            left: "50%",
+                            transform: "translate(-50%, -50%)",
+                            fontSize: 10,
+                            fontWeight: 600,
+                            color: "#000",
+                            mt: 2
+                        }}
+                    >
+                        {machineInfo?.test_progress_percent || 0}%
+                    </Typography>
+
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mt: 0 }}>
+                        <Typography fontSize={10}>0%</Typography>
+                        <Typography fontSize={10}>100%</Typography>
+                    </Box>
+                </Box>
+
 
                 <Button variant="outlined" size="small" onClick={() => navigate(-1)}>
                     <ArrowBackIcon /> BACK
@@ -120,12 +183,13 @@ const TestLabViewDashboard = () => {
             </Box>
 
             {/* Split Screen */}
-            <Box sx={{ display: "flex", gap: 3, height: "80vh" }}>
+            <Box sx={{ display: "flex", gap: 3, height: "75vh" }}>
 
                 {/* LEFT PANEL */}
                 <Paper sx={{
                     flex: 1,
-                    padding: 3,
+                    px: 3,
+                    pb: 3,
                     borderRadius: 3,
                     boxShadow: 3,
                     overflowY: "auto",
@@ -134,7 +198,7 @@ const TestLabViewDashboard = () => {
                     // background: "#001BB7"
                     background: "#2e59d9"
                 }}>
-                    <Box sx={{
+                    {/* <Box sx={{
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
@@ -151,16 +215,16 @@ const TestLabViewDashboard = () => {
                             // sx={{ fontWeight: "bold" }}
                             sx={{ fontWeight: "bold", ...getTestRigStatusColor(machineInfo?.test_status) }}
                         />
-                    </Box>
+                    </Box> */}
                     <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mb: 3, mt: 2 }}>
                         <img
                             src={`${api}/uploads/${machineInfo?.machine_file_attachment}`}
                             // src={"/test.jpg"}
                             style={{
-                                width: "55%",
-                                // height: "200px",
+                                width: "60%",
+                                height: "230px",
                                 borderRadius: 10,
-                                objectFit: "contain"
+                                objectFit: "contain",
                             }} />
                     </Box>
 
@@ -222,7 +286,9 @@ const TestLabViewDashboard = () => {
                 {/* RIGHT PANEL */}
                 <Paper sx={{
                     flex: 1,
-                    padding: 3,
+                    px: 3,
+                    pb: 3,
+                    pt: 2,
                     borderRadius: 3,
                     boxShadow: 3,
                     overflowY: "auto",
@@ -282,7 +348,7 @@ const TestLabViewDashboard = () => {
                             <TableRow>
                                 <TableCell><b>Specification</b></TableCell>
                                 <TableCell><b>Spec Value</b></TableCell>
-                                {/* <TableCell><b>Result Value</b></TableCell> */}
+                                <TableCell><b>Result Value</b></TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -290,7 +356,7 @@ const TestLabViewDashboard = () => {
                                 <TableRow key={index}>
                                     <TableCell>{item.specification_name}</TableCell>
                                     <TableCell>{item.test_spec_value}</TableCell>
-                                    {/* <TableCell>{item.test_result_value ?? "--"}</TableCell> */}
+                                    <TableCell>{item.test_result_value ?? "--"}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -309,7 +375,7 @@ const TestLabViewDashboard = () => {
                             <Typography>100%</Typography>
                         </Box>
                     </Box> */}
-                    <Box sx={{
+                    {/* <Box sx={{
                         mx: 10, mt: 3,
                         position: "relative", background: "white",
                         p: 2, borderRadius: 2,
@@ -349,7 +415,7 @@ const TestLabViewDashboard = () => {
                             <Typography variant='caption'>0%</Typography>
                             <Typography variant='caption'>100%</Typography>
                         </Box>
-                    </Box>
+                    </Box> */}
 
                 </Paper>
             </Box >
