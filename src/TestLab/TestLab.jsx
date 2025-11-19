@@ -329,7 +329,7 @@ const TestLabScreen = () => {
                         marginBottom: -7,
                     }}
                 >
-                    Test Lab Rig Running Status
+                    Manage Test Rig
                 </h2>
             </div>
 

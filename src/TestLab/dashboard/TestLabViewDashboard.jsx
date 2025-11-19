@@ -73,15 +73,15 @@ const TestLabViewDashboard = () => {
         test_result_value: row.test_result_value
     })) || [];
 
-    const getStatusColor = (status) => {
-        if (!status) return "default";
-        switch (status.toLowerCase()) {
-            case "running": return "success";
-            case "completed": return "primary";
-            case "canceled": return "error";
-            default: return "default";
-        }
-    };
+    // const getStatusColor = (status) => {
+    //     if (!status) return "default";
+    //     switch (status.toLowerCase()) {
+    //         case "running": return "success";
+    //         case "completed": return "primary";
+    //         case "canceled": return "error";
+    //         default: return "default";
+    //     }
+    // };
 
     return (
         <Box sx={{
@@ -117,7 +117,7 @@ const TestLabViewDashboard = () => {
                             textDecorationThickness: "3px",
                         }}
                     >
-                        Rig Name - {machineName} -
+                        {machineName}
                     </h2>
                     <Chip
                         label={machineInfo?.test_status}
@@ -177,7 +177,7 @@ const TestLabViewDashboard = () => {
                 </Box>
 
 
-                <Button variant="outlined" size="small" onClick={() => navigate(-1)}>
+                <Button variant="outlined" sx={{ border: "1px solid black" }} size="small" onClick={() => navigate(-1)}>
                     <ArrowBackIcon /> BACK
                 </Button>
             </Box>

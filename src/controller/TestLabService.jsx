@@ -55,3 +55,12 @@ export const GetRigStatusDashboard = async (machine_id) => {
     });
     return response.data;
 }
+
+export const GetRigMonthlyStatusDashboard = async (year, month, plant) => {
+    const response = await axios.get(`${api}/TestLab/GetRigMonthlyStatusDashboard`, {
+        params: {
+            year, month, plant
+        }
+    });
+    return response.data;
+}

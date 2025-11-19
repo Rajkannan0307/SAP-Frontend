@@ -568,7 +568,7 @@ const Sidebar = ({ setSidebarOpen }) => {
           label="TestLab"
           links={[
             {
-              name: "Start Testing",
+              name: "Manage Testing",
               path: "/home/start_testing",
               // icon: <FaFlask style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
               icon: <MiscellaneousServicesIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
@@ -576,15 +576,22 @@ const Sidebar = ({ setSidebarOpen }) => {
               // code: "Report1"
             },
             {
-              name: "Rig Status",
+              name: "Running Status",
               path: "/home/testLabDashbaord",
               icon: <ConstructionIcon style={{ marginRight: "8px", color: "#FF8C00", fontSize: "18px" }} />, // Lime Green
               code: 'RigStatus'
               // code: "Report1"
             },
+            {
+              name: "Dashboard",
+              path: "/home/rigMonthlyStatus",
+              icon: <ConstructionIcon style={{ marginRight: "8px", color: "#FF8C00", fontSize: "18px" }} />, // Lime Green
+              code: 'RigMonthlyStatus'
+              // code: "Report1"
+            },
           ]}
           // codeList={['Report1', 'Report1']}
-          codeList={['StartTesting', 'RigStatus']}
+          codeList={['StartTesting', 'RigStatus', 'RigMonthlyStatus']}
         />
       </div>
 

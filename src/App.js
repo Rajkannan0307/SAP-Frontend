@@ -75,6 +75,7 @@ import Machine from "./Masters/Machine";
 import TestLabScreen from "./TestLab/TestLab";
 import TestLabDashboard from "./TestLab/dashboard";
 import TestLabViewDashboard from "./TestLab/dashboard/TestLabViewDashboard";
+import RigMonthlyStatus from "./TestLab/RigMonthlyStatus";
 
 const App = () => {
   return (
@@ -159,8 +160,7 @@ const App = () => {
 
             <Route path="start_testing" element={<ProtectedRoute screenId={39}><TestLabScreen /></ProtectedRoute>} />
             <Route path="testLabDashbaord" element={<ProtectedRoute screenId={40}><TestLabDashboard /></ProtectedRoute>} />
-            {/* <Route path="start_testing" element={<ProtectedRoute ><TestLabScreen /></ProtectedRoute>} />
-            <Route path="testLabDashbaord" element={<ProtectedRoute ><TestLabDashboard /></ProtectedRoute>} /> */}
+            <Route path="rigMonthlyStatus" element={<ProtectedRoute screenId={41}><RigMonthlyStatus /></ProtectedRoute>} />
             <Route path="testLabDashbaord/:machineId" element={<TestLabViewDashboard />} />
           </Route>
         </Routes>

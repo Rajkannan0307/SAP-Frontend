@@ -114,10 +114,14 @@ const Login = () => {
                 break;
               case 1:
               case 9:
+                window.location.href = "/home/Home";
+                break;
               case 11:
                 window.location.href = "/home/Home";
+                break;
               case 14:
-                window.location.href = "/home/Home";
+                // window.location.href = "/home/Home";
+                window.location.href = "/home/rigMonthlyStatus";
                 break;
             }
           }, 100);

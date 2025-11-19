@@ -78,10 +78,11 @@ const TestLabDashboard = () => {
     return (
         <Box
             sx={{
-                padding: 3,
+                // padding: 3,
+                p: 3,
                 backgroundColor: "#F5F5F5",
                 marginTop: "50px",
-                height: "calc(100vh - 90px)",
+                // height: "calc(100vh - 90px)",
                 display: "flex",
                 flexDirection: "column",
             }}
@@ -129,7 +130,7 @@ const TestLabDashboard = () => {
 
             {/* Card Grid */}
             <Grid container spacing={3}>
-                {machineList.map((item) => (
+                {[...machineList].map((item) => (
                     <Grid item xs={12} sm={6} md={4} key={item.Machine_Id}>
                         <Card
                             sx={{
@@ -222,24 +223,6 @@ const TestLabDashboard = () => {
                                     </Grid2>
 
                                 </Grid2>
-
-                                {/* <Typography variant="body2" sx={{ color: "#555", marginTop: 1 }}>
-                                    <strong>Machine Code:</strong> {item.Machine_Code}
-                                </Typography>
-
-                                <Typography variant="body2" sx={{ color: "#555" }}>
-                                    <strong>Rig Type:</strong> {item.rig_name}
-                                </Typography>
-
-                                <Typography variant="body2" sx={{ color: "#555" }}>
-                                    <strong>Part Description:</strong> {item.part_description || "--"}
-                                </Typography>
-                                <Typography variant="body2" sx={{ color: "#555" }}>
-                                    <strong>Start Date:</strong> {item.test_start_date || "--"}
-                                </Typography>
-                                <Typography variant="body2" sx={{ color: "#555" }}>
-                                    <strong>Planned End Date:</strong> {item.test_end_date || "--"}
-                                </Typography> */}
 
                                 <Chip
                                     label={item?.test_status}
