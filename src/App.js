@@ -71,11 +71,12 @@ import StoreDashboard from "./Store Dashboard/StoreDashboard"
 import Store1 from "./StoreUrl/store1url"
 import MaterialStatus from "./Dashboard/MaterialStatus"
 import Landing from "./components/pages/landing";
-import Machine from "./Masters/Machine";
 import TestLabScreen from "./TestLab/TestLab";
 import TestLabDashboard from "./TestLab/dashboard";
 import TestLabViewDashboard from "./TestLab/dashboard/TestLabViewDashboard";
 import RigMonthlyStatus from "./TestLab/RigMonthlyStatus";
+import MstRigTestSpecScreen from "./Masters/RigTestSpec";
+import MachineScreen from "./Masters/Machine";
 
 const App = () => {
   return (
@@ -114,7 +115,8 @@ const App = () => {
             <Route path="Approval_551" element={<ProtectedRoute screenId={26}><Approval551 /></ProtectedRoute>} />
             <Route path="Approval_311" element={<ProtectedRoute screenId={27}><Approval311 /></ProtectedRoute>} />
             <Route path="Approval_Rs1" element={<ProtectedRoute screenId={33}><ApprovalRs1 /></ProtectedRoute>} />
-            {/* <Route path="Machine" element={<ProtectedRoute screenId={39}><Machine /></ProtectedRoute>} /> */}
+            <Route path="RigTestSpec" element={<ProtectedRoute screenId={42}><MstRigTestSpecScreen /></ProtectedRoute>} />
+            <Route path="Machine" element={<ProtectedRoute screenId={39}><MachineScreen /></ProtectedRoute>} />
 
             <Route path="dashboard" element={<ProtectedRoute screenId={15}><DashBoard /></ProtectedRoute>} />
             <Route path="Report1" element={<ProtectedRoute screenId={16}><Report1 /></ProtectedRoute>} />

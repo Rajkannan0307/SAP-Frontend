@@ -64,3 +64,73 @@ export const GetRigMonthlyStatusDashboard = async (year, month, plant) => {
     });
     return response.data;
 }
+
+
+
+// Test Rig Spec Master
+
+export const GetMstTestRigSpec = async () => {
+    const response = await axios.get(`${api}/TestRigMaster/get_details`);
+    return response.data;
+};
+
+export const GetRigTyes = async () => {
+    const response = await axios.get(`${api}/TestRigMaster/getRigTyes`);
+    return response.data;
+};
+
+export const InsertMstTestRigSpec = async (data) => {
+    const response = await axios.post(`${api}/TestRigMaster/insert`, data);
+    return response.data;
+};
+
+export const UpdateMstTestRigSpec = async (data) => {
+    const response = await axios.put(`${api}/TestRigMaster/update`, data);
+    return response.data;
+};
+
+
+
+// Machine Master 
+
+export const GetMstMachine = async () => {
+    const response = await axios.get(`${api}/MachineMaster/get_machine`);
+    return response.data;
+};
+
+export const GetMstMachineUpdate_image = async (body) => {
+    const response = await axios.put(`${api}/MachineMaster/update_image`, body,
+        {
+            headers: { "Content-Type": "multipart/form-data" }
+        });
+    return response.data;
+};
+
+export const GetLineByPlantDept = async (plant, dept) => {
+    const response = await axios.get(`${api}/MachineMaster/GetLineByPlantDept`, {
+        params: {
+            plant, dept
+        }
+    });
+    return response.data;
+};
+
+export const GetModuleByPlantDept = async (plant, dept) => {
+    const response = await axios.get(`${api}/MachineMaster/GetModuleByPlantDept`, {
+        params: {
+            plant, dept
+        }
+    });
+    return response.data;
+};
+
+
+export const MstInsertMachine = async (body) => {
+    const response = await axios.post(`${api}/MachineMaster/insert`, body);
+    return response.data;
+};
+
+export const MstUpdateMachine = async (body) => {
+    const response = await axios.put(`${api}/MachineMaster/update`, body);
+    return response.data;
+};

@@ -310,13 +310,14 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "SupvCode", path: "/home/SupvCode", icon: <MdSupervisedUserCircle style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "aquamarine" }} />, code: 'SupvCode' },
             { name: "Module", path: "/home/Module", icon: <GiRingMould style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "khaki" }} />, code: 'Module' },
             { name: "Line", path: "/home/Line", icon: <PrecisionManufacturingIcon style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkseagreen" }} />, code: 'Line' },
-            // { name: "Machine", path: "/home/Machine", icon: <PrecisionManufacturingIcon style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkseagreen" }} />, code: 'Machine' },
+            { name: "Rig Test Spec", path: "/home/RigTestSpec", icon: <PrecisionManufacturingIcon style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkseagreen" }} />, code: 'RigTestSpec' },
+            { name: "Machine", path: "/home/Machine", icon: <PrecisionManufacturingIcon style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkseagreen" }} />, code: 'Machine' },
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
             'UserMaster', 'Role', 'Material', 'Vendor',
             'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter',
-            'ValuationType', 'SupvCode', 'Module', 'Line', 'Machine'
+            'ValuationType', 'SupvCode', 'Module', 'Line', 'Machine', 'RigTestSpec'
           ]}
         />
         {/* Transaction Section */}
