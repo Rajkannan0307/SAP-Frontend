@@ -20,7 +20,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
-import { getdetails,getAdd,getUpdates,getPlants } from "../controller/SupvCodeMasterapiservice";
+import { getdetails, getAdd, getUpdates, getPlants } from "../controller/SupvCodeMasterapiservice";
 import { MenuItem, InputLabel, FormControl } from '@mui/material';
 const UserID = localStorage.getItem('UserID');
 const SupvCode = () => {
@@ -32,71 +32,71 @@ const SupvCode = () => {
   const [openEditModal, setOpenEditModal] = useState(false);
   const [ActiveStatus, setActiveStatus] = useState(false);
   const [PlantTable, setPlantTable] = useState([]);
-   const [PlantCode, setPlantCode] = useState([]);
-   const[Sup_Code,setSup_Code]=useState("");
-   const[Sup_Name,setSup_Name]=useState("");
-   const[Supv_Lead_Time,setSupv_Lead_Time]=useState("");
-   const [Supv_ID, setSupv_ID] = useState([]);
- const columns = [
-     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
-     { field: "Sup_Code", headerName: "Supervisor Code ", flex: 1 },
-     { field: "Sup_Name", headerName: "Supervisor Name", flex: 1 },
-     { field: "Supv_Lead_Time", headerName: "Supervisor Lead Time", flex: 1 },
-    
-     {
-       field: "ActiveStatus",
-       headerName: "Active Status",
-       flex: 1,
-       renderCell: (params) => {
-         const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
-         return (
-           <FormControlLabel
-             control={
-               <Switch
-                 checked={isActive} // Use the boolean value directly
-                 color="default" // Neutral color for default theme
-                 sx={{
-                   "& .MuiSwitch-track": {
-                     backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                   },
-                   "& .MuiSwitch-thumb": {
-                     backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                   },
-                 }}
-               />
-             }
-           />
-         );
-       },
-     },
-   ];
+  const [PlantCode, setPlantCode] = useState([]);
+  const [Sup_Code, setSup_Code] = useState("");
+  const [Sup_Name, setSup_Name] = useState("");
+  const [Supv_Lead_Time, setSupv_Lead_Time] = useState("");
+  const [Supv_ID, setSupv_ID] = useState([]);
+  const columns = [
+    { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
+    { field: "Sup_Code", headerName: "Supervisor Code ", flex: 1 },
+    { field: "Sup_Name", headerName: "Supervisor Name", flex: 1 },
+    { field: "Supv_Lead_Time", headerName: "Supervisor Lead Time", flex: 1 },
+
+    {
+      field: "ActiveStatus",
+      headerName: "Active Status",
+      flex: 1,
+      renderCell: (params) => {
+        const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
+        return (
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isActive} // Use the boolean value directly
+                color="default" // Neutral color for default theme
+                sx={{
+                  "& .MuiSwitch-track": {
+                    backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
+                  },
+                  "& .MuiSwitch-thumb": {
+                    backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
+                  },
+                }}
+              />
+            }
+          />
+        );
+      },
+    },
+  ];
   const getData = async () => {
-     try {
-       const response = await getdetails();
-       console.log(response); // Check the structure of response
-       setData(response); // Ensure that this is correctly setting the data
-       setOriginalRows(response); // for reference during search
-       setRows(response);
-     } catch (error) {
-       console.error(error);
-       setData([]); // Handle error by setting empty data
-       setOriginalRows([]); // handle error case
-       setRows([]);
-     }
-   };
+    try {
+      const response = await getdetails();
+      console.log(response); // Check the structure of response
+      setData(response); // Ensure that this is correctly setting the data
+      setOriginalRows(response); // for reference during search
+      setRows(response);
+    } catch (error) {
+      console.error(error);
+      setData([]); // Handle error by setting empty data
+      setOriginalRows([]); // handle error case
+      setRows([]);
+    }
+  };
   useEffect(() => {
     getData();
   }, []);
 
 
   const get_Plant = async () => {
-      try {
-        const response = await getPlants();
-        setPlantTable(response.data);
-      } catch (error) {
-        console.error("Error updating user:", error);
-      }
-    };
+    try {
+      const response = await getPlants();
+      setPlantTable(response.data);
+    } catch (error) {
+      console.error("Error updating user:", error);
+    }
+  };
 
   // ✅ Custom Toolbar
   const CustomToolbar = () => (
@@ -114,7 +114,7 @@ const SupvCode = () => {
       setRows(originalRows);
     } else {
       const filteredRows = originalRows.filter((row) =>
-        ["Plant_Code","Sup_Code","Sup_Name"].some((key) => {
+        ["Plant_Code", "Sup_Code", "Sup_Name"].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
         })
@@ -146,150 +146,150 @@ const SupvCode = () => {
   };
 
   // ✅ Handle Add User
-    const handleAdd = async () => {
-      console.log("Data being sent to the server:", {
-        PlantCode,
-         Sup_Code,Sup_Name,Supv_Lead_Time,UserID
-       
-      });
-      console.log("Add button clicked");
-    
-      // Step 1: Validate required fields
-      if (
-        PlantCode === "" ||
-        Sup_Code === "" ||
-        Sup_Name === "" ||
-        Supv_Lead_Time===""
-      ) {
-        alert("Please fill in all required fields");
-        return;
-      }
-     // Step 2: Validate Sup_Code (must be exactly 4 digits)
-  if (Sup_Code.toString().length !== 3) {
-    alert("Storage Code must be exactly 3 digits");
-    return;
-  }
-     
-      try {
-        // Prepare data to be sent
-        const data = {
-          UserID:UserID,
-          Plant_Code: PlantCode,
-          Sup_Code:Sup_Code,
-          Sup_Name:Sup_Name,
-          Active_Status:ActiveStatus, // Make sure this is defined somewhere
-        };
-    
-        // Step 3: Call the API to add the user
-        const response = await getAdd(data); // Ensure getAdd uses a POST request
-    
-        if (response.data.success) {
-          alert("StorageLocation added successfully!");
-          getData(); // refresh UI (e.g. user list)
-          handleCloseAddModal(); // close the modal
-        } else {
-          alert(response.data.message || "Failed to add StorageLocation.");
-        }
-      } catch (error) {
-        console.error("Error in adding StorageLocation:", error);
-    
-        // Step 4: Show error from server (like Employee_ID already exists)
-        if (error.response && error.response.data && error.response.data.message) {
-          alert(error.response.data.message);
-        } else {
-          alert("An error occurred while adding the Storage Location.");
-        }
-      }
-    };
+  const handleAdd = async () => {
+    console.log("Data being sent to the server:", {
+      PlantCode,
+      Sup_Code, Sup_Name, Supv_Lead_Time, UserID
 
- const handleUpdate = async () => {
-     const data = {
-      UserID:UserID,
-     Supv_ID: Supv_ID,
-     Sup_Name: Sup_Name,
-     Supv_Lead_Time:Supv_Lead_Time,
-       Active_Status: ActiveStatus,
-     };
-     console.log("Data being sent:", data); // Log data to verify it before sending
- 
-     try {
-       const response = await getUpdates(data);
- 
+    });
+    console.log("Add button clicked");
+
+    // Step 1: Validate required fields
+    if (
+      PlantCode === "" ||
+      Sup_Code === "" ||
+      Sup_Name === "" ||
+      Supv_Lead_Time === ""
+    ) {
+      alert("Please fill in all required fields");
+      return;
+    }
+    // Step 2: Validate Sup_Code (must be exactly 4 digits)
+    if (Sup_Code.toString().length !== 4) {
+      alert("Storage Code must be exactly 4 digits");
+      return;
+    }
+
+    try {
+      // Prepare data to be sent
+      const data = {
+        UserID: UserID,
+        Plant_Code: PlantCode,
+        Sup_Code: Sup_Code,
+        Sup_Name: Sup_Name,
+        Active_Status: ActiveStatus, // Make sure this is defined somewhere
+      };
+
+      // Step 3: Call the API to add the user
+      const response = await getAdd(data); // Ensure getAdd uses a POST request
+
+      if (response.data.success) {
+        alert("StorageLocation added successfully!");
+        getData(); // refresh UI (e.g. user list)
+        handleCloseAddModal(); // close the modal
+      } else {
+        alert(response.data.message || "Failed to add StorageLocation.");
+      }
+    } catch (error) {
+      console.error("Error in adding StorageLocation:", error);
+
+      // Step 4: Show error from server (like Employee_ID already exists)
+      if (error.response && error.response.data && error.response.data.message) {
+        alert(error.response.data.message);
+      } else {
+        alert("An error occurred while adding the Storage Location.");
+      }
+    }
+  };
+
+  const handleUpdate = async () => {
+    const data = {
+      UserID: UserID,
+      Supv_ID: Supv_ID,
+      Sup_Name: Sup_Name,
+      Supv_Lead_Time: Supv_Lead_Time,
+      Active_Status: ActiveStatus,
+    };
+    console.log("Data being sent:", data); // Log data to verify it before sending
+
+    try {
+      const response = await getUpdates(data);
+
       // If success
       if (response.data.success) {
-       alert(response.data.message);
-       getData(); // Refresh data
-       handleCloseEditModal(); // Close modal
-     } else {
-       // If success is false, show the backend message
-       alert(response.data.message);
-     }
-   } catch (error) {
-     console.error("Error details:", error.response?.data);
- 
-     if (error.response && error.response.data && error.response.data.message) {
-       alert(error.response.data.message); // Specific error from backend
-     } else {
-       alert("An error occurred while updating the StorageLocation. Please try again.");
-     }
-   }
- };
+        alert(response.data.message);
+        getData(); // Refresh data
+        handleCloseEditModal(); // Close modal
+      } else {
+        // If success is false, show the backend message
+        alert(response.data.message);
+      }
+    } catch (error) {
+      console.error("Error details:", error.response?.data);
+
+      if (error.response && error.response.data && error.response.data.message) {
+        alert(error.response.data.message); // Specific error from backend
+      } else {
+        alert("An error occurred while updating the StorageLocation. Please try again.");
+      }
+    }
+  };
 
 
   const handleDownloadExcel = () => {
-      if (data.length === 0) {
-        alert("No Data Found");
-        return;
-      }
-  
-      const DataColumns = [
-        "Plant_Code",
-         "Sup_Code",
-         "Sup_Name",
-        "ActiveStatus",
-      ];
-  
-      const filteredData = data.map((item) => ({
-        Plant_Code: item.Plant_Code,
-        Sup_Code:item.Sup_Code,
-        Sup_Name:item.Sup_Name,
-  
-        ActiveStatus: item.Active_Status ? "Active" : "Inactive"
-  
-      }));
-  
-      const worksheet = XLSX.utils.json_to_sheet(filteredData, {
-        header: DataColumns,
-      });
-  worksheet['!cols'] = [
-  { wch: 20 },
-  { wch: 20 },
-  { wch: 30 }, 
-   
-    { wch: 20 },
-];
-      // Style header row
-      DataColumns.forEach((_, index) => {
-        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-        if (!worksheet[cellAddress]) return;
-        worksheet[cellAddress].s = {
-          font: {
-            bold: true,
-            color: { rgb: "000000" },
-          },
-          fill: {
-            fgColor: { rgb: "FFFF00" },
-          },
-          alignment: {
-            horizontal: "center",
-          },
-        };
-      });
-  
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "StorageLocation");
-      XLSX.writeFile(workbook, "SupervisorMaster_Data.xlsx");
-    };
+    if (data.length === 0) {
+      alert("No Data Found");
+      return;
+    }
+
+    const DataColumns = [
+      "Plant_Code",
+      "Sup_Code",
+      "Sup_Name",
+      "ActiveStatus",
+    ];
+
+    const filteredData = data.map((item) => ({
+      Plant_Code: item.Plant_Code,
+      Sup_Code: item.Sup_Code,
+      Sup_Name: item.Sup_Name,
+
+      ActiveStatus: item.Active_Status ? "Active" : "Inactive"
+
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(filteredData, {
+      header: DataColumns,
+    });
+    worksheet['!cols'] = [
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 30 },
+
+      { wch: 20 },
+    ];
+    // Style header row
+    DataColumns.forEach((_, index) => {
+      const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+      if (!worksheet[cellAddress]) return;
+      worksheet[cellAddress].s = {
+        font: {
+          bold: true,
+          color: { rgb: "000000" },
+        },
+        fill: {
+          fgColor: { rgb: "FFFF00" },
+        },
+        alignment: {
+          horizontal: "center",
+        },
+      };
+    });
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "StorageLocation");
+    XLSX.writeFile(workbook, "SupervisorMaster_Data.xlsx");
+  };
   return (
     <div
       style={{
@@ -320,7 +320,7 @@ const SupvCode = () => {
             marginBottom: -7,
           }}
         >
-         SupvCode Master
+          SupvCode Master
         </h2>
       </div>
 
@@ -452,36 +452,36 @@ const SupvCode = () => {
           }}
         />
       </div>
-       {/* {Add Model} */}
-            <Modal open={openAddModal} onClose={() => setOpenAddModal(false)}>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  width: 400,
-                  bgcolor: "background.paper",
-                  borderRadius: 2,
-                  boxShadow: 24,
-                  p: 4,
-                  margin: "auto",
-                  marginTop: "10%",
-                  gap: "15px",
-                }}
-              >
-                <h3
-                  style={{
-                    gridColumn: "span 2",
-                    textAlign: "center",
-                    color: "#2e59d9",
-                    textDecoration: "underline",
-                    textDecorationColor: "#88c57a",
-                    textDecorationThickness: "3px",
-                  }}
-                >
-                  Add Supervisor Master
-                </h3>
-                
-                <FormControl fullWidth>
+      {/* {Add Model} */}
+      <Modal open={openAddModal} onClose={() => setOpenAddModal(false)}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
+            width: 400,
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            margin: "auto",
+            marginTop: "10%",
+            gap: "15px",
+          }}
+        >
+          <h3
+            style={{
+              gridColumn: "span 2",
+              textAlign: "center",
+              color: "#2e59d9",
+              textDecoration: "underline",
+              textDecorationColor: "#88c57a",
+              textDecorationThickness: "3px",
+            }}
+          >
+            Add Supervisor Master
+          </h3>
+
+          <FormControl fullWidth>
             <InputLabel>Plant Code</InputLabel>
             <Select
               label="Plant Code"
@@ -496,234 +496,236 @@ const SupvCode = () => {
             </Select>
           </FormControl>
           <TextField
-                  label="Supervisor Code"
-                  name="Supervisor Code"
-                  value={Sup_Code} 
-                 
-                  type="text"
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Remove any non-digit character
-                    if (/^\d*$/.test(value)) {
-                      setSup_Code(value);
-                    }
-                  }}
-                  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
-                     maxLength: 3,
-                
-                  }}
-                  required
-                 
-                />
-                <TextField
-                  label="Supervisor Name"
-                  name="Sup_Name"
-                  value={Sup_Name} 
-                  onChange={(e) => setSup_Name(e.target.value)}
-                  fullWidth
-                  
-                  required
-                />
-                <TextField
-                  label="Supervisor Lead Time"
-                  name="Supv_Lead_Time"
-                  value={Supv_Lead_Time} 
-                  type="text"
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Remove any non-digit character
-                    if (/^\d*$/.test(value)) {
-                      setSupv_Lead_Time(value);
-                    }
-                  }}
-                  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
-                    // maxLength: 3,
-                
-                  }}
-                  required
-                 
-                />
-      
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={ActiveStatus}
-                      onChange={(e) => setActiveStatus(e.target.checked)}
-                      color="success" // Always use 'success' to keep the thumb green when active
-                      sx={{
-                        "& .MuiSwitch-track": {
-                          backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                          backgroundImage: "none !important", // Disable background image
-                        },
-                        "& .MuiSwitch-thumb": {
-                          backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                          borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                        },
-                      }}
-                    />
-                  }
-                  label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-                  labelPlacement="end"
-                  style={{
-                    color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-                    fontWeight: "bold",
-                  }}
-                />
-                <Box
-                  sx={{
-                    gridColumn: "span 2",
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "10px",
-                    marginTop: "15px",
-                  }}
-                >
-                  <Button
-                    variant="contained"
-                    color="error"
-                    onClick={() => handleCloseAddModal(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    style={{ width: "90px" }}
-                    variant="contained"
-                    color="primary"
-                    onClick={handleAdd}
-                  >
-                    Add
-                  </Button>
-                </Box>
-              </Box>
-            </Modal>
-      
-            {/* ✅ Edit Modal */}
-            <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
-              <Box
+            label="Supervisor Code"
+            name="Supervisor Code"
+            value={Sup_Code}
+            type="text"
+            onChange={(e) => {
+              const value = e.target.value;
+              // Remove any non-digit character
+              // if (/^\d*$/.test(value)) {
+              const cleaned = value.replace(/[^a-zA-Z0-9]/g, "");
+              setSup_Code(cleaned);
+              // }
+            }}
+            inputProps={{
+              // inputMode: 'numeric', pattern: '[0-9]*',
+              maxLength: 4,
+            }}
+            required
+
+          />
+          <TextField
+            label="Supervisor Name"
+            name="Sup_Name"
+            value={Sup_Name}
+            onChange={(e) => setSup_Name(e.target.value)}
+            fullWidth
+
+            required
+          />
+          <TextField
+            label="Supervisor Lead Time"
+            name="Supv_Lead_Time"
+            value={Supv_Lead_Time}
+            type="text"
+            onChange={(e) => {
+              const value = e.target.value;
+              // Remove any non-digit character
+              if (/^\d*$/.test(value)) {
+                setSupv_Lead_Time(value);
+              }
+            }}
+            inputProps={{
+              inputMode: 'numeric', pattern: '[0-9]*',
+              // maxLength: 3,
+
+            }}
+            required
+
+          />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={ActiveStatus}
+                onChange={(e) => setActiveStatus(e.target.checked)}
+                color="success" // Always use 'success' to keep the thumb green when active
                 sx={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  width: 400,
-                  bgcolor: "background.paper",
-                  borderRadius: 2,
-                  boxShadow: 24,
-                  p: 4,
-                  margin: "auto",
-                  marginTop: "10%",
-                  gap: "15px",
+                  "& .MuiSwitch-track": {
+                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
+                    backgroundImage: "none !important", // Disable background image
+                  },
+                  "& .MuiSwitch-thumb": {
+                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
+                    borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
+                  },
                 }}
-              >
-                <h3
-                  style={{
-                    gridColumn: "span 2",
-                    textAlign: "center",
-                    color: "#2e59d9",
-                    textDecoration: "underline",
-                    textDecorationColor: "#88c57a",
-                    textDecorationThickness: "3px",
-                  }}
-                >
-                  Edit Supervisor Master
-                </h3>
-                <TextField
-                  label="Plant"
-                  name="Plant"
-                  value={PlantCode} // Use the current value of PlantCode
-                  fullWidth
-                  InputProps={{
-                    readOnly: true, // Make it read-only
-                  }}
-                  required
-                />
-      
-      <TextField
-                  label="Supervisor Code"
-                  name="Supervisor Code"
-                  value={Sup_Code} // Use the current value of PlantCode
-                  fullWidth
-                  InputProps={{
-                    readOnly: true, // Make it read-only
-                  }}
-                  required
-                />
-                <TextField
-                  label="Supervisor Name"
-                  name="Sup_Name"
-                  value={Sup_Name} 
-                  onChange={(e) => setSup_Name(e.target.value)}
-                  fullWidth
-                  
-                  required
-                />
-      
-              <TextField
-                  label="Supervisor Lead Time"
-                  name="Supv_Lead_Time"
-                  value={Supv_Lead_Time} 
-                  type="text"
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Remove any non-digit character
-                    if (/^\d*$/.test(value)) {
-                      setSupv_Lead_Time(value);
-                    }
-                  }}
-                  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
-                    // maxLength: 3,
-                
-                  }}
-                  required
-                 
-                />
-      
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={ActiveStatus}
-                      onChange={(e) => setActiveStatus(e.target.checked)}
-                      color="success" // Always use 'success' to keep the thumb green when active
-                      sx={{
-                        "& .MuiSwitch-track": {
-                          backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                          backgroundImage: "none !important", // Disable background image
-                        },
-                        "& .MuiSwitch-thumb": {
-                          backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                          borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                        },
-                      }}
-                    />
-                  }
-                  label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-                  labelPlacement="end"
-                  style={{
-                    color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-                    fontWeight: "bold",
-                  }}
-                />
-      
-                <Box
-                  sx={{
-                    gridColumn: "span 2",
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "10px",
-                    marginTop: "15px",
-                  }}
-                >
-                  <Button
-                    variant="contained"
-                    color="error"
-                    onClick={handleCloseEditModal}
-                  >
-                    Cancel
-                  </Button>
-                  <Button variant="contained" color="primary" onClick={handleUpdate}>
-                    Update
-                  </Button>
-                </Box>
-              </Box>
-            </Modal>
+              />
+            }
+            label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
+            labelPlacement="end"
+            style={{
+              color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
+              fontWeight: "bold",
+            }}
+          />
+          <Box
+            sx={{
+              gridColumn: "span 2",
+              display: "flex",
+              justifyContent: "center",
+              gap: "10px",
+              marginTop: "15px",
+            }}
+          >
+            <Button
+              variant="contained"
+              color="error"
+              onClick={() => handleCloseAddModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              style={{ width: "90px" }}
+              variant="contained"
+              color="primary"
+              onClick={handleAdd}
+            >
+              Add
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
+
+      {/* ✅ Edit Modal */}
+      <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
+            width: 400,
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            margin: "auto",
+            marginTop: "10%",
+            gap: "15px",
+          }}
+        >
+          <h3
+            style={{
+              gridColumn: "span 2",
+              textAlign: "center",
+              color: "#2e59d9",
+              textDecoration: "underline",
+              textDecorationColor: "#88c57a",
+              textDecorationThickness: "3px",
+            }}
+          >
+            Edit Supervisor Master
+          </h3>
+          <TextField
+            label="Plant"
+            name="Plant"
+            value={PlantCode} // Use the current value of PlantCode
+            fullWidth
+            InputProps={{
+              readOnly: true, // Make it read-only
+            }}
+            required
+          />
+
+          <TextField
+            label="Supervisor Code"
+            name="Supervisor Code"
+            value={Sup_Code} // Use the current value of PlantCode
+            fullWidth
+            InputProps={{
+              readOnly: true, // Make it read-only
+            }}
+            required
+          />
+          <TextField
+            label="Supervisor Name"
+            name="Sup_Name"
+            value={Sup_Name}
+            onChange={(e) => setSup_Name(e.target.value)}
+            fullWidth
+
+            required
+          />
+
+          <TextField
+            label="Supervisor Lead Time"
+            name="Supv_Lead_Time"
+            value={Supv_Lead_Time}
+            type="text"
+            onChange={(e) => {
+              const value = e.target.value;
+              // Remove any non-digit character
+              if (/^\d*$/.test(value)) {
+                setSupv_Lead_Time(value);
+              }
+            }}
+            inputProps={{
+              inputMode: 'numeric', pattern: '[0-9]*',
+              // maxLength: 3,
+
+            }}
+            required
+
+          />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={ActiveStatus}
+                onChange={(e) => setActiveStatus(e.target.checked)}
+                color="success" // Always use 'success' to keep the thumb green when active
+                sx={{
+                  "& .MuiSwitch-track": {
+                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
+                    backgroundImage: "none !important", // Disable background image
+                  },
+                  "& .MuiSwitch-thumb": {
+                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
+                    borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
+                  },
+                }}
+              />
+            }
+            label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
+            labelPlacement="end"
+            style={{
+              color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
+              fontWeight: "bold",
+            }}
+          />
+
+          <Box
+            sx={{
+              gridColumn: "span 2",
+              display: "flex",
+              justifyContent: "center",
+              gap: "10px",
+              marginTop: "15px",
+            }}
+          >
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleCloseEditModal}
+            >
+              Cancel
+            </Button>
+            <Button variant="contained" color="primary" onClick={handleUpdate}>
+              Update
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
     </div>
   );
 };
