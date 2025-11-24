@@ -165,8 +165,8 @@ const SupvCode = () => {
       return;
     }
     // Step 2: Validate Sup_Code (must be exactly 4 digits)
-    if (Sup_Code.toString().length !== 4) {
-      alert("Storage Code must be exactly 4 digits");
+    if (Sup_Code.toString().length !== 3) {
+      alert("Storage Code must be exactly 3 digits");
       return;
     }
 
@@ -510,7 +510,7 @@ const SupvCode = () => {
             }}
             inputProps={{
               // inputMode: 'numeric', pattern: '[0-9]*',
-              maxLength: 4,
+              maxLength: 3,
             }}
             required
 
