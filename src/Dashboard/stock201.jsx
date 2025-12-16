@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { TextField,Button,Modal,Box,IconButton,Typography,} from "@mui/material";
+import { TextField, Button, Modal, Box, IconButton, Typography, } from "@mui/material";
 import { FaDownload } from "react-icons/fa";
 import { deepPurple } from '@mui/material/colors';
 
 import {
-  Table,TableHead,TableRow,TableCell,TableBody, InputLabel,
+  Table, TableHead, TableRow, TableCell, TableBody, InputLabel,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { decryptSessionData } from "../controller/StorageUtils"
@@ -22,9 +22,10 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import SearchIcon from "@mui/icons-material/Search";
 import { FaFileExcel } from "react-icons/fa";
-import * as XLSX from 'sheetjs-style';
+// import * as XLSX from 'sheetjs-style';
+import * as XLSX from "xlsx-js-style";
 import {
-  Movement201, getresubmit,  getTransactionData, getdetails, getPlants,getMaterial, getSLoc,
+  Movement201, getresubmit, getTransactionData, getdetails, getPlants, getMaterial, getSLoc,
   getMovement, getReasonForMovement, getCostCenter, getValuationType, get201ApprovalView, Edit201Record,
 } from "../controller/Movement201apiservice";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -34,7 +35,7 @@ import { api } from "../controller/constants";
 const Stock201 = () => {
 
   const [searchText, setSearchText] = useState("");
-  const [rows, setRows] = useState([]); 
+  const [rows, setRows] = useState([]);
   const [originalRows, setOriginalRows] = useState([]);
   const [openUploadModal, setOpenUploadModal] = useState(false);
   const [openExcelDownloadModal, setOpenExcelDownloadModal] = useState(false);
@@ -141,7 +142,7 @@ const Stock201 = () => {
 
 
 
-// check box select and re submit
+  // check box select and re submit
   const handleOpenCheckResubmitModal = async () => {
     if (!selectedRowIds || selectedRowIds.length === 0) {
       alert("Please select at least one row to resubmit.");
@@ -227,7 +228,7 @@ const Stock201 = () => {
       //console.error("Error updating user:", error);
     }
   };
-  
+
   const get_Material = async () => {
     try {
       const response = await getMaterial();
@@ -350,7 +351,7 @@ const Stock201 = () => {
     getData();
     handleCloseUploadModal();
   }
-//download the new error duplicate for the upload data
+  //download the new error duplicate for the upload data
   const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
     const wb = XLSX.utils.book_new();
 
@@ -603,7 +604,7 @@ const Stock201 = () => {
     }
   };
 
-  
+
   const handleConditionalRowClick = async (params) => {
     console.log('selected row', params.row);
     const rawStatus = params.row?.Approval_Status;
@@ -656,84 +657,84 @@ const Stock201 = () => {
     { field: "Qty", headerName: "Qty", flex: 1 },
     { field: "Movement_Code", headerName: "Movement Type", flex: 1 },
     { field: "Approval_Status", headerName: "Approval Status", flex: 1 },
- {
-  field: "actions",
-  headerName: "Actions",
-  flex: 1,
-  sortable: false,
-  editable: false,
-  disableColumnMenu: true,
-  headerClassName: "actions-header",
-  cellClassName: "actions-cell",
-  renderHeader: () => {
-    const selectableRows = rows.filter((row) => {
-      const status = row.Approval_Status?.toLowerCase().trim();
-      return status === "under query";
-    });
-    const allSelected =
-      selectableRows.length > 0 &&
-      selectedRowIds.length === selectableRows.length;
-    const isIndeterminate =
-      selectedRowIds.length > 0 &&
-      selectedRowIds.length < selectableRows.length;
+    {
+      field: "actions",
+      headerName: "Actions",
+      flex: 1,
+      sortable: false,
+      editable: false,
+      disableColumnMenu: true,
+      headerClassName: "actions-header",
+      cellClassName: "actions-cell",
+      renderHeader: () => {
+        const selectableRows = rows.filter((row) => {
+          const status = row.Approval_Status?.toLowerCase().trim();
+          return status === "under query";
+        });
+        const allSelected =
+          selectableRows.length > 0 &&
+          selectedRowIds.length === selectableRows.length;
+        const isIndeterminate =
+          selectedRowIds.length > 0 &&
+          selectedRowIds.length < selectableRows.length;
 
-    return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          width: "100%",
-        }}
-      >
-        <span>Actions</span>
-        {selectableRows.length > 0 && (
-          <Checkbox
-            checked={allSelected}
-            indeterminate={isIndeterminate}
-            onChange={handleHeaderCheckboxChange}
-            inputProps={{ "aria-label": "Select all rows" }}
-            onClick={(e) => e.stopPropagation()}
-          />
-        )}
-      </div>
-    );
-  },
-  renderCell: (params) => {
-    const row = params.row;
-    const status = row.Approval_Status?.toLowerCase().trim();
-    const isSelectable = status === "under query";
-    const isChecked = selectedRowIds.includes(row.Trn_Sap_ID);
-
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-            setSelectedRow(row);
-            handleOpenViewStatusModal(row);
-          }}
-          title="View Details"
-          style={{ cursor: "pointer", color: "#008080" }}
-        >
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50px' }}>
-            <InfoIcon sx={{ fontSize: 28 }} />
-          </Box>
-        </div>
-
-        {isSelectable && (
-          <Checkbox
-            checked={isChecked}
-            onChange={(e) => {
-              e.stopPropagation();
-              handleRowCheckboxChange(row.Trn_Sap_ID, e.target.checked);
+        return (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%",
             }}
-          />
-        )}
-      </div>
-    );
-  }
-}
+          >
+            <span>Actions</span>
+            {selectableRows.length > 0 && (
+              <Checkbox
+                checked={allSelected}
+                indeterminate={isIndeterminate}
+                onChange={handleHeaderCheckboxChange}
+                inputProps={{ "aria-label": "Select all rows" }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
+          </div>
+        );
+      },
+      renderCell: (params) => {
+        const row = params.row;
+        const status = row.Approval_Status?.toLowerCase().trim();
+        const isSelectable = status === "under query";
+        const isChecked = selectedRowIds.includes(row.Trn_Sap_ID);
+
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedRow(row);
+                handleOpenViewStatusModal(row);
+              }}
+              title="View Details"
+              style={{ cursor: "pointer", color: "#008080" }}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50px' }}>
+                <InfoIcon sx={{ fontSize: 28 }} />
+              </Box>
+            </div>
+
+            {isSelectable && (
+              <Checkbox
+                checked={isChecked}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  handleRowCheckboxChange(row.Trn_Sap_ID, e.target.checked);
+                }}
+              />
+            )}
+          </div>
+        );
+      }
+    }
 
   ];
 
@@ -744,8 +745,8 @@ const Stock201 = () => {
   };
 
 
-   // from & to downloadd
-    const handleCloseModal = () => {
+  // from & to downloadd
+  const handleCloseModal = () => {
     setOpenExcelDownloadModal(false);
 
   };
@@ -1022,45 +1023,45 @@ const Stock201 = () => {
               event.stopPropagation();
             }
           }}
-sx={{
-  // Header Style
-  "& .MuiDataGrid-columnHeader": {
-    backgroundColor: "#bdbdbd",
-    color: "black",
-    fontWeight: "bold",
-  },
-  "& .MuiDataGrid-columnHeaderTitle": {
-    fontSize: "16px",
-  },
+          sx={{
+            // Header Style
+            "& .MuiDataGrid-columnHeader": {
+              backgroundColor: "#bdbdbd",
+              color: "black",
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-columnHeaderTitle": {
+              fontSize: "16px",
+            },
 
-  // ✅ Actions column header
-  "& .MuiDataGrid-columnHeader--field-actions .MuiDataGrid-columnHeaderTitle": {
-    fontSize: "16px",
-   // fontWeight: "normal", // Remove bold
-  },
+            // ✅ Actions column header
+            "& .MuiDataGrid-columnHeader--field-actions .MuiDataGrid-columnHeaderTitle": {
+              fontSize: "16px",
+              // fontWeight: "normal", // Remove bold
+            },
 
-  // ✅ Actions column cells
-  "& .MuiDataGrid-cell--field-actions": {
-    fontSize: "16px",
-   // fontWeight: "normal", // Remove bold
-  },
+            // ✅ Actions column cells
+            "& .MuiDataGrid-cell--field-actions": {
+              fontSize: "16px",
+              // fontWeight: "normal", // Remove bold
+            },
 
-  "& .MuiDataGrid-row": {
-    backgroundColor: "#f5f5f5",
-    "&:hover": {
-      backgroundColor: "#f5f5f5",
-    },
-  },
+            "& .MuiDataGrid-row": {
+              backgroundColor: "#f5f5f5",
+              "&:hover": {
+                backgroundColor: "#f5f5f5",
+              },
+            },
 
-  "& .MuiDataGrid-row.Mui-selected": {
-    backgroundColor: "inherit",
-  },
+            "& .MuiDataGrid-row.Mui-selected": {
+              backgroundColor: "inherit",
+            },
 
-  "& .MuiDataGrid-cell": {
-    color: "#333",
-    fontSize: "14px",
-  },
-}}
+            "& .MuiDataGrid-cell": {
+              color: "#333",
+              fontSize: "14px",
+            },
+          }}
 
         />
       </div>
@@ -1343,7 +1344,7 @@ sx={{
           </Box>
         </Box>
       </Modal>
-      
+
       {/* Row edit modal */}
       <Modal open={openRowEditModal} onClose={handleCloseRowEditModal}>
         <Box

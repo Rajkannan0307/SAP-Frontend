@@ -24,7 +24,8 @@ import {
 } from "@mui/x-data-grid";
 import SearchIcon from "@mui/icons-material/Search";
 import { FaFileExcel } from "react-icons/fa";
-import * as XLSX from 'sheetjs-style';
+// import * as XLSX from 'sheetjs-style';
+import * as XLSX from "xlsx-js-style";
 import InfoIcon from '@mui/icons-material/Info';
 import { PiUploadDuotone } from "react-icons/pi";
 

@@ -32,6 +32,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditTestRigStatus from "./EditTestLab";
 import ViewTestRigStatus from "./ViewTestLab";
+import SectionHeading from "../components/Header";
 
 const TestLabScreen = () => {
     const [searchText, setSearchText] = useState("");
@@ -319,7 +320,7 @@ const TestLabScreen = () => {
                     alignItems: "center",
                 }}
             >
-                <h2
+                {/* <h2
                     style={{
                         margin: 0,
                         color: "#2e59d9",
@@ -330,7 +331,10 @@ const TestLabScreen = () => {
                     }}
                 >
                     Manage Test Rig
-                </h2>
+                </h2> */}
+                <SectionHeading>
+                    Manage Test Rig
+                </SectionHeading>
             </div>
 
             {/* Search and Icons */}

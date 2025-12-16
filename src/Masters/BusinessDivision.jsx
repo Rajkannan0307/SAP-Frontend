@@ -29,6 +29,7 @@ import {
   getdetails,
   getCompany,
 } from "../controller/BusinessDivisionMasterapiservice";
+import SectionHeading from "../components/Header";
 
 const BusinessDivision = () => {
   const [searchText, setSearchText] = useState("");
@@ -51,10 +52,10 @@ const BusinessDivision = () => {
   // const [newRecord] = useState([]);
   // const [updateRecord] = useState([]);
   // const [errRecord] = useState([]);
-  const [ Business_DivisionCode, setBusiness_DivisionCode] = useState("");
-  const [ Business_DivisionID, setBusiness_DivisionID] = useState("");
-  const [ Business_DivisionName, setBusiness_DivisionName] = useState("");
-  const [ Business_DivisionAddress, setBusiness_DivisionAddress] = useState("");
+  const [Business_DivisionCode, setBusiness_DivisionCode] = useState("");
+  const [Business_DivisionID, setBusiness_DivisionID] = useState("");
+  const [Business_DivisionName, setBusiness_DivisionName] = useState("");
+  const [Business_DivisionAddress, setBusiness_DivisionAddress] = useState("");
   const columns = [
     { field: "Com_Code", headerName: "Company Code", flex: 1 },
     { field: "Business_Division_Code", headerName: "Business Division Code ", flex: 1 },
@@ -102,9 +103,9 @@ const BusinessDivision = () => {
     try {
       const response = await getdetails();
       console.log(response); // Check the structure of response
-       setData(response); // Ensure that this is correctly setting the data
+      setData(response); // Ensure that this is correctly setting the data
       setOriginalRows(response); // for reference during search
-       setRows(response);//Sets the displayed data, possibly filtered or modified
+      setRows(response);//Sets the displayed data, possibly filtered or modified
     } catch (error) {
       console.error(error);
       setData([]); // Handle error by setting empty data
@@ -115,8 +116,8 @@ const BusinessDivision = () => {
 
   useEffect(() => {
     getData();
-     console.log('username', Username)
-     console.log('UserID', UserID)
+    console.log('username', Username)
+    console.log('UserID', UserID)
   }, []);
   const get_Company = async () => {
     try {
@@ -151,7 +152,7 @@ const BusinessDivision = () => {
     setIsUploading(false);
   };
 
- 
+
 
 
   // ✅ Handle Row Click for Edit
@@ -180,7 +181,7 @@ const BusinessDivision = () => {
           "Business_Division_Code",
           "Business_Division_Name",
           "Business_Division_Address",
-          
+
         ].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
@@ -194,21 +195,21 @@ const BusinessDivision = () => {
   // ✅ Handle Add Material
   const handleAdd = async () => {
     console.log("Data being sent to the server:", {
-      ActiveStatus,UserID,CompanyCode, Business_DivisionCode, Business_DivisionName, Business_DivisionAddress
+      ActiveStatus, UserID, CompanyCode, Business_DivisionCode, Business_DivisionName, Business_DivisionAddress
     });
     console.log("Add button clicked");
-    if (CompanyCode === '' ||  Business_DivisionCode === '' ||  Business_DivisionName === '' ||  Business_DivisionAddress === '' ) {
+    if (CompanyCode === '' || Business_DivisionCode === '' || Business_DivisionName === '' || Business_DivisionAddress === '') {
       alert("Please fill in all required fields");
       return;  // Exit the function if validation fails
     }
 
     try {
       const data = {
-        UserID:UserID,
-        Com_Code:CompanyCode,
-         Business_Division_Code: Business_DivisionCode,
-         Business_Division_Name: Business_DivisionName,
-         Business_Division_Address: Business_DivisionAddress,
+        UserID: UserID,
+        Com_Code: CompanyCode,
+        Business_Division_Code: Business_DivisionCode,
+        Business_Division_Name: Business_DivisionName,
+        Business_Division_Address: Business_DivisionAddress,
         Active_Status: ActiveStatus,
       };
       const response = await getAdd(data);
@@ -221,7 +222,7 @@ const BusinessDivision = () => {
       }
     } catch (error) {
       console.error("Error in adding  Business_Division:", error);
-  
+
       // Step 4: Show error from server (like Employee_ID already exists)
       if (error.response && error.response.data && error.response.data.message) {
         alert(error.response.data.message);
@@ -234,19 +235,19 @@ const BusinessDivision = () => {
   const handleUpdate = async () => {
     try {
       const data = {
-        UserID:UserID,
-         Business_Division_ID:  Business_DivisionID,
+        UserID: UserID,
+        Business_Division_ID: Business_DivisionID,
         Com_Code: CompanyCode,
-         Business_Division_Code:  Business_DivisionCode,
-         Business_Division_Name:  Business_DivisionName,
-         Business_Division_Address:  Business_DivisionAddress,
+        Business_Division_Code: Business_DivisionCode,
+        Business_Division_Name: Business_DivisionName,
+        Business_Division_Address: Business_DivisionAddress,
         Active_Status: ActiveStatus,
       };
-  
+
       console.log("Data being sent:", data);
-  
+
       const response = await getUpdates(data);
-  
+
       // If success
       if (response.data.success) {
         alert(response.data.message);
@@ -258,7 +259,7 @@ const BusinessDivision = () => {
       }
     } catch (error) {
       console.error("Error details:", error.response?.data);
-  
+
       if (error.response && error.response.data && error.response.data.message) {
         alert(error.response.data.message); // Specific error from backend
       } else {
@@ -266,7 +267,7 @@ const BusinessDivision = () => {
       }
     }
   };
-  
+
   // excel download
   const handleDownloadExcel = () => {
     if (data.length === 0) {
@@ -279,28 +280,28 @@ const BusinessDivision = () => {
       "Business_Division_Code",
       "Business_Division_Name",
       "Business_Division_Address",
-      
+
       "ActiveStatus",
     ];
 
     const filteredData = data.map((item) => ({
       Company_Code: item.Com_Code,
-       Business_Division_Code: item.Business_Division_Code,
-       Business_Division_Name: item.Business_Division_Name,
-       Business_Division_Address: item.Business_Division_Address,
+      Business_Division_Code: item.Business_Division_Code,
+      Business_Division_Name: item.Business_Division_Name,
+      Business_Division_Address: item.Business_Division_Address,
       ActiveStatus: item.Active_Status ? "Active" : "Inactive"
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(filteredData, {
       header: DataColumns,
     });
-worksheet['!cols'] = [
-  { wch: 20 },
-  { wch: 20 },
-  { wch: 30 }, 
-   { wch: 30 }, 
-    { wch: 20 },
-];
+    worksheet['!cols'] = [
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 30 },
+      { wch: 30 },
+      { wch: 20 },
+    ];
     // Style header row
     DataColumns.forEach((_, index) => {
       const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
@@ -344,7 +345,7 @@ worksheet['!cols'] = [
           alignItems: "center",
         }}
       >
-        <h2
+        {/* <h2
           style={{
             margin: 0,
             color: "#2e59d9",
@@ -355,7 +356,11 @@ worksheet['!cols'] = [
           }}
         >
            Business Division Master
-        </h2>
+        </h2> */}
+
+        <SectionHeading>
+          Business Division Master
+        </SectionHeading>
       </div>
 
       {/* Search and Icons */}
@@ -407,8 +412,8 @@ worksheet['!cols'] = [
 
         {/* Icons */}
         <div style={{ display: "flex", gap: "10px" }}>
-          
-          
+
+
 
           {/* Download Button */}
           <IconButton
@@ -462,7 +467,7 @@ worksheet['!cols'] = [
           sx={{
             // Header Style
             "& .MuiDataGrid-columnHeader": {
-             backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
+              backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
               color: "black",
               fontWeight: "bold",
             },
@@ -534,36 +539,37 @@ worksheet['!cols'] = [
           </FormControl>
 
           <TextField
-  label=" Business Division Code"
-  name=" Business Division Code"
-  value={Business_DivisionCode}
-  type="text"
-  onChange={(e) => {
-    const value = e.target.value;
-    // Remove any non-digit character
-    if (/^\d*$/.test(value)) {
-      setBusiness_DivisionCode(value);
-    }
-  }}
-  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
-    maxLength: 4,
+            label=" Business Division Code"
+            name=" Business Division Code"
+            value={Business_DivisionCode}
+            type="text"
+            onChange={(e) => {
+              const value = e.target.value;
+              // Remove any non-digit character
+              if (/^\d*$/.test(value)) {
+                setBusiness_DivisionCode(value);
+              }
+            }}
+            inputProps={{
+              inputMode: 'numeric', pattern: '[0-9]*',
+              maxLength: 4,
 
-  }}
-  required
-/>
+            }}
+            required
+          />
 
 
           <TextField
             label="Business Division Name"
             name=" Business Division Name"
-            value={ Business_DivisionName}
+            value={Business_DivisionName}
             onChange={(e) => setBusiness_DivisionName(e.target.value)}
             required
           />
           <TextField
             label=" Business Division Address"
             name=" Business Division Address"
-            value={ Business_DivisionAddress}
+            value={Business_DivisionAddress}
             onChange={(e) => setBusiness_DivisionAddress(e.target.value)}
             required
           />
@@ -649,20 +655,20 @@ worksheet['!cols'] = [
           >
             Edit  Business Division
           </h3>
-         <TextField
-                     label="Company Code"
-                     name="Company_Code"
-                     value={CompanyCode}
-                     onChange={(e) => setCompanyCode(e.target.value)}
-                     InputProps={{
-                       readOnly: true,  // This makes the TextField read-only
-                     }}
-                   />
+          <TextField
+            label="Company Code"
+            name="Company_Code"
+            value={CompanyCode}
+            onChange={(e) => setCompanyCode(e.target.value)}
+            InputProps={{
+              readOnly: true,  // This makes the TextField read-only
+            }}
+          />
 
           <TextField
             label=" Business Division Code"
             name=" Business Divisio Code"
-            value={ Business_DivisionCode}
+            value={Business_DivisionCode}
             onChange={(e) => setBusiness_DivisionCode(e.target.value)}
             InputProps={{
               readOnly: true,  // This makes the TextField read-only
@@ -671,14 +677,14 @@ worksheet['!cols'] = [
           <TextField
             label=" Business Division Name"
             name=" Business Division Name"
-            value={ Business_DivisionName}
+            value={Business_DivisionName}
             onChange={(e) => setBusiness_DivisionName(e.target.value)}
             required
           />
           <TextField
             label=" Business Division Address"
             name=" Business Division Address"
-            value={ Business_DivisionAddress}
+            value={Business_DivisionAddress}
             onChange={(e) => setBusiness_DivisionAddress(e.target.value)}
             required
           />
@@ -731,7 +737,7 @@ worksheet['!cols'] = [
           </Box>
         </Box>
       </Modal>
-     
+
     </div>
   );
 };

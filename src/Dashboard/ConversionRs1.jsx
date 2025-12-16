@@ -22,10 +22,11 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import SearchIcon from "@mui/icons-material/Search";
 import { FaFileExcel } from "react-icons/fa";
-import * as XLSX from 'sheetjs-style';
+// import * as XLSX from 'sheetjs-style';
+import * as XLSX from "xlsx-js-style";
 import {
-   MovementConversion,getresubmit, getTransactionData, getdetails, getPlants, getMaterial, getSLoc,
-  getMovement,getApprovalView,getRs1ApprovalView, getCostCenter, getValuationType, EditRecord,
+  MovementConversion, getresubmit, getTransactionData, getdetails, getPlants, getMaterial, getSLoc,
+  getMovement, getApprovalView, getRs1ApprovalView, getCostCenter, getValuationType, EditRecord,
 } from "../controller/MovtCRs1apiservice";
 
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -221,7 +222,7 @@ const MovementRs1 = () => {
     getData();
   }, []);
 
-  
+
 
   // Backend cpnnect to -(get) plant, storage location, material, valuvation
   const get_Plant = async () => {
@@ -250,14 +251,14 @@ const MovementRs1 = () => {
     }
   };
 
-//   const get_ReasonForMovement = async () => {
-//     try {
-//       const response = await getReasonForMovement();
-//       setReasonForMovement(response.data);
-//     } catch (error) {
-//       // console.error("Error updating user:", error);
-//     }
-//   };
+  //   const get_ReasonForMovement = async () => {
+  //     try {
+  //       const response = await getReasonForMovement();
+  //       setReasonForMovement(response.data);
+  //     } catch (error) {
+  //       // console.error("Error updating user:", error);
+  //     }
+  //   };
   const get_Movement = async () => {
     try {
       const response = await getMovement();
@@ -311,8 +312,8 @@ const MovementRs1 = () => {
     setUploadedFile(event.target.files[0]);
   };
 
-  
- const handleUploadData = async () => {
+
+  const handleUploadData = async () => {
     if (!uploadedFile) {
       alert("Please select a file first.");
       return;
@@ -341,91 +342,91 @@ const MovementRs1 = () => {
   }
 
 
-const downloadExcel = (newRecord = [], errRecord = []) => {
-  const wb = XLSX.utils.book_new();
+  const downloadExcel = (newRecord = [], errRecord = []) => {
+    const wb = XLSX.utils.book_new();
 
-  const commonHeaders = [
-    'Plant_Code', 'Material_Code' ,'Qty', 'Provision_Qty',
-    'Provision_Value', 'Rate', 'Remark'
-  ];
+    const commonHeaders = [
+      'Plant_Code', 'Material_Code', 'Qty', 'Provision_Qty',
+      'Provision_Value', 'Rate', 'Remark'
+    ];
 
-  const errorHeaders = [
-    ...commonHeaders,
-    'Plant_Val', 'Material_Val',
-    'Plant_SLoc_Val', 'User_Plant_Val'
-  ];
+    const errorHeaders = [
+      ...commonHeaders,
+      'Plant_Val', 'Material_Val',
+      'Plant_SLoc_Val', 'User_Plant_Val'
+    ];
 
-  const formatRecord = (item) => ({
-    Plant_Code: item.Plant_Code || '',
-    Material_Code: item.Material_Code || '',
-    Qty: item.Qty || '',
-    Provision_Qty: item.Provision_Qty || '',
-    Provision_Value: item.Provision_Value || '',
-    Rate: item.Rate || '',
-    Remark: item.Remark || item.Remarks || ''
-  });
+    const formatRecord = (item) => ({
+      Plant_Code: item.Plant_Code || '',
+      Material_Code: item.Material_Code || '',
+      Qty: item.Qty || '',
+      Provision_Qty: item.Provision_Qty || '',
+      Provision_Value: item.Provision_Value || '',
+      Rate: item.Rate || '',
+      Remark: item.Remark || item.Remarks || ''
+    });
 
-  const formatErrorRecord = (item) => ({
-    ...formatRecord(item),
-    Plant_Val: item.Plant_Val || '',
-    Material_Val: item.Material_Val || '',
-    User_Plant_Val: item.User_Plant_Val || ''
-  });
+    const formatErrorRecord = (item) => ({
+      ...formatRecord(item),
+      Plant_Val: item.Plant_Val || '',
+      Material_Val: item.Material_Val || '',
+      User_Plant_Val: item.User_Plant_Val || ''
+    });
 
-  const newData = newRecord.map(formatRecord);
-  const errData = errRecord.map(formatErrorRecord);
+    const newData = newRecord.map(formatRecord);
+    const errData = errRecord.map(formatErrorRecord);
 
-  // --- New Records Sheet ---
-  const wsNew = XLSX.utils.json_to_sheet(newData.length ? newData : [{}], { header: commonHeaders });
-  styleHeaders(wsNew, commonHeaders);
-  XLSX.utils.book_append_sheet(wb, wsNew, 'New Records');
+    // --- New Records Sheet ---
+    const wsNew = XLSX.utils.json_to_sheet(newData.length ? newData : [{}], { header: commonHeaders });
+    styleHeaders(wsNew, commonHeaders);
+    XLSX.utils.book_append_sheet(wb, wsNew, 'New Records');
 
-  // --- Error Records Sheet ---
-  const wsErr = XLSX.utils.json_to_sheet(errData.length ? errData : [{}], { header: errorHeaders });
-  styleHeaders(wsErr, errorHeaders);
-  styleValidationColumns(wsErr, errorHeaders, errData.length);
-  XLSX.utils.book_append_sheet(wb, wsErr, 'Error Records');
+    // --- Error Records Sheet ---
+    const wsErr = XLSX.utils.json_to_sheet(errData.length ? errData : [{}], { header: errorHeaders });
+    styleHeaders(wsErr, errorHeaders);
+    styleValidationColumns(wsErr, errorHeaders, errData.length);
+    XLSX.utils.book_append_sheet(wb, wsErr, 'Error Records');
 
-  // Save Excel file
-  XLSX.writeFile(wb, 'ConversionMovt Data UploadLog.xlsx');
-};
+    // Save Excel file
+    XLSX.writeFile(wb, 'ConversionMovt Data UploadLog.xlsx');
+  };
 
 
-const styleHeaders = (ws, headers) => {
-  headers.forEach((_, colIdx) => {
-    const cell = ws[XLSX.utils.encode_cell({ c: colIdx, r: 0 })];
-    if (cell) {
-      cell.s = {
-        font: { bold: true },
-        fill: { fgColor: { rgb: 'FFFF99' } }, // Yellow
-        alignment: { horizontal: 'center' }
-      };
-    }
-  });
-};
-
-const styleValidationColumns = (ws, headers, rowCount) => {
-  const validationCols = [
-    'Plant_Val', 'Material_Val', 'SLoc_Val', 'CostCenter_Val',
-    'Plant_SLoc_Val', 'Reason_Val', 'User_Plant_Val'
-  ];
-
-  for (let r = 1; r <= rowCount; r++) {
-    validationCols.forEach(col => {
-      const c = headers.indexOf(col);
-      if (c === -1) return;
-      const cell = ws[XLSX.utils.encode_cell({ c, r })];
-      if (cell && typeof cell.v === 'string') {
-        const val = cell.v.trim().toLowerCase();
+  const styleHeaders = (ws, headers) => {
+    headers.forEach((_, colIdx) => {
+      const cell = ws[XLSX.utils.encode_cell({ c: colIdx, r: 0 })];
+      if (cell) {
         cell.s = {
-          font: {
-            color: { rgb: val === 'valid' ? '2E7D32' : 'FF0000' } // green/red
-          }
+          font: { bold: true },
+          fill: { fgColor: { rgb: 'FFFF99' } }, // Yellow
+          alignment: { horizontal: 'center' }
         };
       }
     });
-  }
-};
+  };
+
+  const styleValidationColumns = (ws, headers, rowCount) => {
+    const validationCols = [
+      'Plant_Val', 'Material_Val', 'SLoc_Val', 'CostCenter_Val',
+      'Plant_SLoc_Val', 'Reason_Val', 'User_Plant_Val'
+    ];
+
+    for (let r = 1; r <= rowCount; r++) {
+      validationCols.forEach(col => {
+        const c = headers.indexOf(col);
+        if (c === -1) return;
+        const cell = ws[XLSX.utils.encode_cell({ c, r })];
+        if (cell && typeof cell.v === 'string') {
+          const val = cell.v.trim().toLowerCase();
+          cell.s = {
+            font: {
+              color: { rgb: val === 'valid' ? '2E7D32' : 'FF0000' } // green/red
+            }
+          };
+        }
+      });
+    }
+  };
 
   useEffect(() => {
   }, [openRowEditModal]);
@@ -438,7 +439,7 @@ const styleValidationColumns = (ws, headers, rowCount) => {
       get_Material(),
       get_SLoc(),
       get_Movement(),
-    //   get_ReasonForMovement(),
+      //   get_ReasonForMovement(),
     ]);
   };
 
@@ -534,7 +535,7 @@ const styleValidationColumns = (ws, headers, rowCount) => {
       //setRejection_Value(params.row.Rejection_Value || 0);
       setProvision_Value(params.row.Provision_Value || 0);
       setRate_PerPart(params.row.Rate_PerPart || 0);
-      setPrice(params.row.Rate_PerPart); 
+      setPrice(params.row.Rate_PerPart);
 
       setSelectedRow(params.row);
       setOpenRowEditModal(true);
@@ -567,7 +568,7 @@ const styleValidationColumns = (ws, headers, rowCount) => {
     { field: "Date", headerName: "Date", width: 110 },
     { field: "Material_Code", headerName: "Material Code", width: 135 },
     { field: "Rs1_Qty", headerName: "Rs.1 ConversionQty", width: 166 },
-    { field: "Rate_PerPart", headerName: "Current Rate", width: 122 },  
+    { field: "Rate_PerPart", headerName: "Current Rate", width: 122 },
     { field: "Calculated_Value", headerName: "Rs.1 Value", width: 100 },
     { field: "Provision_Qty", headerName: "Provision Qty", width: 123 },
     { field: "Provision_Value", headerName: "Provision Value", width: 130 },
@@ -669,8 +670,8 @@ const styleValidationColumns = (ws, headers, rowCount) => {
     setToDate(''); // Reset To Date
   };
 
-// from & to downloadd
-    const handleCloseModal = () => {
+  // from & to downloadd
+  const handleCloseModal = () => {
     setOpenExcelDownloadModal(false);
 
   };
@@ -711,47 +712,47 @@ const styleValidationColumns = (ws, headers, rowCount) => {
 
 
   //edit modal funcation
-const toNullableNumber = (value) => {
-  if (value === null || value === undefined || value === '') return null;
-  const num = Number(value);
-  return isNaN(num) ? null : num;
-};
+  const toNullableNumber = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    const num = Number(value);
+    return isNaN(num) ? null : num;
+  };
 
-const handleUpdate = async () => {
-  setIsUpdating(true);
-  try {
-    const data = {
-  ModifiedBy: UserID,
-  DocID: String(DocID),
-  TrnSapID,
-  MatCode,
-  Qty: isNaN(Number(Qty)) ? null : Number(Qty),
-  Price: isNaN(Number(Rate_PerPart)) ? null : Number(Rate_PerPart),
-  ProvisionQty: isNaN(Number(Provision_Qty)) ? null : Number(Provision_Qty),
-  ProvisionValue: isNaN(Number(Provision_Value)) ? null : Number(Provision_Value),
-  SLocCode: String(SLocID),
-  ReasonForMovement
-};
+  const handleUpdate = async () => {
+    setIsUpdating(true);
+    try {
+      const data = {
+        ModifiedBy: UserID,
+        DocID: String(DocID),
+        TrnSapID,
+        MatCode,
+        Qty: isNaN(Number(Qty)) ? null : Number(Qty),
+        Price: isNaN(Number(Rate_PerPart)) ? null : Number(Rate_PerPart),
+        ProvisionQty: isNaN(Number(Provision_Qty)) ? null : Number(Provision_Qty),
+        ProvisionValue: isNaN(Number(Provision_Value)) ? null : Number(Provision_Value),
+        SLocCode: String(SLocID),
+        ReasonForMovement
+      };
 
 
-    console.log("🚀 Sending EditRs.1 Conversion payload:", data);
+      console.log("🚀 Sending EditRs.1 Conversion payload:", data);
 
-    const response = await EditRecord(data);
+      const response = await EditRecord(data);
 
-    if (response?.success === true) {
-      alert(response.message);
-      getData();
-      handleCloseRowEditModal();
-    } else {
-      alert(response?.message || "Update failed. Please try again.");
+      if (response?.success === true) {
+        alert(response.message);
+        getData();
+        handleCloseRowEditModal();
+      } else {
+        alert(response?.message || "Update failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error details:", error.response?.data || error);
+      alert(error.response?.data?.message || "An error occurred while updating the record.");
+    } finally {
+      setIsUpdating(false);
     }
-  } catch (error) {
-    console.error("Error details:", error.response?.data || error);
-    alert(error.response?.data?.message || "An error occurred while updating the record.");
-  } finally {
-    setIsUpdating(false);
-  }
-};
+  };
 
 
   React.useEffect(() => {
@@ -762,8 +763,8 @@ const handleUpdate = async () => {
       setMatCode(selectedRow.Material_Code);
       setQty(selectedRow.Rs1_Qty);
       setPrice(selectedRow.Rate_PerPart);
-      setProvision_Qty(selectedRow.Provision_Qty);     
-      setProvision_Value(selectedRow.Provision_Value); 
+      setProvision_Qty(selectedRow.Provision_Qty);
+      setProvision_Value(selectedRow.Provision_Value);
     }
   }, [selectedRow]);
 
@@ -1289,7 +1290,7 @@ const handleUpdate = async () => {
           {/* Read-only fields */}
           <TextField label="Plant Code" value={PlantCode} fullWidth InputProps={{ readOnly: true }} {...compactFieldProps} />
           <TextField label="Doc ID" value={DocID} fullWidth InputProps={{ readOnly: true }} {...compactFieldProps} />
-                    {/* Material Code (optional editable, but keeping it if needed) */}
+          {/* Material Code (optional editable, but keeping it if needed) */}
           <FormControl fullWidth size="small">
             <InputLabel id="mat-label">Material Code</InputLabel>
             <Select

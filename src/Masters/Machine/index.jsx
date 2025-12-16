@@ -33,6 +33,7 @@ import { api } from "../../controller/constants";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import { getPlants } from "../../controller/SapMasterapiservice";
 import { getDepartment } from "../../controller/UserMasterapiservice";
+import SectionHeading from "../../components/Header";
 
 const MachineScreen = () => {
     const [searchText, setSearchText] = useState("");
@@ -277,7 +278,7 @@ const MachineScreen = () => {
                     alignItems: "center",
                 }}
             >
-                <h2
+                {/* <h2
                     style={{
                         margin: 0,
                         color: "#2e59d9",
@@ -288,7 +289,10 @@ const MachineScreen = () => {
                     }}
                 >
                     Machine
-                </h2>
+                </h2> */}
+                <SectionHeading>
+                    Machine
+                </SectionHeading>
             </div>
 
             {/* Search and Icons */}

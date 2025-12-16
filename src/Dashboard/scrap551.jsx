@@ -22,7 +22,8 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import SearchIcon from "@mui/icons-material/Search";
 import { FaFileExcel } from "react-icons/fa";
-import * as XLSX from 'sheetjs-style';
+// import * as XLSX from 'sheetjs-style';
+import * as XLSX from "xlsx-js-style";
 import {
   Movement551, getresubmit, getTransactionData, getdetails, getPlants, getMaterial, getSLoc,
   getMovement, getReasonForMovement, getCostCenter, getValuationType, get551ApprovalView, Edit551Record,
@@ -308,128 +309,128 @@ const Scrap551 = () => {
   const handleFileUpload = (event) => {
     setUploadedFile(event.target.files[0]);
   };
-const handleUploadData = async () => {
-  if (!uploadedFile) {
-    alert("Please select a file first.");
-    return;
-  }
-
-  try {
-    const formData = new FormData();
-    formData.append("User_Add", uploadedFile);
-    formData.append("UserID", UserID);
-
-    const response = await Movement551(formData);
-    alert(response.data.message);
-
-    const newRecords = response.data.NewRecord || [];
-    const errorRecords = response.data.ErrorRecords || [];
-
-    if (newRecords.length > 0 || errorRecords.length > 0) {
-      downloadExcel(newRecords, errorRecords);
+  const handleUploadData = async () => {
+    if (!uploadedFile) {
+      alert("Please select a file first.");
+      return;
     }
-  } catch (error) {
-    alert(error?.response?.data?.message || "Upload failed.");
-  }
 
-  getData();
-  handleCloseUploadModal();
-};
+    try {
+      const formData = new FormData();
+      formData.append("User_Add", uploadedFile);
+      formData.append("UserID", UserID);
 
+      const response = await Movement551(formData);
+      alert(response.data.message);
 
-const downloadExcel = (newRecord = [], errRecord = []) => {
-  const wb = XLSX.utils.book_new();
+      const newRecords = response.data.NewRecord || [];
+      const errorRecords = response.data.ErrorRecords || [];
 
-  const commonHeaders = [
-    'Plant_Code', 'Material_Code', 'SLoc_Code', 'Reason_For_Movt',
-    'Movement_Code', 'Rejection_Qty', 'Provision_Qty',
-    'Provision_Value', 'Rate', 'Remark'
-  ];
-
-  const errorHeaders = [
-    ...commonHeaders,
-    'Plant_Val', 'Material_Val', 'SLoc_Val', 'CostCenter_Val',
-    'Plant_SLoc_Val', 'Reason_Val', 'User_Plant_Val'
-  ];
-
-  const formatRecord = (item) => ({
-    Plant_Code: item.Plant_Code || '',
-    Material_Code: item.Material_Code || '',
-    SLoc_Code: item.SLoc_Code || '',
-    Reason_For_Movt: item.Reason_For_Movt || '',
-    Movement_Code: item.Movement_Code || '',
-    Rejection_Qty: item.Rejection_Qty || '',
-    Provision_Qty: item.Provision_Qty || '',
-    Provision_Value: item.Provision_Value || '',
-    Rate: item.Rate || '',
-    Remark: item.Remark || item.Remarks || ''
-  });
-
-  const formatErrorRecord = (item) => ({
-    ...formatRecord(item),
-    Plant_Val: item.Plant_Val || '',
-    Material_Val: item.Material_Val || '',
-    SLoc_Val: item.SLoc_Val || '',
-    CostCenter_Val: item.CostCenter_Val || '',
-    Plant_SLoc_Val: item.Plant_SLoc_Val || '',
-    Reason_Val: item.Reason_Val || '',
-    User_Plant_Val: item.User_Plant_Val || ''
-  });
-
-  const newData = newRecord.map(formatRecord);
-  const errData = errRecord.map(formatErrorRecord);
-
-  // --- New Records Sheet ---
-  const wsNew = XLSX.utils.json_to_sheet(newData.length ? newData : [{}], { header: commonHeaders });
-  styleHeaders(wsNew, commonHeaders);
-  XLSX.utils.book_append_sheet(wb, wsNew, 'New Records');
-
-  // --- Error Records Sheet ---
-  const wsErr = XLSX.utils.json_to_sheet(errData.length ? errData : [{}], { header: errorHeaders });
-  styleHeaders(wsErr, errorHeaders);
-  styleValidationColumns(wsErr, errorHeaders, errData.length);
-  XLSX.utils.book_append_sheet(wb, wsErr, 'Error Records');
-
-  // Save Excel file
-  XLSX.writeFile(wb, 'Trn551Movt Data UploadLog.xlsx');
-};
-
-
-const styleHeaders = (ws, headers) => {
-  headers.forEach((_, colIdx) => {
-    const cell = ws[XLSX.utils.encode_cell({ c: colIdx, r: 0 })];
-    if (cell) {
-      cell.s = {
-        font: { bold: true },
-        fill: { fgColor: { rgb: 'FFFF99' } }, // Yellow
-        alignment: { horizontal: 'center' }
-      };
+      if (newRecords.length > 0 || errorRecords.length > 0) {
+        downloadExcel(newRecords, errorRecords);
+      }
+    } catch (error) {
+      alert(error?.response?.data?.message || "Upload failed.");
     }
-  });
-};
 
-const styleValidationColumns = (ws, headers, rowCount) => {
-  const validationCols = [
-    'Plant_Val', 'Material_Val', 'SLoc_Val', 'CostCenter_Val',
-    'Plant_SLoc_Val', 'Reason_Val', 'User_Plant_Val'
-  ];
+    getData();
+    handleCloseUploadModal();
+  };
 
-  for (let r = 1; r <= rowCount; r++) {
-    validationCols.forEach(col => {
-      const c = headers.indexOf(col);
-      if (c === -1) return;
-      const cell = ws[XLSX.utils.encode_cell({ c, r })];
-      if (cell && typeof cell.v === 'string') {
-        const val = cell.v.trim().toLowerCase();
+
+  const downloadExcel = (newRecord = [], errRecord = []) => {
+    const wb = XLSX.utils.book_new();
+
+    const commonHeaders = [
+      'Plant_Code', 'Material_Code', 'SLoc_Code', 'Reason_For_Movt',
+      'Movement_Code', 'Rejection_Qty', 'Provision_Qty',
+      'Provision_Value', 'Rate', 'Remark'
+    ];
+
+    const errorHeaders = [
+      ...commonHeaders,
+      'Plant_Val', 'Material_Val', 'SLoc_Val', 'CostCenter_Val',
+      'Plant_SLoc_Val', 'Reason_Val', 'User_Plant_Val'
+    ];
+
+    const formatRecord = (item) => ({
+      Plant_Code: item.Plant_Code || '',
+      Material_Code: item.Material_Code || '',
+      SLoc_Code: item.SLoc_Code || '',
+      Reason_For_Movt: item.Reason_For_Movt || '',
+      Movement_Code: item.Movement_Code || '',
+      Rejection_Qty: item.Rejection_Qty || '',
+      Provision_Qty: item.Provision_Qty || '',
+      Provision_Value: item.Provision_Value || '',
+      Rate: item.Rate || '',
+      Remark: item.Remark || item.Remarks || ''
+    });
+
+    const formatErrorRecord = (item) => ({
+      ...formatRecord(item),
+      Plant_Val: item.Plant_Val || '',
+      Material_Val: item.Material_Val || '',
+      SLoc_Val: item.SLoc_Val || '',
+      CostCenter_Val: item.CostCenter_Val || '',
+      Plant_SLoc_Val: item.Plant_SLoc_Val || '',
+      Reason_Val: item.Reason_Val || '',
+      User_Plant_Val: item.User_Plant_Val || ''
+    });
+
+    const newData = newRecord.map(formatRecord);
+    const errData = errRecord.map(formatErrorRecord);
+
+    // --- New Records Sheet ---
+    const wsNew = XLSX.utils.json_to_sheet(newData.length ? newData : [{}], { header: commonHeaders });
+    styleHeaders(wsNew, commonHeaders);
+    XLSX.utils.book_append_sheet(wb, wsNew, 'New Records');
+
+    // --- Error Records Sheet ---
+    const wsErr = XLSX.utils.json_to_sheet(errData.length ? errData : [{}], { header: errorHeaders });
+    styleHeaders(wsErr, errorHeaders);
+    styleValidationColumns(wsErr, errorHeaders, errData.length);
+    XLSX.utils.book_append_sheet(wb, wsErr, 'Error Records');
+
+    // Save Excel file
+    XLSX.writeFile(wb, 'Trn551Movt Data UploadLog.xlsx');
+  };
+
+
+  const styleHeaders = (ws, headers) => {
+    headers.forEach((_, colIdx) => {
+      const cell = ws[XLSX.utils.encode_cell({ c: colIdx, r: 0 })];
+      if (cell) {
         cell.s = {
-          font: {
-            color: { rgb: val === 'valid' ? '2E7D32' : 'FF0000' } // green/red
-          }
+          font: { bold: true },
+          fill: { fgColor: { rgb: 'FFFF99' } }, // Yellow
+          alignment: { horizontal: 'center' }
         };
       }
     });
-  }
-};
+  };
+
+  const styleValidationColumns = (ws, headers, rowCount) => {
+    const validationCols = [
+      'Plant_Val', 'Material_Val', 'SLoc_Val', 'CostCenter_Val',
+      'Plant_SLoc_Val', 'Reason_Val', 'User_Plant_Val'
+    ];
+
+    for (let r = 1; r <= rowCount; r++) {
+      validationCols.forEach(col => {
+        const c = headers.indexOf(col);
+        if (c === -1) return;
+        const cell = ws[XLSX.utils.encode_cell({ c, r })];
+        if (cell && typeof cell.v === 'string') {
+          const val = cell.v.trim().toLowerCase();
+          cell.s = {
+            font: {
+              color: { rgb: val === 'valid' ? '2E7D32' : 'FF0000' } // green/red
+            }
+          };
+        }
+      });
+    }
+  };
 
   useEffect(() => {
   }, [openRowEditModal]);
@@ -677,8 +678,8 @@ const styleValidationColumns = (ws, headers, rowCount) => {
     setToDate(''); // Reset To Date
   };
 
-// from & to downloadd
-    const handleCloseModal = () => {
+  // from & to downloadd
+  const handleCloseModal = () => {
     setOpenExcelDownloadModal(false);
 
   };
@@ -717,54 +718,54 @@ const styleValidationColumns = (ws, headers, rowCount) => {
     }
   };
 
-useEffect(() => {
-  if (selectedRow) {
-    setSLocID(String(selectedRow.SLoc_Code));  // ✅ ensure it's a string
-  }
-}, [selectedRow]);
+  useEffect(() => {
+    if (selectedRow) {
+      setSLocID(String(selectedRow.SLoc_Code));  // ✅ ensure it's a string
+    }
+  }, [selectedRow]);
 
   //edit modal funcation
-const toNullableNumber = (value) => {
-  if (value === null || value === undefined || value === '') return null;
-  const num = Number(value);
-  return isNaN(num) ? null : num;
-};
+  const toNullableNumber = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    const num = Number(value);
+    return isNaN(num) ? null : num;
+  };
 
-const handleUpdate = async () => {
-  setIsUpdating(true);
-  try {
-    const data = {
-  ModifiedBy: UserID,
-  DocID: String(DocID),
-  TrnSapID,
-  MatCode,
-  Qty: isNaN(Number(Rejection_Qty)) ? null : Number(Rejection_Qty),
-  Price: isNaN(Number(Rate_PerPart)) ? null : Number(Rate_PerPart),
-  ProvisionQty: isNaN(Number(Provision_Qty)) ? null : Number(Provision_Qty),
-  ProvisionValue: isNaN(Number(Provision_Value)) ? null : Number(Provision_Value),
-  SLocCode: String(SLocID),
-  ReasonForMovement
-};
+  const handleUpdate = async () => {
+    setIsUpdating(true);
+    try {
+      const data = {
+        ModifiedBy: UserID,
+        DocID: String(DocID),
+        TrnSapID,
+        MatCode,
+        Qty: isNaN(Number(Rejection_Qty)) ? null : Number(Rejection_Qty),
+        Price: isNaN(Number(Rate_PerPart)) ? null : Number(Rate_PerPart),
+        ProvisionQty: isNaN(Number(Provision_Qty)) ? null : Number(Provision_Qty),
+        ProvisionValue: isNaN(Number(Provision_Value)) ? null : Number(Provision_Value),
+        SLocCode: String(SLocID),
+        ReasonForMovement
+      };
 
 
-    console.log("🚀 Sending Edit551 payload:", data);
+      console.log("🚀 Sending Edit551 payload:", data);
 
-    const response = await Edit551Record(data);
+      const response = await Edit551Record(data);
 
-    if (response?.success === true) {
-      alert(response.message);
-      getData();
-      handleCloseRowEditModal();
-    } else {
-      alert(response?.message || "Update failed. Please try again.");
+      if (response?.success === true) {
+        alert(response.message);
+        getData();
+        handleCloseRowEditModal();
+      } else {
+        alert(response?.message || "Update failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error details:", error.response?.data || error);
+      alert(error.response?.data?.message || "An error occurred while updating the record.");
+    } finally {
+      setIsUpdating(false);
     }
-  } catch (error) {
-    console.error("Error details:", error.response?.data || error);
-    alert(error.response?.data?.message || "An error occurred while updating the record.");
-  } finally {
-    setIsUpdating(false);
-  }
-};
+  };
 
 
   React.useEffect(() => {

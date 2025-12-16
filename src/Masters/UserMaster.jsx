@@ -30,6 +30,7 @@ import {
   getUpdates,
   getUserLevel
 } from "../controller/UserMasterapiservice";
+import SectionHeading from "../components/Header";
 
 const UserMaster = () => {
   const [searchText, setSearchText] = useState("");
@@ -113,7 +114,7 @@ const UserMaster = () => {
   const get_UserLevel = async () => {
     try {
       const response = await getUserLevel();
-       console.log(response);
+      console.log(response);
       setUserLevelTable(response.data);
     } catch (error) {
       console.error("Error updating user:", error);
@@ -133,23 +134,23 @@ const UserMaster = () => {
   );
 
   // ✅ Handle Add Modal
- // ✅ Handle Add Modal (Clear Fields and Fetch Dropdowns)
-const handleOpenAddModal = (item) => {
-  setDeptName("");
-  setPlantId("");
-  setEmployeeID("");
-  setPassword("");
-  setRoleName("");
-  setUserEmail("");
-  setUserLevel(""); // ✅ Clear selected user level
-  setUserName("");
-  get_Plant();
-  GetDepartment();
-  GetRole();
-  get_UserLevel(); // ✅ Fetch user levels (for dropdown)
-  setActiveStatus(true);
-  setOpenAddModal(true);
-};
+  // ✅ Handle Add Modal (Clear Fields and Fetch Dropdowns)
+  const handleOpenAddModal = (item) => {
+    setDeptName("");
+    setPlantId("");
+    setEmployeeID("");
+    setPassword("");
+    setRoleName("");
+    setUserEmail("");
+    setUserLevel(""); // ✅ Clear selected user level
+    setUserName("");
+    get_Plant();
+    GetDepartment();
+    GetRole();
+    get_UserLevel(); // ✅ Fetch user levels (for dropdown)
+    setActiveStatus(true);
+    setOpenAddModal(true);
+  };
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
 
@@ -360,16 +361,16 @@ const handleOpenAddModal = (item) => {
     const worksheet = XLSX.utils.json_to_sheet(filteredData, {
       header: DataColumns,
     });
-worksheet['!cols'] = [
-  { wch: 20 },
-  { wch: 20 },
-  { wch: 30 }, 
-   { wch: 30 }, 
-     { wch: 30 }, 
-       { wch: 50 }, 
-         { wch: 50 }, 
-    { wch: 20 },
-];
+    worksheet['!cols'] = [
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 30 },
+      { wch: 30 },
+      { wch: 30 },
+      { wch: 50 },
+      { wch: 50 },
+      { wch: 20 },
+    ];
     // Style header row
     DataColumns.forEach((_, index) => {
       const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
@@ -413,7 +414,7 @@ worksheet['!cols'] = [
           alignItems: "center",
         }}
       >
-        <h2
+        {/* <h2
           style={{
             margin: 0,
             color: "#2e59d9",
@@ -424,7 +425,11 @@ worksheet['!cols'] = [
           }}
         >
           User Master
-        </h2>
+        </h2> */}
+
+        <SectionHeading>
+          User Master
+        </SectionHeading>
       </div>
 
       {/* Search and Icons */}
@@ -529,7 +534,7 @@ worksheet['!cols'] = [
           sx={{
             // Header Style
             "& .MuiDataGrid-columnHeader": {
-            backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
+              backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
               color: "black",
               fontWeight: "bold",
             },
@@ -835,7 +840,7 @@ worksheet['!cols'] = [
             fullWidth
             required
           />
-           <FormControl fullWidth>
+          <FormControl fullWidth>
             <InputLabel>UserLevel</InputLabel>
             <Select
               label="UserLevel"

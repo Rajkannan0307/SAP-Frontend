@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import { getRigMachine } from "../../controller/TestLabService";
 import { useNavigate } from "react-router-dom";
+import SectionHeading from "../../components/Header";
 
 export const getTestRigStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -108,7 +109,7 @@ const TestLabDashboard = () => {
                 >
                     Rig Status - Dashboard
                 </Typography> */}
-                <h2
+                {/* <h2
                     style={{
                         margin: 0,
                         color: "#2e59d9",
@@ -118,7 +119,11 @@ const TestLabDashboard = () => {
                     }}
                 >
                     Rig Status - Dashboard
-                </h2>
+                </h2> */}
+
+                <SectionHeading>
+                    Rig Status - Dashboard
+                </SectionHeading>
 
             </Box>
 

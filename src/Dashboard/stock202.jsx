@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { TextField,Button,Modal,Box,IconButton,Typography,} from "@mui/material";
+import { TextField, Button, Modal, Box, IconButton, Typography, } from "@mui/material";
 import { FaDownload } from "react-icons/fa";
 import { deepPurple } from '@mui/material/colors';
 
 import {
-  Table,TableHead,TableRow,TableCell,TableBody, InputLabel,
+  Table, TableHead, TableRow, TableCell, TableBody, InputLabel,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { decryptSessionData } from "../controller/StorageUtils"
@@ -22,9 +22,10 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import SearchIcon from "@mui/icons-material/Search";
 import { FaFileExcel } from "react-icons/fa";
-import * as XLSX from 'sheetjs-style';
+// import * as XLSX from 'sheetjs-style';
+import * as XLSX from "xlsx-js-style";
 import {
-  Movement202, getresubmit,  getTransactionData, getdetails, getPlants,getMaterial, getSLoc,
+  Movement202, getresubmit, getTransactionData, getdetails, getPlants, getMaterial, getSLoc,
   getMovement, getReasonForMovement, getCostCenter, getValuationType, get202ApprovalView, Edit202Record,
 } from "../controller/Movement202apiservice";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -34,7 +35,7 @@ import { api } from "../controller/constants";
 const Stock202 = () => {
 
   const [searchText, setSearchText] = useState("");
-  const [rows, setRows] = useState([]); 
+  const [rows, setRows] = useState([]);
   const [originalRows, setOriginalRows] = useState([]);
   const [openUploadModal, setOpenUploadModal] = useState(false);
   const [openExcelDownloadModal, setOpenExcelDownloadModal] = useState(false);
@@ -141,7 +142,7 @@ const Stock202 = () => {
 
 
 
-// check box select and re submit
+  // check box select and re submit
   const handleOpenCheckResubmitModal = async () => {
     if (!selectedRowIds || selectedRowIds.length === 0) {
       alert("Please select at least one row to resubmit.");
@@ -349,7 +350,7 @@ const Stock202 = () => {
     getData();
     handleCloseUploadModal();
   }
-//download the new error duplicate for the upload data
+  //download the new error duplicate for the upload data
   const downloadExcel = (newRecord, DuplicateRecord, errRecord) => {
     const wb = XLSX.utils.book_new();
 
@@ -602,7 +603,7 @@ const Stock202 = () => {
     }
   };
 
-  
+
   const handleConditionalRowClick = async (params) => {
     console.log('selected row', params.row);
     const rawStatus = params.row?.Approval_Status;
@@ -752,8 +753,8 @@ const Stock202 = () => {
   };
 
 
-   // from & to downloadd
-    const handleCloseModal = () => {
+  // from & to downloadd
+  const handleCloseModal = () => {
     setOpenExcelDownloadModal(false);
 
   };
@@ -1338,7 +1339,7 @@ const Stock202 = () => {
           </Box>
         </Box>
       </Modal>
-      
+
       {/* Row edit modal */}
       <Modal open={openRowEditModal} onClose={handleCloseRowEditModal}>
         <Box

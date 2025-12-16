@@ -191,6 +191,7 @@ const Login = () => {
               fontFamily: "serif",
               margin: "15px 0",
             }}
+            className="text-3xl! text-center font-bold! mt-2 text-[#1B5088]"
           >
             MANUFACTURING WORKSPACE
           </h1>
@@ -260,7 +261,7 @@ const Login = () => {
               flexDirection: "column",
             }}
           >
-            {/* Inner Box for Login Details */}
+
             <div
               style={{
                 height: "220px", // Increased height
@@ -272,17 +273,18 @@ const Login = () => {
                 right: 4,
               }}
             >
-              <h3
-                style={{
-                  textAlign: "center",
-                  marginBottom: "10px",
-                  marginTop: "20px",
-                  color: "#2994d1",
-                  fontSize: "25px"
-                }}
+              <div
+                // style={{
+                //   textAlign: "center",
+                //   marginBottom: "10px",
+                //   marginTop: "20px",
+                //   color: "#2994d1",
+                //   fontSize: "25px"
+                // }}
+                className="text-xl font-bold text-center text-[#2994d1] mb-3"
               >
                 Login
-              </h3>
+              </div>
               <form
                 onSubmit={handleLogin}
                 style={{ display: "flex", flexDirection: "column" }}
@@ -296,7 +298,7 @@ const Login = () => {
                   style={{
                     width: "180px",
                     height: "17px",
-                    padding: "10px",
+                    padding: "12px",
                     borderRadius: "20px",
                     border: "1px solid #1B5088",
                     marginBottom: "15px",
@@ -319,7 +321,7 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
-                    padding: "10px",
+                    padding: "12px",
                     borderRadius: "20px",
                     border: "1px solid #1B5088",
                     marginBottom: "20px",

@@ -3,7 +3,8 @@ import {
   Box, Typography, FormControl,
   InputLabel, Select, MenuItem, TextField, Button
 } from '@mui/material';
-import * as XLSX from 'sheetjs-style';
+// import * as XLSX from 'sheetjs-style';
+import * as XLSX from "xlsx-js-style";
 import { getReportOptions, getReportData, } from '../controller/ApprovalReportsapiservice';
 
 

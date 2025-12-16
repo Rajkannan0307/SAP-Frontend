@@ -32,6 +32,7 @@ import {
   getPlants,
 } from "../controller/VendorMasterapiservice";
 import { VendorMaster } from "../controller/VendorMasterapiservice";
+import SectionHeading from "../components/Header";
 const Vendor = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
@@ -117,8 +118,8 @@ const Vendor = () => {
 
   useEffect(() => {
     getData();
-     console.log('username', Username)
-     console.log('UserID', UserID)
+    console.log('username', Username)
+    console.log('UserID', UserID)
   }, []);
   const get_Plant = async () => {
     try {
@@ -166,10 +167,10 @@ const Vendor = () => {
         const formData = new FormData();
         console.log("file", uploadedFile);
         formData.append("User_Add", uploadedFile);
-        formData.append("UserID", UserID); 
+        formData.append("UserID", UserID);
         const response = await VendorMaster(formData);
         console.log("response", response.data);
-       alert(response.data.message);
+        alert(response.data.message);
         // console.log('response', response.data)
         if (
           response.data.NewRecord.length > 0 ||
@@ -216,10 +217,10 @@ const Vendor = () => {
       "Vendor_Code",
       "Vendor_Name",
       "Vendor_Address",
-      
+
       "ActiveStatus",
       "PlantCode_Validation",
-       
+
     ];
 
     const filteredNewData = newRecord.map((item) => ({
@@ -247,7 +248,7 @@ const Vendor = () => {
       Vendor_Address: item.Vendor_Address,
       ActiveStatus: item.Active_Status,
       PlantCode_Validation: item.Plant_Val,
-      
+
     }));
 
     // 🔹 Helper to style header cells
@@ -268,7 +269,7 @@ const Vendor = () => {
     const styleValidationColumns = (worksheet, columns, dataLength) => {
       const validationCols = [
         "PlantCode_Validation",
-        
+
       ];
 
       for (let row = 1; row <= dataLength; row++) {
@@ -349,7 +350,7 @@ const Vendor = () => {
           "Vendor_Code",
           "Vendor_Name",
           "Vendor_Address",
-          
+
         ].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
@@ -362,21 +363,21 @@ const Vendor = () => {
   // ✅ Handle Add Material
   const handleAdd = async () => {
     console.log("Data being sent to the server:", {
-      ActiveStatus,UserID,PlantCode,VendorCode,VendorName,VendorAddress
+      ActiveStatus, UserID, PlantCode, VendorCode, VendorName, VendorAddress
     });
     console.log("Add button clicked");
-    if (PlantCode === '' || VendorCode === '' || VendorName === '' || VendorAddress === '' ) {
+    if (PlantCode === '' || VendorCode === '' || VendorName === '' || VendorAddress === '') {
       alert("Please fill in all required fields");
       return;  // Exit the function if validation fails
     }
 
     try {
       const data = {
-        UserID:UserID,
-        Plant_Code:PlantCode,
-        Vendor_Code:VendorCode,
-        Vendor_Name:VendorName,
-        Vendor_Address:VendorAddress,
+        UserID: UserID,
+        Plant_Code: PlantCode,
+        Vendor_Code: VendorCode,
+        Vendor_Name: VendorName,
+        Vendor_Address: VendorAddress,
         Active_Status: ActiveStatus,
       };
       const response = await getAdd(data);
@@ -389,7 +390,7 @@ const Vendor = () => {
       }
     } catch (error) {
       console.error("Error in adding Vendor:", error);
-  
+
       // Step 4: Show error from server (like Employee_ID already exists)
       if (error.response && error.response.data && error.response.data.message) {
         alert(error.response.data.message);
@@ -402,7 +403,7 @@ const Vendor = () => {
   const handleUpdate = async () => {
     try {
       const data = {
-        UserID:UserID,
+        UserID: UserID,
         Vendor_ID: VendorID,
         Plant_Code: PlantCode,
         Vendor_Code: VendorCode,
@@ -410,11 +411,11 @@ const Vendor = () => {
         Vendor_Address: VendorAddress,
         Active_Status: ActiveStatus,
       };
-  
+
       console.log("Data being sent:", data);
-  
+
       const response = await getUpdates(data);
-  
+
       // If success
       if (response.data.success) {
         alert(response.data.message);
@@ -426,7 +427,7 @@ const Vendor = () => {
       }
     } catch (error) {
       console.error("Error details:", error.response?.data);
-  
+
       if (error.response && error.response.data && error.response.data.message) {
         alert(error.response.data.message); // Specific error from backend
       } else {
@@ -434,7 +435,7 @@ const Vendor = () => {
       }
     }
   };
-  
+
   // excel download
   const handleDownloadExcel = () => {
     if (data.length === 0) {
@@ -447,7 +448,7 @@ const Vendor = () => {
       "Vendor_Code",
       "Vendor_Name",
       "Vendor_Address",
-      
+
       "ActiveStatus",
     ];
 
@@ -462,13 +463,13 @@ const Vendor = () => {
     const worksheet = XLSX.utils.json_to_sheet(filteredData, {
       header: DataColumns,
     });
-worksheet['!cols'] = [
-  { wch: 20 },
-  { wch: 20 },
-  { wch: 30 }, 
-   { wch: 30 }, 
-    { wch: 20 },
-];
+    worksheet['!cols'] = [
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 30 },
+      { wch: 30 },
+      { wch: 20 },
+    ];
     // Style header row
     DataColumns.forEach((_, index) => {
       const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
@@ -512,7 +513,7 @@ worksheet['!cols'] = [
           alignItems: "center",
         }}
       >
-        <h2
+        {/* <h2
           style={{
             margin: 0,
             color: "#2e59d9",
@@ -523,7 +524,11 @@ worksheet['!cols'] = [
           }}
         >
           Vendor Master
-        </h2>
+        </h2> */}
+
+        <SectionHeading>
+          Vendor Master
+        </SectionHeading>
       </div>
 
       {/* Search and Icons */}
@@ -641,7 +646,7 @@ worksheet['!cols'] = [
           sx={{
             // Header Style
             "& .MuiDataGrid-columnHeader": {
-            backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
+              backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
               color: "black",
               fontWeight: "bold",
             },
@@ -713,23 +718,24 @@ worksheet['!cols'] = [
           </FormControl>
 
           <TextField
-  label="VendorCode"
-  name="VendorCode"
-  value={VendorCode}
-  type="text"
-  onChange={(e) => {
-    const value = e.target.value;
-    // Remove any non-digit character
-    if (/^\d*$/.test(value)) {
-      setVendorCode(value);
-    }
-  }}
-  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
-    // maxLength: 4,
+            label="VendorCode"
+            name="VendorCode"
+            value={VendorCode}
+            type="text"
+            onChange={(e) => {
+              const value = e.target.value;
+              // Remove any non-digit character
+              if (/^\d*$/.test(value)) {
+                setVendorCode(value);
+              }
+            }}
+            inputProps={{
+              inputMode: 'numeric', pattern: '[0-9]*',
+              // maxLength: 4,
 
-  }}
-  required
-/>
+            }}
+            required
+          />
 
 
           <TextField
@@ -828,15 +834,15 @@ worksheet['!cols'] = [
           >
             Edit Vendor
           </h3>
-         <TextField
-                     label="Plant Code"
-                     name="Plant_Code"
-                     value={PlantCode}
-                     onChange={(e) => setPlantCode(e.target.value)}
-                     InputProps={{
-                       readOnly: true,  // This makes the TextField read-only
-                     }}
-                   />
+          <TextField
+            label="Plant Code"
+            name="Plant_Code"
+            value={PlantCode}
+            onChange={(e) => setPlantCode(e.target.value)}
+            InputProps={{
+              readOnly: true,  // This makes the TextField read-only
+            }}
+          />
 
           <TextField
             label="VendorCode"
@@ -936,7 +942,7 @@ worksheet['!cols'] = [
               textDecorationThickness: "3px",
             }}
           >
-             Vendor Master  Excel File Upload
+            Vendor Master  Excel File Upload
           </h3>
 
           <Button
@@ -971,7 +977,7 @@ worksheet['!cols'] = [
             }}
           />
 
-        
+
 
           <Box
             sx={{

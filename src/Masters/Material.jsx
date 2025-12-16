@@ -29,6 +29,7 @@ import { FaDownload } from "react-icons/fa";
 import { deepPurple } from '@mui/material/colors';
 import { api } from "../controller/constants";
 import { getdetails, getAdd, getPlants, getUpdates, getMaterialType, } from '../controller/Masterapiservice';
+import SectionHeading from "../components/Header";
 
 
 const Material = () => {
@@ -40,7 +41,7 @@ const Material = () => {
   const [openEditModal, setOpenEditModal] = useState(false);
   const UserID = localStorage.getItem('UserID');
 
- 
+
   // const [newRecord] = useState([]);
   // const [updateRecord] = useState([]);
   // const [errRecord] = useState([]);
@@ -55,14 +56,14 @@ const Material = () => {
   const [PlantCode, setPlantCode] = useState([]);
   const [MaterialType, setMaterialType] = useState([]);
   const [MaterialCode, setMaterialCode] = useState("");
-  
+
   const [MaterialID, setMaterialID] = useState("");
   const [Description, setDescription] = useState("");
   const [Rate, setRate] = useState("");
   const [ActiveStatus, setActiveStatus] = useState(false);
   const [PlantTable, setPlantTable] = useState([]);
   const [MaterialTable, setMaterialTable] = useState([])
-  
+
   // const [userID, setUserID] = useState("");
 
 
@@ -70,7 +71,7 @@ const Material = () => {
   const columns = [
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
     { field: "Material_Type", headerName: "Material Type", flex: 1 },
-     
+
     { field: "Material_Code", headerName: "Material Code", flex: 1 },
     { field: "Description", headerName: "Description", flex: 2 },
 
@@ -111,12 +112,12 @@ const Material = () => {
       console.log(response);  // Check the structure of response
       setData(response);  // Ensure that this is correctly setting the data
       setOriginalRows(response); // for reference during search
-    setRows(response);  
+      setRows(response);
     } catch (error) {
       console.error(error);
       setData([]);  // Handle error by setting empty data
       setOriginalRows([]); // handle error case
-     setRows([]);
+      setRows([]);
     }
   };
 
@@ -126,13 +127,13 @@ const Material = () => {
   }, []);
 
 
-// useEffect(() => {
-//   if (PlantCode) {
-//     get_SupvCode();
-//   } else {
-//     setSupvTable([]); // reset supervisor list if PlantCode is cleared
-//   }
-// }, [PlantCode]);
+  // useEffect(() => {
+  //   if (PlantCode) {
+  //     get_SupvCode();
+  //   } else {
+  //     setSupvTable([]); // reset supervisor list if PlantCode is cleared
+  //   }
+  // }, [PlantCode]);
 
 
   const get_Plant = async () => {
@@ -152,7 +153,7 @@ const Material = () => {
       console.error("Error updating user:", error);
     }
   };
- 
+
 
 
   // ✅ Custom Toolbar
@@ -170,13 +171,13 @@ const Material = () => {
     setMaterialCode("");
     setDescription("");
     setMaterialType("");
-    
+
     setRate("");
     setActiveStatus(true);
     setOpenAddModal(true);
     get_Plant();
     get_Material_Type();
-  
+
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
@@ -207,14 +208,14 @@ const Material = () => {
         const formData = new FormData();
         console.log('file', uploadedFile)
         formData.append("User_Add", uploadedFile);
-        formData.append("UserID", UserID); 
+        formData.append("UserID", UserID);
         const response = await MaterialMaster(formData)
         console.log('response', response.data)
         alert(response.data.message)
         // console.log('response', response.data)
         if (response.data.NewRecord.length > 0 || response.data.UpdatedData.length > 0 || response.data.ErrorRecords.length > 0) {
           downloadExcel(response.data.NewRecord, response.data.UpdatedData, response.data.ErrorRecords);
-      } 
+        }
         getData();
       } catch (error) {
         if (error.response && error.response.status === 400) {
@@ -223,131 +224,131 @@ const Material = () => {
       }
     }
     handleCloseUploadModal();
-              
+
   }
 
-  
 
-const downloadExcel = (newRecord, updateRecord, errRecord) => {
-  const wb = XLSX.utils.book_new();
 
-  const newRecordsColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'ActiveStatus', 'Status'];
-  const UpdatedColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'ActiveStatus', 'Status'];
-  const ErrorColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation'];
+  const downloadExcel = (newRecord, updateRecord, errRecord) => {
+    const wb = XLSX.utils.book_new();
 
-  const filteredNewData = newRecord.map(item => ({
-    Plant_Code: item.Plant_Code,
-    Material_Type: item.Material_Type,
-    
-    Material_Code: item.Material_Code,
-    Description: item.Description,
-    Rate: item.Rate,
-    ActiveStatus: item.Active_Status,
-    Status: item.Status,
-  }));
+    const newRecordsColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'ActiveStatus', 'Status'];
+    const UpdatedColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'ActiveStatus', 'Status'];
+    const ErrorColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation'];
 
-  const filteredUpdate = updateRecord.map(item => ({
-    Plant_Code: item.Plant_Code,
-    Material_Type: item.Material_Type,
-    
-    Material_Code: item.Material_Code,
-    Description: item.Description,
-    Rate: item.Rate,
-    ActiveStatus: item.Active_Status,
-    Status: item.Status,
-  }));
+    const filteredNewData = newRecord.map(item => ({
+      Plant_Code: item.Plant_Code,
+      Material_Type: item.Material_Type,
 
-  const filteredError = errRecord.map(item => ({
-    Plant_Code: item.Plant_Code,
-    Material_Type: item.Material_Type,
-   
-    Material_Code: item.Material_Code,
-    
-    Description: item.Description,
-    Rate: item.Rate,
-    ActiveStatus: item.Active_Status,
-    PlantCode_Validation: item.Plant_Val,
-    Material_Type_Validation: item.Material_Val,
-  }));
+      Material_Code: item.Material_Code,
+      Description: item.Description,
+      Rate: item.Rate,
+      ActiveStatus: item.Active_Status,
+      Status: item.Status,
+    }));
 
-  // 🔹 Helper to style header cells
-  const styleHeaders = (worksheet, columns) => {
-    columns.forEach((_, index) => {
-      const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
-      if (worksheet[cellAddress]) {
-        worksheet[cellAddress].s = {
-          font: { bold: true, color: { rgb: '000000' } },
-          fill: { fgColor: { rgb: 'FFFF00' } }, // Yellow background
-          alignment: { horizontal: 'center' },
-        };
-      }
-    });
-  };
+    const filteredUpdate = updateRecord.map(item => ({
+      Plant_Code: item.Plant_Code,
+      Material_Type: item.Material_Type,
 
-  // 🔴 Style red text for validation columns only
-  const styleValidationColumns = (worksheet, columns, dataLength) => {
-    const validationCols = ['PlantCode_Validation', 'Material_Type_Validation'];
-  
-    for (let row = 1; row <= dataLength; row++) {
-      validationCols.forEach(colName => {
-        const colIdx = columns.indexOf(colName);
-        if (colIdx === -1) return;
-  
-        const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
-        const cell = worksheet[cellAddress];
-  
-        if (cell && typeof cell.v === 'string') {
-          const value = cell.v.trim().toLowerCase();
-  
-          // Apply green if value is "valid", otherwise red
-          cell.s = {
-            font: {
-              color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' } // green or red
-            }
+      Material_Code: item.Material_Code,
+      Description: item.Description,
+      Rate: item.Rate,
+      ActiveStatus: item.Active_Status,
+      Status: item.Status,
+    }));
+
+    const filteredError = errRecord.map(item => ({
+      Plant_Code: item.Plant_Code,
+      Material_Type: item.Material_Type,
+
+      Material_Code: item.Material_Code,
+
+      Description: item.Description,
+      Rate: item.Rate,
+      ActiveStatus: item.Active_Status,
+      PlantCode_Validation: item.Plant_Val,
+      Material_Type_Validation: item.Material_Val,
+    }));
+
+    // 🔹 Helper to style header cells
+    const styleHeaders = (worksheet, columns) => {
+      columns.forEach((_, index) => {
+        const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
+        if (worksheet[cellAddress]) {
+          worksheet[cellAddress].s = {
+            font: { bold: true, color: { rgb: '000000' } },
+            fill: { fgColor: { rgb: 'FFFF00' } }, // Yellow background
+            alignment: { horizontal: 'center' },
           };
         }
       });
-    }
+    };
+
+    // 🔴 Style red text for validation columns only
+    const styleValidationColumns = (worksheet, columns, dataLength) => {
+      const validationCols = ['PlantCode_Validation', 'Material_Type_Validation'];
+
+      for (let row = 1; row <= dataLength; row++) {
+        validationCols.forEach(colName => {
+          const colIdx = columns.indexOf(colName);
+          if (colIdx === -1) return;
+
+          const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: row });
+          const cell = worksheet[cellAddress];
+
+          if (cell && typeof cell.v === 'string') {
+            const value = cell.v.trim().toLowerCase();
+
+            // Apply green if value is "valid", otherwise red
+            cell.s = {
+              font: {
+                color: { rgb: value === 'valid' ? '2e7d32' : 'FF0000' } // green or red
+              }
+            };
+          }
+        });
+      }
+    };
+
+
+    // 📄 New Records Sheet
+    if (filteredNewData.length === 0) filteredNewData.push({});
+    const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, { header: newRecordsColumns });
+    styleHeaders(wsNewRecords, newRecordsColumns);
+    XLSX.utils.book_append_sheet(wb, wsNewRecords, 'New Records');
+
+    // 📄 Updated Records Sheet
+    if (filteredUpdate.length === 0) filteredUpdate.push({});
+    const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, { header: UpdatedColumns });
+    styleHeaders(wsUpdated, UpdatedColumns);
+    XLSX.utils.book_append_sheet(wb, wsUpdated, 'Updated Records');
+
+    // 📄 Error Records Sheet
+    if (filteredError.length === 0) filteredError.push({});
+    const wsError = XLSX.utils.json_to_sheet(filteredError, { header: ErrorColumns });
+    styleHeaders(wsError, ErrorColumns);
+    styleValidationColumns(wsError, ErrorColumns, filteredError.length);
+    XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
+
+    // 📦 Export the Excel file
+    const fileName = 'Material Data Upload Log.xlsx';
+    XLSX.writeFile(wb, fileName);
   };
-  
-
-  // 📄 New Records Sheet
-  if (filteredNewData.length === 0) filteredNewData.push({});
-  const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, { header: newRecordsColumns });
-  styleHeaders(wsNewRecords, newRecordsColumns);
-  XLSX.utils.book_append_sheet(wb, wsNewRecords, 'New Records');
-
-  // 📄 Updated Records Sheet
-  if (filteredUpdate.length === 0) filteredUpdate.push({});
-  const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, { header: UpdatedColumns });
-  styleHeaders(wsUpdated, UpdatedColumns);
-  XLSX.utils.book_append_sheet(wb, wsUpdated, 'Updated Records');
-
-  // 📄 Error Records Sheet
-  if (filteredError.length === 0) filteredError.push({});
-  const wsError = XLSX.utils.json_to_sheet(filteredError, { header: ErrorColumns });
-  styleHeaders(wsError, ErrorColumns);
-  styleValidationColumns(wsError, ErrorColumns, filteredError.length);
-  XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
-
-  // 📦 Export the Excel file
-  const fileName = 'Material Data Upload Log.xlsx';
-  XLSX.writeFile(wb, fileName);
-};
 
 
 
   // ✅ Handle Row Click for Edit
- 
- 
-  
- 
- 
+
+
+
+
+
   const handleRowClick = (params) => {
     setPlantCode(params.row.Plant_Code);
     setMaterialType(params.row.Material_Type);
     setMaterialCode(params.row.Material_Code);
-   
+
     setDescription(params.row.Description);
     setRate(params.row.Rate);
     setActiveStatus(params.row.Active_Status);
@@ -359,7 +360,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
   // ✅ Search Functionality
   const handleSearch = () => {
     const text = searchText.trim().toLowerCase();
-  
+
     if (!text) {
       setRows(originalRows);
     } else {
@@ -372,12 +373,12 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
       setRows(filteredRows);
     }
   };
-  
+
 
   // ✅ Handle Add Material
   const handleAdd = async () => {
     console.log("Data being sent to the server:", {
-      PlantCode, MaterialType, MaterialCode, Description,Rate, ActiveStatus,UserID
+      PlantCode, MaterialType, MaterialCode, Description, Rate, ActiveStatus, UserID
     });
     console.log("Add button clicked")
     if (PlantCode === '' || MaterialType === '' || MaterialCode === '' || Description === '' || Rate === '') {
@@ -387,10 +388,10 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
 
     try {
       const data = {
-        UserID:UserID,
+        UserID: UserID,
         Plant_Code: PlantCode,
         Material_Type: MaterialType,
-       
+
         Material_Code: MaterialCode,
         Description: Description,
         Rate: Rate,
@@ -406,7 +407,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
       }
     } catch (error) {
       console.error("Error in adding Material:", error);
-  
+
       // Step 4: Show error from server (like Employee_ID already exists)
       if (error.response && error.response.data && error.response.data.message) {
         alert(error.response.data.message);
@@ -418,9 +419,9 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
   const handleUpdate = async () => {
     try {
       const data = {
-        UserID:UserID,
+        UserID: UserID,
         Material_ID: MaterialID,
-        
+
         Description: Description,
         Rate: Rate,
         Active_Status: ActiveStatus,
@@ -443,7 +444,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
       }
     } catch (error) {
       console.error("Error details:", error.response?.data);
-  
+
       if (error.response && error.response.data && error.response.data.message) {
         alert(error.response.data.message); // Specific error from backend
       } else {
@@ -457,30 +458,30 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
       alert("No Data Found");
       return;
     }
-  
+
     const DataColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'ActiveStatus'];
-  
+
     const filteredData = data.map(item => ({
       Plant_Code: item.Plant_Code,
       Material_Type: item.Material_Type,
-      
+
       Material_Code: item.Material_Code,
-     
+
       Description: item.Description,
       Rate: item.Rate,
-       ActiveStatus: item.Active_Status ? "Active" : "Inactive"
+      ActiveStatus: item.Active_Status ? "Active" : "Inactive"
     }));
-  
+
     const worksheet = XLSX.utils.json_to_sheet(filteredData, { header: DataColumns });
-  worksheet['!cols'] = [
-  { wch: 20 },
-  { wch: 30 },
-  { wch: 30 }, 
-  
-    { wch: 30 }, 
-     { wch: 20 }, 
-    { wch: 20 },
-];
+    worksheet['!cols'] = [
+      { wch: 20 },
+      { wch: 30 },
+      { wch: 30 },
+
+      { wch: 30 },
+      { wch: 20 },
+      { wch: 20 },
+    ];
     // Style header row
     DataColumns.forEach((_, index) => {
       const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
@@ -498,12 +499,12 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
         },
       };
     });
-  
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Materials");
     XLSX.writeFile(workbook, "Material_Data.xlsx");
   };
-  
+
   return (
     <div
       style={{
@@ -524,7 +525,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
           alignItems: "center",
         }}
       >
-        <h2
+        {/* <h2
           style={{
             margin: 0,
             color: "#2e59d9",
@@ -535,7 +536,10 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
           }}
         >
           Material Master
-        </h2>
+        </h2> */}
+        <SectionHeading>
+          Material Master
+        </SectionHeading>
       </div>
 
       {/* Search and Icons */}
@@ -653,7 +657,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
           sx={{
             // Header Style
             "& .MuiDataGrid-columnHeader": {
-             backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
+              backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
               color: "black",
               fontWeight: "bold",
             },
@@ -722,7 +726,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
               ))}
             </Select>
           </FormControl>
- 
+
 
           <TextField
             label="Material Code"
@@ -733,15 +737,15 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
             label="Description"
             name="Description" value={Description}
             onChange={(e) => setDescription(e.target.value)} required />
-<TextField
-  label="Rate"
-  name="Rate"
-  type="number"
-  value={Rate}
-  onChange={(e) => setRate(e.target.value)}
-  inputProps={{ min: 0 }}
-  required
-/>
+          <TextField
+            label="Rate"
+            name="Rate"
+            type="number"
+            value={Rate}
+            onChange={(e) => setRate(e.target.value)}
+            inputProps={{ min: 0 }}
+            required
+          />
 
 
 
@@ -839,7 +843,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
               readOnly: true,  // This makes the TextField read-only
             }}
           />
-          
+
 
           <TextField
             label="Material Code"
@@ -858,15 +862,15 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
 
           />
 
-         <TextField
-  label="Rate"
-  name="Rate"
-  type="number"
-  value={Rate}
-  onChange={(e) => setRate(e.target.value)}
-  inputProps={{ min: 0 }}
-  required
-/>
+          <TextField
+            label="Rate"
+            name="Rate"
+            type="number"
+            value={Rate}
+            onChange={(e) => setRate(e.target.value)}
+            inputProps={{ min: 0 }}
+            required
+          />
 
           <FormControlLabel
             control={
@@ -935,8 +939,8 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
             textAlign: "center",
           }}
         >
-          <h3 style={{  fontSize: "22px",textAlign: "center", marginBottom: "20px", color: "#2e59d9", textDecoration: "underline", textDecorationColor: "#88c57a", textDecorationThickness: "3px" }}>
-             Material Master Excel File Upload
+          <h3 style={{ fontSize: "22px", textAlign: "center", marginBottom: "20px", color: "#2e59d9", textDecoration: "underline", textDecorationColor: "#88c57a", textDecorationThickness: "3px" }}>
+            Material Master Excel File Upload
           </h3>
 
           <Button
@@ -971,7 +975,7 @@ const downloadExcel = (newRecord, updateRecord, errRecord) => {
 
 
 
-          
+
 
 
           <Box

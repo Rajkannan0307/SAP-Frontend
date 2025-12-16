@@ -30,6 +30,7 @@ import {
   getModule,
 } from "../controller/LineMasterapiservice";
 import { MenuItem, InputLabel, FormControl } from "@mui/material";
+import SectionHeading from "../components/Header";
 const UserID = localStorage.getItem("UserID");
 const Line = () => {
   const [searchText, setSearchText] = useState("");
@@ -56,7 +57,7 @@ const Line = () => {
   const columns = [
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
     { field: "Dept_Name", headerName: "Department Name ", flex: 1 },
-   
+
     { field: "Module_Name", headerName: "Module Name", flex: 1 },
     { field: "Line_Name", headerName: "Line Name", flex: 1 },
     { field: "Sup_Code", headerName: "Supervisor Code", flex: 1 },
@@ -144,30 +145,30 @@ const Line = () => {
       setRows(filteredRows);
     }
   };
-useEffect(() => {
-  if (PlantCode && !isEditMode) {
-    get_SupvCode(PlantCode); // ✅ only fetch for Add modal
-  }
-}, [PlantCode, isEditMode]);
-
-const get_SupvCode = async (plantId, setStateDirectly = true) => {
-  try {
-    
-    if (!plantId) return [];
-
-    const response = await getSupvCode(plantId);
-console.log("✅ Supv Data received:", response.data);
-
-    if (setStateDirectly) {
-      setSupvTable(response.data); // set supervisor list
+  useEffect(() => {
+    if (PlantCode && !isEditMode) {
+      get_SupvCode(PlantCode); // ✅ only fetch for Add modal
     }
+  }, [PlantCode, isEditMode]);
 
-    return response.data;
-  } catch (error) {
-    console.error("❌ Error fetching supervisors:", error);
-    return [];
-  }
-};
+  const get_SupvCode = async (plantId, setStateDirectly = true) => {
+    try {
+
+      if (!plantId) return [];
+
+      const response = await getSupvCode(plantId);
+      console.log("✅ Supv Data received:", response.data);
+
+      if (setStateDirectly) {
+        setSupvTable(response.data); // set supervisor list
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("❌ Error fetching supervisors:", error);
+      return [];
+    }
+  };
 
 
 
@@ -189,45 +190,45 @@ console.log("✅ Supv Data received:", response.data);
     }
   };
   // ✅ Handle Add Modal
- const handleOpenAddModal = () => {
-  setPlantCode("");  // or set a default
-  setIsEditMode(false);   
-  setDept_Name("");
-  setModule_Name("");
-  setLine_Name("");
-  setSupv_Code(""); // clear old selection
-  setActiveStatus(true);
-  setOpenAddModal(true);
-  GetDepartment();
-  get_Module();
-  get_Plant();
-};
+  const handleOpenAddModal = () => {
+    setPlantCode("");  // or set a default
+    setIsEditMode(false);
+    setDept_Name("");
+    setModule_Name("");
+    setLine_Name("");
+    setSupv_Code(""); // clear old selection
+    setActiveStatus(true);
+    setOpenAddModal(true);
+    GetDepartment();
+    get_Module();
+    get_Plant();
+  };
 
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
   const filteredSupvs = SupvTable.filter((item) => item.Plant_ID === PlantID);
-console.log("🧮 Filtered Supvs:", filteredSupvs);
+  console.log("🧮 Filtered Supvs:", filteredSupvs);
 
-const handleRowClick = async (params) => {
-  setLoadingSupv(true);
-setIsEditMode(true); 
-  setLine_ID(params.row.Line_ID);
-  setPlantCode(params.row.Plant_Code); // just for UI
-  setDept_Name(params.row.Dept_Name);
-  setModule_Name(params.row.Module_Name);
-  setLine_Name(params.row.Line_Name);
-  setSupv_Code(params.row.Supv_ID);
-  setActiveStatus(params.row.Active_Status);
+  const handleRowClick = async (params) => {
+    setLoadingSupv(true);
+    setIsEditMode(true);
+    setLine_ID(params.row.Line_ID);
+    setPlantCode(params.row.Plant_Code); // just for UI
+    setDept_Name(params.row.Dept_Name);
+    setModule_Name(params.row.Module_Name);
+    setLine_Name(params.row.Line_Name);
+    setSupv_Code(params.row.Supv_ID);
+    setActiveStatus(params.row.Active_Status);
 
-  setPlantID(params.row.Plant_ID);           // ✅ 1. Set this first
-  await get_SupvCode(params.row.Plant_ID);   // ✅ 2. Fetch data with correct ID
+    setPlantID(params.row.Plant_ID);           // ✅ 1. Set this first
+    await get_SupvCode(params.row.Plant_ID);   // ✅ 2. Fetch data with correct ID
 
-  setLoadingSupv(false);
-  setOpenEditModal(true);       
-  console.log("🌱 PlantID:", params.row.Plant_ID);
-console.log("🧾 Setting Supv_Code:", params.row.Supv_ID);
-             // ✅ 3. Open modal after data is ready
-};
+    setLoadingSupv(false);
+    setOpenEditModal(true);
+    console.log("🌱 PlantID:", params.row.Plant_ID);
+    console.log("🧾 Setting Supv_Code:", params.row.Supv_ID);
+    // ✅ 3. Open modal after data is ready
+  };
 
 
 
@@ -362,14 +363,14 @@ console.log("🧾 Setting Supv_Code:", params.row.Supv_ID);
     const worksheet = XLSX.utils.json_to_sheet(filteredData, {
       header: DataColumns,
     });
-worksheet['!cols'] = [
-  { wch: 20 },
-  { wch: 30 },
-  { wch: 30 }, 
-   { wch: 30 }, 
-   { wch: 30 }, 
-    { wch: 20 },
-];
+    worksheet['!cols'] = [
+      { wch: 20 },
+      { wch: 30 },
+      { wch: 30 },
+      { wch: 30 },
+      { wch: 30 },
+      { wch: 20 },
+    ];
     // Style header row
     DataColumns.forEach((_, index) => {
       const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
@@ -392,9 +393,9 @@ worksheet['!cols'] = [
     XLSX.utils.book_append_sheet(workbook, worksheet, "StorageLocation");
     XLSX.writeFile(workbook, "LineMaster_Data.xlsx");
   };
-//   console.log("🧪 Supv_Code:", Supv_Code);
-// console.log("🧪 PlantCode:", PlantCode);
-// console.log("🧪 Filtered SupvTable:", SupvTable.filter((item) => item.Plant_ID === PlantCode));
+  //   console.log("🧪 Supv_Code:", Supv_Code);
+  // console.log("🧪 PlantCode:", PlantCode);
+  // console.log("🧪 Filtered SupvTable:", SupvTable.filter((item) => item.Plant_ID === PlantCode));
 
   return (
     <div
@@ -416,7 +417,7 @@ worksheet['!cols'] = [
           alignItems: "center",
         }}
       >
-        <h2
+        {/* <h2
           style={{
             margin: 0,
             color: "#2e59d9",
@@ -427,7 +428,12 @@ worksheet['!cols'] = [
           }}
         >
           Line Master
-        </h2>
+        </h2> */}
+
+
+        <SectionHeading>
+          Line Master
+        </SectionHeading>
       </div>
 
       {/* Search and Icons */}
@@ -574,7 +580,7 @@ worksheet['!cols'] = [
             gap: "15px",
           }}
         >
-          <h3
+          {/* <h3
             style={{
               gridColumn: "span 2",
               textAlign: "center",
@@ -585,7 +591,12 @@ worksheet['!cols'] = [
             }}
           >
             Add Line Master
-          </h3>
+          </h3> */}
+
+
+          <SectionHeading>
+            Add Line Master
+          </SectionHeading>
 
           <FormControl fullWidth>
             <InputLabel>Plant Code</InputLabel>
@@ -621,30 +632,30 @@ worksheet['!cols'] = [
             </Select>
           </FormControl>
 
-       <FormControl fullWidth>
-  <InputLabel>Supervisor Code</InputLabel>
-  <Select
-    label="Supervisor Code"
-    value={Supv_Code}
-    onChange={(e) => setSupv_Code(e.target.value)}
-    required
-     MenuProps={{
-      PaperProps: {
-        sx: {
-          maxHeight: 300, // ⬅️ Smaller dropdown
-         
-        },
-      },
-    }}
-  >
-    {(SupvTable || []).map((item) => (
-      <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
-        {item.Sup_Code} - {item.Sup_Name}
-      </MenuItem>
-    ))}
-    
-  </Select>
-</FormControl>
+          <FormControl fullWidth>
+            <InputLabel>Supervisor Code</InputLabel>
+            <Select
+              label="Supervisor Code"
+              value={Supv_Code}
+              onChange={(e) => setSupv_Code(e.target.value)}
+              required
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    maxHeight: 300, // ⬅️ Smaller dropdown
+
+                  },
+                },
+              }}
+            >
+              {(SupvTable || []).map((item) => (
+                <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
+                  {item.Sup_Code} - {item.Sup_Name}
+                </MenuItem>
+              ))}
+
+            </Select>
+          </FormControl>
 
 
           <FormControl fullWidth>
@@ -741,7 +752,7 @@ worksheet['!cols'] = [
             gap: "15px",
           }}
         >
-          <h3
+          {/* <h3
             style={{
               gridColumn: "span 2",
               textAlign: "center",
@@ -752,7 +763,11 @@ worksheet['!cols'] = [
             }}
           >
             Edit Line Master
-          </h3>
+          </h3> */}
+
+          <SectionHeading>
+            Edit Line Master
+          </SectionHeading>
           <TextField
             label="Plant"
             name="Plant"
@@ -774,7 +789,7 @@ worksheet['!cols'] = [
             }}
             required
           />
-          
+
           <TextField
             label="Module Name"
             name="Module Name"
@@ -784,29 +799,29 @@ worksheet['!cols'] = [
               readOnly: true, // This makes the TextField read-only
             }}
           />
-       <FormControl fullWidth>
-  <InputLabel>Supervisor Code</InputLabel>
-  <Select
-    label="Supervisor Code"
-    value={Supv_Code}
-    onChange={(e) => setSupv_Code(e.target.value)}
-    required
-     MenuProps={{
-      PaperProps: {
-        sx: {
-          maxHeight: 300, // ⬅️ Smaller dropdown
-         
-        },
-      },
-    }}
-  >
-    {filteredSupvs.map((item) => (
-      <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
-        {item.Sup_Code} - {item.Sup_Name}
-      </MenuItem>
-    ))}
-  </Select>
-</FormControl>
+          <FormControl fullWidth>
+            <InputLabel>Supervisor Code</InputLabel>
+            <Select
+              label="Supervisor Code"
+              value={Supv_Code}
+              onChange={(e) => setSupv_Code(e.target.value)}
+              required
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    maxHeight: 300, // ⬅️ Smaller dropdown
+
+                  },
+                },
+              }}
+            >
+              {filteredSupvs.map((item) => (
+                <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
+                  {item.Sup_Code} - {item.Sup_Name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
 
 
@@ -814,7 +829,7 @@ worksheet['!cols'] = [
 
 
 
-          
+
           <TextField
             label="Line Name"
             name="Line_Name"

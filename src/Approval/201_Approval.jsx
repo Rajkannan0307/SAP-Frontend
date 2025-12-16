@@ -25,7 +25,8 @@ import CloseIcon from '@mui/icons-material/Close'; // For CloseIcon
 import QueryBuilderIcon from '@mui/icons-material/QueryBuilder'; // For QueryBuilderIcon
 import axios from 'axios';
 //import * as XLSX from 'xlsx';
-import * as XLSX from 'sheetjs-style';
+// import * as XLSX from 'sheetjs-style';
+import * as XLSX from "xlsx-js-style";
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { getdetails, getApprovalView, HandleApprovalAction, getPlants, getRole, get201ApprovalView, DownloadAllExcel } from '../controller/Approval201apiservice';
@@ -708,9 +709,8 @@ const Approval201 = () => {
               borderBottom: "3px solid limegreen",  // underline with control
               paddingBottom: "1px",                  // space between text and underline
               display: "inline-block",               // shrink width to text only
-              textUnderlineOffset: "px",
               textDecorationThickness: "3px",
-               textUnderlineOffset: "6px",
+              textUnderlineOffset: "6px",
             }}
           >
             201 Approval

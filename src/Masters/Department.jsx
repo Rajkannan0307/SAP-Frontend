@@ -27,8 +27,9 @@ import {
   getAdd,
   getUpdates,
   getdetails,
-  
+
 } from "../controller/DepartmentMasterapiservice";
+import SectionHeading from "../components/Header";
 
 const Department = () => {
   const [searchText, setSearchText] = useState("");
@@ -37,24 +38,24 @@ const Department = () => {
   const [data, setData] = useState([]);
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
- 
+
   const [ActiveStatus, setActiveStatus] = useState(false);
- 
-  
+
+
   const Username = localStorage.getItem('UserName');
   const UserID = localStorage.getItem('UserID');
   // const [newRecord] = useState([]);
   // const [updateRecord] = useState([]);
   // const [errRecord] = useState([]);
-  const [ DepartmentCode, setDepartmentCode] = useState("");
-  const [ DepartmentID, setDepartmentID] = useState("");
-  const [ DepartmentName, setDepartmentName] = useState("");
-  
+  const [DepartmentCode, setDepartmentCode] = useState("");
+  const [DepartmentID, setDepartmentID] = useState("");
+  const [DepartmentName, setDepartmentName] = useState("");
+
   const columns = [
     { field: "Dept_Code", headerName: "Department Code", flex: 1 },
-    
+
     { field: "Dept_Name", headerName: " Department Name ", flex: 1 },
-    
+
 
     {
       field: "ActiveStatus",
@@ -110,33 +111,33 @@ const Department = () => {
 
   useEffect(() => {
     getData();
-     console.log('username', Username)
-     console.log('UserID', UserID)
+    console.log('username', Username)
+    console.log('UserID', UserID)
   }, []);
- 
+
 
   // ✅ Handle Add Modal
   const handleOpenAddModal = (item) => {
-    
+
     setDepartmentCode("");
-   
+
     setDepartmentName("");
-   
+
     setActiveStatus(true);
     setOpenAddModal(true);
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
 
-  
- 
+
+
 
 
   // ✅ Handle Row Click for Edit
 
   const handleRowClick = (params) => {
     setDepartmentID(params.row.Dept_ID);
-   
+
     setDepartmentCode(params.row.Dept_Code);
     setDepartmentName(params.row.Dept_Name);
     // setDepartmentAddress(params.row.Department_Address);
@@ -157,8 +158,8 @@ const Department = () => {
           "Dept_Code",
           "Dept_Code",
           "Dept_Name",
-          
-          
+
+
         ].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
@@ -171,10 +172,10 @@ const Department = () => {
   // ✅ Handle Add Material
   const handleAdd = async () => {
     console.log("Data being sent to the server:", {
-      ActiveStatus,UserID,DepartmentCode, DepartmentName,
+      ActiveStatus, UserID, DepartmentCode, DepartmentName,
     });
     console.log("Add button clicked");
-    if (DepartmentCode === '' ||  DepartmentName === ''  ) {
+    if (DepartmentCode === '' || DepartmentName === '') {
       alert("Please fill in all required fields");
       return;  // Exit the function if validation fails
     }
@@ -184,11 +185,11 @@ const Department = () => {
     }
     try {
       const data = {
-        UserID:UserID,
-        Dept_Code:DepartmentCode,
-        
+        UserID: UserID,
+        Dept_Code: DepartmentCode,
+
         Dept_Name: DepartmentName,
-         
+
         Active_Status: ActiveStatus,
       };
       const response = await getAdd(data);
@@ -201,7 +202,7 @@ const Department = () => {
       }
     } catch (error) {
       console.error("Error in adding  Department:", error);
-  
+
       // Step 4: Show error from server (like Employee_ID already exists)
       if (error.response && error.response.data && error.response.data.message) {
         alert(error.response.data.message);
@@ -214,19 +215,19 @@ const Department = () => {
   const handleUpdate = async () => {
     try {
       const data = {
-        UserID:UserID,
-        Dept_ID:  DepartmentID,
+        UserID: UserID,
+        Dept_ID: DepartmentID,
         Dept_Code: DepartmentCode,
-         
-        Dept_Name:  DepartmentName,
-         
+
+        Dept_Name: DepartmentName,
+
         Active_Status: ActiveStatus,
       };
-  
+
       console.log("Data being sent:", data);
-  
+
       const response = await getUpdates(data);
-  
+
       // If success
       if (response.data.success) {
         alert(response.data.message);
@@ -238,7 +239,7 @@ const Department = () => {
       }
     } catch (error) {
       console.error("Error details:", error.response?.data);
-  
+
       if (error.response && error.response.data && error.response.data.message) {
         alert(error.response.data.message); // Specific error from backend
       } else {
@@ -246,7 +247,7 @@ const Department = () => {
       }
     }
   };
-  
+
   // excel download
   const handleDownloadExcel = () => {
     if (data.length === 0) {
@@ -255,32 +256,32 @@ const Department = () => {
     }
 
     const DataColumns = [
-      
+
       "DepartmentCode",
       "DepartmentName",
-    
-      
+
+
       "ActiveStatus",
     ];
 
     const filteredData = data.map((item) => ({
       DepartmentCode: item.Dept_Code,
-       
-       DepartmentName: item.Dept_Name,
-    
+
+      DepartmentName: item.Dept_Name,
+
       ActiveStatus: item.Active_Status ? "Active" : "Inactive"
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(filteredData, {
       header: DataColumns,
     });
-worksheet['!cols'] = [
-  { wch: 20 },
- 
-  { wch: 30 }, 
-   
-    { wch: 20 },
-];
+    worksheet['!cols'] = [
+      { wch: 20 },
+
+      { wch: 30 },
+
+      { wch: 20 },
+    ];
     // Style header row
     DataColumns.forEach((_, index) => {
       const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
@@ -324,7 +325,7 @@ worksheet['!cols'] = [
           alignItems: "center",
         }}
       >
-        <h2
+        {/* <h2
           style={{
             margin: 0,
             color: "#2e59d9",
@@ -335,7 +336,10 @@ worksheet['!cols'] = [
           }}
         >
            Department Master
-        </h2>
+        </h2> */}
+        <SectionHeading>
+          Department Master
+        </SectionHeading>
       </div>
 
       {/* Search and Icons */}
@@ -387,8 +391,8 @@ worksheet['!cols'] = [
 
         {/* Icons */}
         <div style={{ display: "flex", gap: "10px" }}>
-          
-          
+
+
 
           {/* Download Button */}
           <IconButton
@@ -442,7 +446,7 @@ worksheet['!cols'] = [
           sx={{
             // Header Style
             "& .MuiDataGrid-columnHeader": {
-             backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
+              backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
               color: "black",
               fontWeight: "bold",
             },
@@ -496,34 +500,35 @@ worksheet['!cols'] = [
           >
             Add  Department
           </h3>
-         
-           
-            
+
+
+
 
           <TextField
-  label="Department Code"
-  name="DepartmentCode"
-  value={DepartmentCode}
-  type="text"
-  onChange={(e) => {
-    const value = e.target.value;
-    // Remove any non-digit character
-    if (/^\d*$/.test(value)) {
-      setDepartmentCode(value);
-    }
-  }}
-  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
-     maxLength: 3,
+            label="Department Code"
+            name="DepartmentCode"
+            value={DepartmentCode}
+            type="text"
+            onChange={(e) => {
+              const value = e.target.value;
+              // Remove any non-digit character
+              if (/^\d*$/.test(value)) {
+                setDepartmentCode(value);
+              }
+            }}
+            inputProps={{
+              inputMode: 'numeric', pattern: '[0-9]*',
+              maxLength: 3,
 
-  }}
-  required
-/>
+            }}
+            required
+          />
 
 
           <TextField
             label="Department Name"
             name=" Department Name"
-            value={ DepartmentName}
+            value={DepartmentName}
             onChange={(e) => setDepartmentName(e.target.value)}
             required
           />
@@ -616,21 +621,21 @@ worksheet['!cols'] = [
           >
             Edit Department
           </h3>
-         <TextField
-                     label="Department Code"
-                     name="Department_Code"
-                     value={DepartmentCode}
-                     onChange={(e) => setDepartmentCode(e.target.value)}
-                     InputProps={{
-                       readOnly: true,  // This makes the TextField read-only
-                     }}
-                   />
+          <TextField
+            label="Department Code"
+            name="Department_Code"
+            value={DepartmentCode}
+            onChange={(e) => setDepartmentCode(e.target.value)}
+            InputProps={{
+              readOnly: true,  // This makes the TextField read-only
+            }}
+          />
 
-         
+
           <TextField
             label=" Department Name"
             name=" Department Name"
-            value={ DepartmentName}
+            value={DepartmentName}
             onChange={(e) => setDepartmentName(e.target.value)}
             required
           />
@@ -690,7 +695,7 @@ worksheet['!cols'] = [
           </Box>
         </Box>
       </Modal>
-     
+
     </div>
   );
 };

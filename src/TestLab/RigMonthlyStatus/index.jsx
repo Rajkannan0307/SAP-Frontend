@@ -6,6 +6,7 @@ import { IoIosArrowBack } from "react-icons/io";
 import { IoIosArrowForward } from "react-icons/io";
 import { addMonths, format, subMonths } from 'date-fns';
 import { GetRigMonthlyStatusDashboard } from '../../controller/TestLabService';
+import SectionHeading from '../../components/Header';
 
 
 const cellfontSize = "0.7rem"
@@ -93,7 +94,7 @@ const RigMonthlyStatus = () => {
                     alignItems: "center",
                 }}
             >
-                <h2
+                {/* <h2
                     style={{
                         margin: 0,
                         color: "#2e59d9",
@@ -103,7 +104,11 @@ const RigMonthlyStatus = () => {
                     }}
                 >
                     {`Dashboard - (Testing Start ~ End Status)`}
-                </h2>
+                </h2> */}
+
+                <SectionHeading>
+                    {`Dashboard - (Testing Start ~ End Status)`}
+                </SectionHeading>
             </Box>
 
             {/* Date calender */}

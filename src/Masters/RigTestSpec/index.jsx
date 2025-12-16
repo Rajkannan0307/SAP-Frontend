@@ -27,6 +27,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { useFormik } from "formik";
 import { CommonMuiStyles } from "../../Styles/CommonStyles";
 import * as Yup from "yup"
+import SectionHeading from "../../components/Header";
 
 const MstRigTestSpecScreen = () => {
     const [searchText, setSearchText] = useState("");
@@ -244,7 +245,7 @@ const MstRigTestSpecScreen = () => {
                     alignItems: "center",
                 }}
             >
-                <h2
+                {/* <h2
                     style={{
                         margin: 0,
                         color: "#2e59d9",
@@ -255,7 +256,10 @@ const MstRigTestSpecScreen = () => {
                     }}
                 >
                     Test Rig Specification
-                </h2>
+                </h2> */}
+                <SectionHeading>
+                    Test Rig Specification
+                </SectionHeading>
             </div>
 
             {/* Search and Icons */}

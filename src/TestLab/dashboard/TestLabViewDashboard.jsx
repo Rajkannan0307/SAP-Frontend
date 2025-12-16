@@ -9,6 +9,7 @@ import { getTestRigStatusColor } from './index';
 
 import { styled } from '@mui/material/styles';
 import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
+import SectionHeading from '../../components/Header';
 
 const BorderLinearProgress = styled(LinearProgress)(({ theme }) => ({
     height: 10,
@@ -107,7 +108,7 @@ const TestLabViewDashboard = () => {
                     alignItems: "center",
                     gap: 3
                 }}>
-                    <h2
+                    {/* <h2
                         style={{
                             margin: 0,
                             color: "#2e59d9",
@@ -118,7 +119,11 @@ const TestLabViewDashboard = () => {
                         }}
                     >
                         {machineName}
-                    </h2>
+                    </h2> */}
+
+                    <SectionHeading>
+                        {machineName}
+                    </SectionHeading>
                     <Chip
                         label={machineInfo?.test_status}
                         sx={{

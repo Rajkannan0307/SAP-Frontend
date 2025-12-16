@@ -22,7 +22,8 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import SearchIcon from "@mui/icons-material/Search";
 import { FaFileExcel } from "react-icons/fa";
-import * as XLSX from 'sheetjs-style';
+// import * as XLSX from 'sheetjs-style';
+import * as XLSX from "xlsx-js-style";
 import {
   Movement311, getresubmit, getTransactionData, getdetails, getPlants, getMaterial, getSLoc,
   getMovement, getValuationType, get311ApprovalView, Edit311Record,
@@ -73,7 +74,7 @@ const Location = () => {
   const [MatCode, setMatCode] = useState('');
   const [items, setItems] = useState([]);
   const [ToSLocID, setToSLocID] = useState('');
-const [ValuationType, setValuationType] = useState('');
+  const [ValuationType, setValuationType] = useState('');
 
 
   //click resubmit
@@ -283,23 +284,23 @@ const [ValuationType, setValuationType] = useState('');
     }
   }, []);
 
-// useEffect(() => {
-//   const user = JSON.parse(localStorage.getItem("user"));
-//   if (user) {
-//     const { UserID } = user;
-//     getdetails(UserID)
-//       .then((res) => {
-//         if (res.data.success) {
-//           setTableData(res.data.data || []);
-//         } else {
-//           console.warn("⚠️ No movement records found.");
-//         }
-//       })
-//       .catch((err) => {
-//         console.error("❌ Error fetching movement data:", err);
-//       });
-//   }
-// }, []);
+  // useEffect(() => {
+  //   const user = JSON.parse(localStorage.getItem("user"));
+  //   if (user) {
+  //     const { UserID } = user;
+  //     getdetails(UserID)
+  //       .then((res) => {
+  //         if (res.data.success) {
+  //           setTableData(res.data.data || []);
+  //         } else {
+  //           console.warn("⚠️ No movement records found.");
+  //         }
+  //       })
+  //       .catch((err) => {
+  //         console.error("❌ Error fetching movement data:", err);
+  //       });
+  //   }
+  // }, []);
 
 
 
@@ -315,130 +316,130 @@ const [ValuationType, setValuationType] = useState('');
   const handleFileUpload = (event) => {
     setUploadedFile(event.target.files[0]);
   };
-const handleUploadData = async () => {
-  if (!uploadedFile) {
-    alert("Please select a file first.");
-    return;
-  }
-
-  try {
-    const formData = new FormData();
-    formData.append("User_Add", uploadedFile);
-    formData.append("UserID", UserID);
-
-    const response = await Movement311(formData);
-    alert(response.data.message);
- console.log('response', response.data)
-    const newRecords = response.data.NewRecord || [];
-    const errorRecords = response.data.ErrorRecords || [];
-
-    if (newRecords.length > 0 || errorRecords.length > 0) {
-      downloadExcel(newRecords, errorRecords);
+  const handleUploadData = async () => {
+    if (!uploadedFile) {
+      alert("Please select a file first.");
+      return;
     }
-  } catch (error) {
-    alert(error?.response?.data?.message || "Upload failed.");
-  }
 
-  getData();
-  handleCloseUploadModal();
-};
+    try {
+      const formData = new FormData();
+      formData.append("User_Add", uploadedFile);
+      formData.append("UserID", UserID);
 
+      const response = await Movement311(formData);
+      alert(response.data.message);
+      console.log('response', response.data)
+      const newRecords = response.data.NewRecord || [];
+      const errorRecords = response.data.ErrorRecords || [];
 
-const downloadExcel = (newRecord = [], errRecord = []) => {
-  const wb = XLSX.utils.book_new();
-
-  const commonHeaders = [
-    "Plant_Code", "Material_Code", "From_SLoc_Code", "To_SLoc_Code",
-    "Reason_For_Movt", "Movement_Code", "Qty",
-    "Valuation_Type", "Batch", "Remark"
-  ];
-
-  const errorHeaders = [
-    ...commonHeaders,
-    "Plant_Val", "Material_Val", "From_SLoc_Val", "To_SLoc_Val",
-    "From_SLoc_Plant_Val", "To_SLoc_Plant_Val", "Material_Plant_Val",
-    "Movement_Val", "User_Plant_Val"
-  ];
-
-  const formatRecord = (item) => ({
-    Plant_Code: item.Plant_Code || '',
-    Material_Code: item.Material_Code || '',
-    From_SLoc_Code: item.From_SLoc_Code || '', // fixed from item.SLoc_Code
-    To_SLoc_Code: item.To_SLoc_Code || '',
-    Reason_For_Movt: item.Reason_For_Movt || '',
-    Movement_Code: item.Movement_Code || '',
-    Qty: item.Qty || '',
-    Valuation_Type: item.Valuation_Type || '',
-    Batch: item.Batch || '',
-    Remark: item.Remark || item.Remarks || ''
-  });
-
-  const formatErrorRecord = (item) => ({
-    ...formatRecord(item),
-    Plant_Val: item.Plant_Val || '',
-    Material_Val: item.Material_Val || '',
-    From_SLoc_Val: item.From_SLoc_Val || '',
-    To_SLoc_Val: item.To_SLoc_Val || '',
-    From_SLoc_Plant_Val: item.From_SLoc_Plant_Val || '',
-    To_SLoc_Plant_Val: item.To_SLoc_Plant_Val || '',
-    Material_Plant_Val: item.Material_Plant_Val || '',
-    Movement_Val: item.Movement_Val || '',
-    User_Plant_Val: item.User_Plant_Val || ''
-  });
-
-  const newData = newRecord.map(formatRecord);
-  const errData = errRecord.map(formatErrorRecord);
-
-  // --- New Records Sheet ---
-  const wsNew = XLSX.utils.json_to_sheet(newData.length ? newData : [{}], { header: commonHeaders });
-  styleHeaders(wsNew, commonHeaders);
-  XLSX.utils.book_append_sheet(wb, wsNew, 'New Records');
-
-  // --- Error Records Sheet ---
-  const wsErr = XLSX.utils.json_to_sheet(errData.length ? errData : [{}], { header: errorHeaders });
-  styleHeaders(wsErr, errorHeaders);
-  styleValidationColumns(wsErr, errorHeaders, errData.length);
-  XLSX.utils.book_append_sheet(wb, wsErr, 'Error Records');
-
-  // Save Excel file
-  XLSX.writeFile(wb, 'Trn311Movt Data UploadLog.xlsx');
-};
-
-const styleHeaders = (ws, headers) => {
-  headers.forEach((_, colIdx) => {
-    const cell = ws[XLSX.utils.encode_cell({ c: colIdx, r: 0 })];
-    if (cell) {
-      cell.s = {
-        font: { bold: true },
-        fill: { fgColor: { rgb: 'FFFF99' } }, // Yellow
-        alignment: { horizontal: 'center' }
-      };
+      if (newRecords.length > 0 || errorRecords.length > 0) {
+        downloadExcel(newRecords, errorRecords);
+      }
+    } catch (error) {
+      alert(error?.response?.data?.message || "Upload failed.");
     }
-  });
-};
 
-const styleValidationColumns = (ws, headers, rowCount) => {
-  const validationCols = [
-    'Plant_Val', 'Material_Val', 'SLoc_Val', 'CostCenter_Val',
-    'Plant_SLoc_Val', 'Reason_Val', 'User_Plant_Val'
-  ];
+    getData();
+    handleCloseUploadModal();
+  };
 
-  for (let r = 1; r <= rowCount; r++) {
-    validationCols.forEach(col => {
-      const c = headers.indexOf(col);
-      if (c === -1) return;
-      const cell = ws[XLSX.utils.encode_cell({ c, r })];
-      if (cell && typeof cell.v === 'string') {
-        const val = cell.v.trim().toLowerCase();
+
+  const downloadExcel = (newRecord = [], errRecord = []) => {
+    const wb = XLSX.utils.book_new();
+
+    const commonHeaders = [
+      "Plant_Code", "Material_Code", "From_SLoc_Code", "To_SLoc_Code",
+      "Reason_For_Movt", "Movement_Code", "Qty",
+      "Valuation_Type", "Batch", "Remark"
+    ];
+
+    const errorHeaders = [
+      ...commonHeaders,
+      "Plant_Val", "Material_Val", "From_SLoc_Val", "To_SLoc_Val",
+      "From_SLoc_Plant_Val", "To_SLoc_Plant_Val", "Material_Plant_Val",
+      "Movement_Val", "User_Plant_Val"
+    ];
+
+    const formatRecord = (item) => ({
+      Plant_Code: item.Plant_Code || '',
+      Material_Code: item.Material_Code || '',
+      From_SLoc_Code: item.From_SLoc_Code || '', // fixed from item.SLoc_Code
+      To_SLoc_Code: item.To_SLoc_Code || '',
+      Reason_For_Movt: item.Reason_For_Movt || '',
+      Movement_Code: item.Movement_Code || '',
+      Qty: item.Qty || '',
+      Valuation_Type: item.Valuation_Type || '',
+      Batch: item.Batch || '',
+      Remark: item.Remark || item.Remarks || ''
+    });
+
+    const formatErrorRecord = (item) => ({
+      ...formatRecord(item),
+      Plant_Val: item.Plant_Val || '',
+      Material_Val: item.Material_Val || '',
+      From_SLoc_Val: item.From_SLoc_Val || '',
+      To_SLoc_Val: item.To_SLoc_Val || '',
+      From_SLoc_Plant_Val: item.From_SLoc_Plant_Val || '',
+      To_SLoc_Plant_Val: item.To_SLoc_Plant_Val || '',
+      Material_Plant_Val: item.Material_Plant_Val || '',
+      Movement_Val: item.Movement_Val || '',
+      User_Plant_Val: item.User_Plant_Val || ''
+    });
+
+    const newData = newRecord.map(formatRecord);
+    const errData = errRecord.map(formatErrorRecord);
+
+    // --- New Records Sheet ---
+    const wsNew = XLSX.utils.json_to_sheet(newData.length ? newData : [{}], { header: commonHeaders });
+    styleHeaders(wsNew, commonHeaders);
+    XLSX.utils.book_append_sheet(wb, wsNew, 'New Records');
+
+    // --- Error Records Sheet ---
+    const wsErr = XLSX.utils.json_to_sheet(errData.length ? errData : [{}], { header: errorHeaders });
+    styleHeaders(wsErr, errorHeaders);
+    styleValidationColumns(wsErr, errorHeaders, errData.length);
+    XLSX.utils.book_append_sheet(wb, wsErr, 'Error Records');
+
+    // Save Excel file
+    XLSX.writeFile(wb, 'Trn311Movt Data UploadLog.xlsx');
+  };
+
+  const styleHeaders = (ws, headers) => {
+    headers.forEach((_, colIdx) => {
+      const cell = ws[XLSX.utils.encode_cell({ c: colIdx, r: 0 })];
+      if (cell) {
         cell.s = {
-          font: {
-            color: { rgb: val === 'valid' ? '2E7D32' : 'FF0000' } // green/red
-          }
+          font: { bold: true },
+          fill: { fgColor: { rgb: 'FFFF99' } }, // Yellow
+          alignment: { horizontal: 'center' }
         };
       }
     });
-  }
-};
+  };
+
+  const styleValidationColumns = (ws, headers, rowCount) => {
+    const validationCols = [
+      'Plant_Val', 'Material_Val', 'SLoc_Val', 'CostCenter_Val',
+      'Plant_SLoc_Val', 'Reason_Val', 'User_Plant_Val'
+    ];
+
+    for (let r = 1; r <= rowCount; r++) {
+      validationCols.forEach(col => {
+        const c = headers.indexOf(col);
+        if (c === -1) return;
+        const cell = ws[XLSX.utils.encode_cell({ c, r })];
+        if (cell && typeof cell.v === 'string') {
+          const val = cell.v.trim().toLowerCase();
+          cell.s = {
+            font: {
+              color: { rgb: val === 'valid' ? '2E7D32' : 'FF0000' } // green/red
+            }
+          };
+        }
+      });
+    }
+  };
 
 
   useEffect(() => {
@@ -450,7 +451,7 @@ const styleValidationColumns = (ws, headers, rowCount) => {
   const loadDropdownData = async () => {
     await Promise.all([
       get_Material(),
-      
+
       get_ValuationTypeTable(),
       get_SLoc(),
       get_Movement(),
@@ -573,110 +574,110 @@ const styleValidationColumns = (ws, headers, rowCount) => {
 
 
   //✅ DataGrid Columns with Edit Buttons
-const columns = [
-  { field: "Plant_Code", headerName: "Plant Code", width: 160 },
-  { field: "Doc_ID", headerName: "Doc ID", width: 120 },
-  { field: "Date", headerName: "Date", width: 130 },
-  { field: "Movement_Code", headerName: "Movement Type", width: 200 },
-  { field: "Material_Code", headerName: "Material Code", width: 180 },
-  { field: "SLoc_Code", headerName: "From SLoc", width: 160 },
-  { field: "To_SLoc_Code", headerName: "To SLoc", width: 160 },
-  { field: "Qty", headerName: "Quantity", width: 150 },
- // { field: "Valuation_Type", headerName: "Valuation Type", width: 172 },
-  { field: "Approval_Status", headerName: "Approval Status", width: 180 },
+  const columns = [
+    { field: "Plant_Code", headerName: "Plant Code", width: 160 },
+    { field: "Doc_ID", headerName: "Doc ID", width: 120 },
+    { field: "Date", headerName: "Date", width: 130 },
+    { field: "Movement_Code", headerName: "Movement Type", width: 200 },
+    { field: "Material_Code", headerName: "Material Code", width: 180 },
+    { field: "SLoc_Code", headerName: "From SLoc", width: 160 },
+    { field: "To_SLoc_Code", headerName: "To SLoc", width: 160 },
+    { field: "Qty", headerName: "Quantity", width: 150 },
+    // { field: "Valuation_Type", headerName: "Valuation Type", width: 172 },
+    { field: "Approval_Status", headerName: "Approval Status", width: 180 },
 
-  {
-    field: "actions",
-    headerName: "Actions",
-    width: 235, // Make room for icon + checkbox
-    sortable: false,
-    editable: false,
-    disableColumnMenu: true,
-    renderHeader: () => {
-      const selectableRows = rows.filter((row) => {
-        const status = row.Approval_Status?.toLowerCase().trim();
-        return status === "under query";
-      });
-      const allSelected =
-        selectableRows.length > 0 &&
-        selectedRowIds.length === selectableRows.length;
-      const isIndeterminate =
-        selectedRowIds.length > 0 &&
-        selectedRowIds.length < selectableRows.length;
-      return (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            width: "100%",
-          }}
-        >
-          <span
-            style={{
-              fontWeight: 600,
-              fontSize: 16,
-              color: "#333",
-            }}
-          >
-            Actions
-          </span>
-          {selectableRows.length > 0 && (
-            <Checkbox
-              checked={allSelected}
-              indeterminate={isIndeterminate}
-              onChange={handleHeaderCheckboxChange}
-              inputProps={{ "aria-label": "Select all rows" }}
-              onClick={(e) => e.stopPropagation()}
-            />
-          )}
-        </div>
-      );
-    },
-    renderCell: (params) => {
-      const row = params.row;
-      const status = row.Approval_Status?.toLowerCase().trim();
-      const isSelectable = status === "under query";
-
-      const isChecked = selectedRowIds.includes(row.Trn_Sap_ID);
-
-      return (
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 235, // Make room for icon + checkbox
+      sortable: false,
+      editable: false,
+      disableColumnMenu: true,
+      renderHeader: () => {
+        const selectableRows = rows.filter((row) => {
+          const status = row.Approval_Status?.toLowerCase().trim();
+          return status === "under query";
+        });
+        const allSelected =
+          selectableRows.length > 0 &&
+          selectedRowIds.length === selectableRows.length;
+        const isIndeterminate =
+          selectedRowIds.length > 0 &&
+          selectedRowIds.length < selectableRows.length;
+        return (
           <div
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedRow(row);
-              handleOpenViewStatusModal(row);
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%",
             }}
-            title="View Details"
-            style={{ cursor: "pointer", color: "#008080" }}
           >
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                height: "50px",
+            <span
+              style={{
+                fontWeight: 600,
+                fontSize: 16,
+                color: "#333",
               }}
             >
-              <InfoIcon sx={{ fontSize: 28 }} />
-            </Box>
+              Actions
+            </span>
+            {selectableRows.length > 0 && (
+              <Checkbox
+                checked={allSelected}
+                indeterminate={isIndeterminate}
+                onChange={handleHeaderCheckboxChange}
+                inputProps={{ "aria-label": "Select all rows" }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
           </div>
+        );
+      },
+      renderCell: (params) => {
+        const row = params.row;
+        const status = row.Approval_Status?.toLowerCase().trim();
+        const isSelectable = status === "under query";
 
-          {isSelectable && (
-            <Checkbox
-              checked={isChecked}
-              onChange={(e) => {
+        const isChecked = selectedRowIds.includes(row.Trn_Sap_ID);
+
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div
+              onClick={(e) => {
                 e.stopPropagation();
-                handleRowCheckboxChange(row.Trn_Sap_ID, e.target.checked);
+                setSelectedRow(row);
+                handleOpenViewStatusModal(row);
               }}
-            />
-          )}
-        </div>
-      );
+              title="View Details"
+              style={{ cursor: "pointer", color: "#008080" }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: "50px",
+                }}
+              >
+                <InfoIcon sx={{ fontSize: 28 }} />
+              </Box>
+            </div>
+
+            {isSelectable && (
+              <Checkbox
+                checked={isChecked}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  handleRowCheckboxChange(row.Trn_Sap_ID, e.target.checked);
+                }}
+              />
+            )}
+          </div>
+        );
+      },
     },
-  },
-];
+  ];
 
   const handleOpenModal = () => {
     setOpenExcelDownloadModal(true);
@@ -684,8 +685,8 @@ const columns = [
     setToDate(''); // Reset To Date
   };
 
-// from & to downloadd
-    const handleCloseModal = () => {
+  // from & to downloadd
+  const handleCloseModal = () => {
     setOpenExcelDownloadModal(false);
 
   };
@@ -724,68 +725,68 @@ const columns = [
     }
   };
 
-useEffect(() => {
-  if (selectedRow) {
-    setSLocID(String(selectedRow.SLoc_Code));  // ✅ ensure it's a string
-  }
-}, [selectedRow]);
+  useEffect(() => {
+    if (selectedRow) {
+      setSLocID(String(selectedRow.SLoc_Code));  // ✅ ensure it's a string
+    }
+  }, [selectedRow]);
 
   //edit modal funcation
-const toNullableNumber = (value) => {
-  if (value === null || value === undefined || value === '') return null;
-  const num = Number(value);
-  return isNaN(num) ? null : num;
-};
+  const toNullableNumber = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    const num = Number(value);
+    return isNaN(num) ? null : num;
+  };
 
-const handleUpdate = async () => {
-  setIsUpdating(true);
-  try {
-    const data = {
-      ModifiedBy: UserID,
-      DocID: String(DocID),
-      TrnSapID,
-      MatCode,
-      Qty: isNaN(Number(Qty)) ? null : Number(Qty),
-      ValuationType,                   // ✅ add this
-      Batch,                           // ✅ optional, can be empty string or null
-      FromSLocCode: String(SLocID),    // ✅ this should be mapped correctly
-      ToSLocCode: String(ToSLocID),    // ✅ this too
-      ReasonForMovement
-    };
+  const handleUpdate = async () => {
+    setIsUpdating(true);
+    try {
+      const data = {
+        ModifiedBy: UserID,
+        DocID: String(DocID),
+        TrnSapID,
+        MatCode,
+        Qty: isNaN(Number(Qty)) ? null : Number(Qty),
+        ValuationType,                   // ✅ add this
+        Batch,                           // ✅ optional, can be empty string or null
+        FromSLocCode: String(SLocID),    // ✅ this should be mapped correctly
+        ToSLocCode: String(ToSLocID),    // ✅ this too
+        ReasonForMovement
+      };
 
-    console.log("🚀 Sending Edit311 payload:", data);
+      console.log("🚀 Sending Edit311 payload:", data);
 
-    const response = await Edit311Record(data);
+      const response = await Edit311Record(data);
 
-    if (response?.success === true) {
-      alert(response.message);
-      getData();
-      handleCloseRowEditModal();
-    } else {
-      alert(response?.message || "Update failed. Please try again.");
+      if (response?.success === true) {
+        alert(response.message);
+        getData();
+        handleCloseRowEditModal();
+      } else {
+        alert(response?.message || "Update failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error details:", error.response?.data || error);
+      alert(error.response?.data?.message || "An error occurred while updating the record.");
+    } finally {
+      setIsUpdating(false);
     }
-  } catch (error) {
-    console.error("Error details:", error.response?.data || error);
-    alert(error.response?.data?.message || "An error occurred while updating the record.");
-  } finally {
-    setIsUpdating(false);
-  }
-};
+  };
 
-React.useEffect(() => {
-  if (selectedRow) {
-    setPlantCode(selectedRow.Plant_Code);
-    setDocID(selectedRow.Doc_ID);
-    setTrnSapID(selectedRow.Trn_Sap_ID);
-    setMatCode(selectedRow.Material_Code);
-    setQty(selectedRow.Qty);
-    setSLocID(selectedRow.SLoc_Code);      
-    setToSLocID(selectedRow.To_SLoc_Code); 
-      setValuationType(selectedRow.Valuation_Type); 
-    setBatch(selectedRow.Batch);        
-    setReasonForMovement(selectedRow.Reason_For_Movt);
-  }
-}, [selectedRow]);
+  React.useEffect(() => {
+    if (selectedRow) {
+      setPlantCode(selectedRow.Plant_Code);
+      setDocID(selectedRow.Doc_ID);
+      setTrnSapID(selectedRow.Trn_Sap_ID);
+      setMatCode(selectedRow.Material_Code);
+      setQty(selectedRow.Qty);
+      setSLocID(selectedRow.SLoc_Code);
+      setToSLocID(selectedRow.To_SLoc_Code);
+      setValuationType(selectedRow.Valuation_Type);
+      setBatch(selectedRow.Batch);
+      setReasonForMovement(selectedRow.Reason_For_Movt);
+    }
+  }, [selectedRow]);
 
 
   const fetchData = async () => {
@@ -956,7 +957,7 @@ React.useEffect(() => {
           rows={rows}
           columns={columns}
           pageSize={5}
-         // getRowId={(row) => row.Doc_ID}
+          // getRowId={(row) => row.Doc_ID}
           getRowId={(row) => row.Trn_Sap_ID}
           rowsPerPageOptions={[5]}
           onRowClick={handleConditionalRowClick}
@@ -1085,99 +1086,99 @@ React.useEffect(() => {
       </Modal>
 
 
-{/* 🟨 View Status Modal */}
-<Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
-  <Box
-    sx={{
-      position: 'relative',
-      p: 4,
-      width: { xs: '90%', sm: 900 },
-      mx: 'auto',
-      mt: '5%',
-      bgcolor: 'background.paper',
-      borderRadius: 3,
-      boxShadow: 24,
-      maxHeight: '90vh',
-      overflowY: 'auto',
-    }}
-  >
-    {/* ❌ Top-right close (X) button */}
-    <IconButton
-      onClick={() => setOpenViewStatusModal(false)}
-      sx={{
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        color: '#f44336',
-        '&:hover': {
-          backgroundColor: '#ffcdd2',
-          color: '#b71c1c',
-        },
-      }}
-    >
-      <CloseIcon />
-    </IconButton>
+      {/* 🟨 View Status Modal */}
+      <Modal open={openViewStatusModal} onClose={() => setOpenViewStatusModal(false)}>
+        <Box
+          sx={{
+            position: 'relative',
+            p: 4,
+            width: { xs: '90%', sm: 900 },
+            mx: 'auto',
+            mt: '5%',
+            bgcolor: 'background.paper',
+            borderRadius: 3,
+            boxShadow: 24,
+            maxHeight: '90vh',
+            overflowY: 'auto',
+          }}
+        >
+          {/* ❌ Top-right close (X) button */}
+          <IconButton
+            onClick={() => setOpenViewStatusModal(false)}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              color: '#f44336',
+              '&:hover': {
+                backgroundColor: '#ffcdd2',
+                color: '#b71c1c',
+              },
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
 
-    {/* 🔷 Title */}
-    <Box sx={{ textAlign: 'center' }}>
-      <Typography
-        variant="h6"
-        gutterBottom
-        sx={{
-          color: '#1976d2',
-          borderBottom: '2px solid limegreen',
-          display: 'inline-block',
-        }}
-      >
-        Approval Status
-      </Typography>
-    </Box>
+          {/* 🔷 Title */}
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{
+                color: '#1976d2',
+                borderBottom: '2px solid limegreen',
+                display: 'inline-block',
+              }}
+            >
+              Approval Status
+            </Typography>
+          </Box>
 
-    {/* 🧾 Status Table */}
-    <Table size="small" sx={{ borderCollapse: 'collapse' }}>
-      <TableHead>
-        <TableRow sx={{ bgcolor: '#bdbdbd' }}>
-          <TableCell sx={{ border: '1px solid #555555' }}>Role</TableCell>
-          <TableCell sx={{ border: '1px solid #555555' }}>Date</TableCell>
-          <TableCell sx={{ border: '1px solid #555555' }}>Name</TableCell>
-          <TableCell sx={{ border: '1px solid #555555' }}>Comment</TableCell>
-          <TableCell sx={{ border: '1px solid #555555' }}>Status</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {['Requester', 'Plant MRPC'].map((roleKey, idx) => {
-          const backendRole = roleKey === 'Requester' ? 'Requester' : 'Plant MRPC';
-          const displayRole = roleKey === 'Requester' ? 'Requester' : 'Level  - Plant MRPC';
+          {/* 🧾 Status Table */}
+          <Table size="small" sx={{ borderCollapse: 'collapse' }}>
+            <TableHead>
+              <TableRow sx={{ bgcolor: '#bdbdbd' }}>
+                <TableCell sx={{ border: '1px solid #555555' }}>Role</TableCell>
+                <TableCell sx={{ border: '1px solid #555555' }}>Date</TableCell>
+                <TableCell sx={{ border: '1px solid #555555' }}>Name</TableCell>
+                <TableCell sx={{ border: '1px solid #555555' }}>Comment</TableCell>
+                <TableCell sx={{ border: '1px solid #555555' }}>Status</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {['Requester', 'Plant MRPC'].map((roleKey, idx) => {
+                const backendRole = roleKey === 'Requester' ? 'Requester' : 'Plant MRPC';
+                const displayRole = roleKey === 'Requester' ? 'Requester' : 'Level  - Plant MRPC';
 
-          const row = viewStatusData.find(
-            r => r.Role?.toLowerCase() === backendRole.toLowerCase()
-          ) || {};
+                const row = viewStatusData.find(
+                  r => r.Role?.toLowerCase() === backendRole.toLowerCase()
+                ) || {};
 
-          return (
-            <TableRow key={idx} sx={{ border: '1px solid #555555' }}>
-              <TableCell sx={{ border: '1px solid #555555' }}>{displayRole}</TableCell>
-              <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_Date || '—'}</TableCell>
-              <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_By || '—'}</TableCell>
-              <TableCell sx={{ border: '1px solid #555555' }}>{row.Approver_Comment || '—'}</TableCell>
-              <TableCell sx={{ border: '1px solid #555555' }}>{row.Status || '—'}</TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+                return (
+                  <TableRow key={idx} sx={{ border: '1px solid #555555' }}>
+                    <TableCell sx={{ border: '1px solid #555555' }}>{displayRole}</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_Date || '—'}</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Action_By || '—'}</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Approver_Comment || '—'}</TableCell>
+                    <TableCell sx={{ border: '1px solid #555555' }}>{row.Status || '—'}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
 
-    {/* Close Button at Bottom */}
-    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-      <Button
-        onClick={() => setOpenViewStatusModal(false)}
-        variant="contained"
-        sx={{ textTransform: 'none' }}
-      >
-        Close
-      </Button>
-    </Box>
-  </Box>
-</Modal>
+          {/* Close Button at Bottom */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+            <Button
+              onClick={() => setOpenViewStatusModal(false)}
+              variant="contained"
+              sx={{ textTransform: 'none' }}
+            >
+              Close
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
 
 
       {/* ExcelDownload From & To Date Modal */}
@@ -1260,165 +1261,165 @@ React.useEffect(() => {
 
 
       {/* Row edit modal */}
-{/* Row edit modal */}
-<Modal open={openRowEditModal} onClose={handleCloseRowEditModal}>
-  <Box
-    sx={{
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      width: 450,
-      maxHeight: "85vh",
-      bgcolor: "background.paper",
-      borderRadius: 2,
-      boxShadow: 3,
-      p: 2,
-      mt: 4,
-      mx: "auto",
-      gap: 1.5,
-      overflowY: "auto",
-      transition: 'all 0.3s ease'
-    }}
-  >
-    <h3 style={{
-      gridColumn: "span 2",
-      textAlign: "center",
-      color: "#2e59d9",
-      textDecoration: "underline",
-      textDecorationColor: "#88c57a",
-      textDecorationThickness: "3px",
-    }}>
-      Edit 311 Record
-    </h3>
+      {/* Row edit modal */}
+      <Modal open={openRowEditModal} onClose={handleCloseRowEditModal}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            width: 450,
+            maxHeight: "85vh",
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 3,
+            p: 2,
+            mt: 4,
+            mx: "auto",
+            gap: 1.5,
+            overflowY: "auto",
+            transition: 'all 0.3s ease'
+          }}
+        >
+          <h3 style={{
+            gridColumn: "span 2",
+            textAlign: "center",
+            color: "#2e59d9",
+            textDecoration: "underline",
+            textDecorationColor: "#88c57a",
+            textDecorationThickness: "3px",
+          }}>
+            Edit 311 Record
+          </h3>
 
-    {/* 🔒 Read-only fields */}
-    {[
-      ["Plant Code", PlantCode],
-      ["Doc ID", DocID],
-      ["Trn ID", TrnSapID],
-    ].map(([label, value]) => (
-      <TextField
-        key={label}
-        label={label}
-        value={value}
-        fullWidth
-        InputProps={{ readOnly: true }}
-        {...compactFieldProps}
-      />
-    ))}
+          {/* 🔒 Read-only fields */}
+          {[
+            ["Plant Code", PlantCode],
+            ["Doc ID", DocID],
+            ["Trn ID", TrnSapID],
+          ].map(([label, value]) => (
+            <TextField
+              key={label}
+              label={label}
+              value={value}
+              fullWidth
+              InputProps={{ readOnly: true }}
+              {...compactFieldProps}
+            />
+          ))}
 
-    <TextField
-      label="Movement Type"
-      value={MovtID}
-      fullWidth
-      InputProps={{ readOnly: true }}
-      {...compactFieldProps}
-    />
+          <TextField
+            label="Movement Type"
+            value={MovtID}
+            fullWidth
+            InputProps={{ readOnly: true }}
+            {...compactFieldProps}
+          />
 
-    {/* Material Code */}
-    <FormControl fullWidth size="small">
-      <InputLabel id="mat-label">Material Code</InputLabel>
-      <Select
-        labelId="mat-label"
-        label="Material Code"
-        value={MatCode}
-        onChange={e => setMatCode(e.target.value)}
-      >
-        {MaterialTable.map(item => (
-          <MenuItem key={item.Material_ID} value={item.Material_Code}>
-            {item.Material_Code} - {item.Description}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+          {/* Material Code */}
+          <FormControl fullWidth size="small">
+            <InputLabel id="mat-label">Material Code</InputLabel>
+            <Select
+              labelId="mat-label"
+              label="Material Code"
+              value={MatCode}
+              onChange={e => setMatCode(e.target.value)}
+            >
+              {MaterialTable.map(item => (
+                <MenuItem key={item.Material_ID} value={item.Material_Code}>
+                  {item.Material_Code} - {item.Description}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-    {/* Quantity */}
-    <TextField
-      label="Quantity"
-      type="number"
-      value={Qty}
-      onChange={e => setQty(Number(e.target.value))}
-      fullWidth
-      {...compactFieldProps}
-    />
+          {/* Quantity */}
+          <TextField
+            label="Quantity"
+            type="number"
+            value={Qty}
+            onChange={e => setQty(Number(e.target.value))}
+            fullWidth
+            {...compactFieldProps}
+          />
 
-    {/* From SLoc Code */}
-    <FormControl fullWidth size="small">
-      <InputLabel id="from-sloc-label">From SLoc Code</InputLabel>
-      <Select
-        labelId="from-sloc-label"
-        label="From SLoc Code"
-        value={SLocID}
-        onChange={e => setSLocID(e.target.value)}
-      >
-        {SLocTable.map(item => (
-          <MenuItem key={item.SLoc_ID} value={item.Storage_Code}>
-            {item.Storage_Code}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+          {/* From SLoc Code */}
+          <FormControl fullWidth size="small">
+            <InputLabel id="from-sloc-label">From SLoc Code</InputLabel>
+            <Select
+              labelId="from-sloc-label"
+              label="From SLoc Code"
+              value={SLocID}
+              onChange={e => setSLocID(e.target.value)}
+            >
+              {SLocTable.map(item => (
+                <MenuItem key={item.SLoc_ID} value={item.Storage_Code}>
+                  {item.Storage_Code}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-    {/* To SLoc Code */}
-    <FormControl fullWidth size="small">
-      <InputLabel id="to-sloc-label">To SLoc Code</InputLabel>
-      <Select
-        labelId="to-sloc-label"
-        label="To SLoc Code"
-        value={ToSLocID}
-        onChange={e => setToSLocID(e.target.value)}
-      >
-        {SLocTable.map(item => (
-          <MenuItem key={item.SLoc_ID} value={item.Storage_Code}>
-            {item.Storage_Code}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+          {/* To SLoc Code */}
+          <FormControl fullWidth size="small">
+            <InputLabel id="to-sloc-label">To SLoc Code</InputLabel>
+            <Select
+              labelId="to-sloc-label"
+              label="To SLoc Code"
+              value={ToSLocID}
+              onChange={e => setToSLocID(e.target.value)}
+            >
+              {SLocTable.map(item => (
+                <MenuItem key={item.SLoc_ID} value={item.Storage_Code}>
+                  {item.Storage_Code}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-    {/* Valuation Type */}
-<FormControl fullWidth size="small">
-  <InputLabel id="valuation-label">Valuation Type</InputLabel>
-  <Select
-    labelId="valuation-label"
-    label="Valuation Type"
-    value={ValuationType}
-    onChange={e => setValuationType(e.target.value)}
-  >
-    {ValuationTypeTable.map(item => (
-      <MenuItem key={item.Valuation_ID} value={item.Valuation_Name}>
-        {item.Valuation_Name}
-      </MenuItem>
-    ))}
-  </Select>
-</FormControl>
-
-
-    {/* Batch */}
-    <TextField
-      label="Batch"
-      value={Batch}
-      onChange={e => setBatch(e.target.value)}
-      fullWidth
-      {...compactFieldProps}
-    />
-
-    {/* Reason for Movement */}
-<TextField
-  label="Reason for Movement"
-  value={ReasonForMovement}
-  onChange={e => setReasonForMovement(e.target.value)}
-  fullWidth
-  {...compactFieldProps}
-/>
+          {/* Valuation Type */}
+          <FormControl fullWidth size="small">
+            <InputLabel id="valuation-label">Valuation Type</InputLabel>
+            <Select
+              labelId="valuation-label"
+              label="Valuation Type"
+              value={ValuationType}
+              onChange={e => setValuationType(e.target.value)}
+            >
+              {ValuationTypeTable.map(item => (
+                <MenuItem key={item.Valuation_ID} value={item.Valuation_Name}>
+                  {item.Valuation_Name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
 
-    {/* Buttons */}
-    <Box sx={{ gridColumn: "span 2", display: "flex", justifyContent: "center", gap: 2, mt: 1 }}>
-      <Button size="small" variant="contained" color="error" onClick={handleCloseRowEditModal}>Cancel</Button>
-      <Button size="small" variant="contained" color="primary" onClick={handleUpdate}>Update</Button>
-    </Box>
-  </Box>
-</Modal>
+          {/* Batch */}
+          <TextField
+            label="Batch"
+            value={Batch}
+            onChange={e => setBatch(e.target.value)}
+            fullWidth
+            {...compactFieldProps}
+          />
+
+          {/* Reason for Movement */}
+          <TextField
+            label="Reason for Movement"
+            value={ReasonForMovement}
+            onChange={e => setReasonForMovement(e.target.value)}
+            fullWidth
+            {...compactFieldProps}
+          />
+
+
+          {/* Buttons */}
+          <Box sx={{ gridColumn: "span 2", display: "flex", justifyContent: "center", gap: 2, mt: 1 }}>
+            <Button size="small" variant="contained" color="error" onClick={handleCloseRowEditModal}>Cancel</Button>
+            <Button size="small" variant="contained" color="primary" onClick={handleUpdate}>Update</Button>
+          </Box>
+        </Box>
+      </Modal>
 
 
 

@@ -28,8 +28,9 @@ import {
   getUpdates,
   getdetails,
   getCompany
-  
+
 } from "../controller/PlantMasterapiservices";
+import SectionHeading from "../components/Header";
 
 const Plant = () => {
   const [searchText, setSearchText] = useState("");
@@ -40,25 +41,25 @@ const Plant = () => {
   const [openEditModal, setOpenEditModal] = useState(false);
   const [CompanyCode, setCompanyCode] = useState([]);
   const [ActiveStatus, setActiveStatus] = useState(false);
-  
+
   const [CompanyTable, setCompanyTable] = useState([]);
   const Username = localStorage.getItem('UserName');
   const UserID = localStorage.getItem('UserID');
   // const [newRecord] = useState([]);
   // const [updateRecord] = useState([]);
   // const [errRecord] = useState([]);
-  const [ PlantCode, setPlantCode] = useState("");
-  const [ PlantID, setPlantID] = useState("");
-  const [ PlantName, setPlantName] = useState("");
-  const [ ShortName, setShortName] = useState("");
+  const [PlantCode, setPlantCode] = useState("");
+  const [PlantID, setPlantID] = useState("");
+  const [PlantName, setPlantName] = useState("");
+  const [ShortName, setShortName] = useState("");
   const columns = [
     { field: "Com_Code", headerName: "Company Code ", flex: 1 },
-    
+
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
-    
+
     { field: "Plant_Name", headerName: "Plant Name ", flex: 1 },
     // { field: "Short_Name", headerName: "Short Name ", flex: 1 },
-    
+
 
     {
       field: "ActiveStatus",
@@ -114,12 +115,12 @@ const Plant = () => {
 
   useEffect(() => {
     getData();
-     console.log('username', Username)
-     console.log('UserID', UserID)
+    console.log('username', Username)
+    console.log('UserID', UserID)
   }, []);
- 
 
- const get_Company = async () => {
+
+  const get_Company = async () => {
     try {
       const response = await getCompany();
       setCompanyTable(response.data);
@@ -132,18 +133,18 @@ const Plant = () => {
   const handleOpenAddModal = (item) => {
     get_Company();
     setPlantCode("");
-   setCompanyCode("");
+    setCompanyCode("");
     setPlantName("");
     setShortName("");
-   
+
     setActiveStatus(true);
     setOpenAddModal(true);
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
 
- 
- 
+
+
 
 
   // ✅ Handle Row Click for Edit
@@ -171,8 +172,8 @@ const Plant = () => {
           "Com_Code",
           "Plant_Code",
           "Plant_Name",
-          
-          
+
+
         ].some((key) => {
           const value = row[key];
           return value && String(value).toLowerCase().includes(text);
@@ -185,10 +186,10 @@ const Plant = () => {
   // ✅ Handle Add Material
   const handleAdd = async () => {
     console.log("Data being sent to the server:", {
-      ActiveStatus,UserID,PlantCode, PlantName,CompanyCode
+      ActiveStatus, UserID, PlantCode, PlantName, CompanyCode
     });
     console.log("Add button clicked");
-    if (PlantCode === '' ||  PlantName === ''||CompanyCode==='' ) {
+    if (PlantCode === '' || PlantName === '' || CompanyCode === '') {
       alert("Please fill in all required fields");
       return;  // Exit the function if validation fails
     }
@@ -198,12 +199,12 @@ const Plant = () => {
     // }
     try {
       const data = {
-        UserID:UserID,
-        Com_Code:CompanyCode,
-        Plant_Code:PlantCode,
-        
+        UserID: UserID,
+        Com_Code: CompanyCode,
+        Plant_Code: PlantCode,
+
         Plant_Name: PlantName,
-        Short_Name:ShortName, 
+        Short_Name: ShortName,
         Active_Status: ActiveStatus,
       };
       const response = await getAdd(data);
@@ -216,7 +217,7 @@ const Plant = () => {
       }
     } catch (error) {
       console.error("Error in adding  Plant:", error);
-  
+
       // Step 4: Show error from server (like Employee_ID already exists)
       if (error.response && error.response.data && error.response.data.message) {
         alert(error.response.data.message);
@@ -229,19 +230,19 @@ const Plant = () => {
   const handleUpdate = async () => {
     try {
       const data = {
-        UserID:UserID,
-        Plant_ID:  PlantID,
+        UserID: UserID,
+        Plant_ID: PlantID,
         // Plant_Code: PlantCode,
-         
-        Plant_Name:  PlantName,
-        Short_Name:ShortName,
+
+        Plant_Name: PlantName,
+        Short_Name: ShortName,
         Active_Status: ActiveStatus,
       };
-  
+
       console.log("Data being sent:", data);
-  
+
       const response = await getUpdates(data);
-  
+
       // If success
       if (response.data.success) {
         alert(response.data.message);
@@ -253,7 +254,7 @@ const Plant = () => {
       }
     } catch (error) {
       console.error("Error details:", error.response?.data);
-  
+
       if (error.response && error.response.data && error.response.data.message) {
         alert(error.response.data.message); // Specific error from backend
       } else {
@@ -261,7 +262,7 @@ const Plant = () => {
       }
     }
   };
-  
+
   // excel download
   const handleDownloadExcel = () => {
     if (data.length === 0) {
@@ -273,29 +274,29 @@ const Plant = () => {
       "CompanyCode",
       "PlantCode",
       "PlantName",
-    
-      
+
+
       "ActiveStatus",
     ];
 
     const filteredData = data.map((item) => ({
       PlantCode: item.Plant_Code,
-      CompanyCode:item.Com_Code,
+      CompanyCode: item.Com_Code,
       PlantName: item.Plant_Name,
-    
+
       ActiveStatus: item.Active_Status ? "Active" : "Inactive"
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(filteredData, {
       header: DataColumns,
     });
-worksheet['!cols'] = [
-  { wch: 20 }, // Sup_Name
-  { wch: 20 }, // No_Of_Open_Orders
-  { wch: 30 }, // No_Of_Orders
-  { wch: 20 }, // No_Order_Close
-  
-];
+    worksheet['!cols'] = [
+      { wch: 20 }, // Sup_Name
+      { wch: 20 }, // No_Of_Open_Orders
+      { wch: 30 }, // No_Of_Orders
+      { wch: 20 }, // No_Order_Close
+
+    ];
     // Style header row
     DataColumns.forEach((_, index) => {
       const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
@@ -339,7 +340,7 @@ worksheet['!cols'] = [
           alignItems: "center",
         }}
       >
-        <h2
+        {/* <h2
           style={{
             margin: 0,
             color: "#2e59d9",
@@ -350,7 +351,10 @@ worksheet['!cols'] = [
           }}
         >
            Plant Master
-        </h2>
+        </h2> */}
+        <SectionHeading>
+          Plant Master
+        </SectionHeading>
       </div>
 
       {/* Search and Icons */}
@@ -402,8 +406,8 @@ worksheet['!cols'] = [
 
         {/* Icons */}
         <div style={{ display: "flex", gap: "10px" }}>
-          
-          
+
+
 
           {/* Download Button */}
           <IconButton
@@ -457,7 +461,7 @@ worksheet['!cols'] = [
           sx={{
             // Header Style
             "& .MuiDataGrid-columnHeader": {
-             backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
+              backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
               color: "black",
               fontWeight: "bold",
             },
@@ -511,49 +515,50 @@ worksheet['!cols'] = [
           >
             Add  Plant
           </h3>
-         
-            <FormControl fullWidth>
-                       <InputLabel>Company Code</InputLabel>
-                       <Select
-                         label="Company Code"
-                         name="CompanyCode"
-                         value={CompanyCode}
-                         onChange={(e) => setCompanyCode(e.target.value)}
-                         required
-                       >
-                         {CompanyTable.map((item, index) => (
-                           <MenuItem key={index} value={item.Com_Id}>
-                             {item.Com_Code}
-                           </MenuItem>
-                         ))}
-                       </Select>
-                     </FormControl>
-            
+
+          <FormControl fullWidth>
+            <InputLabel>Company Code</InputLabel>
+            <Select
+              label="Company Code"
+              name="CompanyCode"
+              value={CompanyCode}
+              onChange={(e) => setCompanyCode(e.target.value)}
+              required
+            >
+              {CompanyTable.map((item, index) => (
+                <MenuItem key={index} value={item.Com_Id}>
+                  {item.Com_Code}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
 
           <TextField
-  label="Plant Code"
-  name="PlantCode"
-  value={PlantCode}
-  type="text"
-  onChange={(e) => {
-    const value = e.target.value;
-    // Remove any non-digit character
-    if (/^\d*$/.test(value)) {
-      setPlantCode(value);
-    }
-  }}
-  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' ,
-    // maxLength: 4,
+            label="Plant Code"
+            name="PlantCode"
+            value={PlantCode}
+            type="text"
+            onChange={(e) => {
+              const value = e.target.value;
+              // Remove any non-digit character
+              if (/^\d*$/.test(value)) {
+                setPlantCode(value);
+              }
+            }}
+            inputProps={{
+              inputMode: 'numeric', pattern: '[0-9]*',
+              // maxLength: 4,
 
-  }}
-  required
-/>
+            }}
+            required
+          />
 
 
           <TextField
             label="Plant Name"
             name=" Plant Name"
-            value={ PlantName}
+            value={PlantName}
             onChange={(e) => setPlantName(e.target.value)}
             required
           />
@@ -647,33 +652,33 @@ worksheet['!cols'] = [
             Edit Plant
           </h3>
           <TextField
-                              label="Company Code"
-                              name="Company_Code"
-                              value={CompanyCode}
-                              onChange={(e) => setCompanyCode(e.target.value)}
-                              InputProps={{
-                                readOnly: true,  // This makes the TextField read-only
-                              }}
-                            />
-         <TextField
-                     label="Plant Code"
-                     name="Plant_Code"
-                     value={PlantCode}
-                     onChange={(e) => setPlantCode(e.target.value)}
-                     InputProps={{
-                       readOnly: true,  // This makes the TextField read-only
-                     }}
-                   />
+            label="Company Code"
+            name="Company_Code"
+            value={CompanyCode}
+            onChange={(e) => setCompanyCode(e.target.value)}
+            InputProps={{
+              readOnly: true,  // This makes the TextField read-only
+            }}
+          />
+          <TextField
+            label="Plant Code"
+            name="Plant_Code"
+            value={PlantCode}
+            onChange={(e) => setPlantCode(e.target.value)}
+            InputProps={{
+              readOnly: true,  // This makes the TextField read-only
+            }}
+          />
 
-         
+
           <TextField
             label=" Plant Name"
             name=" Plant Name"
-            value={ PlantName}
+            value={PlantName}
             onChange={(e) => setPlantName(e.target.value)}
             required
           />
-         <TextField
+          <TextField
             label="Short Name"
             name="Short Name"
             value={ShortName}
@@ -729,7 +734,7 @@ worksheet['!cols'] = [
           </Box>
         </Box>
       </Modal>
-     
+
     </div>
   );
 };

@@ -30,6 +30,7 @@ import {
 } from "../controller/CompanyMasterapiservice";
 import { api } from "../controller/constants";
 import { decryptSessionData } from "../controller/StorageUtils";
+import SectionHeading from "../components/Header";
 const Company = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
@@ -251,60 +252,60 @@ const Company = () => {
   };
 
   const handleUpdate = async () => {
-  try {
-    const data = {
-      UserID: UserID,
-      Com_ID: CompanyID,
-      Com_Code: CompanyCode,
-      Com_Name: CompanyName,
-      Active_Status: ActiveStatus,
-      CompanyLogo: CompanyLogo,
-    };
+    try {
+      const data = {
+        UserID: UserID,
+        Com_ID: CompanyID,
+        Com_Code: CompanyCode,
+        Com_Name: CompanyName,
+        Active_Status: ActiveStatus,
+        CompanyLogo: CompanyLogo,
+      };
 
-    console.log("Data being sent for update:", data);
+      console.log("Data being sent for update:", data);
 
-    // First API call - Updating the company data (without image)
-    const response = await getUpdates(data);
+      // First API call - Updating the company data (without image)
+      const response = await getUpdates(data);
 
-    if (response.data.success) {
-      // If a new company logo is selected, proceed with image upload
-      if (uploadedFile) {
-        console.log("File to be uploaded:", uploadedFile);
+      if (response.data.success) {
+        // If a new company logo is selected, proceed with image upload
+        if (uploadedFile) {
+          console.log("File to be uploaded:", uploadedFile);
 
-        const formData = new FormData();
-        formData.append("Com_ID", CompanyID);
-        formData.append("UserID", UserID);
-        formData.append("User_Image", uploadedFile);
+          const formData = new FormData();
+          formData.append("Com_ID", CompanyID);
+          formData.append("UserID", UserID);
+          formData.append("User_Image", uploadedFile);
 
-        const response2 = await User_Img(formData);
-        console.log("Image upload response:", response2.data);
+          const response2 = await User_Img(formData);
+          console.log("Image upload response:", response2.data);
 
-        if (response2.data.message === "Image Uploaded Successfully") {
-          alert("Company and image updated successfully!");
+          if (response2.data.message === "Image Uploaded Successfully") {
+            alert("Company and image updated successfully!");
+          } else {
+            console.log("Error in image upload response:", response2.data);
+            alert("Error while uploading image. Please try again.");
+          }
         } else {
-          console.log("Error in image upload response:", response2.data);
-          alert("Error while uploading image. Please try again.");
+          alert("Company updated successfully!");
         }
+
+        getData(); // Refresh the UI
+        handleCloseEditModal(); // Close modal
+
       } else {
-        alert("Company updated successfully!");
+        alert(response.data.message);
       }
+    } catch (error) {
+      console.error("Error in updating Company:", error);
 
-      getData(); // Refresh the UI
-      handleCloseEditModal(); // Close modal
-
-    } else {
-      alert(response.data.message);
+      if (error.response?.data?.message) {
+        alert(error.response.data.message);
+      } else {
+        alert("An error occurred while updating the Company. Please try again.");
+      }
     }
-  } catch (error) {
-    console.error("Error in updating Company:", error);
-
-    if (error.response?.data?.message) {
-      alert(error.response.data.message);
-    } else {
-      alert("An error occurred while updating the Company. Please try again.");
-    }
-  }
-};
+  };
 
 
   const handleFileUpload = (event) => {
@@ -338,13 +339,13 @@ const Company = () => {
     const worksheet = XLSX.utils.json_to_sheet(filteredData, {
       header: DataColumns,
     });
-worksheet['!cols'] = [
-  { wch: 20 }, 
-   
-  { wch: 30 }, 
-  { wch: 20 }, 
-  
-];
+    worksheet['!cols'] = [
+      { wch: 20 },
+
+      { wch: 30 },
+      { wch: 20 },
+
+    ];
     // Style header row
     DataColumns.forEach((_, index) => {
       const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
@@ -370,7 +371,7 @@ worksheet['!cols'] = [
 
   return (
     <div
-      style={{                                                                                 
+      style={{
         padding: 20,
         backgroundColor: "#F5F5F5",
         marginTop: "50px",
@@ -388,7 +389,7 @@ worksheet['!cols'] = [
           alignItems: "center",
         }}
       >
-        <h2
+        {/* <h2
           style={{
             margin: 0,
             color: "#2e59d9",
@@ -399,7 +400,10 @@ worksheet['!cols'] = [
           }}
         >
           Company Master
-        </h2>
+        </h2> */}
+        <SectionHeading>
+          Company Master
+        </SectionHeading>
       </div>
 
       {/* Search and Icons */}
@@ -503,7 +507,7 @@ worksheet['!cols'] = [
           sx={{
             // Header Style
             "& .MuiDataGrid-columnHeader": {
-             backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
+              backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
               color: "black",
               fontWeight: "bold",
             },
@@ -554,6 +558,7 @@ worksheet['!cols'] = [
               textDecorationColor: "#88c57a",
               textDecorationThickness: "3px",
             }}
+            className="text-xl font-bold"
           >
             Add Company
           </h3>
@@ -680,6 +685,7 @@ worksheet['!cols'] = [
               textDecorationColor: "#88c57a",
               textDecorationThickness: "3px",
             }}
+            className="text-xl font-bold"
           >
             Edit Company
           </h3>

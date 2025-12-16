@@ -14,12 +14,13 @@ const Landing = () => {
             }}
         >
             <h1
-                style={{
-                    textAlign: "center",
-                    color: "#333",
-                    margin: "10px 0",
-                    flexShrink: 0,
-                }}
+                // style={{
+                //     textAlign: "center",
+                //     color: "#333",
+                //     margin: "10px 0",
+                //     flexShrink: 0,
+                // }}
+                className="text-2xl! text-center font-bold! mt-2"
             >
                 MANUFACTURING WORKSPACE
             </h1>
@@ -40,7 +41,7 @@ const Landing = () => {
                         height: '97%'
                     }}
                 >
-                    <Link to="/login" style={{ textAlign: "center" }}>
+                    <Link to="/login" style={{ textAlign: "" }}>
                         <img
                             src="/Login1.jpg"
                             alt="Login"
@@ -59,7 +60,7 @@ const Landing = () => {
                                 (e.currentTarget.style.transform = "scale(1)")
                             }
                         />
-                        <h2 style={{ color: "black", marginTop: "10px" }}>Login</h2>
+                        <h2 className="text-2xl! text-center mr-24 mt-5 font-bold!">Login</h2>
                     </Link>
                 </div>
 
@@ -87,7 +88,7 @@ const Landing = () => {
                             backgroundColor: "#56DFCF",
                         }}
                     >
-                        <h3 style={{ marginBottom: "10px", color: "black" }}>MYSORE</h3>
+                        <div style={{ marginBottom: "10px", color: "black" }} className="text-md font-bold">MYSORE</div>
                         <div style={{ display: "flex", gap: "10px" }}>
                             <div style={{ textAlign: "center", flex: 1 }}>
                                 <Link to={`${api}/Store/1200/1200`}>
@@ -109,7 +110,7 @@ const Landing = () => {
                                         }
                                     />
                                 </Link>
-                                <h4>SSLP Store</h4>
+                                <h4 className="text-md! font-bold!">SSLP Store</h4>
                             </div>
                             <div style={{ textAlign: "center", flex: 1 }}>
                                 <Link to={`${api}/Store/1200/1226`}>
@@ -131,7 +132,7 @@ const Landing = () => {
                                         }
                                     />
                                 </Link>
-                                <h4>HYP Store</h4>
+                                <h4 className="text-md! font-bold!">HYP Store</h4>
                             </div>
                         </div>
                     </div>
@@ -148,7 +149,7 @@ const Landing = () => {
                             backgroundColor: "#ADEED9",
                         }}
                     >
-                        <h3 style={{ marginBottom: "10px", color: "black" }}>PONDY</h3>
+                        <h3 style={{ marginBottom: "10px", color: "black" }} className="text-md! font-bold!">PONDY</h3>
                         <div style={{ display: "flex", gap: "10px" }}>
                             <div style={{ textAlign: "center", flex: 1 }}>
                                 <Link to={`${api}/Store/1300/1300`}>
@@ -170,7 +171,7 @@ const Landing = () => {
                                         }
                                     />
                                 </Link>
-                                <h4>SSLP Store</h4>
+                                <h4 className="text-md! font-bold!">SSLP Store</h4>
                             </div>
                             <div style={{ textAlign: "center", flex: 1 }}>
                                 <Link to={`${api}/Store/1300/1308`}>
@@ -192,7 +193,7 @@ const Landing = () => {
                                         }
                                     />
                                 </Link>
-                                <h4>SGP Store</h4>
+                                <h4 className="text-md! font-bold!"> SGP Store</h4>
                             </div>
                         </div>
                     </div>
@@ -209,7 +210,7 @@ const Landing = () => {
                             backgroundColor: "#ADEED9",
                         }}
                     >
-                        <h3 style={{ marginBottom: "10px", color: "black" }}>VARANAVASI</h3>
+                        <h3 style={{ marginBottom: "10px", color: "black" }} className="text-md! font-bold!">VARANAVASI</h3>
                         <div style={{ display: "flex", gap: "10px" }}>
                             <div style={{ textAlign: "center", flex: 1 }}>
                                 <Link to={`${api}/Store/1150/1150`}>
@@ -231,7 +232,7 @@ const Landing = () => {
                                         }
                                     />
                                 </Link>
-                                <h4>Balljoint Store</h4>
+                                <h4 className="text-md! font-bold!">Balljoint Store</h4>
                             </div>
                             <div style={{ textAlign: "center", flex: 1 }}>
                                 <Link to={`${api}/Store/1150/1174`}>
@@ -253,7 +254,7 @@ const Landing = () => {
                                         }
                                     />
                                 </Link>
-                                <h4>Linkage / R&P Store</h4>
+                                <h4 className="text-md! font-bold!">Linkage / R&P Store</h4>
                             </div>
                         </div>
                     </div>
@@ -270,7 +271,7 @@ const Landing = () => {
                             backgroundColor: "#56DFCF",
                         }}
                     >
-                        <h3 style={{ marginBottom: "10px", color: "black" }}>PANT NAGAR</h3>
+                        <h3 style={{ marginBottom: "10px", color: "black" }} className="text-md! font-bold!">PANT NAGAR</h3>
                         <div style={{ display: "flex", gap: "10px" }}>
                             <div style={{ textAlign: "center", flex: 1 }}>
                                 <Link to={`${api}/Store/1250/1250`}>
@@ -292,7 +293,7 @@ const Landing = () => {
                                         }
                                     />
                                 </Link>
-                                <h4>RM Store</h4>
+                                <h4 className="text-md! font-bold!">RM Store</h4>
                             </div>
                             {/* <div style={{ textAlign: "center", flex: 1 }}>
                                 <Link to={`${api}/Store/1250/1251`}>
