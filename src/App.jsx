@@ -77,6 +77,10 @@ import TestLabViewDashboard from "./TestLab/dashboard/TestLabViewDashboard";
 import RigMonthlyStatus from "./TestLab/RigMonthlyStatus";
 import MstRigTestSpecScreen from "./Masters/RigTestSpec";
 import MachineScreen from "./Masters/Machine";
+import ProductScreen from "./Masters/Product";
+import ProductSegmentScreen from "./Masters/ProductSegment";
+import ProductMappingScreen from "./Masters/ProductMapping";
+import PMPD_ProductionPlan from "./PMPD/ProductionPlan";
 
 const App = () => {
   return (
@@ -117,6 +121,10 @@ const App = () => {
             <Route path="Approval_Rs1" element={<ProtectedRoute screenId={33}><ApprovalRs1 /></ProtectedRoute>} />
             <Route path="RigTestSpec" element={<ProtectedRoute screenId={42}><MstRigTestSpecScreen /></ProtectedRoute>} />
             <Route path="Machine" element={<ProtectedRoute screenId={39}><MachineScreen /></ProtectedRoute>} />
+            {/* New screens */}
+            <Route path="Product" element={<ProtectedRoute screenId={44}><ProductScreen /></ProtectedRoute>} />
+            <Route path="ProductSegmentScreen" element={<ProtectedRoute screenId={45}><ProductSegmentScreen /></ProtectedRoute>} />
+            <Route path="ProductMappingScreen" element={<ProtectedRoute screenId={46}><ProductMappingScreen /></ProtectedRoute>} />
 
             <Route path="dashboard" element={<ProtectedRoute screenId={15}><DashBoard /></ProtectedRoute>} />
             <Route path="Report1" element={<ProtectedRoute screenId={16}><Report1 /></ProtectedRoute>} />
@@ -164,6 +172,10 @@ const App = () => {
             <Route path="testLabDashbaord" element={<ProtectedRoute screenId={40}><TestLabDashboard /></ProtectedRoute>} />
             <Route path="rigMonthlyStatus" element={<ProtectedRoute screenId={41}><RigMonthlyStatus /></ProtectedRoute>} />
             <Route path="testLabDashbaord/:machineId" element={<TestLabViewDashboard />} />
+
+
+            {/* PMPD */}
+            <Route path="PMPD_ProductionPlan" element={<ProtectedRoute screenId={47}><PMPD_ProductionPlan /></ProtectedRoute>} />
           </Route>
         </Routes>
       </AuthProvider>

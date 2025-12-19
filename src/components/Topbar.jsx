@@ -206,7 +206,7 @@ const Topbar = () => {
               alignItems: "center",
               padding: "5px",
               marginRight: "10px",
-              fontSize: "22px",
+              fontSize: "30px",
               cursor: "pointer",
             }}
             onClick={handleLogout}

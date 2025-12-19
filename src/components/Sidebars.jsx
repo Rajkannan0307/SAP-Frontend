@@ -49,6 +49,7 @@ import { MdScience } from "react-icons/md";
 import { GiChemicalDrop } from "react-icons/gi";
 import { FaFlask } from "react-icons/fa";
 import { MdOutlineSensors } from "react-icons/md";
+import { MdPrecisionManufacturing } from "react-icons/md";
 
 
 // Testing
@@ -56,7 +57,9 @@ import { MdOutlineSensors } from "react-icons/md";
 import EngineeringIcon from "@mui/icons-material/Engineering";
 import MiscellaneousServicesIcon from "@mui/icons-material/MiscellaneousServices";
 import ConstructionIcon from "@mui/icons-material/Construction";
-
+import { GiFactory } from "react-icons/gi";
+import { FaCogs } from "react-icons/fa";
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 
 
 const Sidebar = ({ setSidebarOpen }) => {
@@ -67,6 +70,7 @@ const Sidebar = ({ setSidebarOpen }) => {
   const [Report, setReportOpen] = useState(false);
   const [SAP, setSapOpen] = useState(false);
   const [testLabOpen, setTestLabOpen] = useState(false);
+  const [PMPD_Open, setPMPD_Open] = useState(false);
   const [employeeName, setEmployeeName] = useState('');
   const [Role, setRole] = useState('');
   const navigate = useNavigate();
@@ -133,14 +137,17 @@ const Sidebar = ({ setSidebarOpen }) => {
     setReportOpen(false);
     setApprovalOpen(false);
     setTestLabOpen(false)
+    setPMPD_Open(false)
   };
+
   const toggleSAP = () => {
     setSapOpen(!SAP);
     setMasterOpen(false);
     setDashboardOpen(false);
     setReportOpen(false);
     setApprovalOpen(false);
-    setTestLabOpen(false)
+    setTestLabOpen(false);
+    setPMPD_Open(false)
   };
 
   const toggleApproval = () => {
@@ -150,6 +157,7 @@ const Sidebar = ({ setSidebarOpen }) => {
     setReportOpen(false);
     setSapOpen(false);
     setTestLabOpen(false)
+    setPMPD_Open(false)
   };
 
   const toggleReport = () => {
@@ -159,6 +167,7 @@ const Sidebar = ({ setSidebarOpen }) => {
     setApprovalOpen(false);
     setSapOpen(false);
     setTestLabOpen(false)
+    setPMPD_Open(false)
   };
 
   const toggleTestLab = () => {
@@ -167,6 +176,7 @@ const Sidebar = ({ setSidebarOpen }) => {
     setDashboardOpen(false);
     setApprovalOpen(false);
     setSapOpen(false);
+    setPMPD_Open(false)
   };
 
   const toggleDashboard = () => {
@@ -175,14 +185,28 @@ const Sidebar = ({ setSidebarOpen }) => {
     setApprovalOpen(false);
     setReportOpen(false);
     setSapOpen(false);
+    setPMPD_Open(false)
   };
+
+
+  const togglePMPD = () => {
+    setPMPD_Open(!PMPD_Open)
+    setTestLabOpen(false);
+    setMasterOpen(false);
+    setDashboardOpen(false);
+    setApprovalOpen(false);
+    setSapOpen(false);
+  }
 
   const closeAllDropdowns = () => {
     setMasterOpen(false);
     setApprovalOpen(false);
     setDashboardOpen(false);
     setReportOpen(false);
+    setPMPD_Open(false)
   };
+
+
 
   return (
     <div
@@ -312,12 +336,17 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "Line", path: "/home/Line", icon: <PrecisionManufacturingIcon style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkseagreen" }} />, code: 'Line' },
             { name: "Rig Test Spec", path: "/home/RigTestSpec", icon: <PrecisionManufacturingIcon style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkseagreen" }} />, code: 'RigTestSpec' },
             { name: "Machine", path: "/home/Machine", icon: <PrecisionManufacturingIcon style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "darkseagreen" }} />, code: 'Machine' },
+
+            // New Screens
+            { name: "Product", path: "/home/Product", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'Product' },
+            { name: "Product Segment", path: "/home/ProductSegmentScreen", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'ProductSegment' },
+            { name: "Product Mapping", path: "/home/ProductMappingScreen", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'ProductMapping' },
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
             'UserMaster', 'Role', 'Material', 'Vendor',
             'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter',
-            'ValuationType', 'SupvCode', 'Module', 'Line', 'Machine', 'RigTestSpec'
+            'ValuationType', 'SupvCode', 'Module', 'Line', 'Machine', 'RigTestSpec', 'Product', 'ProductSegment', 'ProductMapping'
           ]}
         />
         {/* Transaction Section */}
@@ -394,7 +423,8 @@ const Sidebar = ({ setSidebarOpen }) => {
             {open && "Store Dashboard"}
           </button>
         )}
-        {Permissions.includes('Production') && (
+
+        {/* {Permissions.includes('Production') && (
           <button
 
             onClick={() => {
@@ -417,7 +447,7 @@ const Sidebar = ({ setSidebarOpen }) => {
             <ProductionQuantityLimitsIcon style={{ color: "lemonchiffon", fontSize: "24px" }} />
             {open && "Production Plan"}
           </button>
-        )}
+        )} */}
 
         {/* Approved Report  Section */}
         {Permissions.includes('ApprovedReports') && (
@@ -533,30 +563,6 @@ const Sidebar = ({ setSidebarOpen }) => {
             {open && "SAP LOGIN"}
           </button>
         )}
-        {/* {Permissions.includes('TestLab') && (
-          <button
-
-            onClick={() => {
-              closeAllDropdowns(); // Close other sections
-              navigate("/home/TestLab");
-            }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              background: "none",
-              border: "none",
-              color: "white",
-              cursor: "pointer",
-              fontWeight: "bold",
-              fontSize: "17px",
-              margin: "10px 0", // Space above and below
-              marginBottom: "16px"
-            }}>
-            <MdScience style={{ fontSize: "25px" }} />
-            {open && "Test Lab"}
-          </button>
-        )} */}
 
         <SidebarSection
           open={open}
@@ -593,6 +599,24 @@ const Sidebar = ({ setSidebarOpen }) => {
           ]}
           // codeList={['Report1', 'Report1']}
           codeList={['StartTesting', 'RigStatus', 'RigMonthlyStatus']}
+        />
+
+        <SidebarSection
+          open={open}
+          isOpen={PMPD_Open}
+          toggleSection={togglePMPD}
+          icon={<GiFactory style={{ marginRight: "8px", color: "#FFA500", fontSize: "27px", }} />}
+          Permissions={Permissions}
+          label="PMPD"
+          links={[
+            {
+              name: "Production Plan",
+              path: "/home/PMPD_ProductionPlan",
+              icon: <CalendarMonthIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              code: 'ProductionPlan'
+            },
+          ]}
+          codeList={['ProductionPlan']}
         />
       </div>
 

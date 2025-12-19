@@ -123,6 +123,9 @@ const Login = () => {
                 // window.location.href = "/home/Home";
                 window.location.href = "/home/rigMonthlyStatus";
                 break;
+              case 15:
+                window.location.href = "/home/PMPD_ProductionPlan";
+                break;
             }
           }, 100);
         }
