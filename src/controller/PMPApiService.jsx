@@ -54,3 +54,26 @@ export const getProductionPlandetails = async () => {
     return response.data;
 };
 
+export const getTemplateProductionPlandetails = async () => {
+    const response = await axios.get(`${api}/PMPDRouter/GetTemplateTrnProductionPlan`);
+    return response.data;
+};
+
+
+
+// Trn PMPD Master
+
+export const AddTrn_PMPD_Master = async (data) => {
+    const response = await axios.post(`${api}/PMPDRouter/AddTrn_PMPD_Master`, data, {
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    });
+    return response;
+}
+
+export const getTrnPMPD_MasterDetails = async () => {
+    const response = await axios.get(`${api}/PMPDRouter/GetTrnPMPD_Master`);
+    return response.data;
+};
+

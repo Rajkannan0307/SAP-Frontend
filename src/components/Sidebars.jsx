@@ -615,8 +615,14 @@ const Sidebar = ({ setSidebarOpen }) => {
               icon: <CalendarMonthIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
               code: 'ProductionPlan'
             },
+            {
+              name: "PMPD Master",
+              path: "/home/PMPD_Master",
+              icon: <CalendarMonthIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              code: 'PMPD_Master'
+            },
           ]}
-          codeList={['ProductionPlan']}
+          codeList={['ProductionPlan', 'PMPD_Master']}
         />
       </div>
 

@@ -2,18 +2,16 @@ import React, { useEffect, useState } from 'react'
 import SectionHeading from '../../components/Header'
 import { Box, Button, IconButton, Modal, TextField, Typography } from '@mui/material'
 import { CloudUploadIcon, EditIcon, SearchIcon } from 'lucide-react'
-import { PiUploadDuotone } from 'react-icons/pi'
 import { FaDownload, FaUpload } from 'react-icons/fa6'
 import { deepPurple } from '@mui/material/colors';
 import * as ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
-import { getPlantdetails } from '../../controller/CommonApiService'
-import { AddProductionPlan, getProductionPlandetails, getProductSegmentdetails } from '../../controller/PMPApiService'
+import { AddTrn_PMPD_Master, getTemplateProductionPlandetails, getTrnPMPD_MasterDetails } from '../../controller/PMPApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import { format } from 'date-fns'
 
 
-const PMPD_ProductionPlan = () => {
+const PMPD_MasterScreen = () => {
     const [searchText, setSearchText] = useState("");
     const [rows, setRows] = useState([]);
     const [originalRows, setOriginalRows] = useState([]);
@@ -37,13 +35,16 @@ const PMPD_ProductionPlan = () => {
     };
 
     const columns = [
-        { field: "trn_monthly_plan_id", headerName: "SI No", width: 80 },
+        { field: "trn_pmpd_master_id", headerName: "SI No", width: 80 },
         { field: "plant", headerName: "Plant", flex: 1 },
-        { field: "customer_name", headerName: "Customer", flex: 1 },
+        { field: "line", headerName: "Line", flex: 1 },
+        // { field: "customer_name", headerName: "Customer", flex: 1 },
         { field: "part_number", headerName: "Part No", flex: 1 },
-        { field: "description", headerName: "Description", flex: 1 },
-        { field: "plan_type", headerName: "Plan Type", flex: 1 },
-        { field: "plan_qty", headerName: "Plan Qty", flex: 1 },
+        { field: "prod_seg_name", headerName: "Segment", flex: 1 },
+        { field: "PMPD_SMH", headerName: "PMPD_SMH", flex: 1 },
+        { field: "production", headerName: "Production", flex: 1 },
+        { field: "inspection", headerName: "Inspection", flex: 1 },
+        { field: "packing", headerName: "Packing", flex: 1 },
         { field: "effective_date", headerName: "Plan Date", flex: 1, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
         // {
         //     field: "action", headerName: "Action", width: 160,
@@ -69,7 +70,7 @@ const PMPD_ProductionPlan = () => {
 
     useEffect(() => {
         const fectchData = async () => {
-            const response = await getProductionPlandetails()
+            const response = await getTrnPMPD_MasterDetails()
             setOriginalRows(response || [])
             setRows(response || [])
         }
@@ -164,7 +165,7 @@ const PMPD_ProductionPlan = () => {
                     columns={columns}
                     pageSize={5} // Set the number of rows per page to 8
                     rowsPerPageOptions={[5]}
-                    getRowId={(row) => row.trn_monthly_plan_id} // Specify a custom id field
+                    getRowId={(row) => row.trn_pmpd_master_id} // Specify a custom id field
                     disableSelectionOnClick
                     slots={{ toolbar: CustomToolbar }}
                     sx={{
@@ -226,47 +227,38 @@ const ExcelUploadModal = ({
         setRefreshData((prev) => !prev)
     }
 
+
     async function downloadProductionPlanTemplate() {
-        // 1️⃣ Fetch dropdown data
-        const [plant, prod_segments] = await Promise.all([
-            getPlantdetails(),
-            getProductSegmentdetails(),
-        ]);
 
-        const plantCodes = plant.map((e) => e.Plant_Code);
-        const prodSegNames = prod_segments.map((e) => e.seg_name);
-        const planTypes = ["AOP", "MP"];
-
-        // 2️⃣ Create workbook & worksheet
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet("Production Plan");
-
-        // 3️⃣ Header row
-        // const headers = [
-        //     "plant",
-        //     "customer_name",
-        //     "part_number",
-        //     "description",
-        //     "prod_seg_id",
-        //     "date",
-        //     "plan_type",
-        //     "plan_qty",
-        //     "effective_date",
-        // ];
-        const headers = [
-            "Plant",
-            "Customer Name",
-            "Part Number",
-            "Description",
-            "Segment",
-            "Plan Type",
-            "Plan_qty",
-            "Effective Date",
+        const headerColumns = [
+            'Plant_Code',
+            'Customer',
+            'FG_Partno',
+            'Description',
+            'Per_qty',
+            'Segment',
+            'Line_Name',
+            'PMPD_SMH',
+            'Production',
+            'Inspection',
+            'Packing',
+            'Effective_Date'
         ];
 
-        worksheet.addRow(headers);
+        // 1️⃣ Create workbook
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = "PMPD_MASTER";
+        workbook.created = new Date();
 
-        // Header styling
+        // 2️⃣ Add worksheet
+        const worksheet = workbook.addWorksheet("PMPD_MASTER");
+
+        // 3️⃣ Add header row
+        worksheet.addRow(headerColumns);
+
+        // 4️⃣ Style header (optional but recommended)
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
         worksheet.getRow(1).eachCell((cell) => {
             cell.font = { bold: true };
             cell.alignment = { horizontal: "center" };
@@ -277,53 +269,32 @@ const ExcelUploadModal = ({
             };
         });
 
-        // Column widths
-        worksheet.columns.forEach((col) => (col.width = 22));
+        // 5️⃣ Set column widths
+        worksheet.columns = [
+            { width: 15 }, // Plant_Code
+            { width: 20 }, // Customer
+            { width: 20 }, // FG_Partno
+            { width: 12 }, // Per_qty
+            { width: 18 }, // Segment
+            { width: 18 }, // Line_Name
+            { width: 12 }, // PMPD_SMH
+            { width: 14 }, // Production
+            { width: 14 }, // Inspection
+            { width: 14 }, // Packing
+            { width: 18 }, // Effective Date
+        ];
 
-        // 4️⃣ APPLY DROPDOWNS (ROW 2 → 1000)
+        // 6️⃣ Freeze header row
+        worksheet.views = [{ state: "frozen", ySplit: 1 }];
 
-        // Column A → plant
-        worksheet.dataValidations.add("A2:A1000", {
-            type: "list",
-            allowBlank: false,
-            formulae: [`"${plantCodes.join(",")}"`],
-        });
-
-        // Column E → product segment
-        worksheet.dataValidations.add("E2:E1000", {
-            type: "list",
-            allowBlank: false,
-            formulae: [`"${prodSegNames.join(",")}"`],
-        });
-
-        // Column G → plan type
-        worksheet.dataValidations.add("F2:F1000", {
-            type: "list",
-            allowBlank: false,
-            formulae: [`"${planTypes.join(",")}"`],
-        });
-
-        // 5️⃣ Date formatting
-        worksheet.getColumn("F").numFmt = "yyyy-mm-dd";
-        worksheet.getColumn("I").numFmt = "yyyy-mm-dd";
-
-        // 6️⃣ Cell styling (rows below header)
-        worksheet.eachRow((row, rowNumber) => {
-            if (rowNumber === 1) return;
-            row.eachCell((cell) => {
-                cell.alignment = { horizontal: "center" };
-                cell.font = { size: 10 };
-            });
-        });
-
-        // 7️⃣ Download file
+        // 7️⃣ Write & download file
         const buffer = await workbook.xlsx.writeBuffer();
+
         saveAs(
             new Blob([buffer], {
-                type:
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             }),
-            "Production_Plan_Template.xlsx"
+            "PMPD_MASTER_Template.xlsx"
         );
     }
 
@@ -340,7 +311,7 @@ const ExcelUploadModal = ({
             const userId = localStorage.getItem('EmpId')
             formData.append("userId", userId)
             formData.append("file", uploadedFile)
-            const response = await AddProductionPlan(formData)
+            const response = await AddTrn_PMPD_Master(formData)
             console.log(response.data, "Upload excel response")
             setUploadResponse(response.data)
             alert('File uploaded successfully')
@@ -360,7 +331,6 @@ const ExcelUploadModal = ({
                     "Something went wrong! Try again later."
                 );
             }
-
         }
         setIsUploading(false)
     }
@@ -520,7 +490,7 @@ const ValidationResult = ({ response }) => {
             </div>
 
             {/* Invalid rows */}
-            {errors.invalidRows.length > 0 && (
+            {errors?.invalidRows?.length > 0 && (
                 <>
                     <h3 className="font-semibold mb-2">❌ Invalid Rows</h3>
 
@@ -552,7 +522,7 @@ const ValidationResult = ({ response }) => {
             )}
 
             {/* Empty rows */}
-            {errors.emptyRows.length > 0 && (
+            {errors?.emptyRows?.length > 0 && (
                 <div className="mt-4 text-yellow-700">
                     ⚠ Empty Rows Found: {errors.emptyRows.join(", ")}
                 </div>
@@ -563,4 +533,4 @@ const ValidationResult = ({ response }) => {
 
 
 
-export default PMPD_ProductionPlan
+export default PMPD_MasterScreen
