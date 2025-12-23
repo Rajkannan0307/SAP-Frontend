@@ -82,6 +82,7 @@ import ProductSegmentScreen from "./Masters/ProductSegment";
 import ProductMappingScreen from "./Masters/ProductMapping";
 import PMPD_ProductionPlan from "./PMPD/ProductionPlan";
 import PMPD_MasterScreen from "./PMPD/PMPD_Master";
+import PMPD_Report from "./PMPD/PMPD_Report";
 
 const App = () => {
   return (
@@ -178,6 +179,7 @@ const App = () => {
             {/* PMPD */}
             <Route path="PMPD_ProductionPlan" element={<ProtectedRoute screenId={47}><PMPD_ProductionPlan /></ProtectedRoute>} />
             <Route path="PMPD_Master" element={<ProtectedRoute screenId={48}><PMPD_MasterScreen /></ProtectedRoute>} />
+            <Route path="PMPD_Report" element={<ProtectedRoute screenId={49}><PMPD_Report /></ProtectedRoute>} />
           </Route>
         </Routes>
       </AuthProvider>

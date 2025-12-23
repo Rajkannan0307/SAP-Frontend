@@ -621,8 +621,14 @@ const Sidebar = ({ setSidebarOpen }) => {
               icon: <CalendarMonthIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
               code: 'PMPD_Master'
             },
+            {
+              name: "PMPD Report",
+              path: "/home/PMPD_Report",
+              icon: <CalendarMonthIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              code: 'PMPD_Report'
+            },
           ]}
-          codeList={['ProductionPlan', 'PMPD_Master']}
+          codeList={['ProductionPlan', 'PMPD_Master', 'PMPD_Report']}
         />
       </div>
 

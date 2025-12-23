@@ -8,7 +8,7 @@ import { deepPurple } from '@mui/material/colors';
 import * as ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
 import { getPlantdetails } from '../../controller/CommonApiService'
-import { AddProductionPlan, getProductionPlandetails, getProductSegmentdetails } from '../../controller/PMPApiService'
+import { AddProductionPlan, getProductionPlandetails, getProductSegmentdetails } from '../../controller/PMPDpiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import { format } from 'date-fns'
 
@@ -465,16 +465,13 @@ const ExcelUploadModal = ({
                         </Box>
                     </label>
 
-                    {/* Upload Status */}
-                    {uploadResponse && <ValidationResult response={uploadResponse} />}
-
                     {/* Action Buttons */}
                     <Box
                         sx={{
                             display: "flex",
                             justifyContent: "center",
                             gap: 2,
-                            mt: 3,
+                            my: 3,
                         }}
                     >
                         <Button
@@ -495,6 +492,11 @@ const ExcelUploadModal = ({
                             {isUploading ? "Uploading..." : "Upload"}
                         </Button>
                     </Box>
+
+                    {/* Upload Status */}
+                    {uploadResponse && <ValidationResult response={uploadResponse} />}
+
+
                 </Box>
             </Modal>
         </>

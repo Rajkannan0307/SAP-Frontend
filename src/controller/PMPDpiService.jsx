@@ -77,3 +77,16 @@ export const getTrnPMPD_MasterDetails = async () => {
     return response.data;
 };
 
+
+
+// PMPD Reports 
+
+export const getPMPD_Reports = async (startDate, endDate, plant) => {
+    const response = await axios.get(`${api}/PMPDRouter/GetPMPD_Reports`,
+        {
+            params: {
+                startDate, endDate, plant
+            }
+        });
+    return response.data;
+}
