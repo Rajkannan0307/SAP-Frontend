@@ -28,8 +28,10 @@ const FY_MONTHS = [
 
 const PMPD_Report = () => {
     const [resultData, setResultData] = useState([])
+    const [resultDataSheet3, setResultDataSheet3] = useState([])
     const [plants, setPlants] = useState([])
     const [loading, setLoading] = useState(false)
+    const [excelLoading, setExcelLoading] = useState(false)
 
 
     const validationschema = yup.object({
@@ -56,32 +58,25 @@ const PMPD_Report = () => {
             const endDate = endOfDay(new Date(endYear, 2, 31));    // 31-Mar-2026
             console.log(startDate, endDate)
 
-            if (loading) return
 
-            setLoading(true)
             if (values.type === 'SUBMIT') {
+                if (loading) return
+
+                setLoading(true)
                 const response = await getPMPD_Reports(startDate, endDate, plant)
-                const totalRow = {
-                    plant: response[1]?.[0]?.plant || "",
-                    category: "TOTAL",
-                };
+                setResultData(response[1])
+                console.log(response[2][0])
+                setResultDataSheet3(response[2][0])
 
-                // calculate month-wise totals correctly
-                FY_MONTHS.forEach(({ field }) => {
-                    totalRow[field] = response[1].reduce(
-                        (sum, row) => sum + (Number(row[field]) || 0),
-                        0
-                    );
-                });
-
-                setResultData([
-                    ...response[1],
-                    totalRow
-                ]);
             } else {
+                if (excelLoading) return
+
+                setExcelLoading(true)
                 await handleDownloadExcelData(startDate, endDate, plant)
             }
+
             setLoading(false)
+            setExcelLoading(false)
         }
     })
 
@@ -94,6 +89,17 @@ const PMPD_Report = () => {
     }, [])
 
 
+    const generateDynamicCat = (cat) => {
+        switch (cat) {
+            case "ABSENT":
+                return `${cat} ${resultDataSheet3.absent}%`
+            case 'NEW JOINEE EFFICIENCY':
+                return `NEW JOINEE EFF ${resultDataSheet3.new_joinee_effeciency}%`
+            default:
+                return cat
+        }
+    }
+
     const columns = [
         {
             field: "slno",
@@ -102,7 +108,10 @@ const PMPD_Report = () => {
             renderCell: (params) => params.api.getAllRowIds().indexOf(params.id) + 1
         },
         { field: "plant", headerName: "Plant", width: 90 },
-        { field: "category", headerName: "Category", width: 160 },
+        {
+            field: "category", headerName: "Category", width: 160,
+            renderCell: (params) => generateDynamicCat(params.value)
+        },
 
         ...FY_MONTHS.map((m) => ({
             field: m.field,
@@ -110,7 +119,15 @@ const PMPD_Report = () => {
             flex: 1,
             align: "center",
             headerAlign: "center",
-            renderCell: (params) => params.value || 0
+            renderCell: (params) => {
+                const value = Number(params.value) || 0;
+
+                if (params.row?.category === "TARGET COST") {
+                    return `${value.toFixed(2)} L`;
+                }
+
+                return value;
+            }
         })),
     ];
 
@@ -210,6 +227,12 @@ const PMPD_Report = () => {
             <GridToolbarExport />
         </GridToolbarContainer>
     );
+
+    const getRowClassName = (params) => {
+        if (params.row.category === 'TOTAL') return '!bg-[#d1dfdc]';
+        if (params.row.category === 'HC PLAN') return '!bg-[#d2f0a8] !font-semibold';
+        return '';
+    };
     return (
         <div
             style={{
@@ -230,7 +253,7 @@ const PMPD_Report = () => {
                 }}
             >
                 <SectionHeading>
-                    PMPD Report
+                    PMPD HC PLAN
                 </SectionHeading>
             </div>
 
@@ -288,7 +311,7 @@ const PMPD_Report = () => {
                     formik.setFieldValue('type', 'SUBMIT')
                     formik.handleSubmit(e)
                 }}>
-                    Submit
+                    {loading ? "Loading..." : "Submit"}
                 </Button>
                 <Button
                     variant="contained"
@@ -299,7 +322,7 @@ const PMPD_Report = () => {
                         formik.handleSubmit(e);
                     }}
                 >
-                    Download
+                    {excelLoading ? "Loading..." : "Download"}
                 </Button>
             </div>
 
@@ -324,11 +347,13 @@ const PMPD_Report = () => {
                     disableSelectionOnClick
                     rowHeight={40}
                     columnHeaderHeight={45}
+                    getRowClassName={getRowClassName}
                     slots={{ toolbar: CustomToolbar }}
                     sx={{
                         // Header Style
                         "& .MuiDataGrid-columnHeader": {
-                            backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
+                            // backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
+                            backgroundColor: '#6eddf0', //'#696969', 	'#708090',  //"#2e59d9",
                             color: "black",
                             fontWeight: "bold",
                         },

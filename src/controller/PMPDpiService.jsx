@@ -90,3 +90,19 @@ export const getPMPD_Reports = async (startDate, endDate, plant) => {
         });
     return response.data;
 }
+
+
+
+
+//Mst Category Breakups
+
+export const getMstCategoryBreakupDetails = async () => {
+    const response = await axios.get(`${api}/PMPDRouter/GetCategoryBreakup`);
+    return response.data;
+};
+
+
+export const AddMstCategoryBreakup = async (data) => {
+    const response = await axios.post(`${api}/PMPDRouter/MstCatgoryBreakup`, data);
+    return response;
+}

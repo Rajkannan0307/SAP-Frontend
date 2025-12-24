@@ -83,6 +83,7 @@ import ProductMappingScreen from "./Masters/ProductMapping";
 import PMPD_ProductionPlan from "./PMPD/ProductionPlan";
 import PMPD_MasterScreen from "./PMPD/PMPD_Master";
 import PMPD_Report from "./PMPD/PMPD_Report";
+import CategoryBreakupScreen from "./Masters/CategoryBreakup";
 
 const App = () => {
   return (
@@ -127,6 +128,7 @@ const App = () => {
             <Route path="Product" element={<ProtectedRoute screenId={44}><ProductScreen /></ProtectedRoute>} />
             <Route path="ProductSegmentScreen" element={<ProtectedRoute screenId={45}><ProductSegmentScreen /></ProtectedRoute>} />
             <Route path="ProductMappingScreen" element={<ProtectedRoute screenId={46}><ProductMappingScreen /></ProtectedRoute>} />
+            <Route path="CategoryBreakup" element={<ProtectedRoute screenId={50}><CategoryBreakupScreen /></ProtectedRoute>} />
 
             <Route path="dashboard" element={<ProtectedRoute screenId={15}><DashBoard /></ProtectedRoute>} />
             <Route path="Report1" element={<ProtectedRoute screenId={16}><Report1 /></ProtectedRoute>} />
@@ -188,3 +190,10 @@ const App = () => {
 };
 
 export default App;
+
+
+
+
+
+
+

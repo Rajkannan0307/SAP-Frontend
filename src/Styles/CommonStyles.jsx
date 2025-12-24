@@ -16,7 +16,7 @@ export const CommonMuiStyles = {
         // Label style
         "& .MuiInputLabel-root": {
             fontSize: "12px",
-            top: "-0px"               // fix misalignment
+            top: "-1px"               // fix misalignment
         },
 
         // Shrinked floating label
@@ -35,7 +35,7 @@ export const CommonMuiStyles = {
 
             // Fix the legend (label border space)
             "& legend": {
-                fontSize: "8px"
+                fontSize: "10px"
             }
         },
 

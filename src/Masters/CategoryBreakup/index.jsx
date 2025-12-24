@@ -1,0 +1,631 @@
+import { useState, useEffect } from "react";
+import {
+    TextField,
+    Button,
+    IconButton,
+    MenuItem,
+    FormControlLabel,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Switch
+} from "@mui/material";
+import {
+    DataGrid,
+    GridToolbarContainer,
+    GridToolbarColumnsButton,
+    GridToolbarFilterButton,
+    GridToolbarExport
+} from "@mui/x-data-grid";
+import SearchIcon from "@mui/icons-material/Search";
+import AddIcon from "@mui/icons-material/Add";
+import { decryptSessionData } from "../../controller/StorageUtils";
+import EditIcon from "@mui/icons-material/Edit";
+import { useFormik } from "formik";
+import { CommonMuiStyles } from "../../Styles/CommonStyles";
+import * as Yup from "yup"
+import SectionHeading from "../../components/Header";
+import { AddMstCategoryBreakup, AddOrEditProductMapping, getMstCategoryBreakupDetails, getProductdetails, getProductMappingdetails } from "../../controller/PMPDpiService";
+import { format } from "date-fns";
+import { getPlantdetails } from "../../controller/CommonApiService";
+
+const CategoryBreakupScreen = () => {
+    const [searchText, setSearchText] = useState("");
+    const [rows, setRows] = useState([]);
+    const [originalRows, setOriginalRows] = useState([]);
+    const [editData, setEditData] = useState([]);
+    const [openAddModal, setOpenAddModal] = useState(false);
+    const [openEditModal, setOpenEditModal] = useState(false);
+    const [openViewModal, setOpenViewModal] = useState(false);
+    const [role, setRole] = useState('');
+    const [UserID, setUserID] = useState("");
+
+    const [refreshData, setRefreshData] = useState(false)
+
+    const handleEdit = (data) => {
+        console.log(data, "data")
+        setEditData(data)
+        setOpenEditModal(true)
+    }
+
+    const columns = [
+        { field: "cat_id", headerName: "SI No", width: 80 },
+        { field: "plant", headerName: "Plant", width: 80 },
+        { field: "category", headerName: "Category", flex: 1 },
+        { field: "value", headerName: "Value", width: 80 },
+        {
+            field: "type", headerName: "Type", width: 80,
+            renderCell: (params) => params.row?.category === 'PERMANENT WM' ? "Number" : "%"
+        },
+        { field: "absent", headerName: "Absent %", width: 100 },
+        { field: "new_joinee_effeciency", headerName: "Eff %", width: 80 },
+        { field: "avg_salary", headerName: "Avg Salary", width: 120 },
+        {
+            field: "effective_date",
+            headerName: "Eff Date",
+            width: 120,
+            renderCell: (params) => params.value ? format(params.value, "dd-MM-yyyy") : ""
+        },
+        {
+            field: "active_status", headerName: "Status", width: 100,
+            renderCell: (params) => {
+                const isActive = params.value === true || params.value === "1";
+                return (
+                    <span
+                        style={{
+                            padding: "3px 10px",
+                            borderRadius: "12px",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                            color: "white",
+                            backgroundColor: isActive ? "#2e7d32" : "#d32f2f"
+                        }}
+                    >
+                        {isActive ? "Active" : "Inactive"}
+                    </span>
+                );
+            },
+        },
+        {
+            field: "action", headerName: "Action",
+            renderCell: (params) => (
+                <IconButton
+                    color="primary"
+                    onClick={() => handleEdit(params.row)}
+                    title="Edit"
+                >
+                    <EditIcon />
+                </IconButton>
+            ),
+        },
+    ];
+
+
+    // ✅ Custom Toolbar
+    const CustomToolbar = () => (
+        <GridToolbarContainer>
+            <GridToolbarColumnsButton />
+            <GridToolbarFilterButton />
+            <GridToolbarExport />
+        </GridToolbarContainer>
+    );
+
+    useEffect(() => {
+        // Decrypt session data
+        const encryptedData = sessionStorage.getItem("userData");
+        if (encryptedData) {
+            const decryptedData = decryptSessionData(encryptedData);
+            setUserID(decryptedData.UserID);
+            setRole(decryptedData.RoleId);
+            console.log("sap roleid", decryptedData.RoleId);
+            console.log("Sap userid", decryptedData.UserID);
+        }
+
+        // Auto-refresh after 1 hour 5 min
+        const timer = setTimeout(() => {
+            window.location.reload();
+        }, 3900000);  //1 hr 5 min
+
+        // Cleanup
+        return () => clearTimeout(timer);
+    }, []);
+
+    const isCorp = role === 7 || role === 9;
+    const isPlantMRPC = role === 4;
+
+    // ✅ Handle Add Modal
+    const handleOpenAddModal = (item) => {
+        setOpenAddModal(true);
+    };
+
+    // ✅ Search Functionality
+    const handleSearch = () => {
+        const text = searchText.trim().toLowerCase();
+
+        const filteredRows = originalRows.filter((row) =>
+            ["plant", "category"].some((key) => {
+                const value = row[key];
+                return value?.toString().toLowerCase().includes(text);
+            })
+        );
+
+        setRows(text ? filteredRows : originalRows);
+    };
+
+
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const response = await getMstCategoryBreakupDetails()
+            console.log("getMstCategoryBreakupDetails - ", response)
+            setOriginalRows(response || [])
+            setRows(response || [])
+        }
+        fetchData()
+    }, [refreshData])
+
+
+    return (
+        <div
+            style={{
+                padding: 20,
+                backgroundColor: "#F5F5F5",
+                marginTop: "50px",
+                display: "flex",
+                flexDirection: "column",
+                height: "calc(100vh - 90px)",// or a specific height if necessary
+            }}
+        >
+            {/* Header Section */}
+            <div
+                style={{
+                    marginBottom: 20,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                }}
+            >
+                <SectionHeading>
+                    Category Breakup
+                </SectionHeading>
+            </div>
+
+            {/* Search and Icons */}
+            <div
+                style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 10,
+                }}
+            >
+                {/* Search Box */}
+                <div style={{ display: "flex", gap: "10px" }}>
+                    <TextField
+                        size="small"
+                        variant="outlined"
+                        placeholder="Type here..."
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        onKeyUp={handleSearch}
+                        sx={{
+                            width: "400px",
+                            "& .MuiOutlinedInput-root": {
+                                "& fieldset": {
+                                    border: "2px solid grey", // No border by default
+                                },
+                                "&:hover fieldset": {
+                                    border: "2px solid grey", // Optional: border on hover
+                                },
+                                "&.Mui-focused fieldset": {
+                                    border: "2px solid grey", // Grey border on focus
+                                },
+                            },
+                        }}
+                    />
+                    <Button
+                        onClick={handleSearch}
+                        style={{
+                            borderRadius: "25px",
+                            border: "2px solid grey",
+                            color: "grey",
+                            fontWeight: "bold",
+                        }}
+                    >
+                        <SearchIcon style={{ marginRight: "5px" }} />
+                        Search
+                    </Button>
+                </div>
+
+                {/* Icons */}
+                <div style={{ display: "flex", gap: "10px" }}>
+                    {/* <IconButton
+                        onClick={handleDownloadExcel}
+                        style={{
+                            borderRadius: "50%",
+                            backgroundColor: "#339900",
+                            color: "white",
+                            width: "40px",
+                            height: "40px",
+                        }}
+                    >
+                        <FaFileExcel size={18} />
+                    </IconButton> */}
+
+                    <IconButton
+                        onClick={handleOpenAddModal}
+                        style={{
+                            borderRadius: "50%",
+                            backgroundColor: "#0066FF",
+                            color: "white",
+                            width: "40px",
+                            height: "40px",
+                        }}
+                    >
+                        <AddIcon />
+                    </IconButton>
+                </div>
+            </div>
+
+            {/* DataGrid */}
+            <div
+                style={{
+                    flexGrow: 1, // Ensures it grows to fill the remaining space
+                    backgroundColor: "#fff",
+                    borderRadius: 8,
+                    boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+                    height: "calc(5 * 48px)",
+                }}
+            >
+                <DataGrid
+                    rows={rows}
+                    columns={columns}
+                    pageSize={5} // Set the number of rows per page to 8
+                    rowsPerPageOptions={[5]}
+                    getRowId={(row) => row.cat_id} // Specify a custom id field
+                    disableSelectionOnClick
+                    slots={{ toolbar: CustomToolbar }}
+                    sx={{
+                        // Header Style
+                        "& .MuiDataGrid-columnHeader": {
+                            backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
+                            color: "black",
+                            fontWeight: "bold",
+                        },
+                        "& .MuiDataGrid-columnHeaderTitle": {
+                            fontSize: "16px",
+                            fontWeight: "bold",
+                        },
+                        "& .MuiDataGrid-row": {
+                            backgroundColor: "#f5f5f5", // Default row background
+                            "&:hover": {
+                                backgroundColor: "#f5f5f5",
+                            },
+                        },
+                        // ✅ Remove Selected Row Background
+                        "& .MuiDataGrid-row.Mui-selected": {
+                            backgroundColor: "inherit", // No background on selection
+                        },
+
+                        "& .MuiDataGrid-cell": {
+                            color: "#333",
+                            fontSize: "14px",
+                        },
+                    }}
+                />
+            </div>
+
+            <AddDialog open={openAddModal} setOpenAddModal={setOpenAddModal} setRefreshData={setRefreshData} />
+            <AddDialog open={openEditModal} setOpenAddModal={setOpenEditModal} setRefreshData={setRefreshData} editData={editData} />
+
+        </div>
+    );
+};
+
+
+const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
+    const [submitLoading, setSubmitLoading] = useState(false)
+    const [plants, setPlants] = useState([])
+
+    const handleClose = () => {
+        setOpenAddModal(false)
+        formik.resetForm()
+    }
+
+    // ✅ Validation Schema
+    const validationSchema = Yup.object({
+        plant: Yup.string().required("Required"),
+        category: Yup.string().required("Required"),
+        value: Yup.string().required("Required"),
+        effective_date: Yup.string().required("Required"),
+        absent: Yup.number()
+            .typeError("Must be a number")
+            .required("Required")
+            .min(0, "Min 0")
+            .max(100, "Max 100"),
+        new_joinee_effeciency: Yup.number()
+            .typeError("Must be a number")
+            .required("Required")
+            .min(0, "Min 0")
+            .max(100, "Max 100"),
+        avg_salary: Yup.number().required('Required'),
+        active_status: Yup.string().required("Required"),
+    });
+
+
+    // ✅ Formik Setup
+    const formik = useFormik({
+        initialValues: {
+            plant: editData?.plant || "",
+            category: editData?.category || "",
+            value: editData?.value || "",
+            effective_date: editData?.effective_date ? format(editData?.effective_date, "yyyy-MM-dd") : "",
+            absent: editData?.absent,
+            new_joinee_effeciency: editData?.new_joinee_effeciency,
+            avg_salary: editData?.avg_salary,
+            active_status: editData?.active_status ?? true,
+        },
+        validationSchema,
+        enableReinitialize: true,
+        onSubmit: async (values) => {
+            if (submitLoading) return
+            setSubmitLoading(true)
+            console.log(values)
+            try {
+                const userId = localStorage.getItem("EmpId");
+                if (editData) {
+                    const payload = {
+                        cat_id: editData?.cat_id,
+                        ...values,
+                        user_id: userId
+                    }
+                    await AddMstCategoryBreakup(payload)
+                    alert("✅ Category breakups updated successfully!");
+                } else {
+                    const payload = {
+                        ...values,
+                        user_id: userId
+                    }
+                    await AddMstCategoryBreakup(payload)
+                    alert("✅ Category breakups added successfully!");
+                }
+                setRefreshData((prev) => !prev)
+                handleClose()
+            } catch (error) {
+                console.error("❌ Error submitting form:", error);
+                alert(error?.response?.data?.message ? `❌ ${error?.response?.data?.message}` : "❌ An error occurred while submitting the form.");
+            }
+            setSubmitLoading(false)
+        }
+    });
+
+    useEffect(() => {
+        const fetchPlants = async () => {
+            const response = await getPlantdetails()
+            console.log('Plants', response)
+            setPlants(response)
+        }
+        if (open) fetchPlants()
+    }, [open])
+
+
+    return (
+        <Dialog
+            open={open}
+            onClose={handleClose}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+        >
+            <DialogTitle id="alert-dialog-title">
+                {`${editData ? "Edit" : "Add"} Category Breakup`}
+            </DialogTitle>
+            {/* {JSON.stringify(editData)} */}
+            <DialogContent sx={{ pb: 0 }}>
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    // display: "flex",
+                    width: "100%",
+                    gap: "15px"
+                }}>
+
+                    <TextField
+                        select
+                        id="plant"
+                        name="plant"
+                        label="Plant"
+                        fullWidth
+                        value={formik.values.plant}
+                        onChange={(e) => {
+                            const selectedId = e.target.value;
+                            formik.handleChange(e);
+                        }}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.plant && Boolean(formik.errors.plant)}
+                        helperText={formik.touched.plant && formik.errors.plant}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            minWidth: 200,
+                            mt: 1
+                        }}
+                    >
+                        {plants?.map((option, i) => (
+                            <MenuItem sx={{ fontSize: 12 }} key={i} value={option.Plant_Code}>
+                                {option.Plant_Code}
+                            </MenuItem>
+                        )) || []}
+                    </TextField>
+
+                    <TextField
+                        id="category"
+                        name="category"
+                        label="Category"
+                        fullWidth
+                        value={formik.values.category}
+                        onChange={(e) => {
+                            const selectedId = e.target.value;
+                            formik.handleChange(e);
+                        }}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.category && Boolean(formik.errors.category)}
+                        helperText={formik.touched.category && formik.errors.category}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            minWidth: 200,
+                            mt: 1
+                        }}
+                    />
+
+                    <TextField
+                        id="value"
+                        name="value"
+                        label="Value"
+                        fullWidth
+                        type="number"
+                        value={formik.values.value}
+                        onChange={(e) => {
+                            const selectedId = e.target.value;
+                            formik.handleChange(e);
+                        }}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.value && Boolean(formik.errors.value)}
+                        helperText={formik.touched.value && formik.errors.value}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            minWidth: 200,
+                            mt: 1
+                        }}
+                    />
+
+                    <TextField
+                        id="effective_date"
+                        name="effective_date"
+                        label="Effective Date"
+                        fullWidth
+                        type="date"
+                        value={formik.values.effective_date}
+                        onChange={(e) => {
+                            const selectedId = e.target.value;
+                            formik.handleChange(e);
+                        }}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.effective_date && Boolean(formik.errors.effective_date)}
+                        helperText={formik.touched.effective_date && formik.errors.effective_date}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            minWidth: 200,
+                            mt: 1
+                        }}
+                        slotProps={{
+                            inputLabel: {
+                                shrink: true
+                            }
+                        }}
+                    />
+
+                    <TextField
+                        id="absent"
+                        name="absent"
+                        label="Absent"
+                        fullWidth
+                        type="number"
+                        value={formik.values.absent}
+                        onChange={(e) => {
+                            const selectedId = e.target.value;
+                            formik.handleChange(e);
+                        }}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.absent && Boolean(formik.errors.absent)}
+                        helperText={formik.touched.absent && formik.errors.absent}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            minWidth: 200,
+                            mt: 1
+                        }}
+                    />
+
+                    <TextField
+                        id="new_joinee_effeciency"
+                        name="new_joinee_effeciency"
+                        label="New Joinee Effeciency"
+                        fullWidth
+                        type="number"
+                        value={formik.values.new_joinee_effeciency}
+                        onChange={(e) => {
+                            const selectedId = e.target.value;
+                            formik.handleChange(e);
+                        }}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.new_joinee_effeciency && Boolean(formik.errors.new_joinee_effeciency)}
+                        helperText={formik.touched.new_joinee_effeciency && formik.errors.new_joinee_effeciency}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            minWidth: 200,
+                            mt: 1
+                        }}
+                    />
+
+                    <TextField
+                        id="avg_salary"
+                        name="avg_salary"
+                        label="Avg Salary"
+                        fullWidth
+                        type="number"
+                        value={formik.values.avg_salary}
+                        onChange={(e) => {
+                            const selectedId = e.target.value;
+                            formik.handleChange(e);
+                        }}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.avg_salary && Boolean(formik.errors.avg_salary)}
+                        helperText={formik.touched.avg_salary && formik.errors.avg_salary}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            minWidth: 200,
+                            mt: 1
+                        }}
+                    />
+                </div>
+
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={formik.values.active_status}
+                            onChange={(e) => formik.setFieldValue("active_status", e.target.checked)}
+                            color="success"
+                        />
+                    }
+                    label={formik.values.active_status ? "Active" : "Inactive"}
+                    sx={{
+                        fontWeight: "bold",
+                        mt: 2,
+                        color: formik.values.active_status ? "#2e7d32" : "#d32f2f"
+                    }}
+                />
+
+                {formik.touched.active_status && formik.errors.active_status && (
+                    <div style={{ color: "red", fontSize: 12 }}>{formik.errors.active_status}</div>
+                )}
+
+            </DialogContent>
+            <DialogActions sx={{ p: 0, pb: 2, pr: 3 }}>
+                <Button
+                    variant="contained"
+                    color="error"
+                    size="small"
+                    onClick={handleClose}>Cancel</Button>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    onClick={formik.handleSubmit} autoFocus>
+                    {submitLoading ? "Loading..." : editData ? "Update" : "Add"}
+                </Button>
+            </DialogActions>
+        </Dialog>
+    )
+}
+
+
+export default CategoryBreakupScreen;

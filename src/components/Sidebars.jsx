@@ -341,12 +341,14 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "Product", path: "/home/Product", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'Product' },
             { name: "Product Segment", path: "/home/ProductSegmentScreen", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'ProductSegment' },
             { name: "Product Mapping", path: "/home/ProductMappingScreen", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'ProductMapping' },
+            { name: "Category Breakup", path: "/home/CategoryBreakup", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'CategoryBreakups' },
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
             'UserMaster', 'Role', 'Material', 'Vendor',
             'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter',
-            'ValuationType', 'SupvCode', 'Module', 'Line', 'Machine', 'RigTestSpec', 'Product', 'ProductSegment', 'ProductMapping'
+            'ValuationType', 'SupvCode', 'Module', 'Line', 'Machine', 'RigTestSpec', 'Product', 'ProductSegment', 'ProductMapping',
+            'CategoryBreakups'
           ]}
         />
         {/* Transaction Section */}

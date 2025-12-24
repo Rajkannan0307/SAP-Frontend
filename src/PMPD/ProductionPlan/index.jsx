@@ -10,7 +10,7 @@ import { saveAs } from 'file-saver'
 import { getPlantdetails } from '../../controller/CommonApiService'
 import { AddProductionPlan, getProductionPlandetails, getProductSegmentdetails } from '../../controller/PMPDpiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
-import { format } from 'date-fns'
+import { format, isValid } from 'date-fns'
 
 
 const PMPD_ProductionPlan = () => {
@@ -45,6 +45,7 @@ const PMPD_ProductionPlan = () => {
         { field: "plan_type", headerName: "Plan Type", flex: 1 },
         { field: "plan_qty", headerName: "Plan Qty", flex: 1 },
         { field: "effective_date", headerName: "Plan Date", flex: 1, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
+        { field: "PMPD_effective_date", headerName: "PMPD Master", flex: 1, renderCell: (params) => (<>{params.value}</>) },
         // {
         //     field: "action", headerName: "Action", width: 160,
         //     renderCell: (params) => (
