@@ -49,8 +49,12 @@ export const AddProductionPlan = async (data) => {
     return response;
 }
 
-export const getProductionPlandetails = async () => {
-    const response = await axios.get(`${api}/PMPDRouter/GetTrnProductionPlan`);
+export const getProductionPlandetails = async (startDate, endDate, plant) => {
+    const response = await axios.get(`${api}/PMPDRouter/GetTrnProductionPlan`, {
+        params: {
+            startDate, endDate, plant
+        }
+    });
     return response.data;
 };
 

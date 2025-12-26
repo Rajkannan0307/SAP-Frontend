@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import SectionHeading from '../../components/Header'
-import { Box, Button, IconButton, Modal, TextField, Typography } from '@mui/material'
+import { Box, Button, IconButton, MenuItem, Modal, TextField, Typography } from '@mui/material'
 import { CloudUploadIcon, EditIcon, SearchIcon } from 'lucide-react'
 import { PiUploadDuotone } from 'react-icons/pi'
 import { FaDownload, FaUpload } from 'react-icons/fa6'
@@ -10,8 +10,9 @@ import { saveAs } from 'file-saver'
 import { getPlantdetails } from '../../controller/CommonApiService'
 import { AddProductionPlan, getProductionPlandetails, getProductSegmentdetails } from '../../controller/PMPDpiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
-import { format, isValid } from 'date-fns'
-
+import { endOfDay, format, isValid, startOfDay } from 'date-fns'
+import { useFormik } from 'formik'
+import * as yup from 'yup'
 
 const PMPD_ProductionPlan = () => {
     const [searchText, setSearchText] = useState("");
@@ -27,7 +28,7 @@ const PMPD_ProductionPlan = () => {
             setRows(originalRows);
         } else {
             const filteredRows = originalRows.filter((row) =>
-                ['plant', 'customer_name', 'part_number', 'description', 'plan_type'].some((key) => {
+                ['plant', 'customer_name', 'part_number', 'description', 'plan_type', 'prod_seg_name'].some((key) => {
                     const value = row[key];
                     return value && String(value).toLowerCase().includes(text);
                 })
@@ -36,14 +37,64 @@ const PMPD_ProductionPlan = () => {
         }
     };
 
+    const [plants, setPlants] = useState([])
+    const [loading, setLoading] = useState(false)
+
+    const validationschema = yup.object({
+        plant: yup.string().required('Required'),
+        fin_year: yup.string().required('Required'),
+    })
+
+    const formik = useFormik({
+        initialValues: {
+            plant: "",
+            fin_year: "",
+            type: "SUBMIT"
+        },
+        validationSchema: validationschema,
+        enableReinitialize: true,
+        onSubmit: async (values) => {
+            console.log(values)
+            const fin_Year = values.fin_year
+            const plant = values.plant
+            const startYear = Number(fin_Year.split("-")[0]); // 2025
+            const endYear = startYear + 1;                   // 2026
+
+            const startDate = startOfDay(new Date(startYear, 3, 1));  // 01-Apr-2025
+            const endDate = endOfDay(new Date(endYear, 2, 31));    // 31-Mar-2026
+            console.log(startDate, endDate)
+
+
+            if (loading) return
+
+            setLoading(true)
+            const response = await getProductionPlandetails(startDate, endDate, plant)
+            setOriginalRows(response || [])
+            setRows(response || [])
+
+
+            setLoading(false)
+        }
+    })
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const resposne = await getPlantdetails()
+            setPlants(resposne)
+        }
+        fetchData()
+    }, [])
+
     const columns = [
         { field: "trn_monthly_plan_id", headerName: "SI No", width: 80 },
-        { field: "plant", headerName: "Plant", flex: 1 },
+        { field: "plant", headerName: "Plant", width: 80 },
         { field: "customer_name", headerName: "Customer", flex: 1 },
+        { field: "prod_seg_name", headerName: "Segment", flex: 1 },
         { field: "part_number", headerName: "Part No", flex: 1 },
         { field: "description", headerName: "Description", flex: 1 },
         { field: "plan_type", headerName: "Plan Type", flex: 1 },
         { field: "plan_qty", headerName: "Plan Qty", flex: 1 },
+        { field: "ends", headerName: "Ends", width: 80 },
         { field: "effective_date", headerName: "Plan Date", flex: 1, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
         { field: "PMPD_effective_date", headerName: "PMPD Master", flex: 1, renderCell: (params) => (<>{params.value}</>) },
         // {
@@ -68,14 +119,14 @@ const PMPD_ProductionPlan = () => {
         </GridToolbarContainer>
     );
 
-    useEffect(() => {
-        const fectchData = async () => {
-            const response = await getProductionPlandetails()
-            setOriginalRows(response || [])
-            setRows(response || [])
-        }
-        fectchData()
-    }, [refreshData])
+    // useEffect(() => {
+    //     const fectchData = async () => {
+    //         const response = await getProductionPlandetails()
+    //         setOriginalRows(response || [])
+    //         setRows(response || [])
+    //     }
+    //     fectchData()
+    // }, [refreshData])
 
     return (
         <div
@@ -101,54 +152,115 @@ const PMPD_ProductionPlan = () => {
                 </SectionHeading>
             </div>
 
-
-            {/* Search and Icons Section */}
-            <div
-                style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: 10,
-                }}
-            >
-                {/* Search Box - requester */}
-                <div style={{ display: "flex", gap: "10px" }}>
+            <div className='flex justify-between items-center mb-3'>
+                <div className='flex justify-start items-start gap-3'>
                     <TextField
+                        select
                         size="small"
-                        variant="outlined"
-                        placeholder="Type here..."
-                        value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
-                        onKeyUp={handleSearch}
-                        style={{ width: "400px" }}
-                    />
-                    <Button
-                        onClick={handleSearch}
-                        style={{
-                            borderRadius: "25px",
-                            border: "2px solid skyblue",
-                            color: "skyblue",
-                            fontWeight: "bold",
-                            textTransform: "none",
+                        label="Plant"
+                        name="plant"
+                        value={formik.values.plant}
+                        onChange={formik.handleChange}
+                        sx={{ minWidth: 240 }}
+                        InputLabelProps={{
+                            sx: {
+                                fontSize: "12px",
+                            },
                         }}
+                        InputProps={{
+                            sx: {
+                                fontSize: "13px",
+                            },
+                        }}
+                        error={formik.touched.plant && Boolean(formik.errors.plant)}
+                        helperText={formik.touched.plant && formik.errors.plant}
                     >
-                        <SearchIcon style={{ marginRight: "5px" }} />
-                        Search
+                        {plants.map((p) => (
+                            <MenuItem sx={{ fontSize: "small" }} key={p.Plant_ID} value={p.Plant_Code}>
+                                {p.Plant_Code}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+
+                    <TextField
+                        id="fin_year"
+                        select
+                        size="small"
+                        label="Financial Year"
+                        name="fin_year"
+                        value={formik.values.fin_year}
+                        onChange={formik.handleChange}
+                        sx={{ minWidth: 240 }}
+                        InputLabelProps={{ sx: { fontSize: 12 } }}
+                        InputProps={{ sx: { fontSize: 13 } }}
+                        error={formik.touched.fin_year && Boolean(formik.errors.fin_year)}
+                        helperText={formik.touched.fin_year && formik.errors.fin_year}
+                    >
+                        {["2025-26", "2026-27"].map((fy) => (
+                            <MenuItem key={fy} value={fy} sx={{ fontSize: 13 }}>
+                                {fy}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+
+                    <Button variant='contained' onClick={(e) => {
+                        formik.setFieldValue('type', 'SUBMIT')
+                        formik.handleSubmit(e)
+                    }}>
+                        {loading ? "Loading..." : "Submit"}
                     </Button>
                 </div>
-                <div style={{ display: "flex", gap: "10px" }}>
-                    <ExcelUploadModal open={openUploadModal}
-                        onClose={() => {
-                            setOpenUploadModal(false)
-                        }}
-                        onOpen={() => {
-                            setOpenUploadModal(true)
-                        }}
-                        templateUrl={""}
-                        setRefreshData={setRefreshData}
-                    />
+
+                {/* Search and Icons Section */}
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: 50
+                    }}
+                >
+                    {/* Search Box - requester */}
+                    <div style={{ display: "flex", gap: "10px" }}>
+                        <TextField
+                            size="small"
+                            variant="outlined"
+                            placeholder="Type here..."
+                            value={searchText}
+                            onChange={(e) => setSearchText(e.target.value)}
+                            onKeyUp={handleSearch}
+                            style={{ width: "400px" }}
+                        />
+                        <Button
+                            onClick={handleSearch}
+                            style={{
+                                borderRadius: "25px",
+                                border: "2px solid skyblue",
+                                color: "skyblue",
+                                fontWeight: "bold",
+                                textTransform: "none",
+                            }}
+                        >
+                            <SearchIcon style={{ marginRight: "5px" }} />
+                            Search
+                        </Button>
+                    </div>
+                    <div style={{ display: "flex", gap: "10px" }}>
+                        <ExcelUploadModal open={openUploadModal}
+                            onClose={() => {
+                                setOpenUploadModal(false)
+                            }}
+                            onOpen={() => {
+                                setOpenUploadModal(true)
+                            }}
+                            templateUrl={""}
+                            setRefreshData={setRefreshData}
+                        />
+                    </div>
                 </div>
+
             </div>
+
 
             {/* DataGrid */}
             <div

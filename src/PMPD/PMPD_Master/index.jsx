@@ -232,10 +232,8 @@ const ExcelUploadModal = ({
 
         const headerColumns = [
             'Plant_Code',
-            'Customer',
             'FG_Partno',
             'Description',
-            'Per_qty',
             'Segment',
             'Line_Name',
             'PMPD_SMH',
