@@ -351,7 +351,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                 const userId = localStorage.getItem("EmpId");
                 if (editData) {
                     const payload = {
-                        indirect_manpower_id: editData?.indirect_cat_id,
+                        indirect_manpower_id: editData?.indirect_manpower_id,
                         ...values,
                         user_id: userId
                     }

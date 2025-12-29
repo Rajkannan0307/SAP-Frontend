@@ -45,11 +45,11 @@ import { MdStorage } from "react-icons/md";
 import { RiMoneyRupeeCircleFill } from "react-icons/ri";
 import ProductionQuantityLimitsIcon from '@mui/icons-material/ProductionQuantityLimits';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
-import { MdScience } from "react-icons/md";
-import { GiChemicalDrop } from "react-icons/gi";
-import { FaFlask } from "react-icons/fa";
-import { MdOutlineSensors } from "react-icons/md";
-import { MdPrecisionManufacturing } from "react-icons/md";
+
+import FactoryIcon from "@mui/icons-material/Factory";
+import GroupsIcon from "@mui/icons-material/Groups";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+
 
 
 // Testing
@@ -615,25 +615,25 @@ const Sidebar = ({ setSidebarOpen }) => {
             {
               name: "PMPD Master",
               path: "/home/PMPD_Master",
-              icon: <CalendarMonthIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              icon: <PrecisionManufacturingIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
               code: 'PMPD_Master'
             },
             {
               name: "Production Plan",
               path: "/home/PMPD_ProductionPlan",
-              icon: <CalendarMonthIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              icon: <FactoryIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
               code: 'ProductionPlan'
             },
             {
               name: "Indirect Manpower",
               path: "/home/PMPD_IndirectManpower",
-              icon: <CalendarMonthIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              icon: <GroupsIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
               code: 'PMPD_IndirectManpower'
             },
             {
               name: "PMPD Report",
               path: "/home/PMPD_Report",
-              icon: <CalendarMonthIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              icon: <AssessmentIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
               code: 'PMPD_Report'
             },
           ]}
