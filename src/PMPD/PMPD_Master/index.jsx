@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import SectionHeading from '../../components/Header'
 import { Box, Button, IconButton, Modal, TextField, Typography } from '@mui/material'
 import { CloudUploadIcon, EditIcon, SearchIcon } from 'lucide-react'
@@ -9,6 +9,8 @@ import { saveAs } from 'file-saver'
 import { AddTrn_PMPD_Master, getTemplateProductionPlandetails, getTrnPMPD_MasterDetails } from '../../controller/PMPDpiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import { format } from 'date-fns'
+import { AuthContext } from '../../Authentication/AuthContext'
+import { getPMPDAccess } from '../../Authentication/ActionAccessType'
 
 
 const PMPD_MasterScreen = () => {
@@ -17,6 +19,10 @@ const PMPD_MasterScreen = () => {
     const [originalRows, setOriginalRows] = useState([]);
     const [openUploadModal, setOpenUploadModal] = useState(false);
     const [refreshData, setRefreshData] = useState(false)
+    const { user } = useContext(AuthContext);
+    const currentUserPlantCode = user.PlantCode
+
+    const PMPDAccess = getPMPDAccess()
 
     const handleSearch = () => {
         const text = searchText.trim().toLowerCase();
@@ -70,7 +76,9 @@ const PMPD_MasterScreen = () => {
 
     useEffect(() => {
         const fectchData = async () => {
-            const response = await getTrnPMPD_MasterDetails()
+            const response = PMPDAccess.disableAction
+                ? await getTrnPMPD_MasterDetails(currentUserPlantCode)
+                : await getTrnPMPD_MasterDetails()
             setOriginalRows(response || [])
             setRows(response || [])
         }
@@ -136,7 +144,7 @@ const PMPD_MasterScreen = () => {
                         Search
                     </Button>
                 </div>
-                <div style={{ display: "flex", gap: "10px" }}>
+                <div style={{ display: PMPDAccess.disableAction ? "none" : "flex", gap: "10px" }}>
                     <ExcelUploadModal open={openUploadModal}
                         onClose={() => {
                             setOpenUploadModal(false)

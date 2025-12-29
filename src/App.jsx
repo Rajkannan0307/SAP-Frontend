@@ -84,6 +84,8 @@ import PMPD_ProductionPlan from "./PMPD/ProductionPlan";
 import PMPD_MasterScreen from "./PMPD/PMPD_Master";
 import PMPD_Report from "./PMPD/PMPD_Report";
 import CategoryBreakupScreen from "./Masters/CategoryBreakup";
+import IndirectManpowerScreen from "./PMPD/Indirect_Manpower";
+import IndirectCategoryScreen from "./Masters/IndirectCategory";
 
 const App = () => {
   return (
@@ -129,6 +131,7 @@ const App = () => {
             <Route path="ProductSegmentScreen" element={<ProtectedRoute screenId={45}><ProductSegmentScreen /></ProtectedRoute>} />
             <Route path="ProductMappingScreen" element={<ProtectedRoute screenId={46}><ProductMappingScreen /></ProtectedRoute>} />
             <Route path="CategoryBreakup" element={<ProtectedRoute screenId={50}><CategoryBreakupScreen /></ProtectedRoute>} />
+            <Route path="IndirectCategory" element={<ProtectedRoute screenId={51}><IndirectCategoryScreen /></ProtectedRoute>} />
 
             <Route path="dashboard" element={<ProtectedRoute screenId={15}><DashBoard /></ProtectedRoute>} />
             <Route path="Report1" element={<ProtectedRoute screenId={16}><Report1 /></ProtectedRoute>} />
@@ -182,6 +185,7 @@ const App = () => {
             <Route path="PMPD_ProductionPlan" element={<ProtectedRoute screenId={47}><PMPD_ProductionPlan /></ProtectedRoute>} />
             <Route path="PMPD_Master" element={<ProtectedRoute screenId={48}><PMPD_MasterScreen /></ProtectedRoute>} />
             <Route path="PMPD_Report" element={<ProtectedRoute screenId={49}><PMPD_Report /></ProtectedRoute>} />
+            <Route path="PMPD_IndirectManpower" element={<ProtectedRoute screenId={52}><IndirectManpowerScreen /></ProtectedRoute>} />
           </Route>
         </Routes>
       </AuthProvider>

@@ -342,13 +342,14 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "Product Segment", path: "/home/ProductSegmentScreen", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'ProductSegment' },
             { name: "Product Mapping", path: "/home/ProductMappingScreen", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'ProductMapping' },
             { name: "Category Breakup", path: "/home/CategoryBreakup", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'CategoryBreakups' },
+            { name: "Indirect Category", path: "/home/IndirectCategory", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'IndirectCategory' },
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
             'UserMaster', 'Role', 'Material', 'Vendor',
             'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter',
             'ValuationType', 'SupvCode', 'Module', 'Line', 'Machine', 'RigTestSpec', 'Product', 'ProductSegment', 'ProductMapping',
-            'CategoryBreakups'
+            'CategoryBreakups', 'IndirectCategory'
           ]}
         />
         {/* Transaction Section */}
@@ -612,16 +613,22 @@ const Sidebar = ({ setSidebarOpen }) => {
           label="PMPD"
           links={[
             {
+              name: "PMPD Master",
+              path: "/home/PMPD_Master",
+              icon: <CalendarMonthIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              code: 'PMPD_Master'
+            },
+            {
               name: "Production Plan",
               path: "/home/PMPD_ProductionPlan",
               icon: <CalendarMonthIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
               code: 'ProductionPlan'
             },
             {
-              name: "PMPD Master",
-              path: "/home/PMPD_Master",
+              name: "Indirect Manpower",
+              path: "/home/PMPD_IndirectManpower",
               icon: <CalendarMonthIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
-              code: 'PMPD_Master'
+              code: 'PMPD_IndirectManpower'
             },
             {
               name: "PMPD Report",
@@ -630,28 +637,50 @@ const Sidebar = ({ setSidebarOpen }) => {
               code: 'PMPD_Report'
             },
           ]}
-          codeList={['ProductionPlan', 'PMPD_Master', 'PMPD_Report']}
+          codeList={['ProductionPlan', 'PMPD_Master', 'PMPD_Report', 'PMPD_IndirectManpower']}
         />
       </div>
-
     </div>
   );
 };
 
 const SidebarSection = ({ open, isOpen, toggleSection, icon, label, links, codeList = [], Permissions = [] }) => {
-  // Check if the user has any permissions from this section
-  const hasPermission = codeList.some(code => Permissions.includes(code));
+  // // Check if the user has any permissions from this section
+  // const hasPermission = codeList.some(code => Permissions.includes(code));
+  // if (!hasPermission) return null;
+
+  // const filteredLinks = links.filter(link => {
+  //   // If link.code exists, filter using that, else use link.path as fallback
+  //   return Permissions.includes(link.code || link.path);
+  // });
+
+  // if (filteredLinks.length === 0) return null;
+
+  // Normalize permissions
+  const permissionArray = Array.isArray(Permissions)
+    ? Permissions
+    : typeof Permissions === "string"
+      ? Permissions.split(",").map(p => p.trim())
+      : [];
+
+  // Section-level permission check
+  const hasPermission = codeList.some(code =>
+    permissionArray.some(p => p === code)
+  );
+
   if (!hasPermission) return null;
 
+  // Link-level permission check
   const filteredLinks = links.filter(link => {
-    // If link.code exists, filter using that, else use link.path as fallback
-    return Permissions.includes(link.code || link.path);
+    const key = link.code || link.path;
+    return permissionArray.some(p => p === key);
   });
 
   if (filteredLinks.length === 0) return null;
 
   return (
     <div style={{ marginBottom: "10px" }}>
+      {/* {JSON.stringify(Permissions)} */}
       <button
         onClick={toggleSection}
         style={{

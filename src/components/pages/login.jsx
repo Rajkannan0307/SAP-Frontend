@@ -103,6 +103,8 @@ const Login = () => {
           setTimeout(() => {
             switch (data.Role_ID) {
               case 2:
+                window.location.href = "/home/PMPD_ProductionPlan";
+                break;
               case 3:
               case 4:
               case 5:
@@ -124,6 +126,9 @@ const Login = () => {
                 window.location.href = "/home/rigMonthlyStatus";
                 break;
               case 15:
+                window.location.href = "/home/PMPD_ProductionPlan";
+                break;
+              case 16:
                 window.location.href = "/home/PMPD_ProductionPlan";
                 break;
             }

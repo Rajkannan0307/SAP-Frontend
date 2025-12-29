@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import SectionHeading from '../../components/Header'
 import { Box, Button, IconButton, MenuItem, Modal, TextField, Typography } from '@mui/material'
 import { CloudUploadIcon, EditIcon, SearchIcon } from 'lucide-react'
@@ -13,6 +13,8 @@ import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarEx
 import { endOfDay, format, isValid, startOfDay } from 'date-fns'
 import { useFormik } from 'formik'
 import * as yup from 'yup'
+import { getPMPDAccess } from '../../Authentication/ActionAccessType'
+import { AuthContext } from '../../Authentication/AuthContext'
 
 const PMPD_ProductionPlan = () => {
     const [searchText, setSearchText] = useState("");
@@ -20,6 +22,10 @@ const PMPD_ProductionPlan = () => {
     const [originalRows, setOriginalRows] = useState([]);
     const [openUploadModal, setOpenUploadModal] = useState(false);
     const [refreshData, setRefreshData] = useState(false)
+    const { user } = useContext(AuthContext);
+    const currentUserPlantCode = user.PlantCode
+
+    const PMPDAccess = getPMPDAccess()
 
     const handleSearch = () => {
         const text = searchText.trim().toLowerCase();
@@ -47,7 +53,7 @@ const PMPD_ProductionPlan = () => {
 
     const formik = useFormik({
         initialValues: {
-            plant: "",
+            plant: currentUserPlantCode,
             fin_year: "",
             type: "SUBMIT"
         },
@@ -162,6 +168,7 @@ const PMPD_ProductionPlan = () => {
                         value={formik.values.plant}
                         onChange={formik.handleChange}
                         sx={{ minWidth: 240 }}
+                        disabled={PMPDAccess.disableAction}
                         InputLabelProps={{
                             sx: {
                                 fontSize: "12px",
@@ -177,7 +184,7 @@ const PMPD_ProductionPlan = () => {
                     >
                         {plants.map((p) => (
                             <MenuItem sx={{ fontSize: "small" }} key={p.Plant_ID} value={p.Plant_Code}>
-                                {p.Plant_Code}
+                                {`${p.Plant_Code} - ${p.Plant_Name}`}
                             </MenuItem>
                         ))}
                     </TextField>
@@ -245,7 +252,7 @@ const PMPD_ProductionPlan = () => {
                             Search
                         </Button>
                     </div>
-                    <div style={{ display: "flex", gap: "10px" }}>
+                    <div style={{ display: PMPDAccess.disableAction ? "none" : "flex", gap: "10px" }}>
                         <ExcelUploadModal open={openUploadModal}
                             onClose={() => {
                                 setOpenUploadModal(false)

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import SectionHeading from '../../components/Header'
 import { useFormik } from 'formik'
 import { Button, MenuItem, TextField } from '@mui/material'
@@ -9,6 +9,8 @@ import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarEx
 import * as XLSX from 'xlsx-js-style'
 import { FaFileExcel } from "react-icons/fa";
 import { startOfDay, endOfDay } from 'date-fns'
+import { AuthContext } from '../../Authentication/AuthContext'
+import { getPMPDAccess } from '../../Authentication/ActionAccessType'
 
 const FY_MONTHS = [
     { field: "Apr", headerName: "Apr" },
@@ -32,7 +34,10 @@ const PMPD_Report = () => {
     const [plants, setPlants] = useState([])
     const [loading, setLoading] = useState(false)
     const [excelLoading, setExcelLoading] = useState(false)
+    const { user } = useContext(AuthContext);
+    const currentUserPlantCode = user.PlantCode
 
+    const PMPDAccess = getPMPDAccess()
 
     const validationschema = yup.object({
         plant: yup.string().required('Required'),
@@ -41,7 +46,7 @@ const PMPD_Report = () => {
 
     const formik = useFormik({
         initialValues: {
-            plant: "",
+            plant: currentUserPlantCode,
             fin_year: "",
             type: "SUBMIT"
         },
@@ -266,6 +271,7 @@ const PMPD_Report = () => {
                     value={formik.values.plant}
                     onChange={formik.handleChange}
                     sx={{ minWidth: 240 }}
+                    disabled={PMPDAccess.disableAction}
                     InputLabelProps={{
                         sx: {
                             fontSize: "12px",
@@ -281,7 +287,7 @@ const PMPD_Report = () => {
                 >
                     {plants.map((p) => (
                         <MenuItem sx={{ fontSize: "small" }} key={p.Plant_ID} value={p.Plant_Code}>
-                            {p.Plant_Code}
+                            {`${p.Plant_Code} - ${p.Plant_Name}`}
                         </MenuItem>
                     ))}
                 </TextField>

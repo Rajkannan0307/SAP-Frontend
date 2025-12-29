@@ -76,8 +76,8 @@ export const AddTrn_PMPD_Master = async (data) => {
     return response;
 }
 
-export const getTrnPMPD_MasterDetails = async () => {
-    const response = await axios.get(`${api}/PMPDRouter/GetTrnPMPD_Master`);
+export const getTrnPMPD_MasterDetails = async (plant) => {
+    const response = await axios.get(`${api}/PMPDRouter/GetTrnPMPD_Master`, { params: { plant: plant || null } });
     return response.data;
 };
 
@@ -108,5 +108,35 @@ export const getMstCategoryBreakupDetails = async () => {
 
 export const AddMstCategoryBreakup = async (data) => {
     const response = await axios.post(`${api}/PMPDRouter/MstCatgoryBreakup`, data);
+    return response;
+}
+
+//Mst Indirect Category
+
+export const getMstIndirectCategoryDetails = async (plant, dept) => {
+    const response = await axios.get(`${api}/PMPDRouter/MstIndirectCategory`, { params: { plant, dept } });
+    return response.data;
+};
+
+export const getAllMstIndirectCategoryDetails = async (plant) => {
+    const response = await axios.get(`${api}/PMPDRouter/GetAllMstIndirectCategory`);
+    return response.data;
+};
+
+export const AddMstIndirectCategory = async (data) => {
+    const response = await axios.post(`${api}/PMPDRouter/MstIndirectCategory`, data);
+    return response;
+}
+
+
+//Trn Indirect Manpower
+
+export const getTrnIndirectManPower = async (plant) => {
+    const response = await axios.get(`${api}/PMPDRouter/TrnIndirectManPower`, { params: { plant: plant || null } });
+    return response.data;
+};
+
+export const AddTrnIndirectManpower = async (data) => {
+    const response = await axios.post(`${api}/PMPDRouter/TrnIndirectManpower`, data);
     return response;
 }

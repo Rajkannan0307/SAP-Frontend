@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import {
     TextField,
     Button,
@@ -26,11 +26,13 @@ import { useFormik } from "formik";
 import { CommonMuiStyles } from "../../Styles/CommonStyles";
 import * as Yup from "yup"
 import SectionHeading from "../../components/Header";
-import { AddMstCategoryBreakup, AddOrEditProductMapping, getMstCategoryBreakupDetails, getProductdetails, getProductMappingdetails } from "../../controller/PMPDpiService";
-import { format } from "date-fns";
-import { getPlantdetails } from "../../controller/CommonApiService";
+import { AddMstCategoryBreakup, AddOrEditProductMapping, AddTrnIndirectManpower, getMstCategoryBreakupDetails, getMstIndirectCategoryDetails, getProductdetails, getProductMappingdetails, getTrnIndirectManPower } from "../../controller/PMPDpiService";
+import { format, isValid } from "date-fns";
+import { getDepartmentdetails, getPlantdetails } from "../../controller/CommonApiService";
+import { AuthContext } from "../../Authentication/AuthContext";
+import { getPMPDAccess } from "../../Authentication/ActionAccessType";
 
-const CategoryBreakupScreen = () => {
+const IndirectManpowerScreen = () => {
     const [searchText, setSearchText] = useState("");
     const [rows, setRows] = useState([]);
     const [originalRows, setOriginalRows] = useState([]);
@@ -43,6 +45,11 @@ const CategoryBreakupScreen = () => {
 
     const [refreshData, setRefreshData] = useState(false)
 
+    const { user } = useContext(AuthContext);
+    const currentUserPlantCode = user.PlantCode
+
+    const PMPDAccess = getPMPDAccess()
+
     const handleEdit = (data) => {
         console.log(data, "data")
         setEditData(data)
@@ -50,42 +57,16 @@ const CategoryBreakupScreen = () => {
     }
 
     const columns = [
-        { field: "cat_id", headerName: "SI No", width: 80 },
-        { field: "plant", headerName: "Plant", width: 80 },
-        { field: "category", headerName: "Category", flex: 1 },
-        { field: "value", headerName: "Value", width: 80 },
-        {
-            field: "type", headerName: "Type", width: 80,
-            renderCell: (params) => params.row?.category === 'PERMANENT WM' ? "Number" : "%"
-        },
-        { field: "absent", headerName: "Absent %", width: 100 },
-        { field: "new_joinee_effeciency", headerName: "Eff %", width: 80 },
-        { field: "avg_salary", headerName: "Avg Salary", width: 120 },
+        { field: "indirect_manpower_id", headerName: "SI No", width: 80 },
+        { field: "plant_code", headerName: "Plant", width: 150 },
+        { field: "dept_name", headerName: "Department", flex: 1 },
+        { field: "indirect_category", headerName: "Indirect Category", flex: 1 },
+        { field: "hc_no", headerName: "HC NO", width: 100 },
         {
             field: "effective_date",
             headerName: "Eff Date",
-            width: 120,
+            flex: 1,
             renderCell: (params) => params.value ? format(params.value, "dd-MM-yyyy") : ""
-        },
-        {
-            field: "active_status", headerName: "Status", width: 100,
-            renderCell: (params) => {
-                const isActive = params.value === true || params.value === "1";
-                return (
-                    <span
-                        style={{
-                            padding: "3px 10px",
-                            borderRadius: "12px",
-                            fontSize: "12px",
-                            fontWeight: "bold",
-                            color: "white",
-                            backgroundColor: isActive ? "#2e7d32" : "#d32f2f"
-                        }}
-                    >
-                        {isActive ? "Active" : "Inactive"}
-                    </span>
-                );
-            },
         },
         {
             field: "action", headerName: "Action",
@@ -94,6 +75,7 @@ const CategoryBreakupScreen = () => {
                     color="primary"
                     onClick={() => handleEdit(params.row)}
                     title="Edit"
+                    disabled={PMPDAccess.disableAction}
                 >
                     <EditIcon />
                 </IconButton>
@@ -144,7 +126,7 @@ const CategoryBreakupScreen = () => {
         const text = searchText.trim().toLowerCase();
 
         const filteredRows = originalRows.filter((row) =>
-            ["plant", "category"].some((key) => {
+            ["plant_code", "dept_name", "indirect_category"].some((key) => {
                 const value = row[key];
                 return value?.toString().toLowerCase().includes(text);
             })
@@ -157,14 +139,21 @@ const CategoryBreakupScreen = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const response = await getMstCategoryBreakupDetails()
-            console.log("getMstCategoryBreakupDetails - ", response)
+            const response = PMPDAccess.disableAction
+                ? await getTrnIndirectManPower(currentUserPlantCode)
+                : await getTrnIndirectManPower()
+            console.log("getTrnIndirectManPower - ", response)
             setOriginalRows(response || [])
             setRows(response || [])
         }
         fetchData()
     }, [refreshData])
 
+
+    const hc_count = originalRows?.reduce(
+        (sum, row) => sum + Number(row?.hc_no || 0),
+        0
+    ) || 0;
 
     return (
         <div
@@ -187,8 +176,9 @@ const CategoryBreakupScreen = () => {
                 }}
             >
                 <SectionHeading>
-                    Category Breakup
+                    Indirect Manpower
                 </SectionHeading>
+
             </div>
 
             {/* Search and Icons */}
@@ -239,19 +229,13 @@ const CategoryBreakupScreen = () => {
                 </div>
 
                 {/* Icons */}
-                <div style={{ display: "flex", gap: "10px" }}>
-                    {/* <IconButton
-                        onClick={handleDownloadExcel}
-                        style={{
-                            borderRadius: "50%",
-                            backgroundColor: "#339900",
-                            color: "white",
-                            width: "40px",
-                            height: "40px",
-                        }}
-                    >
-                        <FaFileExcel size={18} />
-                    </IconButton> */}
+                <div className="flex justify-center items-center gap-4">
+                    <div className="bg-white rounded-md shadow-sm border flex gap-3 w-fit p-2">
+                        <div className="text-xs text-gray-500">Total HC Count</div>
+                        <div className="text-xs font-semibold text-gray-900">
+                            {hc_count}
+                        </div>
+                    </div>
 
                     <IconButton
                         onClick={handleOpenAddModal}
@@ -261,11 +245,14 @@ const CategoryBreakupScreen = () => {
                             color: "white",
                             width: "40px",
                             height: "40px",
+                            display: PMPDAccess.disableAction ? "none" : "block",
                         }}
                     >
                         <AddIcon />
                     </IconButton>
                 </div>
+
+
             </div>
 
             {/* DataGrid */}
@@ -283,7 +270,7 @@ const CategoryBreakupScreen = () => {
                     columns={columns}
                     pageSize={5} // Set the number of rows per page to 8
                     rowsPerPageOptions={[5]}
-                    getRowId={(row) => row.cat_id} // Specify a custom id field
+                    getRowId={(row) => row.indirect_manpower_id} // Specify a custom id field
                     disableSelectionOnClick
                     slots={{ toolbar: CustomToolbar }}
                     sx={{
@@ -327,6 +314,8 @@ const CategoryBreakupScreen = () => {
 const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
     const [submitLoading, setSubmitLoading] = useState(false)
     const [plants, setPlants] = useState([])
+    const [department, setDepartment] = useState([])
+    const [indirectCategory, setIndirectCategory] = useState([])
 
     const handleClose = () => {
         setOpenAddModal(false)
@@ -336,21 +325,10 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
     // ✅ Validation Schema
     const validationSchema = Yup.object({
         plant: Yup.string().required("Required"),
-        category: Yup.string().required("Required"),
-        value: Yup.string().required("Required"),
-        effective_date: Yup.string().required("Required"),
-        absent: Yup.number()
-            .typeError("Must be a number")
-            .required("Required")
-            .min(0, "Min 0")
-            .max(100, "Max 100"),
-        new_joinee_effeciency: Yup.number()
-            .typeError("Must be a number")
-            .required("Required")
-            .min(0, "Min 0")
-            .max(100, "Max 100"),
-        avg_salary: Yup.number().required('Required'),
-        active_status: Yup.string().required("Required"),
+        dept: Yup.string().required("Required"),
+        indirect_category: Yup.string().required("Required"),
+        hc_no: Yup.string().required("Required"),
+        effective_date: Yup.string().required("Required")
     });
 
 
@@ -358,13 +336,10 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
     const formik = useFormik({
         initialValues: {
             plant: editData?.plant || "",
-            category: editData?.category || "",
-            value: editData?.value || "",
+            dept: editData?.dept || "",
+            indirect_category: editData?.indirect_cat_id || "",
+            hc_no: editData?.hc_no || "",
             effective_date: editData?.effective_date ? format(editData?.effective_date, "yyyy-MM-dd") : "",
-            absent: editData?.absent,
-            new_joinee_effeciency: editData?.new_joinee_effeciency,
-            avg_salary: editData?.avg_salary,
-            active_status: editData?.active_status ?? true,
         },
         validationSchema,
         enableReinitialize: true,
@@ -376,19 +351,19 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                 const userId = localStorage.getItem("EmpId");
                 if (editData) {
                     const payload = {
-                        cat_id: editData?.cat_id,
+                        indirect_manpower_id: editData?.indirect_cat_id,
                         ...values,
                         user_id: userId
                     }
-                    await AddMstCategoryBreakup(payload)
-                    alert("✅ Category breakups updated successfully!");
+                    await AddTrnIndirectManpower(payload)
+                    alert("✅ Indirect Manpower updated successfully!");
                 } else {
                     const payload = {
                         ...values,
                         user_id: userId
                     }
-                    await AddMstCategoryBreakup(payload)
-                    alert("✅ Category breakups added successfully!");
+                    await AddTrnIndirectManpower(payload)
+                    alert("✅ Indirect Manpower added successfully!");
                 }
                 setRefreshData((prev) => !prev)
                 handleClose()
@@ -401,13 +376,27 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
     });
 
     useEffect(() => {
-        const fetchPlants = async () => {
+        const fetchInitData = async () => {
             const response = await getPlantdetails()
             console.log('Plants', response)
             setPlants(response)
+
+            const deptResponse = await getDepartmentdetails()
+            console.log('Department', deptResponse)
+            setDepartment(deptResponse)
         }
-        if (open) fetchPlants()
+        if (open) fetchInitData()
+
     }, [open])
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const IndirecCategoryResponse = await getMstIndirectCategoryDetails(formik.values.plant, formik.values.dept)
+            console.log('IndirecCategoryResponse', IndirecCategoryResponse)
+            setIndirectCategory(IndirecCategoryResponse)
+        }
+        if (formik.values.plant && formik.values.dept) fetchData()
+    }, [formik.values.plant, formik.values.dept])
 
 
     return (
@@ -458,39 +447,73 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                     </TextField>
 
                     <TextField
-                        id="category"
-                        name="category"
-                        label="Category"
+                        select
+                        id="dept"
+                        name="dept"
+                        label="Department"
                         fullWidth
-                        value={formik.values.category}
+                        value={formik.values.dept}
                         onChange={(e) => {
                             const selectedId = e.target.value;
                             formik.handleChange(e);
                         }}
                         onBlur={formik.handleBlur}
-                        error={formik.touched.category && Boolean(formik.errors.category)}
-                        helperText={formik.touched.category && formik.errors.category}
+                        error={formik.touched.dept && Boolean(formik.errors.dept)}
+                        helperText={formik.touched.dept && formik.errors.dept}
                         sx={{
                             ...CommonMuiStyles.textFieldSmallSx2,
                             minWidth: 200,
                             mt: 1
                         }}
-                    />
+                    >
+                        {department?.map((option, i) => (
+                            <MenuItem sx={{ fontSize: 12 }} key={i} value={option.Dept_ID}>
+                                {`${option.Dept_Name}`}
+                            </MenuItem>
+                        )) || []}
+                    </TextField>
 
                     <TextField
-                        id="value"
-                        name="value"
-                        label="Value"
+                        select
+                        id="indirect_category"
+                        name="indirect_category"
+                        label="Indirect Category"
                         fullWidth
-                        type="number"
-                        value={formik.values.value}
+                        value={formik.values.indirect_category}
                         onChange={(e) => {
                             const selectedId = e.target.value;
                             formik.handleChange(e);
                         }}
                         onBlur={formik.handleBlur}
-                        error={formik.touched.value && Boolean(formik.errors.value)}
-                        helperText={formik.touched.value && formik.errors.value}
+                        error={formik.touched.indirect_category && Boolean(formik.errors.indirect_category)}
+                        helperText={formik.touched.indirect_category && formik.errors.indirect_category}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            minWidth: 200,
+                            mt: 1
+                        }}
+                    >
+                        {indirectCategory?.map((option, i) => (
+                            <MenuItem sx={{ fontSize: 12 }} key={i} value={option.indirect_cat_id}>
+                                {`${option.category}`}
+                            </MenuItem>
+                        )) || []}
+                    </TextField>
+
+                    <TextField
+                        id="hc_no"
+                        name="hc_no"
+                        label="HC NO"
+                        fullWidth
+                        type='number'
+                        value={formik.values.hc_no}
+                        onChange={(e) => {
+                            const selectedId = e.target.value;
+                            formik.handleChange(e);
+                        }}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.hc_no && Boolean(formik.errors.hc_no)}
+                        helperText={formik.touched.hc_no && formik.errors.hc_no}
                         sx={{
                             ...CommonMuiStyles.textFieldSmallSx2,
                             minWidth: 200,
@@ -523,93 +546,10 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                             }
                         }}
                     />
-
-                    <TextField
-                        id="absent"
-                        name="absent"
-                        label="Absent"
-                        fullWidth
-                        type="number"
-                        value={formik.values.absent}
-                        onChange={(e) => {
-                            const selectedId = e.target.value;
-                            formik.handleChange(e);
-                        }}
-                        onBlur={formik.handleBlur}
-                        error={formik.touched.absent && Boolean(formik.errors.absent)}
-                        helperText={formik.touched.absent && formik.errors.absent}
-                        sx={{
-                            ...CommonMuiStyles.textFieldSmallSx2,
-                            minWidth: 200,
-                            mt: 1
-                        }}
-                    />
-
-                    <TextField
-                        id="new_joinee_effeciency"
-                        name="new_joinee_effeciency"
-                        label="New Joinee Effeciency"
-                        fullWidth
-                        type="number"
-                        value={formik.values.new_joinee_effeciency}
-                        onChange={(e) => {
-                            const selectedId = e.target.value;
-                            formik.handleChange(e);
-                        }}
-                        onBlur={formik.handleBlur}
-                        error={formik.touched.new_joinee_effeciency && Boolean(formik.errors.new_joinee_effeciency)}
-                        helperText={formik.touched.new_joinee_effeciency && formik.errors.new_joinee_effeciency}
-                        sx={{
-                            ...CommonMuiStyles.textFieldSmallSx2,
-                            minWidth: 200,
-                            mt: 1
-                        }}
-                    />
-
-                    <TextField
-                        id="avg_salary"
-                        name="avg_salary"
-                        label="Avg Salary"
-                        fullWidth
-                        type="number"
-                        value={formik.values.avg_salary}
-                        onChange={(e) => {
-                            const selectedId = e.target.value;
-                            formik.handleChange(e);
-                        }}
-                        onBlur={formik.handleBlur}
-                        error={formik.touched.avg_salary && Boolean(formik.errors.avg_salary)}
-                        helperText={formik.touched.avg_salary && formik.errors.avg_salary}
-                        sx={{
-                            ...CommonMuiStyles.textFieldSmallSx2,
-                            minWidth: 200,
-                            mt: 1
-                        }}
-                    />
                 </div>
 
-                <FormControlLabel
-                    control={
-                        <Switch
-                            checked={formik.values.active_status}
-                            onChange={(e) => formik.setFieldValue("active_status", e.target.checked)}
-                            color="success"
-                        />
-                    }
-                    label={formik.values.active_status ? "Active" : "Inactive"}
-                    sx={{
-                        fontWeight: "bold",
-                        mt: 2,
-                        color: formik.values.active_status ? "#2e7d32" : "#d32f2f"
-                    }}
-                />
-
-                {formik.touched.active_status && formik.errors.active_status && (
-                    <div style={{ color: "red", fontSize: 12 }}>{formik.errors.active_status}</div>
-                )}
-
             </DialogContent>
-            <DialogActions sx={{ p: 0, pb: 2, pr: 3 }}>
+            <DialogActions sx={{ p: 0, py: 2, pr: 3 }}>
                 <Button
                     variant="contained"
                     color="error"
@@ -628,4 +568,4 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
 }
 
 
-export default CategoryBreakupScreen;
+export default IndirectManpowerScreen;
