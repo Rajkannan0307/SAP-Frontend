@@ -381,6 +381,7 @@ const ExcelUploadModal = ({
             "Segment",
             "Plan Type",
             "Plan_qty",
+            "Ends",
             "Effective Date",
         ];
 

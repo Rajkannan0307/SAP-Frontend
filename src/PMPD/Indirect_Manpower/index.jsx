@@ -245,7 +245,7 @@ const IndirectManpowerScreen = () => {
                             color: "white",
                             width: "40px",
                             height: "40px",
-                            display: PMPDAccess.disableAction ? "none" : "block",
+                            display: PMPDAccess.disableAction ? "none" : null,
                         }}
                     >
                         <AddIcon />

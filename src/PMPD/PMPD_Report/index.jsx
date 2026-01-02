@@ -178,6 +178,8 @@ const PMPD_Report = () => {
                 return `${cat} ${resultDataSheet3.absent}%`
             case 'NEW JOINEE EFFICIENCY':
                 return `NEW JOINEE EFF ${resultDataSheet3.new_joinee_effeciency}%`
+            case 'HC PLAN':
+                return 'HC PLAN'
             default:
                 return cat
         }
@@ -454,7 +456,7 @@ const PMPD_Report = () => {
                         <button
                             key={item}
                             onClick={() => handleTableView(item)}
-                            className={`px-5 py-1.5 text-sm rounded-full transition
+                            className={`px-5 py-1.5 text-sm rounded-full transition cursor-pointer
                               ${tableView === item
                                     ? "bg-blue-600 text-white shadow"
                                     : "text-gray-600 hover:text-gray-900"
