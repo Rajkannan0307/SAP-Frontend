@@ -478,7 +478,7 @@ const PMPD_Report = () => {
                     backgroundColor: "#fff",
                     borderRadius: 8,
                     boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-                    height: "calc(5 * 48px)",
+                    // height: "calc(5 * 48px)",
                     marginTop: 10,
                     display: tableView === "category" ? "block" : "none"
                 }}
@@ -490,9 +490,9 @@ const PMPD_Report = () => {
                     rowsPerPageOptions={[5]}
                     getRowId={(row) => `${row.plant + row.category}`} // Specify a custom id field
                     disableSelectionOnClick
-                    rowHeight={40}
+                    rowHeight={25}
                     columnHeaderHeight={45}
-                    getRowClassName={getRowClassName}
+                    getRowClassName={(params) => `${getRowClassName(params)}`}
                     slots={{ toolbar: CustomToolbar }}
                     sx={{
                         // Header Style
@@ -519,7 +519,7 @@ const PMPD_Report = () => {
 
                         "& .MuiDataGrid-cell": {
                             color: "#333",
-                            fontSize: "12px",
+                            fontSize: "10px",
                         },
                     }}
                 />

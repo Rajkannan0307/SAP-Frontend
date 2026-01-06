@@ -67,12 +67,17 @@ export const getTemplateProductionPlandetails = async () => {
 
 // Trn PMPD Master
 
-export const AddTrn_PMPD_Master = async (data) => {
-    const response = await axios.post(`${api}/PMPDRouter/AddTrn_PMPD_Master`, data, {
+export const AddTrn_PMPD_Master_BULK = async (data) => {
+    const response = await axios.post(`${api}/PMPDRouter/AddTrn_PMPD_Master_BULK`, data, {
         headers: {
             "Content-Type": "multipart/form-data"
         }
     });
+    return response;
+}
+
+export const AddTrn_PMPD_Master_Single = async (data) => {
+    const response = await axios.post(`${api}/PMPDRouter/AddTrn_PMPD_Master_Single`, data);
     return response;
 }
 
@@ -135,3 +140,33 @@ export const AddTrnIndirectManpower = async (data) => {
     const response = await axios.post(`${api}/PMPDRouter/TrnIndirectManpower`, data);
     return response;
 }
+
+
+// Trn Actual Prod Plan
+
+export const getTrnActualProdPlan = async (body) => {
+    const response = await axios.post(`${api}/PMPDRouter/TrnActualProdPlan`, body);
+    return response.data;
+};
+
+export const AddTrnActualProdPlan_BULK = async (body) => {
+    const response = await axios.post(`${api}/PMPDRouter/AddTrnActualProdPlan_BULK`, body, {
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    });
+    return response;
+}
+
+
+
+
+
+//Trn Plan Vs Actual Report
+
+export const GetPMPD_PlanVsActual = async (body) => {
+    const response = await axios.post(`${api}/PMPDRouter/PlanVsActual`, body);
+    return response;
+}
+
+

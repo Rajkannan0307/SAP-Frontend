@@ -56,11 +56,12 @@ const CategoryBreakupScreen = () => {
         { field: "value", headerName: "Value", width: 80 },
         {
             field: "type", headerName: "Type", width: 80,
-            renderCell: (params) => params.row?.category === 'PERMANENT WM' ? "Number" : "%"
+            renderCell: (params) => params.row?.cat_type === 'F' ? "Number" : "%"
         },
         { field: "absent", headerName: "Absent %", width: 100 },
         { field: "new_joinee_effeciency", headerName: "Eff %", width: 80 },
         { field: "avg_salary", headerName: "Avg Salary", width: 120 },
+        { field: "cat_type", headerName: "Type", width: 80 },
         {
             field: "effective_date",
             headerName: "Eff Date",
@@ -350,6 +351,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
             .min(0, "Min 0")
             .max(100, "Max 100"),
         avg_salary: Yup.number().required('Required'),
+        cat_type: Yup.string().required('Required'),
         active_status: Yup.string().required("Required"),
     });
 
@@ -364,6 +366,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
             absent: editData?.absent,
             new_joinee_effeciency: editData?.new_joinee_effeciency,
             avg_salary: editData?.avg_salary,
+            cat_type: editData?.cat_type || "",
             active_status: editData?.active_status ?? true,
         },
         validationSchema,
@@ -586,6 +589,34 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                             mt: 1
                         }}
                     />
+
+                    <TextField
+                        id="cat_type"
+                        name="cat_type"
+                        label='Type'
+                        select
+                        fullWidth
+                        value={String(formik.values.cat_type)}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.cat_type && Boolean(formik.errors.cat_type)}
+                        helperText={formik.touched.cat_type && formik.errors.cat_type}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            minWidth: 100,
+                            mt: 1
+                        }}
+                    >
+                        {
+                            ['F', 'P'].map((e) => (
+                                <MenuItem sx={{
+                                    fontSize: "small"
+                                }} key={e} value={e}>
+                                    {e === 'F' && 'Fixed'}
+                                    {e === 'P' && 'Percentage'}
+                                </MenuItem>))
+                        }
+                    </TextField>
                 </div>
 
                 <FormControlLabel

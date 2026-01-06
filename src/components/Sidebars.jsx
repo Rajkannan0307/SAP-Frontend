@@ -636,8 +636,20 @@ const Sidebar = ({ setSidebarOpen }) => {
               icon: <AssessmentIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
               code: 'PMPD_Report'
             },
+            {
+              name: "Production Actual",
+              path: "/home/PMPD_ActualProductionPlan",
+              icon: <AssessmentIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              code: 'PMPD_ActualProductionPlan'
+            },
+            // {
+            //   name: "Plan Vs Actual",
+            //   path: "/home/PMDP_PlanVsActual",
+            //   icon: <AssessmentIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+            //   code: 'PMPD_Report'
+            // },
           ]}
-          codeList={['ProductionPlan', 'PMPD_Master', 'PMPD_Report', 'PMPD_IndirectManpower']}
+          codeList={['ProductionPlan', 'PMPD_Master', 'PMPD_Report', 'PMPD_IndirectManpower', 'PMPD_ActualProductionPlan']}
         />
       </div>
     </div>

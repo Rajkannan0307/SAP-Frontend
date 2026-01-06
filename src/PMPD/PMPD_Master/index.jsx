@@ -1,17 +1,21 @@
 import React, { useContext, useEffect, useState } from 'react'
 import SectionHeading from '../../components/Header'
-import { Box, Button, IconButton, Modal, TextField, Typography } from '@mui/material'
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Modal, TextField, Typography } from '@mui/material'
 import { CloudUploadIcon, EditIcon, SearchIcon } from 'lucide-react'
 import { FaDownload, FaUpload } from 'react-icons/fa6'
 import { deepPurple } from '@mui/material/colors';
 import * as ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
-import { AddTrn_PMPD_Master, getTemplateProductionPlandetails, getTrnPMPD_MasterDetails } from '../../controller/PMPDpiService'
+import { AddTrn_PMPD_Master_BULK, AddTrn_PMPD_Master_Single, getProductSegmentdetails, getTrnPMPD_MasterDetails } from '../../controller/PMPDpiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import { format } from 'date-fns'
 import { AuthContext } from '../../Authentication/AuthContext'
 import { getPMPDAccess } from '../../Authentication/ActionAccessType'
-
+import AddIcon from "@mui/icons-material/Add";
+import { useFormik } from 'formik'
+import * as Yup from 'yup'
+import { CommonMuiStyles } from '../../Styles/CommonStyles'
+import { getPlantdetails } from '../../controller/CommonApiService'
 
 const PMPD_MasterScreen = () => {
     const [searchText, setSearchText] = useState("");
@@ -23,6 +27,20 @@ const PMPD_MasterScreen = () => {
     const currentUserPlantCode = user.PlantCode
 
     const PMPDAccess = getPMPDAccess()
+
+    const [openAddModal, setOpenAddModal] = useState(false);
+    const [openEditModal, setOpenEditModal] = useState(false);
+    const [editData, setEditData] = useState(null);
+
+    const handleEdit = (data) => {
+        console.log(data, "data")
+        setEditData(data)
+        setOpenEditModal(true)
+    }
+    const handleOpenAddModal = (item) => {
+        setOpenAddModal(true);
+    };
+
 
     const handleSearch = () => {
         const text = searchText.trim().toLowerCase();
@@ -51,19 +69,20 @@ const PMPD_MasterScreen = () => {
         { field: "production", headerName: "Production", flex: 1 },
         { field: "inspection", headerName: "Inspection", flex: 1 },
         { field: "packing", headerName: "Packing", flex: 1 },
+        { field: "end_qty", headerName: "Ends", flex: 1 },
         { field: "effective_date", headerName: "Plan Date", flex: 1, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
-        // {
-        //     field: "action", headerName: "Action", width: 160,
-        //     renderCell: (params) => (
-        //         <IconButton
-        //             color="primary"
-        //             // onClick={() => handleEdit(params.row)}
-        //             title="Edit"
-        //         >
-        //             <EditIcon />
-        //         </IconButton>
-        //     ),
-        // },
+        {
+            field: "action", headerName: "Action", width: 80,
+            renderCell: (params) => (
+                <IconButton
+                    color="primary"
+                    onClick={() => handleEdit(params.row)}
+                    title="Edit"
+                >
+                    <EditIcon size={15} />
+                </IconButton>
+            ),
+        },
     ];
 
     const CustomToolbar = () => (
@@ -155,6 +174,20 @@ const PMPD_MasterScreen = () => {
                         templateUrl={""}
                         setRefreshData={setRefreshData}
                     />
+
+                    <IconButton
+                        onClick={handleOpenAddModal}
+                        style={{
+                            borderRadius: "50%",
+                            backgroundColor: "#0066FF",
+                            color: "white",
+                            width: "40px",
+                            height: "40px",
+                            display: PMPDAccess.disableAction ? "none" : null,
+                        }}
+                    >
+                        <AddIcon />
+                    </IconButton>
                 </div>
             </div>
 
@@ -206,6 +239,9 @@ const PMPD_MasterScreen = () => {
                 />
             </div>
 
+            <AddDialog open={openAddModal} setOpenAddModal={setOpenAddModal} setRefreshData={setRefreshData} />
+            <AddDialog open={openEditModal} setOpenAddModal={setOpenEditModal} setRefreshData={setRefreshData} editData={editData} />
+
 
         </div>
     )
@@ -248,6 +284,7 @@ const ExcelUploadModal = ({
             'Production',
             'Inspection',
             'Packing',
+            'End_Qty',
             'Effective_Date'
         ];
 
@@ -317,7 +354,7 @@ const ExcelUploadModal = ({
             const userId = localStorage.getItem('EmpId')
             formData.append("userId", userId)
             formData.append("file", uploadedFile)
-            const response = await AddTrn_PMPD_Master(formData)
+            const response = await AddTrn_PMPD_Master_BULK(formData)
             console.log(response.data, "Upload excel response")
             setUploadResponse(response.data)
             alert('File uploaded successfully')
@@ -538,6 +575,323 @@ const ValidationResult = ({ response }) => {
     );
 }
 
+
+
+
+const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
+    const [submitLoading, setSubmitLoading] = useState(false)
+    const [plants, setPlants] = useState([])
+    const [productSegment, setProductSegment] = useState([])
+
+    const handleClose = () => {
+        setOpenAddModal(false)
+        formik.resetForm()
+    }
+
+    // ✅ Validation Schema
+    const validationSchema = Yup.object({
+        plant: Yup.string().required("Required"),
+        prod_seg_id: Yup.string().required("Required"),
+        line: Yup.string().required("Required"),
+        part_number: Yup.string().required("Required"),
+        PMPD_SMH: Yup.string().required("Required"),
+        production: Yup.string().required("Required"),
+        inspection: Yup.string().required("Required"),
+        packing: Yup.string().required("Required"),
+        end_qty: Yup.string()
+            .min(1, "Must be greater than or equal to 1")
+            .max(6, "Must be less than or equal to 6")
+            .required("Required"),
+        effective_date: Yup.string().required("Required"),
+    });
+
+
+    // ✅ Formik Setup
+    const formik = useFormik({
+        initialValues: {
+            plant: editData?.plant || "",
+            prod_seg_id: editData?.prod_seg_id || "",
+            line: editData?.line || "",
+            part_number: editData?.part_number || "",
+            PMPD_SMH: editData?.PMPD_SMH || "",
+            production: editData?.production || 0,
+            inspection: editData?.inspection || 0,
+            packing: editData?.packing || 0,
+            end_qty: editData?.end_qty || 0,
+            effective_date: editData?.effective_date ? format(editData?.effective_date, "yyyy-MM-dd") : "",
+        },
+        validationSchema,
+        enableReinitialize: true,
+        onSubmit: async (values) => {
+            if (submitLoading) return
+            setSubmitLoading(true)
+            console.log(values)
+            try {
+                const userId = localStorage.getItem("EmpId");
+                if (editData) {
+                    const payload = {
+                        trn_pmpd_master_id: editData?.trn_pmpd_master_id,
+                        ...values,
+                        user_id: userId
+                    }
+                    await AddTrn_PMPD_Master_Single(payload)
+                    alert("✅ PMPD Master updated successfully!");
+                } else {
+                    const payload = {
+                        ...values,
+                        user_id: userId
+                    }
+                    await AddTrn_PMPD_Master_Single(payload)
+                    alert("✅ PMPD Master added successfully!");
+                }
+                setRefreshData((prev) => !prev)
+                handleClose()
+            } catch (error) {
+                console.error("❌ Error submitting form:", error);
+                alert(error?.response?.data?.message ? `❌ ${error?.response?.data?.message}` : "❌ An error occurred while submitting the form.");
+            }
+            setSubmitLoading(false)
+        }
+    });
+
+    useEffect(() => {
+        const fetchInitData = async () => {
+            const response = await getPlantdetails()
+            console.log('Plants', response)
+            setPlants(response)
+
+            const response2 = await getProductSegmentdetails()
+            console.log('Segment', response2)
+            setProductSegment(response2)
+
+        }
+        if (open) fetchInitData()
+
+    }, [open])
+
+
+    return (
+        <Dialog
+            open={open}
+            onClose={handleClose}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+        >
+            <DialogTitle id="alert-dialog-title">
+                {`${editData ? "Edit" : "Add"} PMPD Master`}
+            </DialogTitle>
+            {/* {JSON.stringify(editData)} */}
+            <DialogContent sx={{ pb: 0 }}>
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    // display: "flex",
+                    width: "100%",
+                    gap: "15px"
+                }}>
+
+                    <TextField
+                        select
+                        id="plant"
+                        name="plant"
+                        label="Plant"
+                        fullWidth
+                        value={String(formik.values.plant)}
+                        onChange={(e) => {
+                            const selectedId = e.target.value;
+                            formik.handleChange(e);
+                        }}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.plant && Boolean(formik.errors.plant)}
+                        helperText={formik.touched.plant && formik.errors.plant}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            minWidth: 200,
+                            mt: 1
+                        }}
+                    >
+                        {plants?.map((option, i) => (
+                            <MenuItem sx={{ fontSize: 12 }} key={i} value={option.Plant_Code}>
+                                {`${option.Plant_Code} - ${option.Plant_Name}`}
+                            </MenuItem>
+                        )) || []}
+                    </TextField>
+
+                    <TextField
+                        select
+                        id="prod_seg_id"
+                        name="prod_seg_id"
+                        label="Segment"
+                        fullWidth
+                        value={String(formik.values.prod_seg_id)}
+                        onChange={(e) => {
+                            const selectedId = e.target.value;
+                            formik.handleChange(e);
+                        }}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.prod_seg_id && Boolean(formik.errors.prod_seg_id)}
+                        helperText={formik.touched.prod_seg_id && formik.errors.prod_seg_id}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            minWidth: 200,
+                            mt: 1
+                        }}
+                    >
+                        {productSegment?.map((option, i) => (
+                            <MenuItem sx={{ fontSize: 12 }} key={i} value={option.prod_seg_id}>
+                                {`${option.seg_name}`}
+                            </MenuItem>
+                        )) || []}
+                    </TextField>
+
+                    <TextField
+                        id="line"
+                        name="line"
+                        label="Line"
+                        fullWidth
+                        value={formik.values.line}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.line && Boolean(formik.errors.line)}
+                        helperText={formik.touched.line && formik.errors.line}
+                        sx={{ ...CommonMuiStyles.textFieldSmallSx2, mt: 1 }}
+                    />
+
+                    <TextField
+                        id="part_number"
+                        name="part_number"
+                        label="Part Number"
+                        fullWidth
+                        value={formik.values.part_number}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.part_number && Boolean(formik.errors.part_number)}
+                        helperText={formik.touched.part_number && formik.errors.part_number}
+                        sx={{ ...CommonMuiStyles.textFieldSmallSx2, mt: 1 }}
+                    />
+
+
+                    <TextField
+                        select
+                        id="PMPD_SMH"
+                        name="PMPD_SMH"
+                        label="PMPD / SMH"
+                        fullWidth
+                        value={String(formik.values.PMPD_SMH)}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.PMPD_SMH && Boolean(formik.errors.PMPD_SMH)}
+                        helperText={formik.touched.PMPD_SMH && formik.errors.PMPD_SMH}
+                        sx={{ ...CommonMuiStyles.textFieldSmallSx2, mt: 1 }}
+                    >
+                        <MenuItem sx={{ fontSize: "small" }} value="PMPD">PMPD</MenuItem>
+                        <MenuItem sx={{ fontSize: "small" }} value="SMH">SMH</MenuItem>
+                    </TextField>
+
+
+                    <TextField
+                        id="production"
+                        name="production"
+                        label="Production"
+                        type="number"
+                        fullWidth
+                        value={formik.values.production}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.production && Boolean(formik.errors.production)}
+                        helperText={formik.touched.production && formik.errors.production}
+                        sx={{ ...CommonMuiStyles.textFieldSmallSx2, mt: 1 }}
+                    />
+
+
+                    <TextField
+                        id="inspection"
+                        name="inspection"
+                        label="Inspection"
+                        type="number"
+                        fullWidth
+                        value={formik.values.inspection}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.inspection && Boolean(formik.errors.inspection)}
+                        helperText={formik.touched.inspection && formik.errors.inspection}
+                        sx={{ ...CommonMuiStyles.textFieldSmallSx2, mt: 1 }}
+                    />
+
+                    <TextField
+                        id="packing"
+                        name="packing"
+                        label="Packing"
+                        type="number"
+                        fullWidth
+                        value={formik.values.packing}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.packing && Boolean(formik.errors.packing)}
+                        helperText={formik.touched.packing && formik.errors.packing}
+                        sx={{ ...CommonMuiStyles.textFieldSmallSx2, mt: 1 }}
+                    />
+
+                    <TextField
+                        id="end_qty"
+                        name="end_qty"
+                        label="End Quantity"
+                        type="number"
+                        fullWidth
+                        value={Number(formik.values.end_qty || 0)}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.end_qty && Boolean(formik.errors.end_qty)}
+                        helperText={formik.touched.end_qty && formik.errors.end_qty}
+                        sx={{ ...CommonMuiStyles.textFieldSmallSx2, mt: 1 }}
+                    />
+
+
+                    <TextField
+                        id="effective_date"
+                        name="effective_date"
+                        label="Effective Date"
+                        fullWidth
+                        type="date"
+                        value={formik.values.effective_date}
+                        onChange={(e) => {
+                            const selectedId = e.target.value;
+                            formik.handleChange(e);
+                        }}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.effective_date && Boolean(formik.errors.effective_date)}
+                        helperText={formik.touched.effective_date && formik.errors.effective_date}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            minWidth: 200,
+                            mt: 1
+                        }}
+                        slotProps={{
+                            inputLabel: {
+                                shrink: true
+                            }
+                        }}
+                    />
+                </div>
+
+            </DialogContent>
+            <DialogActions sx={{ p: 0, py: 2, pr: 3 }}>
+                <Button
+                    variant="contained"
+                    color="error"
+                    size="small"
+                    onClick={handleClose}>Cancel</Button>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    onClick={formik.handleSubmit} autoFocus>
+                    {submitLoading ? "Loading..." : editData ? "Update" : "Add"}
+                </Button>
+            </DialogActions>
+        </Dialog>
+    )
+}
 
 
 export default PMPD_MasterScreen
