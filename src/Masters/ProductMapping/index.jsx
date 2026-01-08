@@ -29,7 +29,7 @@ import { CommonMuiStyles } from "../../Styles/CommonStyles";
 import * as Yup from "yup"
 import { api } from "../../controller/constants";
 import SectionHeading from "../../components/Header";
-import { AddOrEditProduct, AddOrEditProductMapping, getProductdetails, getProductMappingdetails } from "../../controller/PMPDpiService";
+import { AddOrEditProduct, AddOrEditProductMapping, getProductdetails, getProductMappingdetails } from "../../controller/PMPDApiService";
 
 const ProductMappingScreen = () => {
     const [searchText, setSearchText] = useState("");

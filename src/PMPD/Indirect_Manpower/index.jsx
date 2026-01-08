@@ -26,7 +26,7 @@ import { useFormik } from "formik";
 import { CommonMuiStyles } from "../../Styles/CommonStyles";
 import * as Yup from "yup"
 import SectionHeading from "../../components/Header";
-import { AddMstCategoryBreakup, AddOrEditProductMapping, AddTrnIndirectManpower, getMstCategoryBreakupDetails, getMstIndirectCategoryDetails, getProductdetails, getProductMappingdetails, getTrnIndirectManPower } from "../../controller/PMPDpiService";
+import { AddMstCategoryBreakup, AddOrEditProductMapping, AddTrnIndirectManpower, getMstCategoryBreakupDetails, getMstIndirectCategoryDetails, getProductdetails, getProductMappingdetails, getTrnIndirectManPower } from "../../controller/PMPDApiService";
 import { format, isValid } from "date-fns";
 import { getDepartmentdetails, getPlantdetails } from "../../controller/CommonApiService";
 import { AuthContext } from "../../Authentication/AuthContext";

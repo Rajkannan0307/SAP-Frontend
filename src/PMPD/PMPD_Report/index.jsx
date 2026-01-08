@@ -4,7 +4,7 @@ import { useFormik } from 'formik'
 import { Box, Button, Collapse, IconButton, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material'
 import { getPlantdetails } from '../../controller/CommonApiService'
 import * as yup from 'yup'
-import { getPMPD_Reports } from '../../controller/PMPDpiService'
+import { getPMPD_Reports } from '../../controller/PMPDApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import * as XLSX from 'xlsx-js-style'
 import { FaFileExcel } from "react-icons/fa";
@@ -225,7 +225,7 @@ const PMPD_Report = () => {
         },
         { field: "plant", headerName: "Plant", width: 90 },
         {
-            field: "category", headerName: "Category", width: 160,
+            field: "category", headerName: "Line", width: 160,
             renderCell: (params) => generateDynamicCat(params.value)
         },
 
@@ -622,7 +622,8 @@ const PMPD_Report = () => {
                                                             border: "1px solid #ccc",
                                                             borderRadius: "6px"
                                                         }}
-                                                        disabled={segmentResultData.length === index + 1}
+                                                        // disabled={segmentResultData.length === index + 1}
+                                                        disabled={row.category === 'TOTAL'}
                                                         onClick={() => handleToggle(index)}
                                                     >
                                                         <IoIosArrowDown size={16} />

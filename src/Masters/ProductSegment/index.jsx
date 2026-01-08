@@ -28,7 +28,7 @@ import { useFormik } from "formik";
 import { CommonMuiStyles } from "../../Styles/CommonStyles";
 import * as Yup from "yup"
 import SectionHeading from "../../components/Header";
-import { AddOrEditProduct, AddOrEditProductSegemnt, getProductdetails, getProductSegmentdetails } from "../../controller/PMPDpiService";
+import { AddOrEditProduct, AddOrEditProductSegemnt, getProductdetails, getProductSegmentdetails } from "../../controller/PMPDApiService";
 
 const ProductSegmentScreen = () => {
     const [searchText, setSearchText] = useState("");

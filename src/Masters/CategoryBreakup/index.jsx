@@ -26,7 +26,7 @@ import { useFormik } from "formik";
 import { CommonMuiStyles } from "../../Styles/CommonStyles";
 import * as Yup from "yup"
 import SectionHeading from "../../components/Header";
-import { AddMstCategoryBreakup, AddOrEditProductMapping, getMstCategoryBreakupDetails, getProductdetails, getProductMappingdetails } from "../../controller/PMPDpiService";
+import { AddMstCategoryBreakup, AddOrEditProductMapping, getMstCategoryBreakupDetails, getProductdetails, getProductMappingdetails } from "../../controller/PMPDApiService";
 import { format } from "date-fns";
 import { getPlantdetails } from "../../controller/CommonApiService";
 

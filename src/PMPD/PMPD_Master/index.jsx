@@ -6,7 +6,7 @@ import { FaDownload, FaUpload } from 'react-icons/fa6'
 import { deepPurple } from '@mui/material/colors';
 import * as ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
-import { AddTrn_PMPD_Master_BULK, AddTrn_PMPD_Master_Single, getProductSegmentdetails, getTrnPMPD_MasterDetails } from '../../controller/PMPDpiService'
+import { AddTrn_PMPD_Master_BULK, AddTrn_PMPD_Master_Single, getProductSegmentdetails, getTrnPMPD_MasterDetails } from '../../controller/PMPDApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import { format } from 'date-fns'
 import { AuthContext } from '../../Authentication/AuthContext'

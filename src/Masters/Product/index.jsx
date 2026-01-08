@@ -34,7 +34,7 @@ import { FaCloudUploadAlt } from "react-icons/fa";
 import { getPlants } from "../../controller/SapMasterapiservice";
 import { getDepartment } from "../../controller/UserMasterapiservice";
 import SectionHeading from "../../components/Header";
-import { AddOrEditProduct, getProductdetails } from "../../controller/PMPDpiService";
+import { AddOrEditProduct, getProductdetails } from "../../controller/PMPDApiService";
 
 const ProductScreen = () => {
     const [searchText, setSearchText] = useState("");
