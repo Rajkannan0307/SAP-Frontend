@@ -14,39 +14,11 @@ import { getPMPDAccess } from '../../Authentication/ActionAccessType'
 import { IoIosArrowDown } from "react-icons/io";
 import { startOfMonth, endOfMonth, parse } from "date-fns";
 
-const FY_MONTHS = [
-    { field: "Apr", headerName: "Apr" },
-    { field: "May", headerName: "May" },
-    { field: "Jun", headerName: "Jun" },
-    { field: "Jul", headerName: "Jul" },
-    { field: "Aug", headerName: "Aug" },
-    { field: "Sep", headerName: "Sep" },
-    { field: "Oct", headerName: "Oct" },
-    { field: "Nov", headerName: "Nov" },
-    { field: "Dec", headerName: "Dec" },
-    { field: "Jan", headerName: "Jan" },
-    { field: "Feb", headerName: "Feb" },
-    { field: "Mar", headerName: "Mar" },
-];
-
-const headerStyle = {
-    backgroundColor: "#6eddf0",
-    color: "black",
-    fontWeight: "bold",
-    fontSize: "12px",
-    border: "1px solid #ddd"
-};
-
-const cellStyle = {
-    fontSize: "12px",
-    color: "#333",
-    border: "1px solid #ddd"
-};
-
 
 const getRowClassName = (params) => {
     if (params.row.category === 'TOTAL') return '!bg-[#d1dfdc]';
-    if (params.row.category === 'HC PLAN') return '!bg-[#d2f0a8] !font-semibold';
+    if (params.row.category === 'GRAND TOTAL') return '!bg-[#d2f0a8] !font-semibold';
+    if (params.row.category === 'OTHERS') return '!bg-[#fff7d6]';
     return '';
 };
 
@@ -111,9 +83,9 @@ const PMDP_PlanVsActual = () => {
             // Parse month string into a Date object
             const monthDate = parse(current_month, "yyyy-MM", new Date());
 
-            // Get start & end of month
-            const startDate = startOfMonth(monthDate);  // 2026-01-01
-            const endDate = endOfMonth(monthDate);      // 2026-01-31
+            // Get month boundaries
+            const startDate = format(startOfMonth(monthDate), "yyyy-MM-dd");
+            const endDate = format(endOfMonth(monthDate), "yyyy-MM-dd");
 
             const payloadBody = {
                 startDate,
@@ -166,6 +138,7 @@ const PMDP_PlanVsActual = () => {
             renderCell: (params) => params.api.getAllRowIds().indexOf(params.id) + 1
         },
         { field: "plant", headerName: "Plant", width: 90 },
+        { field: "seg_name", headerName: "Segment", width: 90 },
         {
             field: "category", headerName: "Category", width: 260,
             renderCell: (params) => generateDynamicCat(params.value)
@@ -173,39 +146,15 @@ const PMDP_PlanVsActual = () => {
         { field: "AOP", headerName: "AOP", flex: 1 },
         { field: "MP", headerName: "MP", flex: 1 },
         { field: "FLEX_PLAN", headerName: "FLEX PLAN", flex: 1 },
-        { field: "FLEX_ACTUAL", headerName: "FLEX ACTUAL", flex: 1 },
-        { field: "GAP", headerName: "GAP", flex: 1 },
-    ];
-
-    const segmentColumns = [
         {
-            field: "slno",
-            headerName: "SI No",
-            width: 80,
-            renderCell: (params) => params.api.getAllRowIds().indexOf(params.id) + 1
+            field: "FLEX_ACTUAL", headerName: "FLEX ACTUAL", flex: 1,
+            renderCell: (params) => params.value
         },
-        { field: "plant", headerName: "Plant", width: 90 },
         {
-            field: "category", headerName: "Category", width: 160,
-            renderCell: (params) => generateDynamicCat(params.value)
+            field: "GAP", headerName: "GAP", flex: 1,
+            renderCell: (params) => <span className={`
+                ${Number(params?.value || 0) < 0 ? "text-green-600" : "text-red-600"}`}>{params.value}</span>
         },
-
-        ...FY_MONTHS.map((m) => ({
-            field: m.field,
-            headerName: m.headerName,
-            flex: 1,
-            align: "center",
-            headerAlign: "center",
-            renderCell: (params) => {
-                const value = Number(params.value) || 0;
-
-                if (params.row?.category === "TARGET COST") {
-                    return `${value.toFixed(2)} L`;
-                }
-
-                return value;
-            }
-        })),
     ];
 
 
@@ -333,7 +282,7 @@ const PMDP_PlanVsActual = () => {
                 }}
             >
                 <SectionHeading>
-                    Plan Vs Actual
+                    Flex Plan Vs Actual Head Count - ( DIRECT )
                 </SectionHeading>
             </div>
 
@@ -403,21 +352,6 @@ const PMDP_PlanVsActual = () => {
                     </Button>
                 </div>
 
-                {/* <div className="inline-flex rounded-full bg-gray-100 p-1 border">
-                    {["category", "segment"].map((item) => (
-                        <button
-                            key={item}
-                            onClick={() => handleTableView(item)}
-                            className={`px-5 py-1.5 text-sm rounded-full transition cursor-pointer
-                              ${tableView === item
-                                    ? "bg-blue-600 text-white shadow"
-                                    : "text-gray-600 hover:text-gray-900"
-                                }`}
-                        >
-                            {item === "category" ? "Category" : "Segment"}
-                        </button>
-                    ))}
-                </div> */}
             </div>
 
             {/* CATEGORY TABLE VIEW */}
@@ -437,7 +371,7 @@ const PMDP_PlanVsActual = () => {
                     columns={columns}
                     pageSize={5} // Set the number of rows per page to 8
                     rowsPerPageOptions={[5]}
-                    getRowId={(row) => `${row.plant + row.category}`} // Specify a custom id field
+                    getRowId={(row) => `${row.plant + row.category + row?.seg_name}`} // Specify a custom id field
                     disableSelectionOnClick
                     rowHeight={35}
                     columnHeaderHeight={45}

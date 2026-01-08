@@ -622,6 +622,7 @@ const PMPD_Report = () => {
                                                             border: "1px solid #ccc",
                                                             borderRadius: "6px"
                                                         }}
+                                                        disabled={segmentResultData.length === index + 1}
                                                         onClick={() => handleToggle(index)}
                                                     >
                                                         <IoIosArrowDown size={16} />
