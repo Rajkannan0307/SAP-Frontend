@@ -22,17 +22,13 @@ import {
 } from "@mui/x-data-grid";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
-import { FaFileExcel } from "react-icons/fa";
 import { decryptSessionData } from "../../controller/StorageUtils";
-import { GetLineByPlantDept, GetModuleByPlantDept, GetMstMachine, GetMstMachineUpdate_image, GetMstTestRigSpec, GetRigTyes, GetTestRigStatusApi, InsertMstTestRigSpec, MstInsertMachine, MstUpdateMachine, UpdateMstTestRigSpec } from "../../controller/TestLabService";
+import { GetMstMachineUpdate_image } from "../../controller/TestLabService";
 import EditIcon from "@mui/icons-material/Edit";
 import { useFormik } from "formik";
 import { CommonMuiStyles } from "../../Styles/CommonStyles";
 import * as Yup from "yup"
 import { api } from "../../controller/constants";
-import { FaCloudUploadAlt } from "react-icons/fa";
-import { getPlants } from "../../controller/SapMasterapiservice";
-import { getDepartment } from "../../controller/UserMasterapiservice";
 import SectionHeading from "../../components/Header";
 import { AddOrEditProduct, getProductdetails } from "../../controller/PMPDApiService";
 

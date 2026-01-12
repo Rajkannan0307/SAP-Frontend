@@ -78,6 +78,7 @@ const PMPD_MasterScreen = () => {
                     color="primary"
                     onClick={() => handleEdit(params.row)}
                     title="Edit"
+                    disabled={PMPDAccess.disableAction}
                 >
                     <EditIcon size={15} />
                 </IconButton>

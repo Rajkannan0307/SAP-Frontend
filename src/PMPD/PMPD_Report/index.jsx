@@ -8,7 +8,7 @@ import { getPMPD_Reports } from '../../controller/PMPDApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import * as XLSX from 'xlsx-js-style'
 import { FaFileExcel } from "react-icons/fa";
-import { startOfDay, endOfDay } from 'date-fns'
+import { startOfDay, endOfDay, format } from 'date-fns'
 import { AuthContext } from '../../Authentication/AuthContext'
 import { getPMPDAccess } from '../../Authentication/ActionAccessType'
 import { IoIosArrowDown } from "react-icons/io";
@@ -113,8 +113,17 @@ const PMPD_Report = () => {
             const startYear = Number(fin_Year.split("-")[0]); // 2025
             const endYear = startYear + 1;                   // 2026
 
-            const startDate = startOfDay(new Date(startYear, 3, 1));  // 01-Apr-2025
-            const endDate = endOfDay(new Date(endYear, 2, 31));    // 31-Mar-2026
+            // const startDate = startOfDay(new Date(startYear, 3, 1));  // 01-Apr-2025
+            // const endDate = endOfDay(new Date(endYear, 2, 31));    // 31-Mar-2026
+            // console.log(startDate, endDate)
+
+
+            const startDateObj = startOfDay(new Date(startYear, 3, 1)); // 01-Apr-2025
+            const endDateObj = endOfDay(new Date(endYear, 2, 31));    // 31-Mar-2026
+
+            // ✅ SQL-safe format
+            const startDate = format(startDateObj, "yyyy-MM-dd");
+            const endDate = format(endDateObj, "yyyy-MM-dd");
             console.log(startDate, endDate)
 
             const payloadBody = {

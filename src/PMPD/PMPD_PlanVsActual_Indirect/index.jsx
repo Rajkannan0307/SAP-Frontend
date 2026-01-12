@@ -1,18 +1,16 @@
 import React, { useContext, useEffect, useState } from 'react'
 import SectionHeading from '../../components/Header'
 import { useFormik } from 'formik'
-import { Box, Button, Collapse, IconButton, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material'
+import { Box, Button, MenuItem, TextField } from '@mui/material'
 import { getPlantdetails } from '../../controller/CommonApiService'
 import * as yup from 'yup'
-import { GetPMPD_PlanVsActual } from '../../controller/PMPDApiService'
+import { GetPMPD_PlanVsActual_InDirect } from '../../controller/PMPDApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import * as XLSX from 'xlsx-js-style'
 import { FaFileExcel } from "react-icons/fa";
 import { startOfDay, endOfDay, format } from 'date-fns'
 import { AuthContext } from '../../Authentication/AuthContext'
 import { getPMPDAccess } from '../../Authentication/ActionAccessType'
-import { IoIosArrowDown } from "react-icons/io";
-import { startOfMonth, endOfMonth, parse } from "date-fns";
 
 
 const getRowClassName = (params) => {
@@ -21,6 +19,22 @@ const getRowClassName = (params) => {
     if (params.row.category === 'OTHERS') return '!bg-[#fff7d6]';
     return '';
 };
+
+
+const FY_MONTHS = [
+    { field: "Apr", headerName: "Apr" },
+    { field: "May", headerName: "May" },
+    { field: "Jun", headerName: "Jun" },
+    { field: "Jul", headerName: "Jul" },
+    { field: "Aug", headerName: "Aug" },
+    { field: "Sep", headerName: "Sep" },
+    { field: "Oct", headerName: "Oct" },
+    { field: "Nov", headerName: "Nov" },
+    { field: "Dec", headerName: "Dec" },
+    { field: "Jan", headerName: "Jan" },
+    { field: "Feb", headerName: "Feb" },
+    { field: "Mar", headerName: "Mar" },
+];
 
 
 const CustomToolbar = () => (
@@ -32,7 +46,7 @@ const CustomToolbar = () => (
 );
 
 
-const PMDP_PlanVsActual = () => {
+const PMDP_PlanVsActual_Indirect = () => {
     const [resultData, setResultData] = useState([])
     const [segmentResultData, setSegmentResultData] = useState([])
     const [resultDataSheet3, setResultDataSheet3] = useState([])
@@ -64,53 +78,61 @@ const PMDP_PlanVsActual = () => {
 
     const validationschema = yup.object({
         plant: yup.string().required('Required'),
-        current_month: yup.string().required('Required'),
+        fin_year: yup.string().required('Required'),
     })
     const formik = useFormik({
         initialValues: {
             plant: currentUserPlantCode,
-            current_month: "",
+            fin_year: "",
             type: "SUBMIT",
             // reportType: tableView
         },
         validationSchema: validationschema,
         enableReinitialize: true,
         onSubmit: async (values) => {
-            console.log(values)
-            const current_month = values.current_month
-            const plant = values.plant
+            try {
+                const fin_Year = values.fin_year
+                const plant = values.plant
+                const startYear = Number(fin_Year.split("-")[0]); // 2025
+                const endYear = startYear + 1;                   // 2026
 
-            // Parse month string into a Date object
-            const monthDate = parse(current_month, "yyyy-MM", new Date());
+                const startDateObj = startOfDay(new Date(startYear, 3, 1)); // 01-Apr-2025
+                const endDateObj = endOfDay(new Date(endYear, 2, 31));    // 31-Mar-2026
 
-            // Get month boundaries
-            const startDate = format(startOfMonth(monthDate), "yyyy-MM-dd");
-            const endDate = format(endOfMonth(monthDate), "yyyy-MM-dd");
+                // ✅ SQL-safe format
+                const startDate = format(startDateObj, "yyyy-MM-dd");
+                const endDate = format(endDateObj, "yyyy-MM-dd");
+                console.log(startDate, endDate)
 
-            const payloadBody = {
-                startDate,
-                endDate,
-                plant,
+                const payloadBody = {
+                    startDate,
+                    endDate,
+                    plant,
+                }
+
+
+                if (values.type === 'SUBMIT') {
+                    if (loading) return
+
+                    setLoading(true)
+                    const response = await GetPMPD_PlanVsActual_InDirect(payloadBody)
+
+                    setResultData(response.data[1])
+
+                } else {
+                    if (excelLoading) return
+
+                    setExcelLoading(true)
+                    await handleDownloadExcelData(payloadBody)
+                }
+
+
+            } catch (error) {
+                console.log(error)
             }
-
-
-            if (values.type === 'SUBMIT') {
-                if (loading) return
-
-                setLoading(true)
-                const response = await GetPMPD_PlanVsActual(payloadBody)
-
-                setResultData(response.data[2])
-
-            } else {
-                if (excelLoading) return
-
-                setExcelLoading(true)
-                await handleDownloadExcelData(payloadBody)
-            }
-
             setLoading(false)
             setExcelLoading(false)
+
         }
     })
 
@@ -138,29 +160,37 @@ const PMDP_PlanVsActual = () => {
             renderCell: (params) => params.api.getAllRowIds().indexOf(params.id) + 1
         },
         { field: "plant", headerName: "Plant", width: 90 },
-        { field: "seg_name", headerName: "Segment", width: 90 },
-        // {
-        //     field: "category", headerName: "Category", width: 260,
-        //     renderCell: (params) => generateDynamicCat(params.value)
-        // },
-        { field: "AOP", headerName: "AOP", flex: 1 },
-        { field: "MP", headerName: "MP", flex: 1 },
-        { field: "FLEX_PLAN", headerName: "FLEX PLAN", flex: 1 },
-        {
-            field: "FLEX_ACTUAL", headerName: "FLEX ACTUAL", flex: 1,
-            renderCell: (params) => params.value
-        },
-        {
-            field: "GAP", headerName: "GAP", flex: 1,
-            renderCell: (params) => <span className={`
-                ${Number(params?.value || 0) < 0 ? "text-green-600" : "text-red-600"}`}>{params.value}</span>
-        },
+        { field: "dept_name", headerName: "Department", width: 120 },
+        { field: "plan_hc", headerName: "Plan HC No", width: 90 },
+        ...FY_MONTHS.map((m) => ({
+            field: m.field,
+            headerName: m.headerName,
+            flex: 1,
+            align: "center",
+            headerAlign: "center",
+            // headerClassName: '!bg-green-400 !font-semibold',
+            // headerClassName: '!bg-teal-300 !font-semibold',
+            headerClassName: '!bg-[#CBEEF5] !font-semibold',
+            cellClassName: (params) =>
+                Number(params.value) > Number(params.row.plan_hc)
+                    ? '!text-red-600 font-semibold'
+                    : '',
+            renderCell: (params) => {
+                const value = Number(params.value) || 0;
+
+                // if (params.row?.category === "TARGET COST") {
+                //     return `${value.toFixed(2)} L`;
+                // }
+
+                return value;
+            }
+        })),
     ];
 
 
     const handleDownloadExcelData = async (payload) => {
         try {
-            const response = await GetPMPD_PlanVsActual(payload);
+            const response = await GetPMPD_PlanVsActual_InDirect(payload);
             console.log("Data from API:", response.data);
 
             if (!response.data || response.data.length < 2) {
@@ -169,8 +199,7 @@ const PMDP_PlanVsActual = () => {
             }
 
             const summaryData = response.data[0]; // Sheet 1
-            const summaryData2 = response.data[1]; // Sheet 2
-            const detailData = response.data[2];  // Sheet 3
+            const detailData = response.data[1];  // Sheet 3
 
             const fileType =
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
@@ -193,21 +222,7 @@ const PMDP_PlanVsActual = () => {
                     }
                 });
             }
-            const wsSummary2 = XLSX.utils.json_to_sheet(summaryData2);
 
-            if (summaryData2.length > 0) {
-                const headers = Object.keys(summaryData2[0]);
-                headers.forEach((_, colIdx) => {
-                    const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
-                    if (wsSummary2[cellAddress]) {
-                        wsSummary2[cellAddress].s = {
-                            font: { bold: true },
-                            fill: { fgColor: { rgb: "E7F3FF" } },
-                            alignment: { horizontal: "center" },
-                        };
-                    }
-                });
-            }
 
             /* -------------------- Sheet 3 : Data -------------------- */
             const wsData = XLSX.utils.json_to_sheet(detailData);
@@ -228,8 +243,7 @@ const PMDP_PlanVsActual = () => {
 
             /* -------------------- Workbook -------------------- */
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, wsSummary, "Plan");
-            XLSX.utils.book_append_sheet(wb, wsSummary2, "Actual");
+            XLSX.utils.book_append_sheet(wb, wsSummary, "Data");
             XLSX.utils.book_append_sheet(wb, wsData, "Summary");
 
             const excelBuffer = XLSX.write(wb, {
@@ -282,7 +296,7 @@ const PMDP_PlanVsActual = () => {
                 }}
             >
                 <SectionHeading>
-                    Flex Plan Vs Actual Head Count - ( DIRECT )
+                    Flex Plan Vs Actual Head Count - ( INDIRECT )
                 </SectionHeading>
             </div>
 
@@ -318,20 +332,25 @@ const PMDP_PlanVsActual = () => {
                     </TextField>
 
                     <TextField
-                        id="current_month"
+                        id="fin_year"
+                        select
                         size="small"
                         label="Financial Year"
-                        name="current_month"
-                        type="month"
-                        value={formik.values.current_month}
+                        name="fin_year"
+                        value={formik.values.fin_year}
                         onChange={formik.handleChange}
                         sx={{ minWidth: 240 }}
-                        InputLabelProps={{ sx: { fontSize: 12 }, shrink: true }}
+                        InputLabelProps={{ sx: { fontSize: 12 } }}
                         InputProps={{ sx: { fontSize: 13 } }}
-                        error={formik.touched.current_month && Boolean(formik.errors.current_month)}
-                        helperText={formik.touched.current_month && formik.errors.current_month}
-                    />
-
+                        error={formik.touched.fin_year && Boolean(formik.errors.fin_year)}
+                        helperText={formik.touched.fin_year && formik.errors.fin_year}
+                    >
+                        {["2025-26", "2026-27"].map((fy) => (
+                            <MenuItem key={fy} value={fy} sx={{ fontSize: 13 }}>
+                                {fy}
+                            </MenuItem>
+                        ))}
+                    </TextField>
 
                     <Button variant='contained' onClick={(e) => {
                         formik.setFieldValue('type', 'SUBMIT')
@@ -371,7 +390,7 @@ const PMDP_PlanVsActual = () => {
                     columns={columns}
                     pageSize={5} // Set the number of rows per page to 8
                     rowsPerPageOptions={[5]}
-                    getRowId={(row) => `${row.plant + row.category + row?.seg_name}`} // Specify a custom id field
+                    getRowId={(row) => `${row.dept_id}`} // Specify a custom id field
                     disableSelectionOnClick
                     rowHeight={35}
                     columnHeaderHeight={45}
@@ -381,7 +400,8 @@ const PMDP_PlanVsActual = () => {
                         // Header Style
                         "& .MuiDataGrid-columnHeader": {
                             // backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
-                            backgroundColor: '#6eddf0', //'#696969', 	'#708090',  //"#2e59d9",
+                            // backgroundColor: '#6eddf0', //'#696969', 	'#708090',  //"#2e59d9",
+                            backgroundColor: '#9CDFEC', //'#696969', 	'#708090',  //"#2e59d9",
                             color: "black",
                             fontWeight: "bold",
                         },
@@ -411,4 +431,4 @@ const PMDP_PlanVsActual = () => {
     )
 }
 
-export default PMDP_PlanVsActual
+export default PMDP_PlanVsActual_Indirect

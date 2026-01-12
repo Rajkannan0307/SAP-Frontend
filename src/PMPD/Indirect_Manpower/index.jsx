@@ -31,6 +31,7 @@ import { format, isValid } from "date-fns";
 import { getDepartmentdetails, getPlantdetails } from "../../controller/CommonApiService";
 import { AuthContext } from "../../Authentication/AuthContext";
 import { getPMPDAccess } from "../../Authentication/ActionAccessType";
+import { DHRM_DeptHeaderMst } from "../../controller/DHRMApiService";
 
 const IndirectManpowerScreen = () => {
     const [searchText, setSearchText] = useState("");
@@ -61,7 +62,8 @@ const IndirectManpowerScreen = () => {
         { field: "plant_code", headerName: "Plant", width: 150 },
         { field: "dept_name", headerName: "Department", flex: 1 },
         { field: "indirect_category", headerName: "Indirect Category", flex: 1 },
-        { field: "hc_no", headerName: "HC NO", width: 100 },
+        { field: "hc_no", headerName: "PLAN HC", width: 100 },
+        { field: "Department_Header", headerName: "DHRM Dept Header", flex: 1 },
         {
             field: "effective_date",
             headerName: "Eff Date",
@@ -273,6 +275,13 @@ const IndirectManpowerScreen = () => {
                     getRowId={(row) => row.indirect_manpower_id} // Specify a custom id field
                     disableSelectionOnClick
                     slots={{ toolbar: CustomToolbar }}
+                    initialState={{
+                        columns: {
+                            columnVisibilityModel: {
+                                Department_Header: false
+                            }
+                        }
+                    }}
                     sx={{
                         // Header Style
                         "& .MuiDataGrid-columnHeader": {
@@ -316,6 +325,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
     const [plants, setPlants] = useState([])
     const [department, setDepartment] = useState([])
     const [indirectCategory, setIndirectCategory] = useState([])
+    const [dhrmDeptHeaderMst, setDhrmDeptHeaderMst] = useState([])
 
     const handleClose = () => {
         setOpenAddModal(false)
@@ -328,6 +338,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
         dept: Yup.string().required("Required"),
         indirect_category: Yup.string().required("Required"),
         hc_no: Yup.string().required("Required"),
+        dhrm_mst_dh_id: Yup.string().required("Required"),
         effective_date: Yup.string().required("Required")
     });
 
@@ -339,6 +350,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
             dept: editData?.dept || "",
             indirect_category: editData?.indirect_cat_id || "",
             hc_no: editData?.hc_no || "",
+            dhrm_mst_dh_id: editData?.dhrm_mst_dh_id || "",
             effective_date: editData?.effective_date ? format(editData?.effective_date, "yyyy-MM-dd") : "",
         },
         validationSchema,
@@ -384,6 +396,11 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
             const deptResponse = await getDepartmentdetails()
             console.log('Department', deptResponse)
             setDepartment(deptResponse)
+
+
+            const dhrmDeptRes = await DHRM_DeptHeaderMst()
+            console.log("DHRM Department", dhrmDeptHeaderMst)
+            setDhrmDeptHeaderMst(dhrmDeptRes)
         }
         if (open) fetchInitData()
 
@@ -397,6 +414,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
         }
         if (formik.values.plant && formik.values.dept) fetchData()
     }, [formik.values.plant, formik.values.dept])
+
 
 
     return (
@@ -469,6 +487,33 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                         {department?.map((option, i) => (
                             <MenuItem sx={{ fontSize: 12 }} key={i} value={option.Dept_ID}>
                                 {`${option.Dept_Name}`}
+                            </MenuItem>
+                        )) || []}
+                    </TextField>
+
+                    <TextField
+                        select
+                        id="dhrm_mst_dh_id"
+                        name="dhrm_mst_dh_id"
+                        label="DHRM Department"
+                        fullWidth
+                        value={formik.values.dhrm_mst_dh_id}
+                        onChange={(e) => {
+                            const selectedId = e.target.value;
+                            formik.handleChange(e);
+                        }}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.dhrm_mst_dh_id && Boolean(formik.errors.dhrm_mst_dh_id)}
+                        helperText={formik.touched.dhrm_mst_dh_id && formik.errors.dhrm_mst_dh_id}
+                        sx={{
+                            ...CommonMuiStyles.textFieldSmallSx2,
+                            minWidth: 200,
+                            mt: 1
+                        }}
+                    >
+                        {dhrmDeptHeaderMst?.map((option, i) => (
+                            <MenuItem sx={{ fontSize: 12 }} key={i} value={option.Dh_Id}>
+                                {`${option.Department_Header}`}
                             </MenuItem>
                         )) || []}
                     </TextField>

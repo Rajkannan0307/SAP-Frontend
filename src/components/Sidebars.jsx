@@ -214,13 +214,15 @@ const Sidebar = ({ setSidebarOpen }) => {
         width: open ? "250px" : "60px",
         backgroundColor: "#595959",
         transition: "width 0.3s ease",
+        // minHeight: "100%",
         height: "100vh",
         position: "fixed",
         top: "60px",
         left: 0,
         overflowY: "auto",        // ✅ only scrolls when needed
         overflowX: "hidden",      // ✅ prevent horizontal scroll
-        paddingTop: "10px",
+        // paddingTop: "10px",
+        paddingBottom: "3rem"
       }}
     >
       {/* Sidebar Header */}
@@ -615,43 +617,49 @@ const Sidebar = ({ setSidebarOpen }) => {
             {
               name: "PMPD Master",
               path: "/home/PMPD_Master",
-              icon: <PrecisionManufacturingIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              icon: <PrecisionManufacturingIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />,
               code: 'PMPD_Master'
             },
             {
               name: "Production Plan",
               path: "/home/PMPD_ProductionPlan",
-              icon: <FactoryIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              icon: <FactoryIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />,
               code: 'ProductionPlan'
             },
             {
               name: "Indirect Manpower",
               path: "/home/PMPD_IndirectManpower",
-              icon: <GroupsIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              icon: <GroupsIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />,
               code: 'PMPD_IndirectManpower'
             },
             {
               name: "PMPD Report",
               path: "/home/PMPD_Report",
-              icon: <AssessmentIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              icon: <AssessmentIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />,
               code: 'PMPD_Report'
             },
             {
               name: "Production Actual",
               path: "/home/PMPD_ActualProductionPlan",
-              icon: <FactoryIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              icon: <FactoryIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />,
               code: 'PMPD_ActualProductionPlan'
             },
             {
-              name: "Plan Vs Actual",
+              name: "Plan Vs Actual (Direct)",
               path: "/home/PMDP_PlanVsActual",
-              icon: <AssessmentIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />, // Lime Green
+              icon: <AssessmentIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />,
               code: 'PMDP_PlanVsActual'
+            },
+            {
+              name: `Plan Vs Actual (InDirect)`,
+              path: "/home/PMDP_PlanVsActual_Indirect",
+              icon: <AssessmentIcon style={{ marginRight: "8px", color: "#32CD32", fontSize: "18px" }} />,
+              code: 'PMDP_PlanVsActual_Indirect'
             },
           ]}
           codeList={[
             'ProductionPlan', 'PMPD_Master', 'PMPD_Report', 'PMPD_IndirectManpower', 'PMPD_ActualProductionPlan',
-            'PMDP_PlanVsActual'
+            'PMDP_PlanVsActual', 'PMDP_PlanVsActual_Indirect'
           ]}
         />
       </div>
@@ -734,6 +742,7 @@ const SidebarSection = ({ open, isOpen, toggleSection, icon, label, links, codeL
                 color: "white",
                 fontFamily: "Arial",
               }}
+              className="hover:bg-gray-500 rounded-md transition-all duration-200"
             >
               {link.icon && (
                 <span style={{ marginRight: "8px", display: "flex", alignItems: "center" }}>

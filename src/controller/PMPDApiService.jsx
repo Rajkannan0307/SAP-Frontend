@@ -169,4 +169,9 @@ export const GetPMPD_PlanVsActual = async (body) => {
     return response;
 }
 
+export const GetPMPD_PlanVsActual_InDirect = async (body) => {
+    const response = await axios.post(`${api}/PMPDRouter/PlanVsActual_Indirect`, body);
+    return response;
+}
+
 

@@ -88,6 +88,7 @@ import IndirectManpowerScreen from "./PMPD/Indirect_Manpower";
 import IndirectCategoryScreen from "./Masters/IndirectCategory";
 import PMPD_ActualProductionPlan from "./PMPD/ActualProductionPlan";
 import PMDP_PlanVsActual from "./PMPD/PMPD_PlanVsActual";
+import PMDP_PlanVsActual_Indirect from './PMPD/PMPD_PlanVsActual_Indirect'
 
 const App = () => {
   return (
@@ -188,8 +189,9 @@ const App = () => {
             <Route path="PMPD_Master" element={<ProtectedRoute screenId={48}><PMPD_MasterScreen /></ProtectedRoute>} />
             <Route path="PMPD_Report" element={<ProtectedRoute screenId={49}><PMPD_Report /></ProtectedRoute>} />
             <Route path="PMPD_IndirectManpower" element={<ProtectedRoute screenId={52}><IndirectManpowerScreen /></ProtectedRoute>} />
-            <Route path="PMPD_ActualProductionPlan" element={<ProtectedRoute screenId={52}><PMPD_ActualProductionPlan /></ProtectedRoute>} />
-            <Route path="PMDP_PlanVsActual" element={<ProtectedRoute screenId={53}><PMDP_PlanVsActual /></ProtectedRoute>} />
+            <Route path="PMPD_ActualProductionPlan" element={<ProtectedRoute screenId={53}><PMPD_ActualProductionPlan /></ProtectedRoute>} />
+            <Route path="PMDP_PlanVsActual" element={<ProtectedRoute screenId={54}><PMDP_PlanVsActual /></ProtectedRoute>} />
+            <Route path="PMDP_PlanVsActual_Indirect" element={<ProtectedRoute screenId={55}><PMDP_PlanVsActual_Indirect /></ProtectedRoute>} />
           </Route>
         </Routes>
       </AuthProvider>
