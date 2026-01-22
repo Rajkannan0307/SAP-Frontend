@@ -89,6 +89,7 @@ import IndirectCategoryScreen from "./Masters/IndirectCategory";
 import PMPD_ActualProductionPlan from "./PMPD/ActualProductionPlan";
 import PMDP_PlanVsActual from "./PMPD/PMPD_PlanVsActual";
 import PMDP_PlanVsActual_Indirect from './PMPD/PMPD_PlanVsActual_Indirect'
+import PMPD_FixedManpower from "./Masters/PMPD_FixedManpower";
 
 const App = () => {
   return (
@@ -135,6 +136,8 @@ const App = () => {
             <Route path="ProductMappingScreen" element={<ProtectedRoute screenId={46}><ProductMappingScreen /></ProtectedRoute>} />
             <Route path="CategoryBreakup" element={<ProtectedRoute screenId={50}><CategoryBreakupScreen /></ProtectedRoute>} />
             <Route path="IndirectCategory" element={<ProtectedRoute screenId={51}><IndirectCategoryScreen /></ProtectedRoute>} />
+
+            <Route path="PMPD_FixedManpower" element={<ProtectedRoute screenId={56}><PMPD_FixedManpower /></ProtectedRoute>} />
 
             <Route path="dashboard" element={<ProtectedRoute screenId={15}><DashBoard /></ProtectedRoute>} />
             <Route path="Report1" element={<ProtectedRoute screenId={16}><Report1 /></ProtectedRoute>} />

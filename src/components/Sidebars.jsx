@@ -345,13 +345,14 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "Product Mapping", path: "/home/ProductMappingScreen", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'ProductMapping' },
             { name: "Category Breakup", path: "/home/CategoryBreakup", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'CategoryBreakups' },
             { name: "Indirect Category", path: "/home/IndirectCategory", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'IndirectCategory' },
+            { name: "Fixed Manpower", path: "/home/PMPD_FixedManpower", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'PMPD_FixedManpower' },
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
             'UserMaster', 'Role', 'Material', 'Vendor',
             'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter',
             'ValuationType', 'SupvCode', 'Module', 'Line', 'Machine', 'RigTestSpec', 'Product', 'ProductSegment', 'ProductMapping',
-            'CategoryBreakups', 'IndirectCategory'
+            'CategoryBreakups', 'IndirectCategory', 'PMPD_FixedManpower'
           ]}
         />
         {/* Transaction Section */}

@@ -28,17 +28,6 @@ export const AuthProvider = ({ children }) => {
 
   const isPlantMED = Number(localStorage.getItem('RoleID') || 0) === 2
 
-  const PMPDAccessType = (roleId) => {
-    switch (key) {
-      case value:
-
-        break;
-
-      default:
-        break;
-    }
-  }
-
   return (
     <AuthContext.Provider value={{ user, setUser, logout, loading, isPlantMED }}>
       {children}

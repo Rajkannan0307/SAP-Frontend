@@ -175,3 +175,21 @@ export const GetPMPD_PlanVsActual_InDirect = async (body) => {
 }
 
 
+
+
+// MASTER PMPD FIXED MANPOWER
+
+export const GetFixedManpower = async (plant) => {
+    const response = await axios.get(`${api}/FixedManpowerRouter/get_details`, { params: { plant } })
+    return response.data
+}
+
+export const AddFixedManpower = async (data) => {
+    const response = await axios.post(`${api}/FixedManpowerRouter/insert`, data);
+    return response;
+}
+
+export const UpdateFixedManpower = async (data) => {
+    const response = await axios.put(`${api}/FixedManpowerRouter/update`, data);
+    return response;
+}
