@@ -14,9 +14,9 @@ import { getPMPDAccess } from '../../Authentication/ActionAccessType'
 
 
 const getRowClassName = (params) => {
-    if (params.row.category === 'TOTAL') return '!bg-[#d1dfdc]';
-    if (params.row.category === 'GRAND TOTAL') return '!bg-[#d2f0a8] !font-semibold';
-    if (params.row.category === 'OTHERS') return '!bg-[#fff7d6]';
+    if (params.row.dept_name === 'TOTAL') return '!bg-[#d1dfdc]';
+    if (params.row.dept_name === 'GRAND TOTAL') return '!bg-[#d2f0a8] !font-semibold';
+    if (params.row.dept_name_o === 'OTHERS') return '!bg-[#fff7d6]';
     return '';
 };
 
@@ -392,7 +392,7 @@ const PMDP_PlanVsActual_Indirect = () => {
                     rowsPerPageOptions={[5]}
                     getRowId={(row) => `${row.dept_id}`} // Specify a custom id field
                     disableSelectionOnClick
-                    rowHeight={35}
+                    rowHeight={25}
                     columnHeaderHeight={45}
                     getRowClassName={(params) => `${getRowClassName(params)}`}
                     slots={{ toolbar: CustomToolbar }}
@@ -410,7 +410,7 @@ const PMDP_PlanVsActual_Indirect = () => {
                             fontWeight: "bold",
                         },
                         "& .MuiDataGrid-row": {
-                            backgroundColor: "#f5f5f5", // Default row background
+                            // backgroundColor: "#f5f5f5", // Default row background
                             "&:hover": {
                                 backgroundColor: "#f5f5f5",
                             },
@@ -422,7 +422,7 @@ const PMDP_PlanVsActual_Indirect = () => {
 
                         "& .MuiDataGrid-cell": {
                             color: "#333",
-                            fontSize: "12px",
+                            fontSize: "10px",
                         },
                     }}
                 />

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import * as Yup from "yup"
 import { useFormik } from "formik";
-import { AddFixedManpower, getProductSegmentdetails } from '../../controller/PMPDApiService';
+import { AddFixedManpowerApi, getProductSegmentdetails } from '../../controller/PMPDApiService';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Switch, TextField } from '@mui/material';
 import { CommonMuiStyles } from '../../Styles/CommonStyles';
 import { getPlantdetails } from '../../controller/CommonApiService';
@@ -130,7 +130,7 @@ const AddFixedmanpower = ({ open, setOpenAddModal, setRefreshData, editData }) =
                 console.log(payload)
                 //add apiCall
 
-                await AddFixedManpower(payload)
+                await AddFixedManpowerApi(payload)
                 setRefreshData((prev) => !prev)
                 handleClose()
                 alert(`Fixed Manpower Added Successfully`)

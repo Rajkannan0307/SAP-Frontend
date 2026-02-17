@@ -30,6 +30,7 @@ import { deepPurple } from '@mui/material/colors';
 import { api } from "../controller/constants";
 import { getdetails, getAdd, getPlants, getUpdates, getMaterialType, } from '../controller/Masterapiservice';
 import SectionHeading from "../components/Header";
+import { MaterialGroupEnumTypes } from "../common/enumValues";
 
 
 const Material = () => {
@@ -147,7 +148,7 @@ const Material = () => {
 
   const get_Material_Type = async () => {
     try {
-      const response = await getMaterialType();
+      const response = await getMaterialType(MaterialGroupEnumTypes.direct);
       setMaterialTable(response.data);
     } catch (error) {
       console.error("Error updating user:", error);

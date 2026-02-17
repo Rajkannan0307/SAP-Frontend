@@ -184,7 +184,7 @@ export const GetFixedManpower = async (plant) => {
     return response.data
 }
 
-export const AddFixedManpower = async (data) => {
+export const AddFixedManpowerApi = async (data) => {
     const response = await axios.post(`${api}/FixedManpowerRouter/insert`, data);
     return response;
 }

@@ -90,6 +90,13 @@ import PMPD_ActualProductionPlan from "./PMPD/ActualProductionPlan";
 import PMDP_PlanVsActual from "./PMPD/PMPD_PlanVsActual";
 import PMDP_PlanVsActual_Indirect from './PMPD/PMPD_PlanVsActual_Indirect'
 import PMPD_FixedManpower from "./Masters/PMPD_FixedManpower";
+import CC_PackingBOM from "./ContributionalChart/PackingBom";
+import CC_PackingBomPart from "./Masters/PackingBomPart";
+import CC_SubContractScreen from "./ContributionalChart/SubContract";
+import CC_StoresAndSparesScreen from "./ContributionalChart/StoresAndSpares";
+import CC_ActualConsumptionPlan from "./ContributionalChart/ActualConsumption";
+import CC_IndirectMaterialPrice from "./ContributionalChart/IndirectMaterialPrice";
+import CC_DCM_Output from "./ContributionalChart/DCM_Output";
 
 const App = () => {
   return (
@@ -130,13 +137,12 @@ const App = () => {
             <Route path="Approval_Rs1" element={<ProtectedRoute screenId={33}><ApprovalRs1 /></ProtectedRoute>} />
             <Route path="RigTestSpec" element={<ProtectedRoute screenId={42}><MstRigTestSpecScreen /></ProtectedRoute>} />
             <Route path="Machine" element={<ProtectedRoute screenId={39}><MachineScreen /></ProtectedRoute>} />
-            {/* New screens */}
+            {/* PMPD */}
             <Route path="Product" element={<ProtectedRoute screenId={44}><ProductScreen /></ProtectedRoute>} />
             <Route path="ProductSegmentScreen" element={<ProtectedRoute screenId={45}><ProductSegmentScreen /></ProtectedRoute>} />
             <Route path="ProductMappingScreen" element={<ProtectedRoute screenId={46}><ProductMappingScreen /></ProtectedRoute>} />
             <Route path="CategoryBreakup" element={<ProtectedRoute screenId={50}><CategoryBreakupScreen /></ProtectedRoute>} />
             <Route path="IndirectCategory" element={<ProtectedRoute screenId={51}><IndirectCategoryScreen /></ProtectedRoute>} />
-
             <Route path="PMPD_FixedManpower" element={<ProtectedRoute screenId={56}><PMPD_FixedManpower /></ProtectedRoute>} />
 
             <Route path="dashboard" element={<ProtectedRoute screenId={15}><DashBoard /></ProtectedRoute>} />
@@ -195,6 +201,17 @@ const App = () => {
             <Route path="PMPD_ActualProductionPlan" element={<ProtectedRoute screenId={53}><PMPD_ActualProductionPlan /></ProtectedRoute>} />
             <Route path="PMDP_PlanVsActual" element={<ProtectedRoute screenId={54}><PMDP_PlanVsActual /></ProtectedRoute>} />
             <Route path="PMDP_PlanVsActual_Indirect" element={<ProtectedRoute screenId={55}><PMDP_PlanVsActual_Indirect /></ProtectedRoute>} />
+
+
+            {/* CONTRIBUTIONAL CHART */}
+            <Route path="CC_PackingBOM" element={<ProtectedRoute screenId={56}><CC_PackingBOM /></ProtectedRoute>} />
+            <Route path="CC_PackingBomPart" element={<ProtectedRoute screenId={56}><CC_PackingBomPart /></ProtectedRoute>} />
+            <Route path="CC_StoresAndSparesScreen" element={<ProtectedRoute screenId={56}><CC_StoresAndSparesScreen /></ProtectedRoute>} />
+            <Route path="CC_SubContractScreen" element={<ProtectedRoute screenId={56}><CC_SubContractScreen /></ProtectedRoute>} />
+            <Route path="CC_ActualConsumptionPlan" element={<ProtectedRoute screenId={56}><CC_ActualConsumptionPlan /></ProtectedRoute>} />
+            <Route path="CC_IndirectMaterialPrice" element={<ProtectedRoute screenId={56}><CC_IndirectMaterialPrice /></ProtectedRoute>} />
+            <Route path="CC_DCM_Output" element={<ProtectedRoute screenId={56}><CC_DCM_Output /></ProtectedRoute>} />
+
           </Route>
         </Routes>
       </AuthProvider>

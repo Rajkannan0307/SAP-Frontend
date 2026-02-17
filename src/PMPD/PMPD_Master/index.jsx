@@ -66,7 +66,12 @@ const PMPD_MasterScreen = () => {
         { field: "part_number", headerName: "Part No", flex: 1 },
         { field: "prod_seg_name", headerName: "Segment", flex: 1 },
         { field: "PMPD_SMH", headerName: "PMPD_SMH", flex: 1 },
-        { field: "production", headerName: "Production", flex: 1 },
+        {
+            field: "production", headerName: "Production", flex: 1,
+            renderCell: (params) => {
+                return (<>{JSON.stringify(params.value)}</>)
+            }
+        },
         { field: "inspection", headerName: "Inspection", flex: 1 },
         { field: "packing", headerName: "Packing", flex: 1 },
         { field: "end_qty", headerName: "Ends", flex: 1 },

@@ -60,7 +60,14 @@ import ConstructionIcon from "@mui/icons-material/Construction";
 import { GiFactory } from "react-icons/gi";
 import { FaCogs } from "react-icons/fa";
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import { FaBoxOpen } from "react-icons/fa";
 
+import { MdViewInAr } from "react-icons/md";
+import { BsBoxSeam } from "react-icons/bs";
+import { FaRupeeSign } from "react-icons/fa";
+import { MdInventory, MdHandshake } from "react-icons/md";
+import { MdInventory2 } from "react-icons/md";
+import { MdPrecisionManufacturing } from "react-icons/md";
 
 const Sidebar = ({ setSidebarOpen }) => {
   const [open, setOpen] = useState(false);
@@ -71,6 +78,7 @@ const Sidebar = ({ setSidebarOpen }) => {
   const [SAP, setSapOpen] = useState(false);
   const [testLabOpen, setTestLabOpen] = useState(false);
   const [PMPD_Open, setPMPD_Open] = useState(false);
+  const [ContributionalOpen, setContributionalOpen] = useState(false);
   const [employeeName, setEmployeeName] = useState('');
   const [Role, setRole] = useState('');
   const navigate = useNavigate();
@@ -85,6 +93,8 @@ const Sidebar = ({ setSidebarOpen }) => {
   };
 
   const Permissions = usePermissions();
+
+  const [openMenu, setOpenMenu] = useState(null);
 
 
 
@@ -137,7 +147,8 @@ const Sidebar = ({ setSidebarOpen }) => {
     setReportOpen(false);
     setApprovalOpen(false);
     setTestLabOpen(false)
-    setPMPD_Open(false)
+    setPMPD_Open(false);
+    setContributionalOpen(false)
   };
 
   const toggleSAP = () => {
@@ -148,6 +159,7 @@ const Sidebar = ({ setSidebarOpen }) => {
     setApprovalOpen(false);
     setTestLabOpen(false);
     setPMPD_Open(false)
+    setContributionalOpen(false)
   };
 
   const toggleApproval = () => {
@@ -158,6 +170,7 @@ const Sidebar = ({ setSidebarOpen }) => {
     setSapOpen(false);
     setTestLabOpen(false)
     setPMPD_Open(false)
+    setContributionalOpen(false)
   };
 
   const toggleReport = () => {
@@ -168,6 +181,7 @@ const Sidebar = ({ setSidebarOpen }) => {
     setSapOpen(false);
     setTestLabOpen(false)
     setPMPD_Open(false)
+    setContributionalOpen(false)
   };
 
   const toggleTestLab = () => {
@@ -177,6 +191,7 @@ const Sidebar = ({ setSidebarOpen }) => {
     setApprovalOpen(false);
     setSapOpen(false);
     setPMPD_Open(false)
+    setContributionalOpen(false)
   };
 
   const toggleDashboard = () => {
@@ -186,11 +201,23 @@ const Sidebar = ({ setSidebarOpen }) => {
     setReportOpen(false);
     setSapOpen(false);
     setPMPD_Open(false)
+    setContributionalOpen(false)
   };
 
 
   const togglePMPD = () => {
     setPMPD_Open(!PMPD_Open)
+    setTestLabOpen(false);
+    setMasterOpen(false);
+    setDashboardOpen(false);
+    setApprovalOpen(false);
+    setSapOpen(false);
+    setContributionalOpen(false)
+  }
+
+  const toggleContributional = () => {
+    setContributionalOpen(!ContributionalOpen)
+    setPMPD_Open(false)
     setTestLabOpen(false);
     setMasterOpen(false);
     setDashboardOpen(false);
@@ -346,6 +373,9 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "Category Breakup", path: "/home/CategoryBreakup", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'CategoryBreakups' },
             { name: "Indirect Category", path: "/home/IndirectCategory", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'IndirectCategory' },
             { name: "Fixed Manpower", path: "/home/PMPD_FixedManpower", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'PMPD_FixedManpower' },
+
+            // Contributional Charts
+            { name: "Indirect Material Master", path: "/home/CC_PackingBomPart", icon: <FaBoxOpen style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "#FFC107" }} />, code: 'PMPD_FixedManpower' },
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
@@ -663,7 +693,30 @@ const Sidebar = ({ setSidebarOpen }) => {
             'PMDP_PlanVsActual', 'PMDP_PlanVsActual_Indirect'
           ]}
         />
+        {/* <SidebarSection
+          open={open}
+          isOpen={ContributionalOpen}
+          toggleSection={toggleContributional}
+          icon={<FaRupeeSign style={{ marginRight: "8px", color: "#FFA500", fontSize: "27px", }} />}
+          Permissions={Permissions}
+          label="Contribution"
+          links={[
+            { name: "DCM Output", path: "/home/CC_DCM_Output", icon: <BsBoxSeam style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'ProductionPlan' },
+            { name: "Actual Consumption", path: "/home/CC_ActualConsumptionPlan", icon: <BsBoxSeam style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'ProductionPlan' },
+            { name: "Packing BOM", path: "/home/CC_PackingBOM", icon: <FaBoxOpen style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'ProductionPlan' },
+            { name: "Stores And Spares", path: "/home/CC_StoresAndSparesScreen", icon: <MdInventory style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'ProductionPlan' },
+            { name: "Sub Contract", path: "/home/CC_SubContractScreen", icon: <MdPrecisionManufacturing style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'ProductionPlan' },
+            { name: "Indirect Material Price", path: "/home/CC_IndirectMaterialPrice", icon: <FaRupeeSign style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'ProductionPlan' },
+          ]}
+          codeList={[
+            'ProductionPlan',
+          ]}
+        /> */}
+
+
       </div>
+
+      <div className="mt-5" />
     </div>
   );
 };

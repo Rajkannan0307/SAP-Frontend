@@ -512,9 +512,9 @@ const Department = () => {
             onChange={(e) => {
               const value = e.target.value;
               // Remove any non-digit character
-              if (/^\d*$/.test(value)) {
-                setDepartmentCode(value);
-              }
+              // if (/^\d*$/.test(value)) {
+              setDepartmentCode(value);
+              // }
             }}
             inputProps={{
               inputMode: 'numeric', pattern: '[0-9]*',
