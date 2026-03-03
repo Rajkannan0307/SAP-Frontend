@@ -164,17 +164,48 @@ const EditPackageBomDialog = ({
 
     useEffect(() => {
         const fetchData = async () => {
-            const response = await GetMaterialMasterApi(formik.values.plant)
+            const response = await GetMaterialMasterApi({ plant: formik.values.plant, materialType: CCTypesCommonData.fgMaterialTypes })
             console.log(response, "Material Part No")
             setMaterialPartNo(response)
         }
 
         const fetchPackingPart = async () => {
-            const response = await GetPackingPartByPlantApi(formik.values.plant, CCTypesCommonData.materialTypes)
+            const response = CCType === CCTypeEnum.SC
+                ? await GetMaterialMasterApi({ plant: formik.values.plant, materialType: CCTypesCommonData.materialTypes })
+                : await GetPackingPartByPlantApi(formik.values.plant, CCTypesCommonData.materialTypes)
             console.log(response, "Packing Part")
-            setPackingPart(response)
+
+            //--- If Sub-contract get the part number from Mst_Material - Type HALB
+
+            let finalResponse;
+
+            if (CCType === CCTypeEnum.SC) {
+                finalResponse = response.map((e) => {
+                    return {
+                        part_no: e.Material_Code,
+                        plant: e.Plant_Code,
+                        uom: "Nos",
+                        mat_type: e.Material_Type,
+
+                    }
+                })
+            } else {
+                finalResponse = response.map((e) => {
+                    return {
+                        part_no: e.part_no,
+                        plant: e.plant,
+                        uom: e.uom,
+                        mat_type: e.mat_type,
+                    }
+                })
+            }
+
+            setPackingPart(finalResponse)
+            // const response = await GetPackingPartByPlantApi(formik.values.plant, CCTypesCommonData.materialTypes)
+            // console.log(response, "Packing Part")
+            // setPackingPart(response)
         }
-        if (formik.values.plant) {
+        if (open && formik.values.plant) {
             fetchData()
             fetchPackingPart()
         }
@@ -182,25 +213,28 @@ const EditPackageBomDialog = ({
 
 
     useEffect(() => {
+        if (!packingPart.length || !editData?.pack_mst_id) return;
+
         const fetchData = async () => {
             const response = await GetPackingBomChild(editData.pack_mst_id)
-            console.log(response, 'Packing Part Bom Child')
-            const data = response?.map((e, i) => {
-                return {
-                    id: i + 1,
-                    pack_child_id: e.pack_child_id,
-                    pack_part_id: e.pack_part_id,
-                    qty: e.qty,
-                    uom: e.uom,
-                    pri_secri: e.pri_secri,
-                    active_status: e.active_status,
-                }
-            })
+
+            const data = response?.map((e, i) => ({
+                id: i + 1,
+                pack_child_id: e.pack_child_id,
+                child_part_no: e.child_part_no,
+                qty: e.qty,
+                uom: CCType === CCTypeEnum.SC ? 'Nos' : e?.uom,
+                pri_secri: e.pri_secri,
+                active_status: e.active_status,
+            }))
+
             setGridRows(data)
             formik.setFieldValue('childPartCount', data?.length)
         }
+
         fetchData()
-    }, [editData, open])
+
+    }, [packingPart, editData, open])
 
 
     const handleAddRow = () => {
@@ -211,7 +245,7 @@ const EditPackageBomDialog = ({
                 ...prevRows,
                 {
                     id: newId,
-                    pack_part_id: '',
+                    child_part_no: '',
                     qty: 0,
                     uom: '',
                     pri_secri: PriSecriEnum.Primary,
@@ -245,13 +279,13 @@ const EditPackageBomDialog = ({
     const getFilteredPackingPartNo = (currentRowValue) => {
         const selectedSet = new Set(
             gridRows
-                .map(r => r.pack_part_id)
+                .map(r => r.child_part_no)
                 .filter(v => v && v !== currentRowValue)
         );
 
         return packingPart
             .map(e => ({
-                value: e.pack_part_id,
+                value: e.part_no,
                 label: e.part_no,
                 uom: e.uom
             }))
@@ -261,8 +295,8 @@ const EditPackageBomDialog = ({
     const packBomChildColumns = [
         { field: 'id', headerName: 'SI.No', editable: false, width: 80 },
         {
-            field: 'pack_part_id', headerName: 'BOM Child Part', editable: false, flex: 1, renderCell: (params) => {
-                const options = getFilteredPackingPartNo(params.row.pack_part_id);
+            field: 'child_part_no', headerName: 'BOM Child Part', editable: false, flex: 1, renderCell: (params) => {
+                const options = getFilteredPackingPartNo(params.row.child_part_no);
                 return <div>
                     <Select
                         menuPortalTarget={document.body}
@@ -328,20 +362,20 @@ const EditPackageBomDialog = ({
                             }),
                         }}
 
-                        name="pack_part_id"
+                        name="child_part_no"
                         options={options}
 
                         value={
                             options.find(
-                                opt => opt.value === params.row.pack_part_id
+                                opt => String(opt.value) === String(params.row.child_part_no)
                             ) || null
                         }
 
                         onChange={(option) =>
                             handleProcessRowUpdate({
                                 ...params.row,
-                                pack_part_id: option?.value || '',
-                                uom: option?.uom
+                                child_part_no: option?.value || '',
+                                uom: CCType = CCTypeEnum.SC ? 'Nos' : option?.uom
                             })
                         }
                     />
@@ -449,7 +483,6 @@ const EditPackageBomDialog = ({
             <DialogTitle id="alert-dialog-title">
                 {`${editData ? "Edit" : "Add"} ${title}`}
             </DialogTitle>
-
             <DialogContent sx={{ pb: 0, width: "100%" }}>
                 <div style={{
                     // display: "grid",

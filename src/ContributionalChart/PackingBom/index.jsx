@@ -69,16 +69,24 @@ const CC_PackingBOM = () => {
 
 
     const columns = [
-        { field: "pack_mst_id", headerName: "SI No", width: 80 },
-        { field: "plant", headerName: "Plant", width: 150 },
-        { field: "fg_part_no", headerName: "FG Part", flex: 1 },
-        { field: "box_qty", headerName: "Box Qty", flex: 1 },
         {
-            field: "eff_date", headerName: "Eff Date", flex: 1,
+            field: "pack_mst_id", headerName: "SI No", width: 80,
+            renderCell: (params) => params.api.getRowIndexRelativeToVisibleRows(params.id) + 1
+        },
+        { field: "plant", headerName: "Plant", width: 100 },
+        { field: "fg_part_no", headerName: "FG Part", width: 130 },
+        { field: "desc", headerName: "Description", flex: 1 },
+        { field: "mat_type", headerName: "Mat Type", width: 100 },
+        {
+            field: "box_qty", headerName: "Box Qty", width: 100, align: "center",
+            headerAlign: "center"
+        },
+        {
+            field: "eff_date", headerName: "Eff Date", width: 140,
             renderCell: (params) => params.value ? format(params.value, "dd-MM-yyyy") : ""
         },
         {
-            field: "active_status", headerName: "Active Status", flex: 1,
+            field: "active_status", headerName: "Active Status", width: 140,
             renderCell: (params) => {
                 const isActive = params.value === true || params.value === "1";
                 return (
@@ -99,7 +107,7 @@ const CC_PackingBOM = () => {
             },
         },
         {
-            field: "action", headerName: "Action", width: 160,
+            field: "action", headerName: "Action", width: 120,
             renderCell: (params) => (
                 <>
                     <IconButton
@@ -341,7 +349,7 @@ const CC_PackingBOM = () => {
             />
             <ViewPackingBomChildDialog open={viewPackChild} setOpenAddModal={setViewPackChild} packingBomData={editData}
                 CCType={CCTypeEnum.PK}
-                title={"Packing BOM Child"}
+                title={"Packing BOM"}
             />
         </div>
     );

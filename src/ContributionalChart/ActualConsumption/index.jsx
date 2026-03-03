@@ -99,12 +99,21 @@ const CC_ActualConsumptionPlan = () => {
     }, [])
 
     const columns = [
-        { field: "act_cons_id", headerName: "SI No", width: 80 },
-        { field: "plant", headerName: "Plant", width: 150 },
-        { field: "part_no", headerName: "Part No", flex: 1 },
-        { field: "cons_qty", headerName: "Cons Qty", flex: 1 },
-        { field: "cons_date", headerName: "Cons Date", flex: 1, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
-        { field: "doc_date", headerName: "Doc Date", flex: 1, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
+        {
+            field: "act_cons_id", headerName: "SI No", width: 80,
+            renderCell: (params) => params.api.getRowIndexRelativeToVisibleRows(params.id) + 1
+        },
+        { field: "plant", headerName: "Plant", width: 100 },
+        { field: "part_no", headerName: "Part No", width: 150 },
+        { field: "description", headerName: "Description", flex: 1 },
+        { field: "mat_type", headerName: "Mat Type", width: 100 },
+        {
+            field: "cons_qty", headerName: "Cons Qty", width: 150,
+            align: "center",
+            headerAlign: "center"
+        },
+        { field: "cons_date", headerName: "Cons Date", width: 150, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
+        { field: "doc_date", headerName: "Doc Date", width: 150, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
         // {
         //     field: "action", headerName: "Action", width: 160,
         //     renderCell: (params) => (

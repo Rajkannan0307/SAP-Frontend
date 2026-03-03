@@ -45,7 +45,7 @@ export const getLogin = async (data) => {
 
 
 // Material Mastwer
-export const GetMaterialMasterApi = async (plant) => {
-  const response = await axios.get(`${api}/Master/getMaterialByPlant`, { params: { plant } })
+export const GetMaterialMasterApi = async ({ plant, materialType }) => {
+  const response = await axios.get(`${api}/Master/getMaterialByPlant`, { params: { plant, materialType } })
   return response.data;
 }

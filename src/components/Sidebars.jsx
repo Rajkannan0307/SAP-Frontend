@@ -375,14 +375,14 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "Fixed Manpower", path: "/home/PMPD_FixedManpower", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'PMPD_FixedManpower' },
 
             // Contributional Charts
-            { name: "Indirect Material Master", path: "/home/CC_PackingBomPart", icon: <FaBoxOpen style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "#FFC107" }} />, code: 'PMPD_FixedManpower' },
+            { name: "Indirect Material Master", path: "/home/CC_PackingBomPart", icon: <FaBoxOpen style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "#FFC107" }} />, code: 'Indirect_Material' },
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
             'UserMaster', 'Role', 'Material', 'Vendor',
             'Customer', 'StorageLocation', 'Movement_Type', 'MVT_LIST_ITEM', 'CostCenter',
             'ValuationType', 'SupvCode', 'Module', 'Line', 'Machine', 'RigTestSpec', 'Product', 'ProductSegment', 'ProductMapping',
-            'CategoryBreakups', 'IndirectCategory', 'PMPD_FixedManpower'
+            'CategoryBreakups', 'IndirectCategory', 'PMPD_FixedManpower', 'Indirect_Material'
           ]}
         />
         {/* Transaction Section */}
@@ -693,7 +693,7 @@ const Sidebar = ({ setSidebarOpen }) => {
             'PMDP_PlanVsActual', 'PMDP_PlanVsActual_Indirect'
           ]}
         />
-        {/* <SidebarSection
+        <SidebarSection
           open={open}
           isOpen={ContributionalOpen}
           toggleSection={toggleContributional}
@@ -701,17 +701,17 @@ const Sidebar = ({ setSidebarOpen }) => {
           Permissions={Permissions}
           label="Contribution"
           links={[
-            { name: "DCM Output", path: "/home/CC_DCM_Output", icon: <BsBoxSeam style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'ProductionPlan' },
-            { name: "Actual Consumption", path: "/home/CC_ActualConsumptionPlan", icon: <BsBoxSeam style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'ProductionPlan' },
-            { name: "Packing BOM", path: "/home/CC_PackingBOM", icon: <FaBoxOpen style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'ProductionPlan' },
-            { name: "Stores And Spares", path: "/home/CC_StoresAndSparesScreen", icon: <MdInventory style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'ProductionPlan' },
-            { name: "Sub Contract", path: "/home/CC_SubContractScreen", icon: <MdPrecisionManufacturing style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'ProductionPlan' },
-            { name: "Indirect Material Price", path: "/home/CC_IndirectMaterialPrice", icon: <FaRupeeSign style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'ProductionPlan' },
+            { name: "DCM Output", path: "/home/CC_DCM_Output", icon: <BsBoxSeam style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'CC_DCM_Output' },
+            { name: "Actual Consumption", path: "/home/CC_ActualConsumptionPlan", icon: <BsBoxSeam style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'CC_ActualConsumptionPlan' },
+            { name: "Packing BOM", path: "/home/CC_PackingBOM", icon: <FaBoxOpen style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'CC_PackingBOM' },
+            { name: "Stores And Spares", path: "/home/CC_StoresAndSparesScreen", icon: <MdInventory style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'CC_StoresAndSpares' },
+            { name: "Sub Contract", path: "/home/CC_SubContractScreen", icon: <MdPrecisionManufacturing style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'CC_SubContract' },
+            { name: "Material Price", path: "/home/CC_IndirectMaterialPrice", icon: <FaRupeeSign style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'CC_MaterialPrice' },
           ]}
           codeList={[
-            'ProductionPlan',
+            'CC_DCM_Output', 'CC_ActualConsumptionPlan', 'CC_PackingBOM', 'CC_StoresAndSpares', 'CC_SubContract', 'CC_MaterialPrice'
           ]}
-        /> */}
+        />
 
 
       </div>

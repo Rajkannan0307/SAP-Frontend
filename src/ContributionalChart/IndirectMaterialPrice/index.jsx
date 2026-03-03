@@ -25,6 +25,10 @@ const CC_IndirectMaterialPrice = () => {
     const [refreshData, setRefreshData] = useState(false)
     const { user } = useContext(AuthContext);
     const currentUserPlantCode = user.PlantCode
+    const [plants, setPlants] = useState([])
+    const [loading, setLoading] = useState(false)
+    const [matTypes, setMatTypes] = useState([])
+
 
     const handleSearch = () => {
         const text = searchText.trim().toLowerCase();
@@ -42,29 +46,25 @@ const CC_IndirectMaterialPrice = () => {
         }
     };
 
-    const [plants, setPlants] = useState([])
-    const [loading, setLoading] = useState(false)
-
     const validationschema = yup.object({
         plant: yup.string().required('Required'),
         // fin_year: yup.string().required('Required'),
-        startDate: yup.string().required('Required'),
-        endDate: yup.string().required('Required'),
+        // startDate: yup.string().required('Required'),
+        // endDate: yup.string().required('Required'),
+        matType: yup.string().required('Required'),
     })
 
     const formik = useFormik({
         initialValues: {
             plant: currentUserPlantCode,
-            // fin_year: "",
-            startDate: "",
-            endDate: "",
+            matType: "",
             type: "SUBMIT"
         },
         validationSchema: validationschema,
         enableReinitialize: true,
         onSubmit: async (values) => {
             console.log(values)
-            const fin_Year = values.fin_year
+            // const fin_Year = values.fin_year
             const plant = values.plant
             // const startYear = Number(fin_Year.split("-")[0]); // 2025
             // const endYear = startYear + 1;                   // 2026
@@ -74,16 +74,17 @@ const CC_IndirectMaterialPrice = () => {
             // console.log(startDate, endDate);
 
             // Convert month-year input to real dates
-            const startDate = startOfMonth(new Date(values.startDate));
-            const endDate = endOfMonth(new Date(values.endDate));
+            // const startDate = startOfMonth(new Date(values.startDate));
+            // const endDate = endOfMonth(new Date(values.endDate));
 
-            console.log(startDate, endDate)
+            // console.log(startDate, endDate)
 
             if (loading) return
 
             setLoading(true)
             const response = await getTrnIndirectMaterialPrice({
-                startDate, endDate, plant
+                plant,
+                matType: values.matType
             })
             setOriginalRows(response || [])
             setRows(response || [])
@@ -96,16 +97,24 @@ const CC_IndirectMaterialPrice = () => {
         const fetchData = async () => {
             const resposne = await getPlantdetails()
             setPlants(resposne)
+
+            const response2 = await getMaterialType(MaterialGroupEnumTypes.all)
+            setMatTypes(response2.data)
         }
         fetchData()
     }, [])
 
     const columns = [
-        { field: "idm_price_id", headerName: "SI No", width: 80 },
-        { field: "plant", headerName: "Plant", width: 150 },
-        { field: "part_no", headerName: "Part No", flex: 1 },
-        { field: "price", headerName: "Price", flex: 1 },
-        { field: "eff_date", headerName: "Eff Date", flex: 1, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
+        {
+            field: "idm_price_id", headerName: "SI No", width: 80,
+            renderCell: (params) => params.api.getRowIndexRelativeToVisibleRows(params.id) + 1
+        },
+        { field: "plant", headerName: "Plant", width: 100 },
+        { field: "part_no", headerName: "Part No", width: 150 },
+        { field: "description", headerName: "Description", flex: 1 },
+        { field: "mat_type", headerName: "Mat Type", width: 130 },
+        { field: "price", headerName: "Price", width: 120 },
+        { field: "eff_date", headerName: "Eff Date", width: 150, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
         // {
         //     field: "action", headerName: "Action", width: 160,
         //     renderCell: (params) => (
@@ -148,7 +157,7 @@ const CC_IndirectMaterialPrice = () => {
                 }}
             >
                 <SectionHeading>
-                    Indirect Material Consumption
+                    Material Price
                 </SectionHeading>
             </div>
 
@@ -162,7 +171,7 @@ const CC_IndirectMaterialPrice = () => {
                         value={formik.values.plant}
                         onChange={formik.handleChange}
                         fullWidth
-                        // sx={{ minWidth: 140 }}
+                        sx={{ minWidth: 140 }}
                         InputLabelProps={{
                             sx: {
                                 fontSize: "12px",
@@ -179,6 +188,35 @@ const CC_IndirectMaterialPrice = () => {
                         {plants.map((p) => (
                             <MenuItem sx={{ fontSize: "small" }} key={p.Plant_ID} value={p.Plant_Code}>
                                 {`${p.Plant_Code} - ${p.Plant_Name}`}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+
+                    <TextField
+                        select
+                        size="small"
+                        label="Mat Type"
+                        name="matType"
+                        value={formik.values.matType}
+                        onChange={formik.handleChange}
+                        fullWidth
+                        sx={{ minWidth: 140 }}
+                        InputLabelProps={{
+                            sx: {
+                                fontSize: "12px",
+                            },
+                        }}
+                        InputProps={{
+                            sx: {
+                                fontSize: "13px",
+                            },
+                        }}
+                        error={formik.touched.matType && Boolean(formik.errors.matType)}
+                        helperText={formik.touched.matType && formik.errors.matType}
+                    >
+                        {matTypes.map((p) => (
+                            <MenuItem sx={{ fontSize: "small" }} key={p.Mat_Id} value={p.Mat_Type}>
+                                {`${p.Mat_Type}`}
                             </MenuItem>
                         ))}
                     </TextField>
@@ -206,7 +244,7 @@ const CC_IndirectMaterialPrice = () => {
 
 
 
-                    <TextField
+                    {/* <TextField
                         id="startDate"
                         size="small"
                         label="Start Date"
@@ -235,13 +273,17 @@ const CC_IndirectMaterialPrice = () => {
                         InputProps={{ sx: { fontSize: 13 } }}
                         error={formik.touched.endDate && Boolean(formik.errors.endDate)}
                         helperText={formik.touched.endDate && formik.errors.endDate}
-                    />
+                    /> */}
 
-                    <Button variant='contained' onClick={(e) => {
-                        formik.setFieldValue('type', 'SUBMIT')
-                        formik.handleSubmit(e)
-                    }}>
+                    <Button variant='contained'
+                        onClick={(e) => {
+                            formik.setFieldValue('type', 'SUBMIT')
+                            formik.handleSubmit(e)
+                        }}
+                        fullWidth
+                    >
                         {loading ? "Loading..." : "Submit"}
+                        {/* {"Loading..."} */}
                     </Button>
                 </div>
 

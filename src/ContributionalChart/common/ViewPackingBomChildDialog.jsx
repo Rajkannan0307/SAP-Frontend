@@ -19,19 +19,21 @@ const getCCtypesData = (CCType) => {
         case CCTypeEnum.PK:
             return {
                 packQtyHeaderName: 'Pack Qty',
-                enablePriSecriColumn: true
-            }
-        case CCTypeEnum.SC:
-            return {
-                packQtyHeaderName: 'Per Qty',
-                enablePriSecriColumn: false
+                enablePriSecriColumn: true,
+                child_part_no: 'pack_part_no',
             }
         case CCTypeEnum.TC:
             return {
                 packQtyHeaderName: 'Per Qty',
-                enablePriSecriColumn: false
+                enablePriSecriColumn: false,
+                child_part_no: 'pack_part_no'
             }
-
+        case CCTypeEnum.SC:
+            return {
+                packQtyHeaderName: 'Per Qty',
+                enablePriSecriColumn: false,
+                child_part_no: 'child_part_no'
+            }
     }
 }
 
@@ -51,18 +53,25 @@ const ViewPackingBomChildDialog = ({
     }
 
     const columns = [
-        { field: "pack_child_id", headerName: "SI No", width: 80 },
-        { field: "fg_part", headerName: "FG Part", flex: 1, renderCell: (params) => packingBomData?.fg_part_no || '' },
+        {
+            field: "pack_child_id", headerName: "SI No", width: 80,
+            renderCell: (params) => params.api.getRowIndexRelativeToVisibleRows(params.id) + 1
+        },
+        { field: "fg_part", headerName: "FG Part", width: 120, renderCell: (params) => packingBomData?.fg_part_no || '' },
+        { field: "fg_desc", headerName: "Fg Description", flex: 1 },
         {
             field: "pack_qty", headerName: CCTypeData.packQtyHeaderName,
-            flex: 1, renderCell: (params) => packingBomData?.box_qty || ''
+            align: "center", headerAlign: "center",
+            width: 100, renderCell: (params) => packingBomData?.box_qty || ''
         },
-        { field: "pack_part_no", headerName: "BOM Child Part", flex: 1 },
-        { field: "qty", headerName: "Qty", flex: 1 },
+        { field: CCTypeData.child_part_no, headerName: "BOM Child Part", flex: 1 },
+        { field: "child_desc", headerName: "Child Description", flex: 1 },
+        { field: "child_mat_type", headerName: "Mat_Type", width: 100 },
+        { field: "qty", headerName: "Qty", width: 60, align: "center", headerAlign: "center", },
         { field: "pri_secri", headerName: "Pri / Secri", flex: 1 },
-        { field: "uom", headerName: "UOM", flex: 1 },
+        { field: "uom", headerName: "UOM", width: 80 },
         {
-            field: "active_status", headerName: "Active Status", flex: 1,
+            field: "active_status", headerName: "Active Status", width: 120,
             renderCell: (params) => {
                 const isActive =
                     params.value === "Active" ||
@@ -118,8 +127,8 @@ const ViewPackingBomChildDialog = ({
                     backgroundColor: "#fff",
                     borderRadius: 8,
                     boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-                    width: "60rem",
-                    height: "30rem",
+                    width: "70rem",
+                    height: "34rem",
                     paddingInline: 10,
                     paddingBottom: 10
                 }}

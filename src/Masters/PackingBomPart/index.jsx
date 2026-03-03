@@ -83,14 +83,14 @@ const CC_PackingBomPart = () => {
 
 
     const columns = [
-        { field: "pack_part_id", headerName: "SI No", width: 80 },
-        { field: "plant", headerName: "Plant", flex: 1 },
-        { field: "part_no", headerName: "Part No", flex: 1 },
-        { field: "description", headerName: "Description", flex: 1 },
+        { field: "Material_ID", headerName: "SI No", width: 80 },
+        { field: "Plant_Code", headerName: "Plant", flex: 1 },
+        { field: "Material_Code", headerName: "Part No", flex: 1 },
+        { field: "Description", headerName: "Description", flex: 1 },
         { field: "uom", headerName: "UOM", flex: 1 },
-        { field: "mat_type", headerName: "Material Type", flex: 1 },
+        { field: "Material_Type", headerName: "Material Type", flex: 1 },
         {
-            field: "active_status", headerName: "Active Status", flex: 1,
+            field: "Active_Status", headerName: "Active Status", flex: 1,
             renderCell: (params) => {
                 const isActive = params.value === true || params.value === "1";
                 return (
@@ -164,7 +164,7 @@ const CC_PackingBomPart = () => {
         const text = searchText.trim().toLowerCase();
 
         const filteredRows = originalRows.filter((row) =>
-            ["plant", "part_no", "uom"].some((key) => {
+            ["Material_Type", "uom", "Description", "Material_Code", "Plant_Code"].some((key) => {
                 const value = row[key];
                 return value?.toString().toLowerCase().includes(text);
             })
@@ -366,7 +366,7 @@ const CC_PackingBomPart = () => {
                     columns={columns}
                     pageSize={5} // Set the number of rows per page to 8
                     rowsPerPageOptions={[5]}
-                    getRowId={(row) => row.pack_part_id} // Specify a custom id field
+                    getRowId={(row) => row.Material_ID} // Specify a custom id field
                     disableSelectionOnClick
                     slots={{ toolbar: CustomToolbar }}
                     sx={{
@@ -420,24 +420,24 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
 
     // ✅ Validation Schema
     const validationSchema = Yup.object({
-        plant: Yup.string().required('Required'),
-        part_no: Yup.string().required('Required'),
-        description: Yup.string().required('Required'),
+        Plant_ID: Yup.string().required('Required'),
+        Material_Code: Yup.string().required('Required'),
+        Description: Yup.string().required('Required'),
         uom: Yup.string().required('Required'),
-        mat_id: Yup.string().required('Required'),
-        active_status: Yup.string().required('Required'),
+        Material_Type: Yup.string().required('Required'),
+        Active_Status: Yup.string().required('Required'),
     });
 
 
     // ✅ Formik Setup
     const formik = useFormik({
         initialValues: {
-            plant: editData?.plant || "",
-            part_no: editData?.part_no || "",
-            description: editData?.description || "",
+            Plant_ID: editData?.Plant_ID || "",
+            Material_Code: editData?.Material_Code || "",
+            Description: editData?.Description || "",
             uom: editData?.uom || "",
-            mat_id: editData?.mat_id || "",
-            active_status: editData?.active_status ?? true,
+            Material_Type: editData?.Material_Type || "",
+            Active_Status: editData?.Active_Status ?? true,
         },
         validationSchema,
         enableReinitialize: true,
@@ -449,7 +449,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                 const userId = localStorage.getItem("EmpId");
                 if (editData) {
                     const payload = {
-                        pack_part_id: editData?.pack_part_id,
+                        Material_ID: editData?.Material_ID,
                         ...values,
                         userId: userId
                     }
@@ -513,12 +513,12 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                         select
                         size="small"
                         label="Plant"
-                        name="plant"
-                        value={String(formik.values.plant)}
+                        name="Plant_ID"
+                        value={formik.values.Plant_ID}
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
-                        error={formik.touched.plant && Boolean(formik.errors.plant)}
-                        helperText={formik.touched.plant && formik.errors.plant}
+                        error={formik.touched.Plant_ID && Boolean(formik.errors.Plant_ID)}
+                        helperText={formik.touched.Plant_ID && formik.errors.Plant_ID}
                         InputLabelProps={{ sx: { fontSize: 12 } }}
                         InputProps={{ sx: { fontSize: 13 } }}
                         sx={{
@@ -528,7 +528,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                         }}
                     >
                         {plants.map((p) => (
-                            <MenuItem sx={{ fontSize: "small" }} key={p.Plant_ID} value={p.Plant_Code}>
+                            <MenuItem sx={{ fontSize: "small" }} key={p.Plant_ID} value={p.Plant_ID}>
                                 {`${p.Plant_Code} - ${p.Plant_Name}`}
                             </MenuItem>
                         ))}
@@ -536,16 +536,16 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
 
 
                     <TextField
-                        id="part_no"
-                        name="part_no"
+                        id="Material_Code"
+                        name="Material_Code"
                         label="Part No"
                         size="small"
                         fullWidth
-                        value={formik.values.part_no}
+                        value={formik.values.Material_Code}
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
-                        error={formik.touched.part_no && Boolean(formik.errors.part_no)}
-                        helperText={formik.touched.part_no && formik.errors.part_no}
+                        error={formik.touched.Material_Code && Boolean(formik.errors.Material_Code)}
+                        helperText={formik.touched.Material_Code && formik.errors.Material_Code}
                         InputLabelProps={{ sx: { fontSize: 12 } }}
                         InputProps={{ sx: { fontSize: 13 } }}
                         sx={{
@@ -556,16 +556,16 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                     />
 
                     <TextField
-                        id="description"
-                        name="description"
+                        id="Description"
+                        name="Description"
                         label="Description"
                         size="small"
                         fullWidth
-                        value={formik.values.description}
+                        value={formik.values.Description}
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
-                        error={formik.touched.description && Boolean(formik.errors.description)}
-                        helperText={formik.touched.description && formik.errors.description}
+                        error={formik.touched.Description && Boolean(formik.errors.Description)}
+                        helperText={formik.touched.Description && formik.errors.Description}
                         InputLabelProps={{ sx: { fontSize: 12 } }}
                         InputProps={{ sx: { fontSize: 13 } }}
                         sx={{
@@ -596,16 +596,16 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
 
                     <TextField
                         select
-                        id="mat_id"
-                        name="mat_id"
+                        id="Material_Type"
+                        name="Material_Type"
                         label="Material Type"
                         size="small"
                         fullWidth
-                        value={formik.values.mat_id}
+                        value={formik.values.Material_Type}
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
-                        error={formik.touched.mat_id && Boolean(formik.errors.mat_id)}
-                        helperText={formik.touched.mat_id && formik.errors.mat_id}
+                        error={formik.touched.Material_Type && Boolean(formik.errors.Material_Type)}
+                        helperText={formik.touched.Material_Type && formik.errors.mat_id}
                         InputLabelProps={{ sx: { fontSize: 12 } }}
                         InputProps={{ sx: { fontSize: 13 } }}
                         sx={{
@@ -614,7 +614,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                         }}
                     >
                         {materialType.map((p) => (
-                            <MenuItem sx={{ fontSize: "small" }} key={p.Mat_Id} value={p.Mat_Id}>
+                            <MenuItem sx={{ fontSize: "small" }} key={p.Mat_Type} value={p.Mat_Type}>
                                 {/* {`${p.Mat_Id} - ${p.Mat_Type}`} */}
                                 {`${p.Mat_Type}`}
                             </MenuItem>
@@ -625,21 +625,21 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                 <FormControlLabel
                     control={
                         <Switch
-                            checked={formik.values.active_status}
-                            onChange={(e) => formik.setFieldValue("active_status", e.target.checked)}
+                            checked={formik.values.Active_Status}
+                            onChange={(e) => formik.setFieldValue("Active_Status", e.target.checked)}
                             color="success"
                         />
                     }
-                    label={formik.values.active_status ? "Active" : "Inactive"}
+                    label={formik.values.Active_Status ? "Active" : "Inactive"}
                     sx={{
                         fontWeight: "bold",
                         mt: 2,
-                        color: formik.values.active_status ? "#2e7d32" : "#d32f2f"
+                        color: formik.values.Active_Status ? "#2e7d32" : "#d32f2f"
                     }}
                 />
 
-                {formik.touched.active_status && formik.errors.active_status && (
-                    <div style={{ color: "red", fontSize: 12 }}>{formik.errors.active_status}</div>
+                {formik.touched.Active_Status && formik.errors.Active_Status && (
+                    <div style={{ color: "red", fontSize: 12 }}>{formik.errors.Active_Status}</div>
                 )}
 
             </DialogContent>
