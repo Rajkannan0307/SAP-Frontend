@@ -18,7 +18,7 @@
 //             flex: 1,
 //             marginLeft: "250px", // Sidebar width when open
 //             transition: "margin-left 0.3s ease",
-            
+
 //              overflowY: "auto",
 //           }}
 //         >
@@ -37,6 +37,7 @@ import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Topbar from "./components/Topbar";
 import Sidebar from "./components/Sidebars";
+import { ToastContainer } from "react-toastify";
 
 const Main = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -60,6 +61,8 @@ const Main = () => {
           <Outlet context={{ sidebarOpen }} />
         </div>
       </div>
+
+      <ToastContainer />
     </div>
   );
 };

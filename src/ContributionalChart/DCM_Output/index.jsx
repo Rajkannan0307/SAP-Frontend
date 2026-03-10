@@ -4,16 +4,18 @@ import { Box, Button, Dialog, DialogContent, DialogTitle, IconButton, MenuItem, 
 import { EditIcon, EyeIcon, SearchIcon } from 'lucide-react'
 import { getPlantdetails } from '../../controller/CommonApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
-import { endOfDay, endOfMonth, format, isSameMonth, isValid, startOfDay, startOfMonth, subDays } from 'date-fns'
+import { endOfDay, endOfMonth, format, isSameMonth, isValid, parse, startOfDay, startOfMonth, subDays } from 'date-fns'
 import { useFormik } from 'formik'
 import * as yup from 'yup'
 import { AuthContext } from '../../Authentication/AuthContext'
-import { AddTrnMonthlyConsumption_BULK, GetDCMOutput_ReportApi } from '../../controller/ContributionalChartApiService'
+import { AddTrnMonthlyConsumption_BULK, DCMOutputReportSendMailApi, GetDCMOutput_ReportApi } from '../../controller/ContributionalChartApiService'
 import { exportToExcelDownload } from '../../utilis/excelUtilis'
 import { FaFileExcel } from "react-icons/fa";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import CloseIcon from "@mui/icons-material/Close";
 import { MdOutlineCancel } from 'react-icons/md'
+import { IoMdSend } from "react-icons/io";
+import { toast } from 'react-toastify'
 
 
 
@@ -70,6 +72,7 @@ const CC_DCM_Output = () => {
     const [originalRows, setOriginalRows] = useState([]);
     const [plants, setPlants] = useState([])
     const [loading, setLoading] = useState(false)
+    const [sendMailLoading, setSendMailLoading] = useState(false)
     const [excelLoading, setExcelLoading] = useState(false);
 
     const [consumptionData, setConsumptionData] = useState([])
@@ -101,32 +104,40 @@ const CC_DCM_Output = () => {
     const formik = useFormik({
         initialValues: {
             plant: currentUserPlantCode,
-            date: "",
+            date: new Date().toISOString().slice(0, 7),
             type: "SUBMIT"
         },
         validationSchema: validationschema,
         enableReinitialize: true,
         onSubmit: async (values) => {
+            console.log(values)
+            const fin_Year = values.fin_year
+            const plant = values.plant
 
-            try {
-                console.log(values)
-                const fin_Year = values.fin_year
-                const plant = values.plant
+            // Convert month-year input to real dates
 
-                // Convert month-year input to real dates
+            // const selectedDate = new Date(values.date);
+            // const today = new Date();
 
-                const selectedDate = new Date(values.date);
-                const today = new Date();
+            // const startDate = startOfMonth(selectedDate);
 
-                const startDate = startOfMonth(selectedDate);
+            // const endDate = isSameMonth(selectedDate, today)
+            //     ? subDays(today, 1)     // yesterday
+            //     : endOfMonth(selectedDate);
 
-                const endDate = isSameMonth(selectedDate, today)
-                    ? subDays(today, 1)     // yesterday
-                    : endOfMonth(selectedDate);
+            // Parse month string into a Date object
+            const monthDate = parse(values.date, "yyyy-MM", new Date());
 
-                console.log(startDate, endDate)
+            // Get month boundaries
+            const startDate = format(startOfMonth(monthDate), "yyyy-MM-dd");
+            const endDate = format(endOfMonth(monthDate), "yyyy-MM-dd");
 
-                if (values.type === "SUBMIT") {
+            console.log(startDate, endDate)
+
+
+
+            if (values.type === "SUBMIT") {
+                try {
 
                     if (loading) return
 
@@ -135,19 +146,24 @@ const CC_DCM_Output = () => {
                         startDate, endDate, plant
                     })
                     console.log(response)
-                    setOriginalRows(response[6] || [])
-                    setRows(response[6] || [])
+                    setOriginalRows(response[9] || [])
+                    setRows(response[9] || [])
 
                     setConsumptionData(response[1] || 0)
                     console.log(response[1])
-                } else {
-                    handleExcelDownload({ startDate, endDate, plant })
+
+
+                } catch (error) {
+                    console.error(error)
                 }
 
-            } catch (error) {
-                console.error(error)
+            } else if (values.type === "SEND_MAIL") {
+                await handleMailTrigger({ startDate, endDate, plant })
+            } else if (values.type === "DOWNLOAD") {
+                handleExcelDownload({ startDate, endDate, plant })
             }
 
+            setSendMailLoading(false)
             setLoading(false)
         }
     })
@@ -226,8 +242,12 @@ const CC_DCM_Output = () => {
                     { name: "Production Actual", data: response[3] || [] },
                     { name: "Sales Plan", data: response[4] || [] },
                     { name: "Production Plan", data: response[5] || [] },
-                    { name: "DCM", data: response[6] || [] },
-                    { name: "Missing FG_Part", data: response[7] || [] },
+                    { name: "Labour Flex Plan", data: response[6] || [] },
+                    { name: "Labour Cost Actual", data: response[7] || [] },
+                    // { name: "DHRM HC", data: response[8] || [] },
+                    { name: "Labour Cost Working", data: response[8] || [] },
+                    { name: "DCM", data: response[9] || [] },
+                    { name: "Missing FG_Part", data: response[10] || [] },
                 ]
             });
 
@@ -238,6 +258,19 @@ const CC_DCM_Output = () => {
         }
     };
 
+
+
+    const handleMailTrigger = async ({ startDate, endDate, plant }) => {
+        try {
+            setSendMailLoading(true)
+            await DCMOutputReportSendMailApi({ startDate, endDate, plant })
+            toast.success('Mail Sent Successfully')
+        } catch (error) {
+            console.log(error)
+            toast.error('Something went wrong')
+        }
+        setSendMailLoading(false)
+    }
 
     return (
         <div
@@ -340,6 +373,18 @@ const CC_DCM_Output = () => {
                         gap: 20
                     }}
                 >
+                    <Button variant="contained" sx={{
+                        background: "#1434A4"
+                    }}
+                        onClick={(e) => {
+                            formik.setFieldValue('type', 'SEND_MAIL')
+                            formik.handleSubmit(e)
+                        }}
+                        startIcon={<IoMdSend size={16} />}
+                    >
+                        {sendMailLoading ? "Loading..." : "Send Mail"}
+                    </Button>
+
                     {/* Search Box - requester */}
                     <div style={{ display: "flex", gap: 10 }}>
                         <TextField
@@ -406,7 +451,10 @@ const CC_DCM_Output = () => {
                     columnHeaderHeight={35}
                     rowHeight={35}
                     // getRowHeight={(p) => "auto"}
-                    getRowClassName={(params) => `${getRowClassName(params)} ${params.row.Description === "TOTAL" ? "total-row" : ""}`}
+                    getRowClassName={(params) => `
+                            ${getRowClassName(params)} ${params.row.Description === "TOTAL" ? "total-row" : ""}
+                            ${params.indexRelativeToCurrentPage === 1 ? "section-start" : ""}
+                    `}
                     sx={{
                         // Header Style
                         "& .MuiDataGrid-columnHeader": {
@@ -424,6 +472,7 @@ const CC_DCM_Output = () => {
                                 backgroundColor: "#f5f5f5",
                             },
                         },
+
                         // ✅ Remove Selected Row Background
                         "& .MuiDataGrid-row.Mui-selected": {
                             backgroundColor: "inherit", // No background on selection
@@ -441,6 +490,21 @@ const CC_DCM_Output = () => {
                             "& .MuiDataGrid-cell": {
                                 color: "#fff"
                             }
+                        },
+                        "& .section-start": {
+                            position: "relative",
+                            mb: 2
+                        },
+
+                        "& .section-start::after": {
+                            content: '""',
+                            position: "absolute",
+                            left: 0,
+                            right: 0,
+                            bottom: -20,
+                            height: "20px",
+                            // backgroundColor: "#83B3E6"
+                            backgroundColor: "#C6C9C3"
                         }
                     }}
                 />

@@ -103,3 +103,13 @@ export const GetDCMOutput_ReportApi = async ({ plant, startDate, endDate }) => {
     });
     return response.data;
 }
+
+export const DCMOutputReportSendMailApi = async ({ plant, startDate, endDate }) => {
+    const body = {
+        plant, startDate, endDate
+    }
+    const response = await axios.post(`${api}/PackingBomRouter/dcmOutput/sendMail`, body);
+    return response.data;
+}
+
+
