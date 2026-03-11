@@ -171,6 +171,7 @@ const PMDP_PlanVsActual = () => {
             const summaryData = response.data[0]; // Sheet 1
             const summaryData2 = response.data[1]; // Sheet 2
             const detailData = response.data[2];  // Sheet 3
+            const detailData2 = response.data[4];  // Sheet 3
 
             const fileType =
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
@@ -226,11 +227,29 @@ const PMDP_PlanVsActual = () => {
                 });
             }
 
+            /* -------------------- Sheet 4 : Data2 -------------------- */
+            const wsData2 = XLSX.utils.json_to_sheet(detailData2);
+
+            if (detailData2.length > 0) {
+                const headers = Object.keys(detailData2[0]);
+                headers.forEach((_, colIdx) => {
+                    const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
+                    if (wsData2[cellAddress]) {
+                        wsData2[cellAddress].s = {
+                            font: { bold: true },
+                            fill: { fgColor: { rgb: "FFF4CC" } },
+                            alignment: { horizontal: "center" },
+                        };
+                    }
+                });
+            }
+
             /* -------------------- Workbook -------------------- */
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, wsSummary, "Plan");
             XLSX.utils.book_append_sheet(wb, wsSummary2, "Actual");
             XLSX.utils.book_append_sheet(wb, wsData, "Summary");
+            XLSX.utils.book_append_sheet(wb, wsData2, "Summary_Split");
 
             const excelBuffer = XLSX.write(wb, {
                 bookType: "xlsx",
