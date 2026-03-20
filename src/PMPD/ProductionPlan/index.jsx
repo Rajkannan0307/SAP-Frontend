@@ -27,20 +27,54 @@ const PMPD_ProductionPlan = () => {
 
     const PMPDAccess = getPMPDAccess()
 
+    // const handleSearch = () => {
+    //     const text = searchText.trim().toLowerCase();
+
+    //     if (!text) {
+    //         setRows(originalRows);
+    //     } else {
+    //         const filteredRows = originalRows.filter((row) =>
+    //             ['plant', 'customer_name', 'part_number', 'description', 'plan_type', 'prod_seg_name', 'effective_date'].some((key) => {
+    //                 const value = row[key];
+    //                 format(params.value, "dd-MM-yyyy")
+    //                 return value && String(value).toLowerCase().includes(text);
+    //             })
+    //         );
+    //         setRows(filteredRows);
+    //     }
+    // };
+
     const handleSearch = () => {
         const text = searchText.trim().toLowerCase();
 
         if (!text) {
             setRows(originalRows);
-        } else {
-            const filteredRows = originalRows.filter((row) =>
-                ['plant', 'customer_name', 'part_number', 'description', 'plan_type', 'prod_seg_name'].some((key) => {
-                    const value = row[key];
-                    return value && String(value).toLowerCase().includes(text);
-                })
-            );
-            setRows(filteredRows);
+            return;
         }
+
+        const filteredRows = originalRows.filter((row) => {
+            return ['plant', 'customer_name', 'part_number', 'description', 'plan_type', 'prod_seg_name', 'effective_date'].some((key) => {
+                let value = row[key];
+
+                if (value === null || value === undefined) return false;
+
+                // Handle the date field specifically
+                if (key === 'effective_date') {
+                    // parseISO is safer for yyyy-mm-dd strings
+                    const dateObj = new Date(value);
+
+                    if (isValid(dateObj)) {
+                        // Convert the row's date to the searchable format
+                        value = format(dateObj, "dd-MM-yyyy");
+                    }
+                }
+
+                // Standard string comparison
+                return String(value).toLowerCase().includes(text);
+            });
+        });
+
+        setRows(filteredRows);
     };
 
     const [plants, setPlants] = useState([])

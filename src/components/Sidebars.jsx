@@ -68,6 +68,7 @@ import { FaRupeeSign } from "react-icons/fa";
 import { MdInventory, MdHandshake } from "react-icons/md";
 import { MdInventory2 } from "react-icons/md";
 import { MdPrecisionManufacturing } from "react-icons/md";
+import { FaBolt, FaChartBar, FaFileInvoiceDollar } from 'react-icons/fa';
 
 const Sidebar = ({ setSidebarOpen }) => {
   const [open, setOpen] = useState(false);
@@ -352,7 +353,6 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "Department", path: "/home/Department", icon: <Diversity2Icon style={{ marginRight: "2px", fontSize: "22px", color: "bisque" }} />, code: 'Department' },
             { name: "Login User", path: "/home/UserMaster", icon: < AccountCircleIcon style={{ marginRight: "2px", color: "aqua" }} />, code: 'UserMaster' },
             { name: "Role", path: "/home/Role", icon: < MdOutlineAdminPanelSettings style={{ marginRight: "2px", width: "25px", fontSize: "24px", color: "goldenrod", }} />, code: 'Role' },
-            { name: "Material", path: "/home/Material", icon: <AcUnitIcon style={{ marginRight: "2px", color: "greenyellow", code: 'Material' }} />, code: 'Material' },
             { name: "Vendor", path: "/home/Vendor", icon: <FcFactory style={{ marginRight: "2px", fontSize: "24px", width: "25px", code: 'Vendor' }} />, code: 'Vendor' },
             { name: "Customer", path: "/home/Customer", icon: <RiCustomerService2Fill style={{ marginRight: "2px", fontSize: "20px", width: "25px", color: "deepskyblue" }} />, code: 'Customer' },
             { name: "Storage Location", path: "/home/StorageLocation", icon: <GrStorage style={{ marginRight: "2px", fontSize: "20px", width: "25px", color: "gold" }} />, code: 'StorageLocation' },
@@ -375,7 +375,8 @@ const Sidebar = ({ setSidebarOpen }) => {
             { name: "Fixed Manpower", path: "/home/PMPD_FixedManpower", icon: <FaCogs style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "bisque" }} />, code: 'PMPD_FixedManpower' },
 
             // Contributional Charts
-            { name: "Indirect Material Master", path: "/home/CC_PackingBomPart", icon: <FaBoxOpen style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "#FFC107" }} />, code: 'Indirect_Material' },
+            { name: "Material - Direct", path: "/home/Material", icon: <AcUnitIcon style={{ marginRight: "2px", color: "greenyellow", code: 'Material' }} />, code: 'Material' },
+            { name: "Material - Indirect", path: "/home/CC_PackingBomPart", icon: <FaBoxOpen style={{ marginRight: "2px", fontSize: "22px", width: "25px", color: "#FFC107" }} />, code: 'Indirect_Material' },
           ]}
           codeList={[
             'company', 'BusinessDivision', 'Plant', 'Department',
@@ -701,21 +702,21 @@ const Sidebar = ({ setSidebarOpen }) => {
           Permissions={Permissions}
           label="Contribution"
           links={[
-            { name: "DCM Output", path: "/home/CC_DCM_Output", icon: <BsBoxSeam style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'CC_DCM_Output' },
+            { name: "DCM Output", path: "/home/CC_DCM_Output", icon: <FaFileInvoiceDollar style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'CC_DCM_Output' },
             { name: "Actual Consumption", path: "/home/CC_ActualConsumptionPlan", icon: <BsBoxSeam style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'CC_ActualConsumptionPlan' },
             { name: "Packing BOM", path: "/home/CC_PackingBOM", icon: <FaBoxOpen style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'CC_PackingBOM' },
             { name: "Stores And Spares", path: "/home/CC_StoresAndSparesScreen", icon: <MdInventory style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'CC_StoresAndSpares' },
             { name: "Sub Contract", path: "/home/CC_SubContractScreen", icon: <MdPrecisionManufacturing style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'CC_SubContract' },
             { name: "Material Price", path: "/home/CC_IndirectMaterialPrice", icon: <FaRupeeSign style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'CC_MaterialPrice' },
+            { name: "Power Unit", path: "/home/CC_Power_Unit", icon: <FaBolt style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'PowerUnit' },
+            { name: "Daily Power Consumption", path: "/home/CC_DailyPowerConsumption", icon: <FaChartBar style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'DailyPowerConsumption' },
+            { name: "Power Mix Ratio", path: "/home/CC_PowerMixRatio", icon: <FaChartBar style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'PowerMixRatio' },
           ]}
           codeList={[
-            'CC_DCM_Output', 'CC_ActualConsumptionPlan', 'CC_PackingBOM', 'CC_StoresAndSpares', 'CC_SubContract', 'CC_MaterialPrice'
+            'CC_DCM_Output', 'CC_ActualConsumptionPlan', 'CC_PackingBOM', 'CC_StoresAndSpares', 'CC_SubContract', 'CC_MaterialPrice', 'PowerUnit', 'DailyPowerConsumption', 'PowerMixRatio'
           ]}
         />
-
-
       </div>
-
       <div className="mt-5" />
     </div>
   );

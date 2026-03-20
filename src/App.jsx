@@ -97,6 +97,9 @@ import CC_StoresAndSparesScreen from "./ContributionalChart/StoresAndSpares";
 import CC_ActualConsumptionPlan from "./ContributionalChart/ActualConsumption";
 import CC_IndirectMaterialPrice from "./ContributionalChart/IndirectMaterialPrice";
 import CC_DCM_Output from "./ContributionalChart/DCM_Output";
+import CC_PowerUnit from "./Masters/PowerUnit";
+import CC_DailyPowerConsumption from "./ContributionalChart/DailyPowerConsumption";
+import CC_PowerMixRatio from "./ContributionalChart/PowerMixRatio";
 
 const App = () => {
   return (
@@ -211,6 +214,10 @@ const App = () => {
             <Route path="CC_ActualConsumptionPlan" element={<ProtectedRoute screenId={56}><CC_ActualConsumptionPlan /></ProtectedRoute>} />
             <Route path="CC_IndirectMaterialPrice" element={<ProtectedRoute screenId={56}><CC_IndirectMaterialPrice /></ProtectedRoute>} />
             <Route path="CC_DCM_Output" element={<ProtectedRoute screenId={56}><CC_DCM_Output /></ProtectedRoute>} />
+
+            <Route path="CC_Power_Unit" element={<ProtectedRoute screenId={64}><CC_PowerUnit /></ProtectedRoute>} />
+            <Route path="CC_DailyPowerConsumption" element={<ProtectedRoute screenId={65}><CC_DailyPowerConsumption /></ProtectedRoute>} />
+            <Route path="CC_PowerMixRatio" element={<ProtectedRoute screenId={66}><CC_PowerMixRatio /></ProtectedRoute>} />
 
           </Route>
         </Routes>

@@ -29,7 +29,6 @@ export const getUpdates = async (data) => {
   return response;
 };
 export const getMaterialType = async (matGroup) => {
-
   const response = await axios.get(`${api}/Master/Get_Material_Type`, { params: { matGroup } });
   return response;
 };

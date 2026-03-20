@@ -34,9 +34,26 @@ const PMPD_ActualProductionPlan = () => {
       setRows(originalRows);
     } else {
       const filteredRows = originalRows.filter((row) =>
-        ['plant', 'part_number', 'description'].some((key) => {
-          const value = row[key];
-          return value && String(value).toLowerCase().includes(text);
+        ['plant', 'part_number', 'description', 'prod_date'].some((key) => {
+          // const value = row[key];
+          // return value && String(value).toLowerCase().includes(text);
+          let value = row[key];
+
+          if (value === null || value === undefined) return false;
+
+          // Handle the date field specifically
+          if (key === 'prod_date') {
+            // parseISO is safer for yyyy-mm-dd strings
+            const dateObj = new Date(value);
+
+            if (isValid(dateObj)) {
+              // Convert the row's date to the searchable format
+              value = format(dateObj, "dd-MM-yyyy");
+            }
+          }
+
+          // Standard string comparison
+          return String(value).toLowerCase().includes(text);
         })
       );
       setRows(filteredRows);

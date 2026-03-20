@@ -113,3 +113,61 @@ export const DCMOutputReportSendMailApi = async ({ plant, startDate, endDate }) 
 }
 
 
+
+
+///-============ Mst Power Unit
+export const GetMstPowerUnitApi = async () => {
+    const response = await axios.get(`${api}/powerUnit/getMstPowerUnit`);
+    return response.data;
+}
+export const AddorEditMstPowerUnitApi = async (body) => {
+    const response = await axios.post(`${api}/powerUnit/addOrEditMstPowerUnit`, body);
+    return response.data;
+}
+export const MstPowerUnitBulkApi = async (body) => {
+    const response = await axios.post(`${api}/powerUnit/mstPowerunit_BULK`, body, {
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    });
+    return response.data;
+}
+
+
+//=======[Trn Daily Power Consumption]
+export const GetTrnDailyPwrConsAPi = async () => {
+    const response = await axios.get(`${api}/dailyPwrRouter/getTrnDailyPwrCons`);
+    return response.data;
+}
+export const AddOrEditTrnDailyPwrConsApi = async (body) => {
+    const response = await axios.post(`${api}/dailyPwrRouter/addOrEditTrnDailyPwrCons`, body);
+    return response.data;
+}
+export const TrnDailyPwrCons_BULKApi = async (body) => {
+    const response = await axios.post(`${api}/dailyPwrRouter/TrnDailyPwrCons_BULK`, body, {
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    });
+    return response.data;
+}
+
+
+// ====== Trn Power Mix Ratio
+export const GetTrnPowerMixRatioAPi = async () => {
+    const response = await axios.get(`${api}/powerMixRouter/getTrnPowerMixRatio`);
+    return response.data;
+}
+export const AddOrEditTrnPowerMixRatioApi = async (body) => {
+    const response = await axios.post(`${api}/powerMixRouter/addOrEditTrnPowerMix`, body);
+    return response.data;
+}
+export const TrnPowerMixRatio_BULKApi = async (body) => {
+    const response = await axios.post(`${api}/powerMixRouter/TrnPowerMixRatio_BULK`, body, {
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    });
+    return response.data;
+}
+

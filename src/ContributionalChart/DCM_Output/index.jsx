@@ -145,12 +145,12 @@ const CC_DCM_Output = () => {
                     const response = await GetDCMOutput_ReportApi({
                         startDate, endDate, plant
                     })
-                    console.log(response)
-                    setOriginalRows(response[9] || [])
-                    setRows(response[9] || [])
+                    console.log(response.dcm_output, 'dcm_output')
+                    setOriginalRows(response.dcm_output || [])
+                    setRows(response.dcm_output || [])
 
-                    setConsumptionData(response[1] || 0)
-                    console.log(response[1])
+                    setConsumptionData(response?.childPartConsumption || [])
+                    console.log(response?.childPartConsumption || [])
 
 
                 } catch (error) {
@@ -233,21 +233,38 @@ const CC_DCM_Output = () => {
                 plant
             });
 
+            console.log(response.dcm_output, 'dcm_output - Excel output')
+
             await exportToExcelDownload({
                 fileName: "DCM_Reports",
                 sheets: [
-                    { name: "Base Report", data: response[0] || [] },
-                    { name: "Consumption", data: response[1] || [] },
-                    { name: "Sales Actual", data: response[2] || [] },
-                    { name: "Production Actual", data: response[3] || [] },
-                    { name: "Sales Plan", data: response[4] || [] },
-                    { name: "Production Plan", data: response[5] || [] },
-                    { name: "Labour Flex Plan", data: response[6] || [] },
-                    { name: "Labour Cost Actual", data: response[7] || [] },
-                    // { name: "DHRM HC", data: response[8] || [] },
-                    { name: "Labour Cost Working", data: response[8] || [] },
-                    { name: "DCM", data: response[9] || [] },
-                    { name: "Missing FG_Part", data: response[10] || [] },
+                    // { name: "Base Report", data: response[0] || [] },
+                    // { name: "Consumption", data: response[1] || [] },
+                    // { name: "Sales Actual", data: response[2] || [] },
+                    // { name: "Production Actual", data: response[3] || [] },
+                    // { name: "Sales Plan", data: response[4] || [] },
+                    // { name: "Production Plan", data: response[5] || [] },
+                    // { name: "Labour Flex Plan", data: response[6] || [] },
+                    // { name: "Labour Cost Actual", data: response[7] || [] },
+                    // // { name: "DHRM HC", data: response[8] || [] },
+                    // { name: "Labour Cost Working", data: response[8] || [] },
+                    // { name: "Power Cost Unit", data: response[9] || [] },
+                    // { name: "DCM", data: response[10] || [] },
+                    // { name: "Missing FG_Part", data: response[11] || [] },
+                    { name: "Production Plan", data: response.productionPlan || [] },
+                    { name: "Production Actual", data: response.productionActual || [] },
+                    { name: "Consumption Actual", data: response.actualConsumption || [] },
+                    { name: "Packing BOM", data: response.packingBom || [] },
+                    { name: "S&S_SubContract", data: response.SP_AND_SC || [] },
+                    { name: "BOM Plan vs Actual", data: response.childPartConsumption || [] },
+                    { name: "Sales Actual", data: response.salesActual || [] },
+                    { name: "Sales Plan", data: response.salesPlan || [] },
+                    { name: "Labour Flex Plan", data: response.labourFlexPlan || [] },
+                    { name: "Labour Cost Actual", data: response.labourCostActual || [] },
+                    { name: "Labour Cost Working", data: response.labourCostWorking || [] },
+                    { name: "Power Cost Unit", data: response.powerCostUnit || [] },
+                    { name: "DCM", data: response.dcm_output || [] },
+                    { name: "Missing FG_Part", data: response.missingFgParts || [] },
                 ]
             });
 
