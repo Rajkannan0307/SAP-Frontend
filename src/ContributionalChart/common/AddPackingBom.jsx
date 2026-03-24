@@ -133,6 +133,7 @@ const createEmptyRow = (id) => ({
     id,
     child_part_no: null,
     qty: "",
+    life: "",
     pri_secri: "",
     uom: "",
     new: true
@@ -312,6 +313,7 @@ const AddPackageBomDialog = ({
                     id: newId,
                     child_part_no: '',
                     qty: 0,
+                    life: 0,
                     pri_secri: PriSecriEnum.Primary,
                     uom: ''
                 }
@@ -397,6 +399,12 @@ const AddPackageBomDialog = ({
             flex: 1
         },
         {
+            field: 'life', headerName: 'Life', editable: true, type: 'number',
+            align: 'left',
+            headerAlign: 'left',
+            flex: 1
+        },
+        {
             field: 'pri_secri',
             headerName: 'Primary / Secondary',
             flex: 1,
@@ -454,6 +462,7 @@ const AddPackageBomDialog = ({
                 id: i + 1,
                 child_part_no: e.child_part_no,
                 qty: e.qty,
+                life: e.life,
                 pri_secri: e.pri_secri,
                 uom: CCType === CCTypeEnum.SC ? 'Nos' : e.uom
             }
@@ -708,7 +717,8 @@ const AddPackageBomDialog = ({
                         disableColumnMenu
                         sortingOrder={[]}
                         columnVisibilityModel={{
-                            pri_secri: CCType === CCTypeEnum.PK ? true : false
+                            pri_secri: CCType === CCTypeEnum.PK ? true : false,
+                            life: CCType === CCTypeEnum.TC ? true : false
                         }}
                         sx={{
                             ...CommonMuiStyles.dataGridSmallSx,

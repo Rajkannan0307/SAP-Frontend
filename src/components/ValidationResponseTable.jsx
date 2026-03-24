@@ -7,8 +7,7 @@ import { Box, Typography } from "@mui/material";
 const CustomToolbar = () => (
     <GridToolbarContainer className="">
         <GridToolbarExport
-            csvOptions={{ fileName: "Validation_Errors" }}
-            excelOptions={{ fileName: "Validation_Errors" }}
+            csvOptions={{ fileName: "Validation_Errors", allColumns: true }}
         />
     </GridToolbarContainer>
 );

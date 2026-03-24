@@ -104,11 +104,17 @@ const CC_ActualConsumptionPlan = () => {
             renderCell: (params) => params.api.getRowIndexRelativeToVisibleRows(params.id) + 1
         },
         { field: "plant", headerName: "Plant", width: 100 },
+        { field: "doc_no", headerName: "Doc No", width: 150 },
         { field: "part_no", headerName: "Part No", width: 150 },
         { field: "description", headerName: "Description", flex: 1 },
         { field: "mat_type", headerName: "Mat Type", width: 100 },
         {
             field: "cons_qty", headerName: "Cons Qty", width: 150,
+            align: "center",
+            headerAlign: "center"
+        },
+        {
+            field: "cons_value", headerName: "Cons Value", width: 150,
             align: "center",
             headerAlign: "center"
         },
@@ -404,8 +410,10 @@ const ExcelUploadModal = ({
 
         const headers = [
             "Plant",
+            "Doc_No",
             "Part_Number",
             "Cons_Qty",
+            "Cons_Value",
             "Cons_Date",
             "Doc_Date",
         ];

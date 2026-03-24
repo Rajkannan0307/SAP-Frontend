@@ -6,6 +6,7 @@ import { FaDownload, FaUpload } from "react-icons/fa6";
 import * as ExcelJS from 'exceljs'
 import { PackingBomBulkUploadApi } from "../../controller/ContributionalChartApiService";
 import { CCTypeEnum, PriSecriEnum } from "../../common/enumValues";
+import ValidationResponseGrid from "../../components/ValidationResponseTable";
 
 // type CCType = 'SC' | 'TC' | 'PK';
 
@@ -38,6 +39,7 @@ const getCCtypesData = (CCType) => {
                     'Per_Qty',
                     'Child_Part_No',
                     'BOM_Qty',
+                    'Life',
                     'UOM',
                     'Effective_Date (dd-mm-yyyy)',
                     'Active_Status'
@@ -45,7 +47,7 @@ const getCCtypesData = (CCType) => {
                 workSheetName: 'TOOLS_AND_SPARES_BOM',
                 templateFileName: 'TOOLS_AND_SPARES_BOM_Template.xlsx',
                 applyPriSecri: false,
-                activeStatusExcelCode: 'H2:H1000'
+                activeStatusExcelCode: 'I2:I1000'
             }
         case CCTypeEnum.SC:
             return {
@@ -62,7 +64,7 @@ const getCCtypesData = (CCType) => {
                 workSheetName: 'SUB_CONTRACT_BOM',
                 templateFileName: 'SUB_CONTRACT_BOM_Template.xlsx',
                 applyPriSecri: false,
-                activeStatusExcelCode: 'H2:H1000'
+                activeStatusExcelCode: 'I2:I1000'
             }
     }
 }
@@ -333,7 +335,8 @@ const PackingBomBulkUpload = ({
                     </Box>
 
                     {/* Upload Status */}
-                    {uploadResponse && <ValidationResult response={uploadResponse} />}
+                    {/* {uploadResponse && <ValidationResult response={uploadResponse} />} */}
+                    {uploadResponse && <ValidationResponseGrid response={uploadResponse} />}
 
 
                 </Box>
