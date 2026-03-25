@@ -14,6 +14,7 @@ import { useFormik } from 'formik'
 import * as yup from 'yup'
 import { AuthContext } from '../../Authentication/AuthContext'
 import { AddTrnMonthlyConsumption_BULK, getTrnActualConsumptionPlan } from '../../controller/ContributionalChartApiService'
+import ValidationResponseGrid from '../../components/ValidationResponseTable'
 
 const CC_ActualConsumptionPlan = () => {
     const [searchText, setSearchText] = useState("");
@@ -634,7 +635,7 @@ const ExcelUploadModal = ({
                     </Box>
 
                     {/* Upload Status */}
-                    {uploadResponse && <ValidationResult response={uploadResponse} />}
+                    {uploadResponse && <ValidationResponseGrid response={uploadResponse} />}
 
 
                 </Box>

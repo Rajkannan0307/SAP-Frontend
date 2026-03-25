@@ -15,6 +15,7 @@ import { useFormik } from 'formik'
 import * as yup from 'yup'
 import { getPMPDAccess } from '../../Authentication/ActionAccessType'
 import { AuthContext } from '../../Authentication/AuthContext'
+import ValidationResponseGrid from '../../components/ValidationResponseTable'
 
 const PMPD_ActualProductionPlan = () => {
   const [searchText, setSearchText] = useState("");
@@ -592,7 +593,7 @@ const ExcelUploadModal = ({
           </Box>
 
           {/* Upload Status */}
-          {uploadResponse && <ValidationResult response={uploadResponse} />}
+          {uploadResponse && <ValidationResponseGrid response={uploadResponse} />}
 
 
         </Box>
