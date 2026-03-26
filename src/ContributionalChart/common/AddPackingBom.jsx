@@ -28,12 +28,12 @@ export const getCCTypesCommonData = (CCType) => {
     switch (CCType) {
         case CCTypeEnum.PK:
             return {
-                materialTypes: 'VERP',
+                materialTypes: 'VERP,LEIH',
                 fgMaterialTypes: "FERT"
             }
         case CCTypeEnum.TC:
             return {
-                materialTypes: 'HIBE,FHMI',
+                materialTypes: 'HIBE,FHMI,SERV',
                 fgMaterialTypes: "FERT"
             }
         case CCTypeEnum.SC:
