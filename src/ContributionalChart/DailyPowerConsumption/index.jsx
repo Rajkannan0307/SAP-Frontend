@@ -93,11 +93,13 @@ const CC_DailyPowerConsumption = () => {
         return updatedRow;
     };
     const handleEditClick = (id) => {
+        setSelectedRows((prev) => [...prev, id])
         setRowModesModel((prev) => ({
             ...prev,
             [id]: { mode: GridRowModes.Edit }
         }));
     };
+
 
     const handleSaveClick = async (id) => {
         try {
@@ -368,28 +370,30 @@ const CC_DailyPowerConsumption = () => {
 
                 if (!isSelected) {
                     return (
-                        <IconButton disabled>
+                        <IconButton onClick={() => {
+                            handleEditClick(params.id)
+                        }}>
                             <EditIcon />
                         </IconButton>
                     );
                 }
 
 
-                // isEditing ? (
-                return <IconButton
-                    color="success"
-                    onClick={() => handleSaveClick(params.id)}
-                >
-                    <SaveIcon />
-                </IconButton>
-                // ) : (
-                // <IconButton
-                //     color="primary"
-                //     onClick={() => handleEditClick(params.id)}
-                // >
-                //     <EditIcon />
-                // </IconButton>
-                // );
+                return isEditing ? (
+                    <IconButton
+                        color="success"
+                        onClick={() => handleSaveClick(params.id)}
+                    >
+                        <SaveIcon />
+                    </IconButton>
+                ) : (
+                    <IconButton
+                        color="primary"
+                        onClick={() => handleEditClick(params.id)}
+                    >
+                        <EditIcon />
+                    </IconButton>
+                );
             }
         }
     ];
@@ -573,17 +577,17 @@ const CC_DailyPowerConsumption = () => {
                     getRowId={(row) => row.daily_pwr_id} // Specify a custom id field
                     columnHeaderHeight={35}
                     slots={{ toolbar: CustomToolbar }}
-                    checkboxSelection
-                    disableRowSelectionOnClick
-                    onRowSelectionModelChange={(ids) => {
-                        setSelectedRows(ids);
-                        const updatedModes = {};
-                        ids.forEach((id) => {
-                            updatedModes[id] = { mode: GridRowModes.Edit };
-                        });
-                        setRowModesModel(updatedModes);
-                    }}
-                    rowSelectionModel={selectedRows}
+                    // checkboxSelection
+                    editMode="row"
+                    // onRowSelectionModelChange={(ids) => {
+                    //     setSelectedRows(ids);
+                    //     const updatedModes = {};
+                    //     ids.forEach((id) => {
+                    //         updatedModes[id] = { mode: GridRowModes.Edit };
+                    //     });
+                    //     setRowModesModel(updatedModes);
+                    // }}
+                    // rowSelectionModel={selectedRows}
                     rowModesModel={rowModesModel}
                     onRowModesModelChange={setRowModesModel}
                     processRowUpdate={processRowUpdate} // only stores data
