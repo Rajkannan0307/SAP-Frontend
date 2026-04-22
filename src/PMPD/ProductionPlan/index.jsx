@@ -16,6 +16,7 @@ import * as yup from 'yup'
 import { getPMPDAccess } from '../../Authentication/ActionAccessType'
 import { AuthContext } from '../../Authentication/AuthContext'
 import ValidationResponseGrid from '../../components/ValidationResponseTable'
+import { finYearsList } from '../../common/data'
 
 const PMPD_ProductionPlan = () => {
     const [searchText, setSearchText] = useState("");
@@ -238,7 +239,7 @@ const PMPD_ProductionPlan = () => {
                         error={formik.touched.fin_year && Boolean(formik.errors.fin_year)}
                         helperText={formik.touched.fin_year && formik.errors.fin_year}
                     >
-                        {["2025-26", "2026-27"].map((fy) => (
+                        {finYearsList.map((fy) => (
                             <MenuItem key={fy} value={fy} sx={{ fontSize: 13 }}>
                                 {fy}
                             </MenuItem>

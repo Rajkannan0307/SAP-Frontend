@@ -16,6 +16,7 @@ import * as yup from 'yup'
 import { getPMPDAccess } from '../../Authentication/ActionAccessType'
 import { AuthContext } from '../../Authentication/AuthContext'
 import ValidationResponseGrid from '../../components/ValidationResponseTable'
+import { finYearsList } from '../../common/data'
 
 const PMPD_ActualProductionPlan = () => {
   const [searchText, setSearchText] = useState("");
@@ -111,25 +112,49 @@ const PMPD_ActualProductionPlan = () => {
     fetchData()
   }, [])
 
+  // const columns = [
+  //   { field: "act_prod_id", headerName: "SI No", width: 80 },
+  //   { field: "plant", headerName: "Plant", width: 150 },
+  //   { field: "part_number", headerName: "Part No", width: 230 },
+  //   { field: "description", headerName: "Description", flex: 1 },
+  //   { field: "prod_qty", headerName: "Prod Qty", width: 150 },
+  //   { field: "prod_date", headerName: "Prod Date", width: 150, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
+  //   // {
+  //   //     field: "action", headerName: "Action", width: 160,
+  //   //     renderCell: (params) => (
+  //   //         <IconButton
+  //   //             color="primary"
+  //   //             // onClick={() => handleEdit(params.row)}
+  //   //             title="Edit"
+  //   //         >
+  //   //             <EditIcon />
+  //   //         </IconButton>
+  //   //     ),
+  //   // },
+  // ];
+
   const columns = [
     { field: "act_prod_id", headerName: "SI No", width: 80 },
-    { field: "plant", headerName: "Plant", width: 150 },
-    { field: "part_number", headerName: "Part No", width: 230 },
-    { field: "description", headerName: "Description", flex: 1 },
-    { field: "prod_qty", headerName: "Prod Qty", width: 150 },
-    { field: "prod_date", headerName: "Prod Date", width: 150, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
-    // {
-    //     field: "action", headerName: "Action", width: 160,
-    //     renderCell: (params) => (
-    //         <IconButton
-    //             color="primary"
-    //             // onClick={() => handleEdit(params.row)}
-    //             title="Edit"
-    //         >
-    //             <EditIcon />
-    //         </IconButton>
-    //     ),
-    // },
+    { field: "plant", headerName: "Plant", width: 100 },
+    { field: "moment_type", headerName: "Moment_Type", width: 110 },
+    { field: "storage_loc", headerName: "Storage_Loc", width: 110 },
+    {
+      field: "prod_date",
+      headerName: "Prod_Date",
+      width: 130,
+      renderCell: (params) => params.value ? format(new Date(params.value), "dd-MM-yyyy") : ""
+    },
+    { field: "part_number", headerName: "Part_Number", width: 180 },
+    { field: "description", headerName: "Description", flex: 1, minWidth: 200 },
+    { field: "prod_qty", headerName: "Prod_Qty", width: 110, type: 'number' },
+    { field: "prod_order", headerName: "Prod_Order", width: 150 },
+    { field: "material_doc", headerName: "Material_Doc", width: 150 },
+    {
+      field: "time_of_entry",
+      headerName: "Entry_Time",
+      width: 120,
+      renderCell: (params) => params.value
+    }
   ];
 
   const CustomToolbar = () => (
@@ -209,7 +234,7 @@ const PMPD_ActualProductionPlan = () => {
             error={formik.touched.fin_year && Boolean(formik.errors.fin_year)}
             helperText={formik.touched.fin_year && formik.errors.fin_year}
           >
-            {["2025-26", "2026-27"].map((fy) => (
+            {finYearsList.map((fy) => (
               <MenuItem key={fy} value={fy} sx={{ fontSize: 13 }}>
                 {fy}
               </MenuItem>
@@ -371,10 +396,15 @@ const ExcelUploadModal = ({
 
     const headers = [
       "Plant",
+      "Moment_Type",
+      "Storage_Loc",
+      "Prod_Date",
       "Part_Number",
       "Description",
       "Prod_Qty",
-      "Prod_Date",
+      "Prod_Order",
+      "Material_Doc",
+      "Entry_Time_hh_mm_ss"
     ];
 
     worksheet.addRow(headers);
@@ -403,7 +433,7 @@ const ExcelUploadModal = ({
     });
 
     // 5️⃣ Date formatting
-    worksheet.getColumn("E").numFmt = "yyyy-mm-dd";
+    worksheet.getColumn("D").numFmt = "yyyy-mm-dd";
     // worksheet.getColumn("I").numFmt = "yyyy-mm-dd";
 
     // 6️⃣ Cell styling (rows below header)

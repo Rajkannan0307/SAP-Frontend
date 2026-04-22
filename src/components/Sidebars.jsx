@@ -700,7 +700,7 @@ const Sidebar = ({ setSidebarOpen }) => {
           toggleSection={toggleContributional}
           icon={<FaRupeeSign style={{ marginRight: "8px", color: "#FFA500", fontSize: "27px", }} />}
           Permissions={Permissions}
-          label="Contribution"
+          label="DCM"
           links={[
             { name: "DCM Output", path: "/home/CC_DCM_Output", icon: <FaFileInvoiceDollar style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'CC_DCM_Output' },
             { name: "Actual Consumption", path: "/home/CC_ActualConsumptionPlan", icon: <BsBoxSeam style={{ marginRight: "8px", fontSize: "18px", color: "#B7BDF7" }} />, code: 'CC_ActualConsumptionPlan' },
