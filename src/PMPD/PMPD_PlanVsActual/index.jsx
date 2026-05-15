@@ -8,10 +8,9 @@ import { GetPMPD_PlanVsActual } from '../../controller/PMPDApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import * as XLSX from 'xlsx-js-style'
 import { FaFileExcel } from "react-icons/fa";
-import { startOfDay, endOfDay, format } from 'date-fns'
+import { startOfMonth, endOfMonth, parse, format, subDays } from 'date-fns'
 import { AuthContext } from '../../Authentication/AuthContext'
 import { getPMPDAccess } from '../../Authentication/ActionAccessType'
-import { startOfMonth, endOfMonth, parse } from "date-fns";
 
 
 const getRowClassName = (params) => {
@@ -84,7 +83,18 @@ const PMDP_PlanVsActual = () => {
 
             // Get month boundaries
             const startDate = format(startOfMonth(monthDate), "yyyy-MM-dd");
-            const endDate = format(endOfMonth(monthDate), "yyyy-MM-dd");
+            // const endDate = format(endOfMonth(monthDate), "yyyy-MM-dd");
+
+            // Check if selected month is the current month
+            const today = new Date();
+            const isCurrentMonth =
+                monthDate.getFullYear() === today.getFullYear() &&
+                monthDate.getMonth() === today.getMonth();
+
+            // If current month → use yesterday as end date, otherwise use end of month
+            const endDate = isCurrentMonth
+                ? format(subDays(today, 1), "yyyy-MM-dd")
+                : format(endOfMonth(monthDate), "yyyy-MM-dd");
 
             const payloadBody = {
                 startDate,
