@@ -11,7 +11,6 @@ import { FaFileExcel } from "react-icons/fa";
 import { startOfDay, endOfDay, format } from 'date-fns'
 import { AuthContext } from '../../Authentication/AuthContext'
 import { getPMPDAccess } from '../../Authentication/ActionAccessType'
-import { IoIosArrowDown } from "react-icons/io";
 import { startOfMonth, endOfMonth, parse } from "date-fns";
 
 
@@ -100,7 +99,7 @@ const PMDP_PlanVsActual = () => {
                 setLoading(true)
                 const response = await GetPMPD_PlanVsActual(payloadBody)
 
-                setResultData(response.data[2])
+                setResultData(response.data[3])
 
             } else {
                 if (excelLoading) return
@@ -122,13 +121,6 @@ const PMDP_PlanVsActual = () => {
         fetchData()
     }, [])
 
-
-    const generateDynamicCat = (cat) => {
-        switch (cat) {
-            default:
-                return cat
-        }
-    }
 
     const columns = [
         {
@@ -157,127 +149,58 @@ const PMDP_PlanVsActual = () => {
         },
     ];
 
-
     const handleDownloadExcelData = async (payload) => {
         try {
-            const response = await GetPMPD_PlanVsActual(payload);
-            console.log("Data from API:", response.data);
+            const { data } = await GetPMPD_PlanVsActual(payload);
 
-            if (!response.data || response.data.length < 2) {
-                alert("No data available to download.");
-                return;
+            if (!data || data.length < 2) {
+                return alert("No data available to download.");
             }
 
-            const summaryData = response.data[0]; // Sheet 1
-            const summaryData2 = response.data[1]; // Sheet 2
-            const detailData = response.data[2];  // Sheet 3
-            const detailData2 = response.data[4];  // Sheet 3
+            // 1. Reusable helper to generate a sheet and style its headers
+            const createSheet = (sheetData, bgColor = "E7F3FF") => {
+                if (!sheetData) return XLSX.utils.json_to_sheet([]);
+                const ws = XLSX.utils.json_to_sheet(sheetData);
 
-            const fileType =
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-            const fileExtension = ".xlsx";
-            const fileName = "PMPD_PlanVsActual";
+                if (sheetData.length > 0) {
+                    Object.keys(sheetData[0]).forEach((_, colIdx) => {
+                        const cell = ws[XLSX.utils.encode_cell({ c: colIdx, r: 0 })];
+                        if (cell) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: bgColor } }, alignment: { horizontal: "center" } };
+                    });
+                }
+                return ws;
+            };
 
-            /* -------------------- Sheet 1 : Summary -------------------- */
-            const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+            // 2. Destructure the specific arrays from the response
+            const planData = data[0];
+            const actualData = data[1];
+            const manPowerActuals = data[2];
+            const summaryData = data[4];
+            const summarySplitData = data[5];
 
-            if (summaryData.length > 0) {
-                const headers = Object.keys(summaryData[0]);
-                headers.forEach((_, colIdx) => {
-                    const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
-                    if (wsSummary[cellAddress]) {
-                        wsSummary[cellAddress].s = {
-                            font: { bold: true },
-                            fill: { fgColor: { rgb: "E7F3FF" } },
-                            alignment: { horizontal: "center" },
-                        };
-                    }
-                });
-            }
-            const wsSummary2 = XLSX.utils.json_to_sheet(summaryData2);
-
-            if (summaryData2.length > 0) {
-                const headers = Object.keys(summaryData2[0]);
-                headers.forEach((_, colIdx) => {
-                    const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
-                    if (wsSummary2[cellAddress]) {
-                        wsSummary2[cellAddress].s = {
-                            font: { bold: true },
-                            fill: { fgColor: { rgb: "E7F3FF" } },
-                            alignment: { horizontal: "center" },
-                        };
-                    }
-                });
-            }
-
-            /* -------------------- Sheet 3 : Data -------------------- */
-            const wsData = XLSX.utils.json_to_sheet(detailData);
-
-            if (detailData.length > 0) {
-                const headers = Object.keys(detailData[0]);
-                headers.forEach((_, colIdx) => {
-                    const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
-                    if (wsData[cellAddress]) {
-                        wsData[cellAddress].s = {
-                            font: { bold: true },
-                            fill: { fgColor: { rgb: "FFF4CC" } },
-                            alignment: { horizontal: "center" },
-                        };
-                    }
-                });
-            }
-
-            /* -------------------- Sheet 4 : Data2 -------------------- */
-            const wsData2 = XLSX.utils.json_to_sheet(detailData2);
-
-            if (detailData2.length > 0) {
-                const headers = Object.keys(detailData2[0]);
-                headers.forEach((_, colIdx) => {
-                    const cellAddress = XLSX.utils.encode_cell({ c: colIdx, r: 0 });
-                    if (wsData2[cellAddress]) {
-                        wsData2[cellAddress].s = {
-                            font: { bold: true },
-                            fill: { fgColor: { rgb: "FFF4CC" } },
-                            alignment: { horizontal: "center" },
-                        };
-                    }
-                });
-            }
-
-            /* -------------------- Workbook -------------------- */
+            // 3. Create Workbook and append styled sheets
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, wsSummary, "Plan");
-            XLSX.utils.book_append_sheet(wb, wsSummary2, "Actual");
-            XLSX.utils.book_append_sheet(wb, wsData, "Summary");
-            XLSX.utils.book_append_sheet(wb, wsData2, "Summary_Split");
+            XLSX.utils.book_append_sheet(wb, createSheet(planData, "E7F3FF"), "Plan");
+            XLSX.utils.book_append_sheet(wb, createSheet(actualData, "E7F3FF"), "Actual");
+            XLSX.utils.book_append_sheet(wb, createSheet(manPowerActuals, "E7F3FF"), "ManpowerActuals"); // Fixed: Now correctly converted to a sheet
+            XLSX.utils.book_append_sheet(wb, createSheet(summaryData, "FFF4CC"), "Summary");
+            XLSX.utils.book_append_sheet(wb, createSheet(summarySplitData, "FFF4CC"), "Summary_Split");
 
-            const excelBuffer = XLSX.write(wb, {
-                bookType: "xlsx",
-                type: "array",
-            });
-
-            const blob = new Blob([excelBuffer], { type: fileType });
-            const url = window.URL.createObjectURL(blob);
+            // 4. Generate & Download
+            const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+            const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
 
             const link = document.createElement("a");
-            link.href = url;
-            link.download = fileName + fileExtension;
-            document.body.appendChild(link);
+            link.href = window.URL.createObjectURL(blob);
+            link.download = "PMPD_PlanVsActual.xlsx";
             link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
+            window.URL.revokeObjectURL(link.href);
 
             alert("Excel downloaded successfully!");
+
         } catch (error) {
             console.error("Download failed:", error);
-
-            if (error.response) {
-                alert(error.response.data.message || "Backend error");
-            } else if (error.request) {
-                alert("No response from server");
-            } else {
-                alert(error.message);
-            }
+            alert(error?.response?.data?.message || (error?.request ? "No response from server" : error.message));
         }
     };
 

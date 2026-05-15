@@ -171,3 +171,53 @@ export const TrnPowerMixRatio_BULKApi = async (body) => {
     return response.data;
 }
 
+
+
+// =========== Returnable Packing ================
+
+
+export const GetReturnablePackingApi = async ({ plant, startDate, endDate }) => {
+    const response = await axios.post(`${api}/PackingBomRouter/getReturnablePackingAct`, { plant, startDate, endDate });
+    return response.data;
+}
+export const ReturnablePacking_BULKApi = async (formdata) => {
+    const response = await axios.post(`${api}/PackingBomRouter/ReturnablePackingAct_BULK`, formdata, {
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    });
+    return response.data;
+}
+
+
+// =========== MST Rejection ============
+
+export const GetMstRejectionApi = async ({ plant, startDate, endDate }) => {
+    const response = await axios.post(`${api}/PackingBomRouter/getMstRejection`, { plant, startDate, endDate });
+    return response.data;
+}
+export const MstRejection_BULKApi = async (formdata) => {
+    const response = await axios.post(`${api}/PackingBomRouter/MstRejection_BULK`, formdata, {
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    });
+    return response.data;
+}
+
+
+//============ Trn Rejection Actuals
+
+
+export const GetTrnRejectionActualApi = async ({ plant, startDate, endDate }) => {
+    const response = await axios.post(`${api}/PackingBomRouter/getTrnRejectionActual`, { plant, startDate, endDate });
+    return response.data;
+}
+export const TrnRejectionActual_BULKApi = async (formdata) => {
+    const response = await axios.post(`${api}/PackingBomRouter/TrnRejectionActual_BULK`, formdata, {
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    });
+    return response.data;
+}

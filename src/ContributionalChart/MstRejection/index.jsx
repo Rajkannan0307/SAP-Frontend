@@ -1,23 +1,23 @@
 import React, { useContext, useEffect, useState } from 'react'
 import SectionHeading from '../../components/Header'
-import { Box, Button, Checkbox, IconButton, ListItemText, MenuItem, Modal, TextField, Typography } from '@mui/material'
+import { Box, Button, IconButton, MenuItem, Modal, TextField, Typography } from '@mui/material'
 import { CloudUploadIcon, EditIcon, SearchIcon } from 'lucide-react'
+import { PiUploadDuotone } from 'react-icons/pi'
 import { FaDownload, FaUpload } from 'react-icons/fa6'
 import { deepPurple } from '@mui/material/colors';
 import * as ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
 import { getPlantdetails } from '../../controller/CommonApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
-import { format, } from 'date-fns'
+import { endOfDay, endOfMonth, format, isValid, startOfDay, startOfMonth } from 'date-fns'
 import { useFormik } from 'formik'
 import * as yup from 'yup'
 import { AuthContext } from '../../Authentication/AuthContext'
-import { AddTrnIndirectMaterialPrice_BULK, getTrnIndirectMaterialPrice } from '../../controller/ContributionalChartApiService'
-import { getMaterialType } from '../../controller/Masterapiservice'
-import { MaterialGroupEnumTypes } from '../../common/enumValues'
+import { MstRejection_BULKApi, GetMstRejectionApi } from '../../controller/ContributionalChartApiService'
+import ValidationResponseGrid from '../../components/ValidationResponseTable'
 import { toast } from 'react-toastify'
 
-const CC_IndirectMaterialPrice = () => {
+const CC_MstRejection = () => {
     const [searchText, setSearchText] = useState("");
     const [rows, setRows] = useState([]);
     const [originalRows, setOriginalRows] = useState([]);
@@ -25,10 +25,6 @@ const CC_IndirectMaterialPrice = () => {
     const [refreshData, setRefreshData] = useState(false)
     const { user } = useContext(AuthContext);
     const currentUserPlantCode = user.PlantCode
-    const [plants, setPlants] = useState([])
-    const [loading, setLoading] = useState(false)
-    const [matTypes, setMatTypes] = useState([])
-
 
     const handleSearch = () => {
         const text = searchText.trim().toLowerCase();
@@ -37,7 +33,7 @@ const CC_IndirectMaterialPrice = () => {
             setRows(originalRows);
         } else {
             const filteredRows = originalRows.filter((row) =>
-                ['plant', 'part_no', 'eff_date'].some((key) => {
+                ['plant', 'supplier_code', 'supplier_name', 'material_code', 'pack_desc'].some((key) => {
                     const value = row[key];
                     return value && String(value).toLowerCase().includes(text);
                 })
@@ -46,42 +42,51 @@ const CC_IndirectMaterialPrice = () => {
         }
     };
 
+    const [plants, setPlants] = useState([])
+    const [loading, setLoading] = useState(false)
+
     const validationschema = yup.object({
         plant: yup.string().required('Required'),
         // fin_year: yup.string().required('Required'),
-        // startDate: yup.string().required('Required'),
-        // endDate: yup.string().required('Required'),
-        matType: yup.array().min(1, 'Required'),
+        startDate: yup.string().required('Required'),
+        endDate: yup.string().required('Required'),
     })
 
     const formik = useFormik({
         initialValues: {
             plant: currentUserPlantCode,
-            matType: [],
-            type: "SUBMIT"
+            // fin_year: "",
+            startDate: "",
+            endDate: "",
         },
         validationSchema: validationschema,
         enableReinitialize: true,
         onSubmit: async (values) => {
             console.log(values)
             const plant = values.plant
+            // Convert month-year input to real dates
+            const startDate = startOfMonth(new Date(values.startDate));
+            const endDate = endOfMonth(new Date(values.endDate));
+
+            console.log(startDate, endDate)
 
             if (loading) return
-            setLoading(true)
 
             try {
-                const response = await getTrnIndirectMaterialPrice({
-                    plant,
-                    matType: values.matType?.join(",")
+                setLoading(true)
+                const response = await GetMstRejectionApi({
+                    startDate, endDate, plant
                 })
+                console.log(response)
                 setOriginalRows(response || [])
                 setRows(response || [])
             } catch (error) {
-                toast.error(error?.response?.data?.message || "Something went wrong")
                 console.log(error)
+                toast.error(error?.response?.data?.message || error?.message || 'something went wrong')
             } finally {
                 setLoading(false)
             }
+
         }
     })
 
@@ -89,36 +94,42 @@ const CC_IndirectMaterialPrice = () => {
         const fetchData = async () => {
             const resposne = await getPlantdetails()
             setPlants(resposne)
-
-            const response2 = await getMaterialType(MaterialGroupEnumTypes.all)
-            setMatTypes(response2.data)
         }
         fetchData()
     }, [])
 
     const columns = [
         {
-            field: "idm_price_id", headerName: "SI No", width: 80,
+            field: "rej_id", headerName: "SI No", width: 80,
             renderCell: (params) => params.api.getRowIndexRelativeToVisibleRows(params.id) + 1
         },
         { field: "plant", headerName: "Plant", width: 100 },
-        { field: "part_no", headerName: "Part No", width: 150 },
-        { field: "description", headerName: "Description", flex: 1 },
-        { field: "mat_type", headerName: "Mat Type", width: 130 },
-        { field: "price", headerName: "Price", width: 120 },
+        { field: "cost_center", headerName: "Cost Center", width: 150 },
+        { field: "fg_part", headerName: "FG Part", width: 200 },
+        { field: "mat_desc", headerName: "Description", flex: 1 },
+        { field: "rej_per", headerName: "Rej Per", width: 100 },
         { field: "eff_date", headerName: "Eff Date", width: 150, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
-        // {
-        //     field: "action", headerName: "Action", width: 160,
-        //     renderCell: (params) => (
-        //         <IconButton
-        //             color="primary"
-        //             // onClick={() => handleEdit(params.row)}
-        //             title="Edit"
-        //         >
-        //             <EditIcon />
-        //         </IconButton>
-        //     ),
-        // },
+        {
+            field: "active_status", headerName: "Active Status", width: 140,
+            renderCell: (params) => {
+                const isActive = params.value === true || params.value === "1";
+                return (
+                    <span
+                        style={{
+                            padding: "3px 10px",
+                            borderRadius: "12px",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                            color: "white",
+                            backgroundColor: isActive ? "#2e7d32" : "#d32f2f"
+                        }}
+                    >
+                        {isActive ? "Active" : "Inactive"}
+                    </span>
+                );
+
+            },
+        },
     ];
 
     const CustomToolbar = () => (
@@ -149,7 +160,7 @@ const CC_IndirectMaterialPrice = () => {
                 }}
             >
                 <SectionHeading>
-                    Material Price
+                    FG Rejection % Master
                 </SectionHeading>
             </div>
 
@@ -163,7 +174,7 @@ const CC_IndirectMaterialPrice = () => {
                         value={formik.values.plant}
                         onChange={formik.handleChange}
                         fullWidth
-                        sx={{ minWidth: 150, maxWidth: 150 }}
+                        // sx={{ minWidth: 140 }}
                         InputLabelProps={{
                             sx: {
                                 fontSize: "12px",
@@ -185,50 +196,40 @@ const CC_IndirectMaterialPrice = () => {
                     </TextField>
 
                     <TextField
-                        select
-                        slotProps={{
-                            select: {
-                                multiple: true,
-                                renderValue: (selected) => selected?.join(', '),
-                            },
-                            inputLabel: {
-                                sx: { fontSize: "12px" },
-                            },
-                            input: {
-                                sx: { fontSize: "13px" },
-                            }
-                        }}
+                        id="startDate"
                         size="small"
-                        label="Mat Type"
-                        name="matType"
-                        value={formik.values.matType}
+                        label="Start Date"
+                        name="startDate"
+                        type='month'
+                        fullWidth
+                        value={formik.values.startDate}
+                        onChange={formik.handleChange}
+                        // sx={{ minWidth: 140 }}
+                        InputLabelProps={{ sx: { fontSize: 12 }, shrink: true }}
+                        InputProps={{ sx: { fontSize: 13 } }}
+                        error={formik.touched.startDate && Boolean(formik.errors.startDate)}
+                        helperText={formik.touched.startDate && formik.errors.startDate}
+                    />
+                    <TextField
+                        id="endDate"
+                        size="small"
+                        label="End Date"
+                        name="endDate"
+                        type='month'
+                        value={formik.values.endDate}
                         onChange={formik.handleChange}
                         fullWidth
-                        sx={{ minWidth: 150, maxWidth: 150 }}
-                        error={formik.touched.matType && Boolean(formik.errors.matType)}
-                        helperText={formik.touched.matType && formik.errors.matType}
-                    >
-                        {matTypes.map((p) => (
-                            <MenuItem sx={{ fontSize: "small" }} key={p.Mat_Id} value={p.Mat_Type}>
-                                <Checkbox
-                                    checked={formik.values.matType.indexOf(p.Mat_Type) > -1}
-                                    size="small"
-                                />
-                                <ListItemText primary={`${p.Mat_Type}`} primaryTypographyProps={{ fontSize: "small" }} />
-                            </MenuItem>
-                        ))}
-                    </TextField>
+                        // sx={{ minWidth: 140 }}
+                        InputLabelProps={{ sx: { fontSize: 12 }, shrink: true }}
+                        InputProps={{ sx: { fontSize: 13 } }}
+                        error={formik.touched.endDate && Boolean(formik.errors.endDate)}
+                        helperText={formik.touched.endDate && formik.errors.endDate}
+                    />
 
-                    <Button variant='contained'
-                        onClick={(e) => {
-                            formik.setFieldValue('type', 'SUBMIT')
-                            formik.handleSubmit(e)
-                        }}
-                        fullWidth
-                        sx={{
-                            maxWidth: 150,
-                        }}
-                    >
+                    <Button variant='contained' onClick={(e) => {
+                        formik.setFieldValue('type', 'SUBMIT')
+                        formik.handleSubmit(e)
+                    }}>
                         {loading ? "Loading..." : "Submit"}
                     </Button>
                 </div>
@@ -300,7 +301,7 @@ const CC_IndirectMaterialPrice = () => {
                     columns={columns}
                     pageSize={5} // Set the number of rows per page to 8
                     rowsPerPageOptions={[5]}
-                    getRowId={(row) => row.idm_price_id} // Specify a custom id field
+                    getRowId={(row) => row.rej_id} // Specify a custom id field
                     disableSelectionOnClick
                     slots={{ toolbar: CustomToolbar }}
                     columnHeaderHeight={35}
@@ -367,25 +368,25 @@ const ExcelUploadModal = ({
 
     async function downloadProductionPlanTemplate() {
         // 1️⃣ Fetch dropdown data
-        const [plant, matTypeList] = await Promise.all([
+        const [plant] = await Promise.all([
             getPlantdetails(),
-            getMaterialType(MaterialGroupEnumTypes.all)
         ]);
 
         const plantCodes = plant.map((e) => e.Plant_Code);
 
-        const matTypes = matTypeList.data.map((e) => e.Mat_Type);
-
+        const statusList = ['Active', 'Inactive'];
         // 2️⃣ Create workbook & worksheet
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet("Indirect Material price");
+        const worksheet = workbook.addWorksheet("Mst Rejection");
 
         const headers = [
             "Plant",
-            "Material_Type",
-            "Part_Number",
-            "Price",
-            "Eff_Date_(dd-MM-YYYY)",
+            "Cost_Center",
+            "Fg_Part",
+            "Fg_Description",
+            "Rej_Per",
+            "Effective_Date(dd_MM_yyyy)",
+            "Active_Status"
         ];
 
         worksheet.addRow(headers);
@@ -413,15 +414,15 @@ const ExcelUploadModal = ({
             formulae: [`"${plantCodes.join(",")}"`],
         });
 
-        worksheet.dataValidations.add("B2:B1000", {
+        // Column I → status
+        worksheet.dataValidations.add("G2:G1000", {
             type: "list",
             allowBlank: false,
-            formulae: [`"${matTypes.join(",")}"`],
+            formulae: [`"${statusList.join(",")}"`],
         });
 
         // 5️⃣ Date formatting
-        // worksheet.getColumn("E").numFmt = "yyyy-mm-dd";
-        // worksheet.getColumn("I").numFmt = "yyyy-mm-dd";
+        worksheet.getColumn("H").numFmt = "dd-mm-yyyy";
 
         // 6️⃣ Cell styling (rows below header)
         worksheet.eachRow((row, rowNumber) => {
@@ -439,7 +440,7 @@ const ExcelUploadModal = ({
                 type:
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             }),
-            "Indirect_Material_price_Template.xlsx"
+            "Mst_Rejection_Template.xlsx"
         );
     }
 
@@ -456,7 +457,7 @@ const ExcelUploadModal = ({
             const userId = localStorage.getItem('EmpId')
             formData.append("userId", userId)
             formData.append("file", uploadedFile)
-            const response = await AddTrnIndirectMaterialPrice_BULK(formData)
+            const response = await MstRejection_BULKApi(formData)
             console.log(response.data, "Upload excel response")
             setUploadResponse(response.data)
             alert('File uploaded successfully')
@@ -610,7 +611,7 @@ const ExcelUploadModal = ({
                     </Box>
 
                     {/* Upload Status */}
-                    {uploadResponse && <ValidationResult response={uploadResponse} />}
+                    {uploadResponse && <ValidationResponseGrid response={uploadResponse} />}
 
 
                 </Box>
@@ -619,64 +620,4 @@ const ExcelUploadModal = ({
     );
 };
 
-
-const ValidationResult = ({ response }) => {
-    const { summary, errors } = response;
-
-    return (
-        <div className="p-4 bg-red-50 rounded-lg border border-red-300">
-            <h2 className="text-lg font-semibold text-red-700 mb-2">
-                ❌ Upload Failed – Validation Errors
-            </h2>
-
-            {/* Summary */}
-            <div className="grid grid-cols-4 gap-4 mb-4 text-sm">
-                <div>Total Rows: <b>{summary.totalRows}</b></div>
-                <div className="text-green-600">Valid: <b>{summary.valid}</b></div>
-                <div className="text-red-600">Invalid: <b>{summary.invalid}</b></div>
-                <div className="text-yellow-600">Empty: <b>{summary.empty}</b></div>
-            </div>
-
-            {/* Invalid rows */}
-            {errors.invalidRows.length > 0 && (
-                <>
-                    <h3 className="font-semibold mb-2">❌ Invalid Rows</h3>
-
-                    <table className="w-full border text-sm">
-                        <thead className="bg-red-100">
-                            <tr>
-                                <th className="border px-2 py-1">Excel Row</th>
-                                <th className="border px-2 py-1">Errors</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {errors.invalidRows.map((row, i) => (
-                                <tr key={i} className="hover:bg-red-50">
-                                    <td className="border px-2 py-1 text-center">
-                                        {row.row}
-                                    </td>
-                                    <td className="border px-2 py-1">
-                                        <ul className="list-disc pl-4">
-                                            {row.errors.map((err, idx) => (
-                                                <li key={idx}>{err}</li>
-                                            ))}
-                                        </ul>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </>
-            )}
-
-            {/* Empty rows */}
-            {errors.emptyRows.length > 0 && (
-                <div className="mt-4 text-yellow-700">
-                    ⚠ Empty Rows Found: {errors.emptyRows.join(", ")}
-                </div>
-            )}
-        </div>
-    );
-}
-
-export default CC_IndirectMaterialPrice
+export default CC_MstRejection

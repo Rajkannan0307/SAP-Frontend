@@ -100,6 +100,9 @@ import CC_DCM_Output from "./ContributionalChart/DCM_Output";
 import CC_PowerUnit from "./Masters/PowerUnit";
 import CC_DailyPowerConsumption from "./ContributionalChart/DailyPowerConsumption";
 import CC_PowerMixRatio from "./ContributionalChart/PowerMixRatio";
+import CC_ReturnablePackage from "./ContributionalChart/ReturnablePackage";
+import CC_MstRejection from "./ContributionalChart/MstRejection";
+import CC_RejectionActual from "./ContributionalChart/RejectionActual";
 
 const App = () => {
   return (
@@ -218,6 +221,10 @@ const App = () => {
             <Route path="CC_Power_Unit" element={<ProtectedRoute screenId={64}><CC_PowerUnit /></ProtectedRoute>} />
             <Route path="CC_DailyPowerConsumption" element={<ProtectedRoute screenId={65}><CC_DailyPowerConsumption /></ProtectedRoute>} />
             <Route path="CC_PowerMixRatio" element={<ProtectedRoute screenId={66}><CC_PowerMixRatio /></ProtectedRoute>} />
+
+            <Route path="CC_ReturnablePackage" element={<ProtectedRoute screenId={67}><CC_ReturnablePackage /></ProtectedRoute>} />
+            <Route path="CC_MstRejection" element={<ProtectedRoute screenId={68}><CC_MstRejection /></ProtectedRoute>} />
+            <Route path="CC_RejectionActual" element={<ProtectedRoute screenId={69}><CC_RejectionActual /></ProtectedRoute>} />
 
           </Route>
         </Routes>

@@ -253,6 +253,8 @@ const CC_DCM_Output = () => {
                     // { name: "Missing FG_Part", data: response[11] || [] },
                     { name: "Production Plan", data: response.productionPlan || [] },
                     { name: "Production Actual", data: response.productionActual || [] },
+                    { name: "Rej Master", data: response.rejectionMaster || [] },
+                    { name: "Rej Actual", data: response.rejectionActual || [] },
                     { name: "Consumption Actual", data: response.actualConsumption || [] },
                     { name: "Packing BOM", data: response.packingBom || [] },
                     { name: "Stores and Spares", data: response.Stores_spares || [] },
@@ -265,6 +267,7 @@ const CC_DCM_Output = () => {
                     { name: "Labour Cost Working", data: response.labourCostWorking || [] },
                     { name: "Power Cost Details", data: response.powerCostFlex || [] },
                     { name: "Power Cost summary", data: response.powerCostUnit || [] },
+                    { name: "Returnable Packing", data: response.returnablePacking || [] },
                     { name: "DCM", data: response.dcm_output || [] },
                     { name: "Missing FG_Part", data: response.missingFgParts || [] },
                 ]
