@@ -8,7 +8,8 @@ export const getPMPDAccess = () => {
     const roleId = Number(localStorage.getItem("RoleID") || 0);
 
     // Plant MED → View only
-    if (roleId === ROLE.PLANT_MED || roleId === ROLE.PLAN_FINANCE_MED) {
+    // if (roleId === ROLE.PLANT_MED || roleId === ROLE.PLAN_FINANCE_MED) {
+    if (roleId === ROLE.PLANT_MED) {
         return { disableAction: true };
     }
 

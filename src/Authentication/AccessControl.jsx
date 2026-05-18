@@ -10,7 +10,7 @@ const accessMap = {
   3: [
     14, 19, 20, 22, 23, 26, 33,
     47, 48, 49, 52, 53, 54, 55, 56, //PMPD
-    58, 59, 60, 61, 62, 63, 64, 65, 66 //contribution
+    58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69 //contribution
   ], // PLANT FINANCE HEAD can access Approval_309, Report1, Report2
   4: [14, 18, 19, 20, 23, 26, 27], // PLANT MRPC can access Approval_309, Report1, Report2
   5: [14, 19, 20, 23, 26, 33,
