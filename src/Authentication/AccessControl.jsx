@@ -8,7 +8,7 @@ const accessMap = {
     47, 48, 49, 52 //PMPD Access screen for PLANT MED HEAD
   ], // PLANT MMD HEAD can access Approval_309, Report1, Report2
   3: [
-    14, 19, 20, 22, 23, 26, 33,
+    7, 14, 19, 20, 22, 23, 26, 33,
     47, 48, 49, 52, 53, 54, 55, 56, //PMPD
     58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69 //contribution
   ], // PLANT FINANCE HEAD can access Approval_309, Report1, Report2
@@ -17,7 +17,7 @@ const accessMap = {
     58, //contribution
   ], // PLANT HEAD can access Approval_309, Report1, Report2
   6: [14, 19, 20, 22, 26, 33,
-    58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69 //contribution
+    58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69,  //contribution
   ], // CORP FINANCE HEAD can access Approval_309, Report1, Report2
   7: [7, 8, 9, 10, 12, 13, 14, 16, 17, 18, 19, 20, 22, 26, 34, 35, 36, 37, 38, 39, 33, 40], // CORP MRPC can access multiple screens
   8: [14, 19, 20, 26, 33], // BUSINESS HEAD can access Approval_309, Report1, Report2
