@@ -193,3 +193,44 @@ export const UpdateFixedManpower = async (data) => {
     const response = await axios.put(`${api}/FixedManpowerRouter/update`, data);
     return response;
 }
+
+
+
+// Fetch all dropdown master options
+export const getInhouseCapacityMasters = async () => {
+    const response = await axios.get(`${api}/PMPDRouter/getCapacityMasters`);
+    return response;
+};
+
+// Execute Get_Trn_Inhouse_Capacity procedure
+export const getInhouseCapacityList = async () => {
+    const response = await axios.get(`${api}/PMPDRouter/getInhouseCapacity`);
+    return response;
+};
+
+// Execute Insert_Trn_Inhouse_Capacity procedure
+export const insertInhouseCapacity = async (data) => {
+    const response = await axios.post(`${api}/PMPDRouter/insertInhouseCapacity`, data);
+    return response;
+};
+
+// Execute Update_Trn_Inhouse_Capacity procedure
+export const updateInhouseCapacity = async (data) => {
+    const response = await axios.put(`${api}/PMPDRouter/updateInhouseCapacity`, data);
+    return response;
+};
+
+
+
+export const bulkInsertInhouseCapacityFile = async (file, userId) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (userId) formData.append("userId", userId);
+
+    const response = await axios.post(`${api}/PMPDRouter/AddTrnInhouseCapacity_BULK`, formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
+    return response;
+};

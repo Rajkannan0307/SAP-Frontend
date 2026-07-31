@@ -103,6 +103,7 @@ import CC_PowerMixRatio from "./ContributionalChart/PowerMixRatio";
 import CC_ReturnablePackage from "./ContributionalChart/ReturnablePackage";
 import CC_MstRejection from "./ContributionalChart/MstRejection";
 import CC_RejectionActual from "./ContributionalChart/RejectionActual";
+import InhouseCapacity from "./PMPD/InhouseCapacity";
 
 const App = () => {
   return (
@@ -150,6 +151,7 @@ const App = () => {
             <Route path="CategoryBreakup" element={<ProtectedRoute screenId={50}><CategoryBreakupScreen /></ProtectedRoute>} />
             <Route path="IndirectCategory" element={<ProtectedRoute screenId={51}><IndirectCategoryScreen /></ProtectedRoute>} />
             <Route path="PMPD_FixedManpower" element={<ProtectedRoute screenId={56}><PMPD_FixedManpower /></ProtectedRoute>} />
+
 
             <Route path="dashboard" element={<ProtectedRoute screenId={15}><DashBoard /></ProtectedRoute>} />
             <Route path="Report1" element={<ProtectedRoute screenId={16}><Report1 /></ProtectedRoute>} />
@@ -207,6 +209,7 @@ const App = () => {
             <Route path="PMPD_ActualProductionPlan" element={<ProtectedRoute screenId={53}><PMPD_ActualProductionPlan /></ProtectedRoute>} />
             <Route path="PMDP_PlanVsActual" element={<ProtectedRoute screenId={54}><PMDP_PlanVsActual /></ProtectedRoute>} />
             <Route path="PMDP_PlanVsActual_Indirect" element={<ProtectedRoute screenId={55}><PMDP_PlanVsActual_Indirect /></ProtectedRoute>} />
+            <Route path="Inhouse_capacity" element={<ProtectedRoute screenId={70}><InhouseCapacity /></ProtectedRoute>} />
 
 
             {/* CONTRIBUTIONAL CHART */}
