@@ -219,28 +219,28 @@ const CC_DailyPowerConsumption = () => {
         },
         { field: "plant", headerName: "Plant", flex: 1 },
         {
-            field: "eb", headerName: "EB", flex: 1,
+            field: "eb", headerName: "EB Units", flex: 1,
             editable: (params) => selectedRows.includes(params.row.daily_pwr_id),
             type: "number",
             headerAlign: "center",
             align: "center"
         },
         {
-            field: "dg", headerName: "DG", flex: 1,
+            field: "dg", headerName: "DG Units", flex: 1,
             editable: (params) => selectedRows.includes(params.row.daily_pwr_id),
             type: "number",
             headerAlign: "center",
             align: "center"
         },
         {
-            field: "wind", headerName: "Wind", flex: 1,
+            field: "wind", headerName: "Wind Units", flex: 1,
             editable: (params) => selectedRows.includes(params.row.daily_pwr_id),
             type: "number",
             headerAlign: "center",
             align: "center"
         },
         {
-            field: "solar", headerName: "Solar", flex: 1,
+            field: "solar", headerName: "Solar Units", flex: 1,
             editable: (params) => selectedRows.includes(params.row.daily_pwr_id),
             type: "number",
             headerAlign: "center",
@@ -480,7 +480,7 @@ const CC_DailyPowerConsumption = () => {
                 }}
             >
                 <SectionHeading>
-                    Daily Power Consumption
+                    Daily Power Consumption (Monthly Cumulative Units)
                 </SectionHeading>
             </div>
 
@@ -795,7 +795,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                     <TextField
                         id="eb"
                         name="eb"
-                        label="EB"
+                        label="EB Units"
                         size="small"
                         fullWidth
                         type="number"
@@ -814,7 +814,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                     <TextField
                         id="dg"
                         name="dg"
-                        label="DG"
+                        label="DG Units"
                         size="small"
                         fullWidth
                         type="number"
@@ -833,7 +833,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                     <TextField
                         id="wind"
                         name="wind"
-                        label="Wind"
+                        label="Wind Units"
                         size="small"
                         fullWidth
                         type="number"
@@ -852,7 +852,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                     <TextField
                         id="solar"
                         name="solar"
-                        label="Solar"
+                        label="Solar Units"
                         size="small"
                         fullWidth
                         type="number"

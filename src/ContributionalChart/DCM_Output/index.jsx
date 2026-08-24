@@ -16,6 +16,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { MdOutlineCancel } from 'react-icons/md'
 import { IoMdSend } from "react-icons/io";
 import { toast } from 'react-toastify'
+import DCMInfoModal from './DCMInfoModal'
 
 
 
@@ -445,7 +446,7 @@ const CC_DCM_Output = () => {
                             setRefreshData={setRefreshData}
                         /> */}
 
-
+                        {/* <DCMInfoModal /> */}
                     </div>
                 </div>
 

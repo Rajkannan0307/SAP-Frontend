@@ -95,8 +95,8 @@ const CC_PowerMixRatio = () => {
             width: 60,
             renderCell: (params) => params.api.getRowIndexRelativeToVisibleRows(params.id) + 1
         },
-        { field: "plant", headerName: "Plant", flex: 1 },
-        { field: "month", headerName: "Month", flex: 1 }, // Uses the formatted 'MM-yyyy' from SQL
+        { field: "plant", headerName: "Plant", width: 80 },
+        { field: "month", headerName: "Month", width: 100 }, // Uses the formatted 'MM-yyyy' from SQL
 
         // --- Percentages Group ---
         { field: "eb_per", headerName: "EB %", width: 80, type: 'number' },
@@ -105,10 +105,10 @@ const CC_PowerMixRatio = () => {
         { field: "solar_per", headerName: "Solar %", width: 85, type: 'number' },
 
         // --- Unit Costs Group ---
-        { field: "eb_unit_cost", headerName: "EB Cost", width: 100, type: 'number' },
-        { field: "dg_unit_cost", headerName: "DG Cost", width: 100, type: 'number' },
-        { field: "wind_unit_cost", headerName: "Wind Cost", width: 100, type: 'number' },
-        { field: "solar_unit_cost", headerName: "Solar Cost", width: 100, type: 'number' },
+        { field: "eb_unit_cost", headerName: "EB Per Unit Rs", width: 120, type: 'number' },
+        { field: "dg_unit_cost", headerName: "DG Per Unit Rs", width: 120, type: 'number' },
+        { field: "wind_unit_cost", headerName: "Wind Per Unit Rs", width: 120, type: 'number' },
+        { field: "solar_unit_cost", headerName: "Solar Per Unit Rs", width: 120, type: 'number' },
 
         {
             field: "active_status",
@@ -232,7 +232,7 @@ const CC_PowerMixRatio = () => {
                 }}
             >
                 <SectionHeading>
-                    Power Mix Ratio
+                    Power Mix Ratio & Per Unit Cost
                 </SectionHeading>
             </div>
 
@@ -636,7 +636,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                     <TextField
                         id="eb_unit_cost"
                         name="eb_unit_cost"
-                        label="Eb Unit Cost"
+                        label="EB Per Unit Rs"
                         size="small"
                         fullWidth
                         type="number"
@@ -655,7 +655,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                     <TextField
                         id="dg_unit_cost"
                         name="dg_unit_cost"
-                        label="DG Unit Cost"
+                        label="DG Per Unit Rs"
                         size="small"
                         fullWidth
                         type="number"
@@ -674,7 +674,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                     <TextField
                         id="wind_unit_cost"
                         name="wind_unit_cost"
-                        label="Wind Unit Cost"
+                        label="Wind Per Unit Rs"
                         size="small"
                         fullWidth
                         type="number"
@@ -694,7 +694,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                     <TextField
                         id="solar_unit_cost"
                         name="solar_unit_cost"
-                        label="Solar Unit Cost"
+                        label="Solar Per Unit Rs"
                         size="small"
                         fullWidth
                         type="number"
