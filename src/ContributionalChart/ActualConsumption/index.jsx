@@ -163,7 +163,7 @@ const CC_ActualConsumptionPlan = () => {
                 }}
             >
                 <SectionHeading>
-                    Consumption Actual
+                    Consumption Actual (IDM)
                 </SectionHeading>
             </div>
 

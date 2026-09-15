@@ -2,12 +2,15 @@ import React, { useState, useEffect } from "react";
 import {
   TextField,
   Button,
-  Modal,
-  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   FormControlLabel,
   IconButton,
-  Select,
   Switch,
+  Tooltip,
+  Chip,
 } from "@mui/material";
 import {
   DataGrid,
@@ -19,91 +22,104 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
-import { FaFileExcel } from "react-icons/fa";
-import * as XLSX from "xlsx-js-style";
-import { MenuItem, InputLabel, FormControl } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import { toast } from "react-toastify";
 import { getdetails, getAdd, getUpdates } from "../controller/Roleapiservices";
-import SubjectRoundedIcon from "@mui/icons-material/SubjectRounded";
 import SectionHeading from "../components/Header";
+
+// Compact, modern control styling — matches the app's newer screens (MFG
+// Report, Material Master) so this looks consistent instead of the old
+// default-size MUI controls.
+const compactFieldSx = {
+  "& .MuiInputBase-input": { padding: "8px 10px", fontSize: 13 },
+  "& .MuiInputLabel-root": { fontSize: 13 },
+};
+
+const compactButtonSx = {
+  height: 34,
+  fontSize: 13,
+  textTransform: "none",
+  borderRadius: 1.5,
+  boxShadow: "none",
+};
+
+const gridSx = {
+  "& .MuiDataGrid-columnHeader": { backgroundColor: "#eef1f6", color: "#2e3648", fontWeight: 600 },
+  "& .MuiDataGrid-columnHeaderTitle": { fontSize: "13px", fontWeight: 600 },
+  "& .MuiDataGrid-row": { backgroundColor: "#fff", "&:hover": { backgroundColor: "#f6f8fc" } },
+  "& .MuiDataGrid-row.Mui-selected": { backgroundColor: "inherit" },
+  "& .MuiDataGrid-cell": { color: "#333", fontSize: "13px" },
+  "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within": { outline: "none" },
+  border: "none",
+};
 
 const Role = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
   const [originalRows, setOriginalRows] = useState([]);
-  const [data, setData] = useState([]);
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [ActiveStatus, setActiveStatus] = useState(false);
   const [Role_Name, setRoleName] = useState("");
   const [Role_ID, setRoleID] = useState("");
-  const UserID = localStorage.getItem('UserID');
-  console.log('role userid', UserID)
-  const RoleID = localStorage.getItem("RoleID")
+  const [saving, setSaving] = useState(false);
+  const UserID = localStorage.getItem("UserID");
   const navigate = useNavigate();
 
   const columns = [
-
-    { field: "Role_Name", headerName: "Role", flex: 1, width: "40%" },
+    { field: "Role_Name", headerName: "Role", flex: 1, minWidth: 200 },
     {
-      field: 'Menus',
-      headerName: 'Menus',
-      width: 150,
-
-      renderCell: () => (
-        <IconButton sx={{ height: 40, width: 40, color: "#000" }}>
-          <SubjectRoundedIcon />
-        </IconButton>
+      field: "Active_Status",
+      headerName: "Status",
+      width: 110,
+      renderCell: (params) => (
+        <Chip
+          label={params.value ? "Active" : "Inactive"}
+          size="small"
+          sx={{
+            fontWeight: 600,
+            fontSize: 11,
+            color: params.value ? "#1e7e34" : "#b3261e",
+            backgroundColor: params.value ? "#e6f4ea" : "#fdecea",
+          }}
+        />
       ),
-      renderHeader: () => <div style={{ fontSize: '16px' }}>Menus</div>
     },
-
-    // {
-    //   field: "ActiveStatus",
-    //   headerName: "Active Status",
-    //   width:"40%",
-    //   flex: 1,
-    //   renderCell: (params) => {
-    //     const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
-    //     return (
-    //       <FormControlLabel
-    //         control={
-    //           <Switch
-    //             checked={isActive} // Use the boolean value directly
-    //             color="default" // Neutral color for default theme
-    //             sx={{
-    //               "& .MuiSwitch-track": {
-    //                 backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-    //               },
-    //               "& .MuiSwitch-thumb": {
-    //                 backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-    //               },
-    //             }}
-    //           />
-    //         }
-    //       />
-    //     );
-    //   },
-    // },
+    {
+      field: "Menus",
+      headerName: "Permissions",
+      width: 130,
+      sortable: false,
+      align: "center",
+      headerAlign: "center",
+      renderCell: () => (
+        <Tooltip title="Manage menu permissions for this role">
+          <IconButton size="small" sx={{ color: "#0066FF" }}>
+            <AdminPanelSettingsIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      ),
+    },
   ];
+
   const getData = async () => {
     try {
       const response = await getdetails();
-      console.log(response); // Check the structure of response
-      setData(response); // Ensure that this is correctly setting the data
-      setOriginalRows(response); // for reference during search
+      setOriginalRows(response);
       setRows(response);
     } catch (error) {
       console.error(error);
-      setData([]); // Handle error by setting empty data
-      setOriginalRows([]); // handle error case
+      toast.error("Failed to load roles.");
+      setOriginalRows([]);
       setRows([]);
     }
   };
+
   useEffect(() => {
     getData();
   }, []);
 
-  // ✅ Custom Toolbar
   const CustomToolbar = () => (
     <GridToolbarContainer>
       <GridToolbarColumnsButton />
@@ -111,491 +127,227 @@ const Role = () => {
       <GridToolbarExport />
     </GridToolbarContainer>
   );
-  // ✅ Search Functionality
-  const handleSearch = () => {
-    const text = searchText.trim().toLowerCase();
 
+  const handleSearch = (value) => {
+    const text = value.trim().toLowerCase();
     if (!text) {
       setRows(originalRows);
-    } else {
-      const filteredRows = originalRows.filter((row) =>
-        ['Role_Name'].some((key) => {
-          const value = row[key];
-          return value && String(value).toLowerCase().includes(text);
-        })
-      );
-      setRows(filteredRows);
+      return;
     }
+    setRows(originalRows.filter((row) => String(row.Role_Name || "").toLowerCase().includes(text)));
   };
-  // ✅ Handle Add Modal
-  const handleOpenAddModal = (item) => {
-    setRoleName("")
+
+  const handleOpenAddModal = () => {
+    setRoleName("");
     setActiveStatus(true);
     setOpenAddModal(true);
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
 
-  const handleRowClick = (params) => {
-    setRoleID(params.row.Role_ID);
-    setRoleName(params.row.Role_Name);
-    setActiveStatus(params.row.Active_Status);
-    setOpenEditModal(true); // Open the modal
+  const goToPermissions = (row) => {
+    if (row.Role_ID && row.Role_Name) {
+      navigate(`/home/Role/${row.Role_ID}`, {
+        state: { role: row.Role_Name, Role_No: row.Role_ID },
+      });
+    } else {
+      toast.error("Role data is incomplete.");
+    }
   };
 
-  // ✅ Handle Add User
   const handleAdd = async () => {
-    console.log("Data being sent to the server:", {
-
-      Role_Name,
-      UserID,
-    });
-    console.log("Add button clicked");
-
-    // Step 1: Validate required fields
-    if (
-
-      Role_Name === ""
-
-    ) {
-      alert("Please fill in all required fields");
+    if (Role_Name.trim() === "") {
+      toast.warning("Please enter a role name.");
       return;
     }
-
-
+    setSaving(true);
     try {
-      // Prepare data to be sent
-      const data = {
-        UserID: UserID,
-        Role_Name: Role_Name,
-
-        Active_Status: ActiveStatus, // Make sure this is defined somewhere
-      };
-
-      // Step 3: Call the API to add the user
-      const response = await getAdd(data); // Ensure getAdd uses a POST request
-
+      const data = { UserID, Role_Name, Active_Status: ActiveStatus };
+      const response = await getAdd(data);
       if (response.data.success) {
-        alert("Role added successfully!");
-        getData(); // refresh UI (e.g. user list)
-        handleCloseAddModal(); // close the modal
+        toast.success("Role added successfully!");
+        getData();
+        handleCloseAddModal();
       } else {
-        alert(response.data.message || "Failed to add Role.");
+        toast.error(response.data.message || "Failed to add role.");
       }
     } catch (error) {
-      console.error("Error in adding Role:", error);
-      // Step 4: Show error from server (like Employee_ID already exists)
-      if (error.response && error.response.data && error.response.data.message) {
-        alert(error.response.data.message);
-      } else {
-        alert("An error occurred while adding the Role.");
-      }
-
-
+      toast.error(error?.response?.data?.message || "An error occurred while adding the role.");
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleUpdate = async () => {
-    const data = {
-      Role_ID: Role_ID,
-      Role_Name: Role_Name,
-      UserID: UserID,
-      Active_Status: ActiveStatus,
-    };
-    console.log("Data being sent:", data); // Log data to verify it before sending
-
+    setSaving(true);
     try {
+      const data = { Role_ID, Role_Name, UserID, Active_Status: ActiveStatus };
       const response = await getUpdates(data);
-
-      // If success
       if (response.data.success) {
-        alert(response.data.message);
-        getData(); // Refresh data
-        handleCloseEditModal(); // Close modal
+        toast.success(response.data.message);
+        getData();
+        handleCloseEditModal();
       } else {
-        // If success is false, show the backend message
-        alert(response.data.message);
+        toast.error(response.data.message);
       }
     } catch (error) {
-      console.error("Error details:", error.response?.data);
-
-      if (error.response && error.response.data && error.response.data.message) {
-        alert(error.response.data.message); // Specific error from backend
-      } else {
-        alert("An error occurred while updating the Vendor. Please try again.");
-      }
+      toast.error(error?.response?.data?.message || "An error occurred while updating the role.");
+    } finally {
+      setSaving(false);
     }
   };
-
 
   return (
     <div
       style={{
-        padding: 20,
+        padding: "16px 20px",
         backgroundColor: "#F5F5F5",
         marginTop: "50px",
         display: "flex",
         flexDirection: "column",
-        height: "calc(100vh - 90px)", // or a specific height if necessary
+        height: "calc(100vh - 50px)",
       }}
     >
-      {/* Header Section */}
-      <div
-        style={{
-          marginBottom: 20,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        {/* <h2
-        style={{
-          margin: 0,
-          color: "#2e59d9",
-          textDecoration: "underline",
-          textDecorationColor: "#88c57a",
-          textDecorationThickness: "3px",
-          marginBottom: -7,
-        }}
-      >
-        Role Master
-      </h2> */}
-        <SectionHeading>
-          Role Master
-        </SectionHeading>
+      <div style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <SectionHeading>Role Master</SectionHeading>
       </div>
 
-      {/* Search and Icons */}
+      {/* Compact toolbar: search + add, one line */}
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          backgroundColor: "#fff",
+          borderRadius: 8,
+          boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+          padding: "8px 10px",
           marginBottom: 10,
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          alignItems: "center",
         }}
       >
-        {/* Search Box */}
-        <div style={{ display: "flex", gap: "10px" }}>
-          <TextField
-            size="small"
-            variant="outlined"
-            placeholder="Type here..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onKeyUp={handleSearch}
-            sx={{
-              width: "400px",
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  border: "2px solid grey", // No border by default
-                },
-                "&:hover fieldset": {
-                  border: "2px solid grey", // Optional: border on hover
-                },
-                "&.Mui-focused fieldset": {
-                  border: "2px solid grey", // Grey border on focus
-                },
-              },
-            }}
-          />
-
+        <TextField
+          size="small"
+          placeholder="Search role..."
+          value={searchText}
+          onChange={(e) => {
+            setSearchText(e.target.value);
+            handleSearch(e.target.value);
+          }}
+          sx={{ ...compactFieldSx, minWidth: 260 }}
+          InputProps={{
+            startAdornment: <SearchIcon sx={{ fontSize: 18, color: "#888", mr: 1 }} />,
+          }}
+        />
+        <div style={{ marginLeft: "auto" }}>
           <Button
-            onClick={handleSearch}
-            style={{
-              borderRadius: "25px",
-              border: "2px solid grey",
-              color: "grey",
-              fontWeight: "bold",
-            }}
-          >
-            <SearchIcon style={{ marginRight: "5px" }} />
-            Search
-          </Button>
-        </div>
-
-        {/* Icons */}
-        <div style={{ display: "flex", gap: "10px", marginRight: "30%" }}>
-
-
-          {/* Add Button */}
-          <IconButton
+            variant="contained"
+            startIcon={<AddIcon sx={{ fontSize: 18 }} />}
             onClick={handleOpenAddModal}
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#0066FF",
-              color: "white",
-              width: "40px",
-              height: "40px",
-
-            }}
+            sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc", boxShadow: "none" } }}
           >
-            <AddIcon />
-          </IconButton>
+            Add Role
+          </Button>
         </div>
       </div>
 
       {/* DataGrid */}
-      <div
-        style={{
-          width: "70%",
-          //    marginLeft:"10%",
-          flexGrow: 1, // Ensures it grows to fill the remaining space
-          backgroundColor: "#fff",
-          borderRadius: 8,
-          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-          height: "calc(5 * 48px)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-
-        }}
-      >
+      <div style={{ flexGrow: 1, backgroundColor: "#fff", borderRadius: 8, boxShadow: "0 4px 8px rgba(0,0,0,0.08)", minHeight: 0, overflow: "hidden" }}>
         <DataGrid
           rows={rows}
           columns={columns}
-          pageSize={5}
-          rowsPerPageOptions={[5]}
+          pageSize={10}
+          rowsPerPageOptions={[10, 25, 50]}
           getRowId={(row) => row.Role_ID}
           disableSelectionOnClick
           slots={{ toolbar: CustomToolbar }}
+          columnHeaderHeight={38}
+          rowHeight={42}
+          localeText={{ noRowsLabel: "No roles found." }}
           onCellClick={(params) => {
-            console.log("Clicked cell:", params); // ✅ Debug
-
-            if (params.field === "Menus" && params.row) {
-              const { Role_ID, Role_Name } = params.row;
-              console.log("Navigating to:", `/home/Role/${params.row.Role_ID}`);
-              console.log("Params:", params.row);
-
-              if (Role_ID && Role_Name) {
-                console.log("Navigating to:", `/home/Role/${Role_ID}`);
-                navigate(`/home/Role/${Role_ID}`, {
-                  state: {
-                    role: Role_Name,
-                    Role_No: Role_ID,
-                  },
-                });
-              } else {
-                alert("Role data is incomplete.");
-              }
+            if (params.field === "Menus") {
+              goToPermissions(params.row);
             } else {
-              // If it's any other cell, open the edit modal
               setRoleID(params.row.Role_ID);
               setRoleName(params.row.Role_Name);
               setActiveStatus(params.row.Active_Status);
               setOpenEditModal(true);
             }
           }}
-          sx={{
-            "& .MuiDataGrid-columnHeader": {
-              backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
-              color: "black",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-columnHeaderTitle": {
-              fontSize: "16px",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-row": {
-              backgroundColor: "#f5f5f5",
-              "&:hover": {
-                backgroundColor: "#f5f5f5",
-              },
-            },
-            "& .MuiDataGrid-row.Mui-selected": {
-              backgroundColor: "inherit",
-            },
-            "& .MuiDataGrid-cell": {
-              color: "#333",
-              fontSize: "14px",
-            },
-          }}
+          sx={{ height: "100%", ...gridSx }}
         />
-
       </div>
-      {/* {Add Model} */}
-      <Modal open={openAddModal} onClose={() => setOpenAddModal(false)}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            width: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            gap: "15px",
-          }}
-        >
-          <h3
-            style={{
-              gridColumn: "span 2",
-              textAlign: "center",
-              color: "#2e59d9",
-              textDecoration: "underline",
-              textDecorationColor: "#88c57a",
-              textDecorationThickness: "3px",
-            }}
-          >
-            Add Role
-          </h3>
 
-
+      {/* Add Role Dialog */}
+      <Dialog open={openAddModal} onClose={handleCloseAddModal} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 16, fontWeight: 600 }}>
+          Add Role
+          <IconButton size="small" onClick={handleCloseAddModal}><CloseIcon fontSize="small" /></IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
           <TextField
-            label="Role"
-            name="Role"
+            label="Role Name"
             value={Role_Name}
             onChange={(e) => setRoleName(e.target.value)}
+            size="small"
+            autoFocus
             required
+            fullWidth
           />
-
-
-
-
-
-
-
-
           <FormControlLabel
             control={
               <Switch
                 checked={ActiveStatus}
                 onChange={(e) => setActiveStatus(e.target.checked)}
-                color="success" // Always use 'success' to keep the thumb green when active
-                sx={{
-                  "& .MuiSwitch-track": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                    backgroundImage: "none !important", // Disable background image
-                  },
-                  "& .MuiSwitch-thumb": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                    borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                  },
-                }}
+                color="success"
               />
             }
-            label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-            labelPlacement="end"
-            style={{
-              color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-              fontWeight: "bold",
-            }}
+            label={ActiveStatus ? "Active" : "Inactive"}
           />
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            <Button
-              variant="contained"
-              color="error"
-              onClick={() => handleCloseAddModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              style={{ width: "90px" }}
-              variant="contained"
-              color="primary"
-              onClick={handleAdd}
-            >
-              Add
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
-      {/* ✅ Edit Modal */}
-      <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            width: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            gap: "15px",
-          }}
-        >
-          <h3
-            style={{
-              gridColumn: "span 2",
-              textAlign: "center",
-              color: "#2e59d9",
-              textDecoration: "underline",
-              textDecorationColor: "#88c57a",
-              textDecorationThickness: "3px",
-            }}
-          >
-            Edit Role
-          </h3>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleCloseAddModal} sx={{ ...compactButtonSx, color: "#666" }}>Cancel</Button>
+          <Button variant="contained" disabled={saving} onClick={handleAdd} sx={{ ...compactButtonSx, backgroundColor: "#0066FF" }}>
+            {saving ? "Adding..." : "Add"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Role Dialog */}
+      <Dialog open={openEditModal} onClose={handleCloseEditModal} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 16, fontWeight: 600 }}>
+          Edit Role
+          <IconButton size="small" onClick={handleCloseEditModal}><CloseIcon fontSize="small" /></IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
           <TextField
-            label="Role"
-            name="Role"
+            label="Role Name"
             value={Role_Name}
             onChange={(e) => setRoleName(e.target.value)}
+            size="small"
             required
+            fullWidth
           />
-
-
           <FormControlLabel
             control={
               <Switch
                 checked={ActiveStatus}
                 onChange={(e) => setActiveStatus(e.target.checked)}
-                color="success" // Always use 'success' to keep the thumb green when active
-                sx={{
-                  "& .MuiSwitch-track": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                    backgroundImage: "none !important", // Disable background image
-                  },
-                  "& .MuiSwitch-thumb": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                    borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                  },
-                }}
+                color="success"
               />
             }
-            label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-            labelPlacement="end"
-            style={{
-              color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-              fontWeight: "bold",
-            }}
+            label={ActiveStatus ? "Active" : "Inactive"}
           />
-
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleCloseEditModal}
-            >
-              Cancel
-            </Button>
-            <Button variant="contained" color="primary" onClick={handleUpdate}>
-              Update
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleCloseEditModal} sx={{ ...compactButtonSx, color: "#666" }}>Cancel</Button>
+          <Button variant="contained" disabled={saving} onClick={handleUpdate} sx={{ ...compactButtonSx, backgroundColor: "#0066FF" }}>
+            {saving ? "Saving..." : "Update"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
-  )
-}
+  );
+};
 
-export default Role
+export default Role;

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { TextField, Button, MenuItem, CircularProgress } from "@mui/material";
+import { TextField, Button, MenuItem, CircularProgress, Tooltip } from "@mui/material";
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarFilterButton, GridToolbarExport } from "@mui/x-data-grid";
 import SearchIcon from "@mui/icons-material/Search";
 import { FaFileExcel } from "react-icons/fa";
@@ -31,6 +31,124 @@ const numberFmt = (v) => (v || v === 0 ? Number(v).toLocaleString("en-IN") : "0"
 // Blank (not "0") when the operation doesn't apply to this FG at all —
 // vs. a real "0" quantity for an operation that does apply.
 const opCellFmt = (v) => (v === undefined || v === null ? "" : numberFmt(v));
+
+// Modern tooltip "card" styling shared by every stock tooltip — flat white
+// surface, subtle border + shadow, rounded corners, capped height with its
+// own internal scroll so a long supplier list never overflows the viewport.
+const tooltipPopperSx = {
+  "& .MuiTooltip-tooltip": {
+    backgroundColor: "#fff",
+    color: "#222",
+    border: "1px solid #e2e5ea",
+    borderRadius: "10px",
+    boxShadow: "0 8px 24px rgba(20,20,43,0.12)",
+    padding: 0,
+    maxWidth: 360,
+  },
+  "& .MuiTooltip-arrow": {
+    color: "#fff",
+    "&::before": { border: "1px solid #e2e5ea" },
+  },
+};
+
+// One child-part section: header line (code – description) then, for the
+// Supp side, the per-supplier breakdown feeding that number; for the IH
+// side, a single plant-stock line (no per-storage-location API data exists
+// on this screen, so that side stays a single figure).
+const ChildPartSection = ({ child, side, suppliers, isLast }) => (
+  <div
+    style={{
+      padding: "8px 12px",
+      borderBottom: isLast ? "none" : "1px solid #eef0f3",
+    }}
+  >
+    <div style={{ fontSize: 12.5, fontWeight: 600, color: "#1a2233", marginBottom: 4 }}>
+      {child.child_part_no} <span style={{ fontWeight: 400, color: "#5b6472" }}>– {child.child_desc || "—"}</span>
+    </div>
+
+    {side === "supplier_qty" ? (
+      suppliers && suppliers.length > 0 ? (
+        <div style={{ maxHeight: 170, overflowY: "auto" }}>
+          {suppliers.map((s, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: 12,
+                fontSize: 11.5,
+                color: "#333",
+                padding: "3px 0",
+              }}
+            >
+              <span style={{ wordBreak: "break-word", lineHeight: "15px" }}>
+                {s.supplier_name || "—"} <span style={{ color: "#8a93a3", whiteSpace: "nowrap" }}>({s.supplier_code})</span>
+              </span>
+              <span style={{ fontWeight: 600, color: "#0066FF", flexShrink: 0, whiteSpace: "nowrap" }}>{numberFmt(s.qty)} Qty</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ fontSize: 11.5, color: "#8a93a3" }}>No supplier stock for this month.</div>
+      )
+    ) : (
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "#333" }}>
+        <span>Plant stock</span>
+        <span style={{ fontWeight: 600, color: "#0066FF" }}>{numberFmt(child[side])} Qty</span>
+      </div>
+    )}
+  </div>
+);
+
+// IH/Supp cell — hovering shows exactly which child part(s) fed into that
+// summed number. For Supp cells, drills one level further into the actual
+// supplier-wise breakdown (reusing the same snapshot data already fetched
+// for Excel export — no new API, no backend change).
+const ChildPartTooltip = ({ value, children, side, supplierMap, plant }) => {
+  const display = opCellFmt(value);
+  if (!children || children.length === 0) {
+    return <span>{display}</span>;
+  }
+  const title = (
+    <div style={{ fontSize: 12, lineHeight: "18px" }}>
+      <div
+        style={{
+          padding: "8px 12px",
+          fontSize: 11.5,
+          fontWeight: 700,
+          letterSpacing: 0.3,
+          color: "#fff",
+          backgroundColor: "#0066FF",
+          borderRadius: "10px 10px 0 0",
+        }}
+      >
+        {side === "supplier_qty" ? "SUPPLIER STOCK BREAKDOWN" : "PLANT STOCK BREAKDOWN"}
+      </div>
+      {children.map((c, i) => (
+        <ChildPartSection
+          key={i}
+          child={c}
+          side={side}
+          suppliers={supplierMap ? supplierMap.get(`${plant}|${c.child_part_no}`) : undefined}
+          isLast={i === children.length - 1}
+        />
+      ))}
+    </div>
+  );
+  return (
+    <Tooltip
+      title={title}
+      arrow
+      placement="top"
+      enterDelay={250}
+      TransitionProps={{ timeout: 180 }}
+      componentsProps={{ popper: { sx: tooltipPopperSx } }}
+    >
+      <span style={{ cursor: "default" }}>{display}</span>
+    </Tooltip>
+  );
+};
 
 // Compact, single-line filter controls: smaller padding/font than the default
 // MUI size, achieved via input padding (safe) rather than forcing a fixed
@@ -66,6 +184,10 @@ const MatAvailabilityStatus = () => {
   const [loaded, setLoaded] = useState(false);
   const [plantStockAsOf, setPlantStockAsOf] = useState(null);
   const [supplierStockAsOf, setSupplierStockAsOf] = useState(null);
+  // Per-supplier breakdown for the hover tooltip only — same snapshot API
+  // already used for the Excel export, just also fetched here and reduced
+  // into a plant+material lookup map. No new API, no backend change.
+  const [supplierSnapshotMap, setSupplierSnapshotMap] = useState(new Map());
 
   useEffect(() => {
     const loadFilters = async () => {
@@ -90,11 +212,26 @@ const MatAvailabilityStatus = () => {
     if (loading) return;
     setLoading(true);
     try {
-      const data = await GetMatAvailabilityReportApi(buildParams());
+      const [data, supplierSnapshot] = await Promise.all([
+        GetMatAvailabilityReportApi(buildParams()),
+        GetSupplierStockSnapshotApi(month).catch((err) => {
+          console.error("Failed to load supplier stock breakdown for tooltip:", err);
+          return null;
+        }),
+      ]);
       setReportRows(data?.rows || []);
       setOperationColumns(data?.operationColumns || []);
       setPlantStockAsOf(data?.plantStockAsOf || null);
       setSupplierStockAsOf(data?.supplierStockAsOf || null);
+
+      const map = new Map();
+      (supplierSnapshot?.rows || []).forEach((r) => {
+        const key = `${r.plant}|${r.material_code}`;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push({ supplier_code: r.supplier_code, supplier_name: r.supplier_name, qty: r.unrestricted_qty });
+      });
+      setSupplierSnapshotMap(map);
+
       setLoaded(true);
     } catch (error) {
       console.error(error);
@@ -103,6 +240,7 @@ const MatAvailabilityStatus = () => {
       setOperationColumns([]);
       setPlantStockAsOf(null);
       setSupplierStockAsOf(null);
+      setSupplierSnapshotMap(new Map());
     } finally {
       setLoading(false);
     }
@@ -115,7 +253,9 @@ const MatAvailabilityStatus = () => {
 
   // One row per Plant+FG — every child part's operation rolls up into the
   // FG-level IH (plant)/Supp (supplier) pivot; op fields are left undefined
-  // when that operation doesn't apply to this FG at all (blank cell).
+  // when that operation doesn't apply to this FG at all (blank cell). Each
+  // op cell also carries the list of child parts that fed into it (for the
+  // hover tooltip) alongside the plain summed number DataGrid sorts/exports.
   const flatRows = useMemo(() => {
     return reportRows.map((fg, idx) => {
       const row = {
@@ -129,10 +269,13 @@ const MatAvailabilityStatus = () => {
         total_ih: fg.ih_total,
         total_supp: fg.supp_total,
         grand_total: fg.grand_total,
+        all_children: fg.children,
       };
       fg.operations.forEach((op) => {
+        const childrenForOp = fg.children.filter((c) => c.opt_no === op.opt_no);
         row[`op_${op.opt_no}_ih`] = op.plant_qty;
         row[`op_${op.opt_no}_supp`] = op.supplier_qty;
+        row[`op_${op.opt_no}_children`] = childrenForOp;
       });
       return row;
     });
@@ -140,31 +283,50 @@ const MatAvailabilityStatus = () => {
 
   const columns = useMemo(() => {
     const base = [
-      { field: "plant", headerName: "Plant", width: 80 },
-      { field: "fg_part_no", headerName: "FG_Part_No", width: 120 },
-      { field: "plan", headerName: "Plan", width: 80, align: "center", headerAlign: "center", renderCell: (p) => numberFmt(p.value) },
-      { field: "actual", headerName: "Actual", width: 80, align: "center", headerAlign: "center", renderCell: (p) => numberFmt(p.value) },
-      { field: "gap", headerName: "GAP", width: 80, align: "center", headerAlign: "center", renderCell: (p) => numberFmt(p.value) },
+      { field: "plant", headerName: "Plant", width: 60 },
+      { field: "fg_part_no", headerName: "FG_Part_No", width: 90 },
+      { field: "fg_desc", headerName: "FG Part Description", width: 280 },
+      { field: "plan", headerName: "Plan", width: 80, align: "right", headerAlign: "center", renderCell: (p) => numberFmt(p.value) },
+      { field: "actual", headerName: "Actual", width: 80, align: "right", headerAlign: "center", renderCell: (p) => numberFmt(p.value) },
+      { field: "gap", headerName: "GAP", width: 80, align: "right", headerAlign: "center", renderCell: (p) => numberFmt(p.value) },
     ];
     const opCols = operationColumns.flatMap((op) => [
       {
-        field: `op_${op.opt_no}_ih`, headerName: "IH", width: 75, align: "center", headerAlign: "center",
-        sortable: false, renderCell: (p) => opCellFmt(p.value),
+        field: `op_${op.opt_no}_ih`, headerName: "IH", width: 55, align: "right", headerAlign: "center",
+        sortable: false,
+        renderCell: (p) => (
+          <ChildPartTooltip value={p.value} children={p.row[`op_${op.opt_no}_children`]} side="plant_qty" plant={p.row.plant} supplierMap={supplierSnapshotMap} />
+        ),
         cellClassName: "mat-ih-cell",
       },
       {
-        field: `op_${op.opt_no}_supp`, headerName: "Supp", width: 75, align: "center", headerAlign: "center",
-        sortable: false, renderCell: (p) => opCellFmt(p.value),
+        field: `op_${op.opt_no}_supp`, headerName: "Supp", width: 55, align: "right", headerAlign: "center",
+        sortable: false,
+        renderCell: (p) => (
+          <ChildPartTooltip value={p.value} children={p.row[`op_${op.opt_no}_children`]} side="supplier_qty" plant={p.row.plant} supplierMap={supplierSnapshotMap} />
+        ),
         cellClassName: "mat-supp-cell",
       },
     ]);
     const totalCols = [
-      { field: "total_ih", headerName: "IH", width: 80, align: "center", headerAlign: "center", sortable: false, renderCell: (p) => numberFmt(p.value), cellClassName: "mat-ih-cell" },
-      { field: "total_supp", headerName: "Supp", width: 80, align: "center", headerAlign: "center", sortable: false, renderCell: (p) => numberFmt(p.value), cellClassName: "mat-supp-cell" },
-      { field: "grand_total", headerName: "TOT", width: 90, align: "center", headerAlign: "center", sortable: false, renderCell: (p) => numberFmt(p.value), cellClassName: "mat-tot-cell" },
+      {
+        field: "total_ih", headerName: "IH", width: 60, align: "right", headerAlign: "center", sortable: false,
+        renderCell: (p) => (
+          <ChildPartTooltip value={p.value} children={(p.row.all_children || []).filter((c) => c.plant_qty > 0)} side="plant_qty" plant={p.row.plant} supplierMap={supplierSnapshotMap} />
+        ),
+        cellClassName: "mat-ih-cell",
+      },
+      {
+        field: "total_supp", headerName: "Supp", width: 60, align: "right", headerAlign: "center", sortable: false,
+        renderCell: (p) => (
+          <ChildPartTooltip value={p.value} children={(p.row.all_children || []).filter((c) => c.supplier_qty > 0)} side="supplier_qty" plant={p.row.plant} supplierMap={supplierSnapshotMap} />
+        ),
+        cellClassName: "mat-supp-cell",
+      },
+      { field: "grand_total", headerName: "TOT", width: 90, align: "right", headerAlign: "center", sortable: false, renderCell: (p) => numberFmt(p.value), cellClassName: "mat-tot-cell" },
     ];
     return [...base, ...opCols, ...totalCols];
-  }, [operationColumns]);
+  }, [operationColumns, supplierSnapshotMap]);
 
   // Grouped header row: SOCKET spans every operation + the TOTAL block,
   // each operation spans its own IH/Supp pair. MUI requires a genuinely
@@ -214,7 +376,7 @@ const MatAvailabilityStatus = () => {
       // row 1 — the "!merges" below span rows 1-3 for each of them, and a
       // merged cell only ever displays its TOP-LEFT cell's value, so putting
       // the text in row 3 instead (as before) rendered as blank headers.
-      const fixedCols = ["Plant", "FG_Part_No", "Plan", "Actual", "GAP"];
+      const fixedCols = ["Plant", "FG_Part_No", "FG Part Description", "Plan", "Actual", "GAP"];
       const headerRow1 = [...fixedCols, "SOCKET"];
       const headerRow2 = [...fixedCols.map(() => ""), ...operationColumns.flatMap(() => ["", ""]), "TOTAL"];
       const headerRow3 = [...fixedCols.map(() => ""), ...operationColumns.flatMap(() => ["IH", "Supp"]), "IH", "Supp", "TOT"];
@@ -228,7 +390,7 @@ const MatAvailabilityStatus = () => {
       const pivotAoa = [headerRow1, headerRow2, headerRow3];
       reportRows.forEach((fg) => {
         const opMap = new Map(fg.operations.map((op) => [op.opt_no, op]));
-        const row = [fg.plant, fg.fg_part_no, fg.plan, fg.actual, fg.gap];
+        const row = [fg.plant, fg.fg_part_no, fg.fg_desc, fg.plan, fg.actual, fg.gap];
         operationColumns.forEach((op) => {
           const found = opMap.get(op.opt_no);
           row.push(found ? found.plant_qty : "", found ? found.supplier_qty : "");
@@ -253,7 +415,8 @@ const MatAvailabilityStatus = () => {
         // "TOTAL" spans IH/Supp/TOT, row 1.
         { s: { r: 1, c: socketColEnd - 2 }, e: { r: 1, c: socketColEnd } },
       ];
-      pivotSheet["!cols"] = [...fixedCols.map(() => ({ wch: 12 })), ...Array(opCount * 2 + 3).fill({ wch: 9 })];
+      const fixedColWidths = [8, 14, 28, 10, 10, 10]; // Plant, FG_Part_No, FG Part Description, Plan, Actual, GAP
+      pivotSheet["!cols"] = [...fixedColWidths.map((wch) => ({ wch })), ...Array(opCount * 2 + 3).fill({ wch: 9 })];
       for (let r = 0; r <= 2; r++) {
         for (let c = 0; c <= socketColEnd; c++) {
           const cell = pivotSheet[XLSX.utils.encode_cell({ r, c })];

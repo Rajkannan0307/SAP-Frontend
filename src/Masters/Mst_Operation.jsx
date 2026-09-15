@@ -33,6 +33,12 @@ const UserID = localStorage.getItem("UserID");
 
 const validationSchema = Yup.object({
   Opt_Name: Yup.string().trim().required("Operation Name is required"),
+  Opt_No: Yup.number()
+    .typeError("Opt No must be a number")
+    .integer("Opt No must be a whole number")
+    .min(10, "Opt No must be between 10 and 999")
+    .max(999, "Opt No must be between 10 and 999")
+    .required("Opt No is required"),
   Active_Status: Yup.boolean().required(),
 });
 
@@ -56,6 +62,7 @@ const Mst_Operation = () => {
       renderCell: (params) => params.api.getRowIndexRelativeToVisibleRows(params.id) + 1,
     },
     { field: "opt_name", headerName: "Operation Name", flex: 1, minWidth: 200 },
+    { field: "opt_no", headerName: "Opt No", width: 100, headerAlign: "center", align: "center" },
     {
       field: "status",
       headerName: "Status",
@@ -357,6 +364,7 @@ const OperationFormDialog = ({ open, onClose, onSaved, editData }) => {
   const formik = useFormik({
     initialValues: {
       Opt_Name: editData?.opt_name || "",
+      Opt_No: editData?.opt_no ?? "",
       Active_Status: editData?.status ?? true,
     },
     validationSchema,
@@ -366,6 +374,7 @@ const OperationFormDialog = ({ open, onClose, onSaved, editData }) => {
         const payload = {
           UserID,
           Opt_Name: values.Opt_Name.trim(),
+          Opt_No: values.Opt_No,
           Active_Status: values.Active_Status,
         };
 
@@ -424,6 +433,23 @@ const OperationFormDialog = ({ open, onClose, onSaved, editData }) => {
           error={formik.touched.Opt_Name && Boolean(formik.errors.Opt_Name)}
           helperText={formik.touched.Opt_Name && formik.errors.Opt_Name}
           sx={{ mt: 1 }}
+        />
+
+        <TextField
+          id="Opt_No"
+          name="Opt_No"
+          label="Opt No"
+          type="number"
+          fullWidth
+          value={formik.values.Opt_No}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          error={formik.touched.Opt_No && Boolean(formik.errors.Opt_No)}
+          helperText={
+            (formik.touched.Opt_No && formik.errors.Opt_No) || "Enter a number between 10 and 999"
+          }
+          inputProps={{ min: 10, max: 999 }}
+          sx={{ mt: 2 }}
         />
 
         <FormControlLabel

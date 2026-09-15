@@ -356,6 +356,7 @@ const Material = () => {
     setOpenEditModal(true);  // Open the modal
     setMaterialID(params.row.Material_ID);
     // setUserID(params.User_ID);
+    get_Material_Type(); // populate the Material Type dropdown options for editing
   };
 
   // ✅ Search Functionality
@@ -424,6 +425,7 @@ const Material = () => {
         Material_ID: MaterialID,
 
         Description: Description,
+        Material_Type: MaterialType,
         Rate: Rate,
         Active_Status: ActiveStatus,
         // UserID: userID,  // Ensure the UserID is also included
@@ -835,15 +837,20 @@ const Material = () => {
 
 
 
-          <TextField
-            label="Material Type"
-            name="Material_Type"
-            value={MaterialType}
-            onChange={(e) => setMaterialType(e.target.value)}
-            InputProps={{
-              readOnly: true,  // This makes the TextField read-only
-            }}
-          />
+          <FormControl fullWidth>
+            <InputLabel>Material Type</InputLabel>
+            <Select
+              label="Material Type"
+              name="Material_Type"
+              value={MaterialType}
+              onChange={(e) => setMaterialType(e.target.value)}
+              required
+            >
+              {MaterialTable.map((item) => (
+                <MenuItem key={item.Mat_Id} value={item.Mat_Type}>{item.Mat_Type}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
 
           <TextField
