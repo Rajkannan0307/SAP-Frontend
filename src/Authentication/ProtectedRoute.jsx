@@ -5,7 +5,7 @@ import { AuthContext } from "./AuthContext";
 import { CircularProgress, Box, Snackbar, Alert } from "@mui/material";
 import { canAccessScreen } from "./AccessControl"; // Import the access control function
 
-const ProtectedRoute = ({ children, screenId }) => {
+const ProtectedRoute = ({ children, screenCode }) => {
   const { user, loading } = useContext(AuthContext);
   const [showAlert, setShowAlert] = useState(false);
   const navigate = useNavigate();
@@ -17,14 +17,14 @@ const ProtectedRoute = ({ children, screenId }) => {
         setTimeout(() => {
           navigate("/");
         }, 1000); // Redirect after 2 seconds if not authenticated
-      } else if (screenId && !canAccessScreen(screenId)) {
+      } else if (screenCode && !canAccessScreen(screenCode)) {
         setShowAlert(true);
         setTimeout(() => {
           navigate("/home/Home"); // Redirect to home if user has no access
         }, 1000);
       }
     }
-  }, [loading, user, navigate, screenId]);
+  }, [loading, user, navigate, screenCode]);
 
   if (loading) {
     return (
@@ -36,7 +36,7 @@ const ProtectedRoute = ({ children, screenId }) => {
     );
   }
 
-  if (!user || (screenId && !canAccessScreen(screenId))) {
+  if (!user || (screenCode && !canAccessScreen(screenCode))) {
     return (
       <>
         <Snackbar

@@ -1,57 +1,21 @@
 // src/Authentication/AccessControl.js
 import { decryptSessionData } from "../controller/StorageUtils";
 
-// Simulating your database table (Access Control Mapping)
-const accessMap = {
-  1: [15, 34, 35, 36, 37, 38, 39, 16, 17], // REQUESTER can access Dashboard, Report1, Report2
-  2: [14, 19, 20, 22,
-    47, 48, 49, 52 //PMPD Access screen for PLANT MED HEAD
-  ], // PLANT MMD HEAD can access Approval_309, Report1, Report2
-  3: [
-    7, 14, 19, 20, 22, 23, 26, 33,
-    47, 48, 49, 52, 53, 54, 55, 56, //PMPD
-    58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69 //contribution
-  ], // PLANT FINANCE HEAD can access Approval_309, Report1, Report2
-  4: [14, 18, 19, 20, 23, 26, 27], // PLANT MRPC can access Approval_309, Report1, Report2
-  5: [14, 19, 20, 23, 26, 33,
-    58, //contribution
-  ], // PLANT HEAD can access Approval_309, Report1, Report2
-  6: [14, 19, 20, 22, 26, 33,
-    58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69,  //contribution
-  ], // CORP FINANCE HEAD can access Approval_309, Report1, Report2
-  7: [7, 8, 9, 10, 12, 13, 14, 16, 17, 18, 19, 20, 22, 26, 34, 35, 36, 37, 38, 39, 33, 40], // CORP MRPC can access multiple screens
-  8: [14, 19, 20, 26, 33], // BUSINESS HEAD can access Approval_309, Report1, Report2
-  9: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
-    18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 26, 27, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,
-    43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
-    67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92],// CORP ADMIN (Full Access)
-  10: [22], // CORP MMD HEAD
-  14: [40, 39, 41, 42, 43],  // TEST LAB 
-  15: [44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56], // CORP MED //PMPD
-  16: [47, 48, 49, 52, 53, 54, 55, 56] //PLANT MED PMPD ACCESS
-};
-
-
-//   1: [15, ], // REQUESTER can access Dashboard, Report1, Report2
-//   2: [14, 19,20,22], // PLANT MMD HEAD can access Approval_309, Report1, Report2
-//   3: [14,19,20,22,23,26,27], // PLANT FINANCE HEAD can access Approval_309, Report1, Report2
-//   4: [14, 18,19,20,23,26,27], // PLANT MRPC can access Approval_309, Report1, Report2
-//   5: [14, 19,20,23,26,27], // PLANT HEAD can access Approval_309, Report1, Report2
-//   6: [14, 19,20,22,26,27], // CORP FINANCE HEAD can access Approval_309, Report1, Report2
-//   7: [7, 8, 9, 10, 12, 13, 14, 16, 17,18,19,20,22,26,27], // CORP MRPC can access multiple screens
-//   8: [14, 19,20,26,27], // BUSINESS HEAD can access Approval_309, Report1, Report2
-//   9: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,18,19,20,21,22,23,24,25,26,27],// CORP ADMIN (Full Access)
-//   10:[22,26,27] // CORP MMD HEAD
-// };
-// Function to check if a role has access to a specific screen
-export const canAccessScreen = (screenId) => {
+// Function to check if the logged-in user has access to a specific screen,
+// using the Screen_Codes permission list returned by the login API
+// (the same data Sidebars.jsx uses to show/hide menu items).
+export const canAccessScreen = (screenCode) => {
   const encryptedData = sessionStorage.getItem("userData");
   if (!encryptedData) return false;
 
   const decryptedData = decryptSessionData(encryptedData);
-  const userRoleId = decryptedData?.RoleId;
+  const permissions = decryptedData?.Permissions;
 
+  const permissionArray = Array.isArray(permissions)
+    ? permissions
+    : typeof permissions === "string"
+      ? permissions.split(",").map((p) => p?.trim())
+      : [];
 
-  // Check if the role has access to the screen
-  return accessMap[userRoleId]?.includes(screenId) ?? false;
+  return permissionArray.includes(screenCode);
 };

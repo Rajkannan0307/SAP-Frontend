@@ -66,6 +66,11 @@ import EmergencyApproval from "./Approval/EmergencyProcurementAprroval"
 import SupvCode from "./Masters/SupvCode"
 import Module from "./Masters/Module"
 import Line from "./Masters/Line"
+import Mst_Operation from "./Masters/Mst_Operation"
+import MFG_BOM from "./MFG_Availability"
+import PlantStock from "./MFG_Availability/PlantStock"
+import SupplierStock from "./MFG_Availability/SupplierStock"
+import MatAvailabilityStatus from "./MFG_Availability/MatAvailabilityStatus"
 import ProductionPlan from "./Production plan/ProductionPlan"
 import StoreDashboard from "./Store Dashboard/StoreDashboard"
 import Store1 from "./StoreUrl/store1url"
@@ -118,52 +123,57 @@ const App = () => {
           {/* Protected Routes with Role-Based Access */}
           <Route path="/login" element={<Login />} />
           <Route path="/home" element={<ProtectedRoute><Main /></ProtectedRoute>}>
-            <Route path="company" element={<ProtectedRoute screenId={1}><Company /></ProtectedRoute>} />
-            <Route path="BusinessDivision" element={<ProtectedRoute screenId={2}><BusinessDivision /></ProtectedRoute>} />
-            <Route path="plant" element={<ProtectedRoute screenId={3}><Plant /></ProtectedRoute>} />
-            <Route path="Department" element={<ProtectedRoute screenId={4}><Department /></ProtectedRoute>} />
-            <Route path="UserMaster" element={<ProtectedRoute screenId={5}><UserMaster /></ProtectedRoute>} />
-            <Route path="Role" element={<ProtectedRoute screenId={6}><Role /></ProtectedRoute>} />
-            <Route path="material" element={<ProtectedRoute screenId={7}><Material /></ProtectedRoute>} />
-            <Route path="Vendor" element={<ProtectedRoute screenId={8}><Vendor /></ProtectedRoute>} />
-            <Route path="Customer" element={<ProtectedRoute screenId={9}><Customer /></ProtectedRoute>} />
-            <Route path="StorageLocation" element={<ProtectedRoute screenId={10}><StorageLocation /></ProtectedRoute>} />
-            <Route path="SupvCode" element={<ProtectedRoute screenId={24}><SupvCode /></ProtectedRoute>} />
-            <Route path="Module" element={<ProtectedRoute screenId={25}><Module /></ProtectedRoute>} />
-            <Route path="Line" element={<ProtectedRoute screenId={28}><Line /></ProtectedRoute>} />
+            <Route path="company" element={<ProtectedRoute screenCode="company"><Company /></ProtectedRoute>} />
+            <Route path="BusinessDivision" element={<ProtectedRoute screenCode="BusinessDivision"><BusinessDivision /></ProtectedRoute>} />
+            <Route path="plant" element={<ProtectedRoute screenCode="Plant"><Plant /></ProtectedRoute>} />
+            <Route path="Department" element={<ProtectedRoute screenCode="Department"><Department /></ProtectedRoute>} />
+            <Route path="UserMaster" element={<ProtectedRoute screenCode="UserMaster"><UserMaster /></ProtectedRoute>} />
+            <Route path="Role" element={<ProtectedRoute screenCode="Role"><Role /></ProtectedRoute>} />
+            <Route path="material" element={<ProtectedRoute screenCode="Material"><Material /></ProtectedRoute>} />
+            <Route path="Vendor" element={<ProtectedRoute screenCode="Vendor"><Vendor /></ProtectedRoute>} />
+            <Route path="Customer" element={<ProtectedRoute screenCode="Customer"><Customer /></ProtectedRoute>} />
+            <Route path="StorageLocation" element={<ProtectedRoute screenCode="StorageLocation"><StorageLocation /></ProtectedRoute>} />
+            <Route path="SupvCode" element={<ProtectedRoute screenCode="SupvCode"><SupvCode /></ProtectedRoute>} />
+            <Route path="Module" element={<ProtectedRoute screenCode="Module"><Module /></ProtectedRoute>} />
+            <Route path="Line" element={<ProtectedRoute screenCode="Line"><Line /></ProtectedRoute>} />
+            <Route path="Mst_Operation" element={<ProtectedRoute screenCode="Mst_Operation"><Mst_Operation /></ProtectedRoute>} />
+            <Route path="MFG_BOM" element={<ProtectedRoute screenCode="MFG_BOM"><MFG_BOM /></ProtectedRoute>} />
+            <Route path="PlantStock" element={<ProtectedRoute screenCode="PlantStock"><PlantStock /></ProtectedRoute>} />
+            <Route path="SupplierStock" element={<ProtectedRoute screenCode="SupplierStock"><SupplierStock /></ProtectedRoute>} />
+            <Route path="MatAvailabilityStatus" element={<ProtectedRoute screenCode="MatAvailabilityStatus"><MatAvailabilityStatus /></ProtectedRoute>} />
             <Route path="ProductionPlan" element={<ProtectedRoute ><ProductionPlan screenId={32} /></ProtectedRoute>} />
             <Route path="StoreDashboard" element={<ProtectedRoute ><StoreDashboard screenId={31} /></ProtectedRoute>} />
-            <Route path="Movement_Type" element={<ProtectedRoute screenId={11}><Movement_Type /></ProtectedRoute>} />
-            <Route path="MVT_LIST_ITEM" element={<ProtectedRoute screenId={12}><MVT_LIST_ITEM /></ProtectedRoute>} />
-            <Route path="CostCenter" element={<ProtectedRoute screenId={13}><CostCenter /></ProtectedRoute>} />
-            <Route path="Approval_309" element={<ProtectedRoute screenId={14}><Approval309 /></ProtectedRoute>} />
-            <Route path="Approval_201" element={<ProtectedRoute screenId={19}><Approval201 /></ProtectedRoute>} />
-            <Route path="Approval_202" element={<ProtectedRoute screenId={20}><Approval202 /></ProtectedRoute>} />
-            <Route path="Approval_551" element={<ProtectedRoute screenId={26}><Approval551 /></ProtectedRoute>} />
-            <Route path="Approval_311" element={<ProtectedRoute screenId={27}><Approval311 /></ProtectedRoute>} />
-            <Route path="Approval_Rs1" element={<ProtectedRoute screenId={33}><ApprovalRs1 /></ProtectedRoute>} />
-            <Route path="RigTestSpec" element={<ProtectedRoute screenId={42}><MstRigTestSpecScreen /></ProtectedRoute>} />
-            <Route path="Machine" element={<ProtectedRoute screenId={39}><MachineScreen /></ProtectedRoute>} />
+            <Route path="Movement_Type" element={<ProtectedRoute screenCode="Movement_Type"><Movement_Type /></ProtectedRoute>} />
+            <Route path="MVT_LIST_ITEM" element={<ProtectedRoute screenCode="MVT_LIST_ITEM"><MVT_LIST_ITEM /></ProtectedRoute>} />
+            <Route path="CostCenter" element={<ProtectedRoute screenCode="CostCenter"><CostCenter /></ProtectedRoute>} />
+            <Route path="Approval_309" element={<ProtectedRoute screenCode="Approval_309"><Approval309 /></ProtectedRoute>} />
+            <Route path="Approval_201" element={<ProtectedRoute screenCode="Approval_201"><Approval201 /></ProtectedRoute>} />
+            <Route path="Approval_202" element={<ProtectedRoute screenCode="Approval_202"><Approval202 /></ProtectedRoute>} />
+            <Route path="Approval_551" element={<ProtectedRoute screenCode="Approval_551"><Approval551 /></ProtectedRoute>} />
+            <Route path="Approval_311" element={<ProtectedRoute screenCode="Approval_551"><Approval311 /></ProtectedRoute>} />
+            <Route path="Approval_Rs1" element={<ProtectedRoute screenCode="ApprovalRs1"><ApprovalRs1 /></ProtectedRoute>} />
+            <Route path="RigTestSpec" element={<ProtectedRoute screenCode="RigTestSpec"><MstRigTestSpecScreen /></ProtectedRoute>} />
+            <Route path="Machine" element={<ProtectedRoute screenCode="Machine"><MachineScreen /></ProtectedRoute>} />
             {/* PMPD */}
-            <Route path="Product" element={<ProtectedRoute screenId={44}><ProductScreen /></ProtectedRoute>} />
-            <Route path="ProductSegmentScreen" element={<ProtectedRoute screenId={45}><ProductSegmentScreen /></ProtectedRoute>} />
-            <Route path="ProductMappingScreen" element={<ProtectedRoute screenId={46}><ProductMappingScreen /></ProtectedRoute>} />
-            <Route path="CategoryBreakup" element={<ProtectedRoute screenId={50}><CategoryBreakupScreen /></ProtectedRoute>} />
-            <Route path="IndirectCategory" element={<ProtectedRoute screenId={51}><IndirectCategoryScreen /></ProtectedRoute>} />
-            <Route path="PMPD_FixedManpower" element={<ProtectedRoute screenId={56}><PMPD_FixedManpower /></ProtectedRoute>} />
+            <Route path="Product" element={<ProtectedRoute screenCode="Product"><ProductScreen /></ProtectedRoute>} />
+            <Route path="ProductSegmentScreen" element={<ProtectedRoute screenCode="ProductSegment"><ProductSegmentScreen /></ProtectedRoute>} />
+            <Route path="ProductMappingScreen" element={<ProtectedRoute screenCode="ProductMapping"><ProductMappingScreen /></ProtectedRoute>} />
+            <Route path="CategoryBreakup" element={<ProtectedRoute screenCode="CategoryBreakups"><CategoryBreakupScreen /></ProtectedRoute>} />
+            <Route path="IndirectCategory" element={<ProtectedRoute screenCode="IndirectCategory"><IndirectCategoryScreen /></ProtectedRoute>} />
+            <Route path="PMPD_FixedManpower" element={<ProtectedRoute screenCode="PMPD_FixedManpower"><PMPD_FixedManpower /></ProtectedRoute>} />
 
 
-            <Route path="dashboard" element={<ProtectedRoute screenId={15}><DashBoard /></ProtectedRoute>} />
-            <Route path="Report1" element={<ProtectedRoute screenId={16}><Report1 /></ProtectedRoute>} />
-            <Route path="Report2" element={<ProtectedRoute screenId={17}><Report2 /></ProtectedRoute>} />
-            <Route path="Report3" element={<ProtectedRoute screenId={16}><Report3 /></ProtectedRoute>} />
-            <Route path="Report4" element={<ProtectedRoute screenId={17}><Report4 /></ProtectedRoute>} />
-            <Route path="Report5" element={<ProtectedRoute screenId={16}><Report5 /></ProtectedRoute>} />
-            <Route path="Report6" element={<ProtectedRoute screenId={17}><Report6 /></ProtectedRoute>} />
-            <Route path="Report7" element={<ProtectedRoute screenId={16}><Report7 /></ProtectedRoute>} />
-            <Route path="Report8" element={<ProtectedRoute screenId={17}><Report8 /></ProtectedRoute>} />
+            <Route path="dashboard" element={<ProtectedRoute screenCode="dashboard"><DashBoard /></ProtectedRoute>} />
+            <Route path="Report1" element={<ProtectedRoute screenCode="Report1"><Report1 /></ProtectedRoute>} />
+            <Route path="Report2" element={<ProtectedRoute screenCode="Report2"><Report2 /></ProtectedRoute>} />
+            <Route path="Report3" element={<ProtectedRoute screenCode="Report3"><Report3 /></ProtectedRoute>} />
+            <Route path="Report4" element={<ProtectedRoute screenCode="Report4"><Report4 /></ProtectedRoute>} />
+            <Route path="Report5" element={<ProtectedRoute screenCode="Report5"><Report5 /></ProtectedRoute>} />
+            <Route path="Report6" element={<ProtectedRoute screenCode="Report6"><Report6 /></ProtectedRoute>} />
+            <Route path="Report7" element={<ProtectedRoute screenCode="Report7"><Report7 /></ProtectedRoute>} />
+            <Route path="Report8" element={<ProtectedRoute screenCode="Report8"><Report8 /></ProtectedRoute>} />
 
-            <Route path="ApprovalReports" element={<ProtectedRoute screenId={34}><ApprovedReports /></ProtectedRoute>} />
+            <Route path="ApprovalReports" element={<ProtectedRoute screenCode="ApprovedReports"><ApprovedReports /></ProtectedRoute>} />
 
             <Route path="phy" element={<ProtectedRoute><Phy /></ProtectedRoute>} />
             <Route path="Emergency" element={<ProtectedRoute><Emergency /></ProtectedRoute>} />
@@ -183,51 +193,51 @@ const App = () => {
             <Route path="SubContracting" element={<ProtectedRoute><SubContracting /></ProtectedRoute>} />
             <Route path="Inward" element={<ProtectedRoute><Inward /></ProtectedRoute>} />
             <Route path="Location" element={<ProtectedRoute><Location /></ProtectedRoute>} />
-            <Route path="SAP" element={<ProtectedRoute screenId={18}><SAP /></ProtectedRoute>} />
-            <Route path="ValuationType" element={<ProtectedRoute screenId={21}><ValuationType /></ProtectedRoute>} />
+            <Route path="SAP" element={<ProtectedRoute screenCode="sap"><SAP /></ProtectedRoute>} />
+            <Route path="ValuationType" element={<ProtectedRoute screenCode="ValuationType"><ValuationType /></ProtectedRoute>} />
             <Route path="Purchase" element={<ProtectedRoute><Purchase /></ProtectedRoute>} />
             <Route path="Service" element={<ProtectedRoute><Service /></ProtectedRoute>} />
-            <Route path="InwardApproval" element={<ProtectedRoute screenId={22}><InwardApproval /></ProtectedRoute>} />
-            <Route path="EmergencyApproval" element={<ProtectedRoute screenId={23}><EmergencyApproval /></ProtectedRoute>} />
+            <Route path="InwardApproval" element={<ProtectedRoute screenCode="InwardApproval"><InwardApproval /></ProtectedRoute>} />
+            <Route path="EmergencyApproval" element={<ProtectedRoute screenCode="EmergencyApproval"><EmergencyApproval /></ProtectedRoute>} />
             <Route path="Home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path="HomePage" element={<ProtectedRoute><ApproverHome /></ProtectedRoute>} />
             {/* Role Management */}
-            <Route path="Role/:roleId" element={<ProtectedRoute screenId={6}><Admin /></ProtectedRoute>} />
-            <Route path="Role/:roleId/:menuId" element={<ProtectedRoute screenId={6}><SubMenu /></ProtectedRoute>} />
+            <Route path="Role/:roleId" element={<ProtectedRoute screenCode="Role"><Admin /></ProtectedRoute>} />
+            <Route path="Role/:roleId/:menuId" element={<ProtectedRoute screenCode="Role"><SubMenu /></ProtectedRoute>} />
 
-            <Route path="start_testing" element={<ProtectedRoute screenId={39}><TestLabScreen /></ProtectedRoute>} />
-            <Route path="testLabDashbaord" element={<ProtectedRoute screenId={40}><TestLabDashboard /></ProtectedRoute>} />
-            <Route path="rigMonthlyStatus" element={<ProtectedRoute screenId={41}><RigMonthlyStatus /></ProtectedRoute>} />
+            <Route path="start_testing" element={<ProtectedRoute screenCode="StartTesting"><TestLabScreen /></ProtectedRoute>} />
+            <Route path="testLabDashbaord" element={<ProtectedRoute screenCode="RigStatus"><TestLabDashboard /></ProtectedRoute>} />
+            <Route path="rigMonthlyStatus" element={<ProtectedRoute screenCode="RigMonthlyStatus"><RigMonthlyStatus /></ProtectedRoute>} />
             <Route path="testLabDashbaord/:machineId" element={<TestLabViewDashboard />} />
 
 
             {/* PMPD */}
-            <Route path="PMPD_ProductionPlan" element={<ProtectedRoute screenId={47}><PMPD_ProductionPlan /></ProtectedRoute>} />
-            <Route path="PMPD_Master" element={<ProtectedRoute screenId={48}><PMPD_MasterScreen /></ProtectedRoute>} />
-            <Route path="PMPD_Report" element={<ProtectedRoute screenId={49}><PMPD_Report /></ProtectedRoute>} />
-            <Route path="PMPD_IndirectManpower" element={<ProtectedRoute screenId={52}><IndirectManpowerScreen /></ProtectedRoute>} />
-            <Route path="PMPD_ActualProductionPlan" element={<ProtectedRoute screenId={53}><PMPD_ActualProductionPlan /></ProtectedRoute>} />
-            <Route path="PMDP_PlanVsActual" element={<ProtectedRoute screenId={54}><PMDP_PlanVsActual /></ProtectedRoute>} />
-            <Route path="PMDP_PlanVsActual_Indirect" element={<ProtectedRoute screenId={55}><PMDP_PlanVsActual_Indirect /></ProtectedRoute>} />
-            <Route path="Inhouse_capacity" element={<ProtectedRoute screenId={70}><InhouseCapacity /></ProtectedRoute>} />
+            <Route path="PMPD_ProductionPlan" element={<ProtectedRoute screenCode="ProductionPlan"><PMPD_ProductionPlan /></ProtectedRoute>} />
+            <Route path="PMPD_Master" element={<ProtectedRoute screenCode="PMPD_Master"><PMPD_MasterScreen /></ProtectedRoute>} />
+            <Route path="PMPD_Report" element={<ProtectedRoute screenCode="PMPD_Report"><PMPD_Report /></ProtectedRoute>} />
+            <Route path="PMPD_IndirectManpower" element={<ProtectedRoute screenCode="PMPD_IndirectManpower"><IndirectManpowerScreen /></ProtectedRoute>} />
+            <Route path="PMPD_ActualProductionPlan" element={<ProtectedRoute screenCode="PMPD_ActualProductionPlan"><PMPD_ActualProductionPlan /></ProtectedRoute>} />
+            <Route path="PMDP_PlanVsActual" element={<ProtectedRoute screenCode="PMDP_PlanVsActual"><PMDP_PlanVsActual /></ProtectedRoute>} />
+            <Route path="PMDP_PlanVsActual_Indirect" element={<ProtectedRoute screenCode="PMDP_PlanVsActual_Indirect"><PMDP_PlanVsActual_Indirect /></ProtectedRoute>} />
+            <Route path="Inhouse_capacity" element={<ProtectedRoute screenCode="Inhouse_capacity"><InhouseCapacity /></ProtectedRoute>} />
 
 
             {/* CONTRIBUTIONAL CHART */}
-            <Route path="CC_PackingBOM" element={<ProtectedRoute screenId={56}><CC_PackingBOM /></ProtectedRoute>} />
-            <Route path="CC_PackingBomPart" element={<ProtectedRoute screenId={56}><CC_PackingBomPart /></ProtectedRoute>} />
-            <Route path="CC_StoresAndSparesScreen" element={<ProtectedRoute screenId={56}><CC_StoresAndSparesScreen /></ProtectedRoute>} />
-            <Route path="CC_SubContractScreen" element={<ProtectedRoute screenId={56}><CC_SubContractScreen /></ProtectedRoute>} />
-            <Route path="CC_ActualConsumptionPlan" element={<ProtectedRoute screenId={56}><CC_ActualConsumptionPlan /></ProtectedRoute>} />
-            <Route path="CC_IndirectMaterialPrice" element={<ProtectedRoute screenId={56}><CC_IndirectMaterialPrice /></ProtectedRoute>} />
-            <Route path="CC_DCM_Output" element={<ProtectedRoute screenId={56}><CC_DCM_Output /></ProtectedRoute>} />
+            <Route path="CC_PackingBOM" element={<ProtectedRoute screenCode="CC_PackingBOM"><CC_PackingBOM /></ProtectedRoute>} />
+            <Route path="CC_PackingBomPart" element={<ProtectedRoute screenCode="Indirect_Material"><CC_PackingBomPart /></ProtectedRoute>} />
+            <Route path="CC_StoresAndSparesScreen" element={<ProtectedRoute screenCode="CC_StoresAndSpares"><CC_StoresAndSparesScreen /></ProtectedRoute>} />
+            <Route path="CC_SubContractScreen" element={<ProtectedRoute screenCode="CC_SubContract"><CC_SubContractScreen /></ProtectedRoute>} />
+            <Route path="CC_ActualConsumptionPlan" element={<ProtectedRoute screenCode="CC_ActualConsumptionPlan"><CC_ActualConsumptionPlan /></ProtectedRoute>} />
+            <Route path="CC_IndirectMaterialPrice" element={<ProtectedRoute screenCode="CC_MaterialPrice"><CC_IndirectMaterialPrice /></ProtectedRoute>} />
+            <Route path="CC_DCM_Output" element={<ProtectedRoute screenCode="CC_DCM_Output"><CC_DCM_Output /></ProtectedRoute>} />
 
-            <Route path="CC_Power_Unit" element={<ProtectedRoute screenId={64}><CC_PowerUnit /></ProtectedRoute>} />
-            <Route path="CC_DailyPowerConsumption" element={<ProtectedRoute screenId={65}><CC_DailyPowerConsumption /></ProtectedRoute>} />
-            <Route path="CC_PowerMixRatio" element={<ProtectedRoute screenId={66}><CC_PowerMixRatio /></ProtectedRoute>} />
+            <Route path="CC_Power_Unit" element={<ProtectedRoute screenCode="PowerUnit"><CC_PowerUnit /></ProtectedRoute>} />
+            <Route path="CC_DailyPowerConsumption" element={<ProtectedRoute screenCode="DailyPowerConsumption"><CC_DailyPowerConsumption /></ProtectedRoute>} />
+            <Route path="CC_PowerMixRatio" element={<ProtectedRoute screenCode="PowerMixRatio"><CC_PowerMixRatio /></ProtectedRoute>} />
 
-            <Route path="CC_ReturnablePackage" element={<ProtectedRoute screenId={67}><CC_ReturnablePackage /></ProtectedRoute>} />
-            <Route path="CC_MstRejection" element={<ProtectedRoute screenId={68}><CC_MstRejection /></ProtectedRoute>} />
-            <Route path="CC_RejectionActual" element={<ProtectedRoute screenId={69}><CC_RejectionActual /></ProtectedRoute>} />
+            <Route path="CC_ReturnablePackage" element={<ProtectedRoute screenCode="CC_ReturnablePackage"><CC_ReturnablePackage /></ProtectedRoute>} />
+            <Route path="CC_MstRejection" element={<ProtectedRoute screenCode="CC_MstRejection"><CC_MstRejection /></ProtectedRoute>} />
+            <Route path="CC_RejectionActual" element={<ProtectedRoute screenCode="CC_RejectionActual"><CC_RejectionActual /></ProtectedRoute>} />
 
           </Route>
         </Routes>

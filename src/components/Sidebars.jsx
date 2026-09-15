@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
-import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { PiNuclearPlantFill } from "react-icons/pi";
 import { GrCubes } from "react-icons/gr";
 import { MdCalendarMonth, MdOutlineReportGmailerrorred } from "react-icons/md";
@@ -72,6 +71,7 @@ const Sidebar = ({ setSidebarOpen }) => {
   const [Role, setRole] = useState("");
 
   const navigate = useNavigate();
+  const location = useLocation();
   const Permissions = usePermissions();
 
   useEffect(() => {
@@ -110,9 +110,11 @@ const Sidebar = ({ setSidebarOpen }) => {
 
   return (
     <div
-      className={`fixed top-[60px] left-0 h-[calc(100vh-60px)] bg-[#595959] text-white transition-all duration-300 z-50 overflow-y-auto overflow-x-hidden pb-12 shadow-lg ${
-        open ? "w-[260px]" : "w-[60px]"
-      }`}
+      style={{ scrollbarGutter: "stable" }}
+      className={`fixed top-[60px] left-0 h-[calc(100vh-60px)] bg-[#595959] text-white transition-all duration-300 z-50 overflow-y-auto overflow-x-hidden pb-12 shadow-lg
+        [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent
+        [&::-webkit-scrollbar-thumb]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full
+        ${open ? "w-[260px]" : "w-[60px]"}`}
     >
       {/* Sidebar Header */}
       <div
@@ -145,7 +147,7 @@ const Sidebar = ({ setSidebarOpen }) => {
       </div>
 
       {/* Sidebar Menu Items */}
-      <div className="p-2 flex flex-col gap-1">
+      <div className="p-2 pr-1.5 flex flex-col gap-0.5">
         {/* Masters Section */}
         <SidebarSection
           open={open}
@@ -158,6 +160,7 @@ const Sidebar = ({ setSidebarOpen }) => {
             />
           }
           Permissions={Permissions}
+          currentPath={location.pathname}
           label="Masters"
           links={[
             {
@@ -319,6 +322,17 @@ const Sidebar = ({ setSidebarOpen }) => {
               code: "Line",
             },
             {
+              name: "Operation",
+              path: "/home/Mst_Operation",
+              icon: (
+                <PrecisionManufacturingIcon
+                  style={{ color: "darkseagreen" }}
+                  className="text-[22px]"
+                />
+              ),
+              code: "Mst_Operation",
+            },
+            {
               name: "Rig Test Spec",
               path: "/home/RigTestSpec",
               icon: (
@@ -424,6 +438,7 @@ const Sidebar = ({ setSidebarOpen }) => {
             "SupvCode",
             "Module",
             "Line",
+            "Mst_Operation",
             "Machine",
             "RigTestSpec",
             "Product",
@@ -439,6 +454,7 @@ const Sidebar = ({ setSidebarOpen }) => {
         {Permissions.includes("dashboard") && (
           <StandaloneButton
             open={open}
+            active={location.pathname === "/home/dashboard"}
             onClick={() => {
               closeAllDropdowns();
               navigate("/home/dashboard");
@@ -452,6 +468,68 @@ const Sidebar = ({ setSidebarOpen }) => {
             label="Transaction"
           />
         )}
+        {/* Material Availability Status Section */}
+        <SidebarSection
+          open={open}
+          isOpen={activeSection === "MaterialAvailabilityStatus"}
+          toggleSection={() => toggleSection("MaterialAvailabilityStatus")}
+          icon={
+            <PrecisionManufacturingIcon
+              style={{ color: "darkseagreen" }}
+              className="text-[22px]"
+            />
+          }
+          Permissions={Permissions}
+          currentPath={location.pathname}
+          label="Material Availability Status"
+          links={[
+            {
+              name: "MFG BOM",
+              path: "/home/MFG_BOM",
+              icon: (
+                <PrecisionManufacturingIcon
+                  style={{ color: "darkseagreen" }}
+                  className="text-[22px]"
+                />
+              ),
+              code: "MFG_BOM",
+            },
+            {
+              name: "Plant Stock",
+              path: "/home/PlantStock",
+              icon: (
+                <PrecisionManufacturingIcon
+                  style={{ color: "darkseagreen" }}
+                  className="text-[22px]"
+                />
+              ),
+              code: "PlantStock",
+            },
+            {
+              name: "Supplier Stock",
+              path: "/home/SupplierStock",
+              icon: (
+                <PrecisionManufacturingIcon
+                  style={{ color: "darkseagreen" }}
+                  className="text-[22px]"
+                />
+              ),
+              code: "SupplierStock",
+            },
+            {
+              name: "MFG Report",
+              path: "/home/MatAvailabilityStatus",
+              icon: (
+                <PrecisionManufacturingIcon
+                  style={{ color: "darkseagreen" }}
+                  className="text-[22px]"
+                />
+              ),
+              code: "MatAvailabilityStatus",
+            },
+          ]}
+          codeList={["MFG_BOM", "PlantStock", "SupplierStock", "MatAvailabilityStatus"]}
+        />
         {/* Approval Section */}
         <SidebarSection
           open={open}
@@ -459,6 +537,7 @@ const Sidebar = ({ setSidebarOpen }) => {
           toggleSection={() => toggleSection("Approval")}
           icon={<FcApproval className="text-[24px]" />}
           Permissions={Permissions}
+          currentPath={location.pathname}
           label="Approval"
           links={[
             {
@@ -565,6 +644,7 @@ const Sidebar = ({ setSidebarOpen }) => {
         {Permissions.includes("Store") && (
           <StandaloneButton
             open={open}
+            active={location.pathname === "/home/StoreDashboard"}
             onClick={() => {
               closeAllDropdowns();
               navigate("/home/StoreDashboard");
@@ -582,6 +662,7 @@ const Sidebar = ({ setSidebarOpen }) => {
         {Permissions.includes("ApprovedReports") && (
           <StandaloneButton
             open={open}
+            active={location.pathname === "/home/ApprovalReports"}
             onClick={() => {
               closeAllDropdowns();
               navigate("/home/ApprovalReports");
@@ -604,6 +685,7 @@ const Sidebar = ({ setSidebarOpen }) => {
             <TbReport style={{ color: "#ffcc00" }} className="text-[27px]" />
           }
           Permissions={Permissions}
+          currentPath={location.pathname}
           label="Report"
           links={[
             {
@@ -710,6 +792,7 @@ const Sidebar = ({ setSidebarOpen }) => {
         {Permissions.includes("sap") && (
           <StandaloneButton
             open={open}
+            active={location.pathname === "/home/SAP"}
             onClick={() => {
               closeAllDropdowns();
               navigate("/home/SAP");
@@ -732,6 +815,7 @@ const Sidebar = ({ setSidebarOpen }) => {
             />
           }
           Permissions={Permissions}
+          currentPath={location.pathname}
           label="TestLab"
           links={[
             {
@@ -781,6 +865,7 @@ const Sidebar = ({ setSidebarOpen }) => {
           }
           
           Permissions={Permissions}
+          currentPath={location.pathname}
           label="PMPD"
           links={[
             
@@ -905,6 +990,7 @@ const Sidebar = ({ setSidebarOpen }) => {
             <FaRupeeSign style={{ color: "#FFA500" }} className="text-[27px]" />
           }
           Permissions={Permissions}
+          currentPath={location.pathname}
           label="DCM"
           links={[
             {
@@ -1058,14 +1144,18 @@ const Sidebar = ({ setSidebarOpen }) => {
 };
 
 /* Reusable Component for Standalone Buttons */
-const StandaloneButton = ({ open, onClick, icon, label }) => (
+const StandaloneButton = ({ open, onClick, icon, label, active = false }) => (
   <button
     onClick={onClick}
-    className="flex items-center w-full px-3 py-2.5 text-left text-white bg-transparent rounded-md hover:bg-gray-600 transition-colors"
+    className={`flex items-center w-full gap-2.5 px-3 py-2 rounded-md text-left transition-colors duration-150 ${
+      active ? "bg-gray-600 text-white" : "text-white bg-transparent hover:bg-gray-600"
+    }`}
   >
-    <div className="flex items-center justify-center min-w-[32px]">{icon}</div>
+    <span className="flex items-center justify-center w-5 h-5 shrink-0 leading-none">
+      {icon}
+    </span>
     {open && (
-      <span className="font-bold text-[17px] ml-2 whitespace-nowrap">
+      <span className="font-semibold text-[14px] leading-snug text-left break-words">
         {label}
       </span>
     )}
@@ -1082,6 +1172,7 @@ const SidebarSection = ({
   links,
   codeList = [],
   Permissions = [],
+  currentPath = "",
 }) => {
   const permissionArray = Array.isArray(Permissions)
     ? Permissions
@@ -1102,42 +1193,57 @@ const SidebarSection = ({
   if (filteredLinks.length === 0) return null;
 
   return (
-    <div className="">
+    <div>
       <button
         onClick={toggleSection}
-        className="flex items-center justify-between w-full px-3 py-2.5 text-left text-white bg-transparent rounded-md hover:bg-gray-600 hover:rounded-md transition-colors"
+        className={`flex items-center justify-between w-full gap-2 px-3 py-2 rounded-md text-left transition-colors duration-150 ${
+          isOpen ? "bg-gray-600 text-white" : "text-white bg-transparent hover:bg-gray-600"
+        }`}
       >
-        <div className="flex items-center">
-          <div className="flex items-center justify-center min-w-[32px]">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="flex items-center justify-center w-5 h-5 shrink-0 leading-none">
             {icon}
-          </div>
+          </span>
           {open && (
-            <span className="font-bold text-[17px] ml-2 whitespace-nowrap">
+            <span className="font-semibold text-[14px] leading-snug text-left break-words">
               {label}
             </span>
           )}
         </div>
-        {open && (isOpen ? <ArrowDropDownIcon /> : <ArrowRightIcon />)}
+        {open && (
+          <ArrowRightIcon
+            fontSize="small"
+            className={`shrink-0 transition-transform duration-200 ease-in-out ${
+              isOpen ? "rotate-90" : "rotate-0"
+            }`}
+          />
+        )}
       </button>
 
       {open && isOpen && (
-        <div className="p-1 pl-4 flex flex-col gap-1 bg-[#4b4b4b] rounded-md shadow-inner">
-          {filteredLinks.map((link, index) => (
-            <Link
-              key={index}
-              to={link.path}
-              className="flex items-center p-2 text-[15px] text-gray-200 no-underline rounded-md hover:bg-gray-500 hover:text-white transition-all duration-200"
-            >
-              {link.icon && (
-                <span className="mr-3 flex items-center justify-center">
-                  {link.icon}
-                </span>
-              )}
-              <span className="" title={link.name}>
-                {link.name}
-              </span>
-            </Link>
-          ))}
+        <div className="mt-0.5 mb-0.5 p-1 pl-3 flex flex-col gap-0.5 bg-[#4b4b4b] rounded-md shadow-inner">
+          {filteredLinks.map((link, index) => {
+            const isActive = currentPath === link.path;
+            return (
+              <Link
+                key={index}
+                to={link.path}
+                title={link.name}
+                className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] leading-snug no-underline transition-colors duration-150 ${
+                  isActive
+                    ? "bg-gray-500 text-white font-semibold"
+                    : "text-gray-200 hover:bg-gray-500 hover:text-white"
+                }`}
+              >
+                {link.icon && (
+                  <span className="flex items-center justify-center w-5 h-5 shrink-0 leading-none">
+                    {link.icon}
+                  </span>
+                )}
+                <span className="break-words">{link.name}</span>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
