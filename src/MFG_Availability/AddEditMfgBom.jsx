@@ -139,6 +139,7 @@ const createEmptyRow = (id) => ({
   valuation_id: "",
   vendor_id: "",
   status: true,
+  is_assembly_part: false,
   new: true,
 });
 
@@ -222,6 +223,7 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
             valuation_id: r.valuation_id,
             vendor_id: r.vendor_id,
             status: r.status,
+            is_assembly_part: Boolean(r.is_assembly_part),
           })),
         };
         await InsertMfgBomApi(payload);
@@ -309,6 +311,7 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
         Vendor_Code: e.Vendor_Code,
         Vendor_Name: e.Vendor_Name,
         status: e.status,
+        is_assembly_part: Boolean(e.Is_assembly_part),
       }));
       setGridRows(data);
     };
@@ -495,6 +498,27 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
             fontWeight: "bold",
             color: params.value ? "#2e7d32" : "#d32f2f",
           }}
+        />
+      ),
+    },
+    {
+      field: "is_assembly_part",
+      headerName: "Assembly Part",
+      width: 120,
+      align: "center",
+      headerAlign: "center",
+      renderCell: (params) => (
+        <FormControlLabel
+          control={
+            <Switch
+              checked={Boolean(params.value)}
+              onChange={(e) => handleProcessRowUpdate({ ...params.row, is_assembly_part: e.target.checked })}
+              color="primary"
+              size="small"
+            />
+          }
+          label={params.value ? "Yes" : "No"}
+          sx={{ m: 0, fontWeight: "bold", color: params.value ? "#1565c0" : "#777" }}
         />
       ),
     },

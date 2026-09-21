@@ -24,6 +24,7 @@ const HEADER_COLUMNS = [
   "Valuation_Class",
   "Vendor_Code",
   "Active_Status",
+  "Is_Assembly_Part",
 ];
 
 const MfgBomBulkUpload = ({ open, onClose, onOpen, setRefreshData }) => {
@@ -109,6 +110,13 @@ const MfgBomBulkUpload = ({ open, onClose, onOpen, setRefreshData }) => {
       type: "list",
       allowBlank: false,
       formulae: ['"Active,Inactive"'],
+    });
+
+    // Is Assembly Part — optional; blank/omitted is treated as No.
+    worksheet.dataValidations.add("J2:J1000", {
+      type: "list",
+      allowBlank: true,
+      formulae: ['"Yes,No"'],
     });
 
     const buffer = await workbook.xlsx.writeBuffer();

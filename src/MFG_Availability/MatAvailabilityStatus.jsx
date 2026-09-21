@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { TextField, Button, MenuItem, CircularProgress, Tooltip } from "@mui/material";
+import { TextField, Button, MenuItem, CircularProgress, Tooltip, Typography } from "@mui/material";
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarFilterButton, GridToolbarExport } from "@mui/x-data-grid";
 import SearchIcon from "@mui/icons-material/Search";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import PrecisionManufacturingOutlinedIcon from "@mui/icons-material/PrecisionManufacturingOutlined";
 import { FaFileExcel } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { format } from "date-fns";
 import * as XLSX from "xlsx-js-style";
-import SectionHeading from "../components/Header";
 import {
   GetMatAvailabilityFiltersApi,
   GetMatAvailabilityReportApi,
@@ -156,22 +157,35 @@ const ChildPartTooltip = ({ value, children, side, supplierMap, plant }) => {
 const compactFieldSx = (minWidth) => ({
   minWidth,
   flexShrink: 0,
-  "& .MuiInputBase-input, & .MuiSelect-select": { padding: "6.5px 8px", fontSize: 12 },
-  "& .MuiInputLabel-root": { fontSize: 12 },
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "8px",
+    backgroundColor: "#fafbfc",
+    "& fieldset": { borderColor: "#dde1e7" },
+    "&:hover fieldset": { borderColor: "#0066FF" },
+    "&.Mui-focused fieldset": { borderColor: "#0066FF", borderWidth: "1.5px" },
+  },
+  "& .MuiInputBase-input, & .MuiSelect-select": { padding: "8px 10px", fontSize: 12.5 },
+  "& .MuiInputLabel-root": { fontSize: 12.5, color: "#6b7280" },
   "& .MuiInputLabel-root.MuiInputLabel-shrink": { fontSize: 12 },
 });
 
 const compactButtonSx = {
-  height: 32,
-  fontSize: 12,
+  height: 34,
+  fontSize: 12.5,
+  fontWeight: 600,
   textTransform: "none",
-  borderRadius: 1.5,
+  borderRadius: "8px",
   boxShadow: "none",
-  padding: "0 10px",
+  padding: "0 14px",
   whiteSpace: "nowrap",
+  transition: "background-color .15s ease, box-shadow .15s ease",
 };
 
-const MatAvailabilityStatus = () => {
+// Tab 1: Materials — the original MAT Availability report, completely
+// unchanged in filters/calculations/columns/APIs/behavior. Only its outer
+// page frame (title) moved up to the shared MatAvailabilityStatus wrapper
+// so both tabs sit under one title + tab bar.
+const MaterialsBody = ({ onCountChange }) => {
   const [filterOptions, setFilterOptions] = useState({ plants: [], partNames: [] });
   const [plant, setPlant] = useState("");
   const [partNameId, setPartNameId] = useState("");
@@ -223,6 +237,7 @@ const MatAvailabilityStatus = () => {
       setOperationColumns(data?.operationColumns || []);
       setPlantStockAsOf(data?.plantStockAsOf || null);
       setSupplierStockAsOf(data?.supplierStockAsOf || null);
+      onCountChange?.(data?.rows?.length || 0);
 
       const map = new Map();
       (supplierSnapshot?.rows || []).forEach((r) => {
@@ -502,31 +517,19 @@ const MatAvailabilityStatus = () => {
   };
 
   return (
-    <div
-      style={{
-        padding: "10px 14px",
-        backgroundColor: "#F5F5F5",
-        marginTop: "50px",
-        display: "flex",
-        flexDirection: "column",
-        height: "calc(100vh - 50px)",
-      }}
-    >
-      <div style={{ marginBottom: 15, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <SectionHeading>MFG Set of Parts - Stock Report [MB52 / MBLB]</SectionHeading>
-      </div>
-
+    <>
       {/* Compact filter toolbar — Plant, Part Name, Month + Search only */}
       <div
         style={{
           backgroundColor: "#fff",
-          borderRadius: 8,
-          boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-          padding: "6px 8px",
-          marginBottom: 4,
+          borderRadius: 10,
+          border: "1px solid #e8eaee",
+          boxShadow: "0 1px 3px rgba(16,24,40,0.05)",
+          padding: "10px 12px",
+          marginBottom: 8,
           display: "flex",
           flexWrap: "wrap",
-          gap: 6,
+          gap: 10,
           alignItems: "center",
         }}
       >
@@ -561,13 +564,14 @@ const MatAvailabilityStatus = () => {
           InputLabelProps={{ shrink: true, sx: { fontSize: 12 } }}
         />
 
-        <div style={{ display: "flex", gap: 6, marginLeft: "auto", flexShrink: 0 }}>
+        <div style={{ display: "flex", gap: 8, marginLeft: "auto", flexShrink: 0 }}>
           <Button
             onClick={fetchReport}
             disabled={loading}
             variant="contained"
+            disableElevation
             startIcon={loading ? <CircularProgress size={12} color="inherit" /> : <SearchIcon sx={{ fontSize: 15 }} />}
-            sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc", boxShadow: "none" } }}
+            sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc" } }}
           >
             {loading ? "Loading..." : "Search"}
           </Button>
@@ -575,8 +579,9 @@ const MatAvailabilityStatus = () => {
             onClick={handleDownloadExcel}
             disabled={excelLoading}
             variant="contained"
+            disableElevation
             startIcon={excelLoading ? <CircularProgress size={12} color="inherit" /> : <FaFileExcel size={13} />}
-            sx={{ ...compactButtonSx, backgroundColor: "#1B7A43", "&:hover": { backgroundColor: "#166238", boxShadow: "none" } }}
+            sx={{ ...compactButtonSx, backgroundColor: "#1B7A43", "&:hover": { backgroundColor: "#166238" } }}
           >
             {excelLoading ? "Exporting..." : "Export Excel"}
           </Button>
@@ -584,13 +589,35 @@ const MatAvailabilityStatus = () => {
       </div>
 
       {loaded && (
-        <div style={{ fontSize: 10.5, color: "#666", marginBottom: 3, display: "flex", gap: 12, flexWrap: "wrap", lineHeight: "14px" }}>
-          <span>{flatRows.length} record{flatRows.length === 1 ? "" : "s"} found</span>
+        <div
+          style={{
+            fontSize: 11,
+            color: "#586174",
+            backgroundColor: "#f8f9fb",
+            border: "1px solid #eef0f3",
+            borderRadius: 8,
+            padding: "6px 12px",
+            marginBottom: 8,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontWeight: 700, color: "#1a2233" }}>
+            {flatRows.length} record{flatRows.length === 1 ? "" : "s"} found
+          </span>
           {plantStockAsOf && (
-            <span>· Plant Stock as of {format(new Date(plantStockAsOf), "dd-MMM-yyyy HH:mm")}</span>
+            <>
+              <span style={{ color: "#d3d7dd" }}>|</span>
+              <span>Plant Stock as of <b style={{ color: "#333" }}>{format(new Date(plantStockAsOf), "dd-MMM-yyyy HH:mm")}</b></span>
+            </>
           )}
           {supplierStockAsOf && (
-            <span>· Supplier Stock as of {format(new Date(supplierStockAsOf), "dd-MMM-yyyy HH:mm")}</span>
+            <>
+              <span style={{ color: "#d3d7dd" }}>|</span>
+              <span>Supplier Stock as of <b style={{ color: "#333" }}>{format(new Date(supplierStockAsOf), "dd-MMM-yyyy HH:mm")}</b></span>
+            </>
           )}
         </div>
       )}
@@ -625,6 +652,403 @@ const MatAvailabilityStatus = () => {
             "& .mat-tot-cell": { fontWeight: "bold", backgroundColor: "#e2efda" },
           }}
         />
+      </div>
+    </>
+  );
+};
+
+// Tab 2: Production-IH — same report structure/filters/APIs as Materials,
+// restricted server-side to assembly-part child rows (assemblyOnly=true),
+// showing only IH data plus the derived Set of Parts column (MIN of IH
+// across this FG's operation columns).
+const ProductionIHBody = ({ onCountChange }) => {
+  const [filterOptions, setFilterOptions] = useState({ plants: [], partNames: [] });
+  const [plant, setPlant] = useState("");
+  const [partNameId, setPartNameId] = useState("");
+  const [month, setMonth] = useState(currentMonth());
+
+  const [reportRows, setReportRows] = useState([]);
+  const [operationColumns, setOperationColumns] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [plantStockAsOf, setPlantStockAsOf] = useState(null);
+
+  useEffect(() => {
+    const loadFilters = async () => {
+      try {
+        const data = await GetMatAvailabilityFiltersApi();
+        setFilterOptions({ plants: data?.plants || [], partNames: data?.partNames || [] });
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to load filter options.");
+      }
+    };
+    loadFilters();
+  }, []);
+
+  const buildParams = () => ({
+    plant: plant || undefined,
+    partNameId: partNameId || undefined,
+    month,
+    assemblyOnly: true,
+  });
+
+  const fetchReport = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const data = await GetMatAvailabilityReportApi(buildParams());
+      setReportRows(data?.rows || []);
+      setOperationColumns(data?.operationColumns || []);
+      setPlantStockAsOf(data?.plantStockAsOf || null);
+      onCountChange?.(data?.rows?.length || 0);
+      setLoaded(true);
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Failed to load Production-IH report.");
+      setReportRows([]);
+      setOperationColumns([]);
+      setPlantStockAsOf(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReport();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const flatRows = useMemo(() => {
+    return reportRows.map((fg, idx) => {
+      const row = {
+        id: `${fg.plant}-${fg.fg_part_no}-${idx}`,
+        plant: fg.plant,
+        fg_part_no: fg.fg_part_no,
+        fg_desc: fg.fg_desc,
+        plan: fg.plan,
+        actual: fg.actual,
+        gap: fg.gap,
+        set_of_parts: fg.set_of_parts,
+        all_children: fg.children,
+      };
+      fg.operations.forEach((op) => {
+        const childrenForOp = fg.children.filter((c) => c.opt_no === op.opt_no);
+        row[`op_${op.opt_no}_ih`] = op.plant_qty;
+        row[`op_${op.opt_no}_children`] = childrenForOp;
+      });
+      return row;
+    });
+  }, [reportRows]);
+
+  const columns = useMemo(() => {
+    const base = [
+      { field: "plant", headerName: "Plant", width: 60 },
+      { field: "fg_part_no", headerName: "FG_Part_No", width: 90 },
+      { field: "fg_desc", headerName: "FG Part Description", width: 280 },
+      { field: "plan", headerName: "Plan", width: 80, align: "right", headerAlign: "center", renderCell: (p) => numberFmt(p.value) },
+      { field: "actual", headerName: "Actual", width: 80, align: "right", headerAlign: "center", renderCell: (p) => numberFmt(p.value) },
+      { field: "gap", headerName: "GAP", width: 80, align: "right", headerAlign: "center", renderCell: (p) => numberFmt(p.value) },
+    ];
+    const opCols = operationColumns.map((op) => ({
+      field: `op_${op.opt_no}_ih`,
+      headerName: `${op.opt_name} - IH`,
+      width: 130,
+      align: "right",
+      headerAlign: "center",
+      sortable: false,
+      renderCell: (p) => (
+        <ChildPartTooltip value={p.value} children={p.row[`op_${op.opt_no}_children`]} side="plant_qty" plant={p.row.plant} />
+      ),
+      cellClassName: "mat-ih-cell",
+    }));
+    const setOfPartsCol = [
+      { field: "set_of_parts", headerName: "Set of Parts", width: 120, align: "right", headerAlign: "center", sortable: false, renderCell: (p) => numberFmt(p.value), cellClassName: "mat-tot-cell" },
+    ];
+    return [...base, ...opCols, ...setOfPartsCol];
+  }, [operationColumns]);
+
+  // Grouped header row: SOCKET spans every operation column directly (each
+  // column's own header already reads "<Operation> - IH", so there's no
+  // separate per-operation sub-group/IH row underneath). Set of Parts sits
+  // outside the SOCKET group as its own top-level column.
+  const columnGroupingModel = useMemo(() => {
+    return [
+      {
+        groupId: "socket_group",
+        headerName: "SOCKET",
+        headerAlign: "center",
+        children: operationColumns.map((op) => ({ field: `op_${op.opt_no}_ih` })),
+      },
+    ];
+  }, [operationColumns]);
+
+  return (
+    <>
+      <div
+        style={{
+          backgroundColor: "#fff",
+          borderRadius: 10,
+          border: "1px solid #e8eaee",
+          boxShadow: "0 1px 3px rgba(16,24,40,0.05)",
+          padding: "10px 12px",
+          marginBottom: 8,
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 10,
+          alignItems: "center",
+        }}
+      >
+        <TextField
+          select size="small" label="Plant" value={plant}
+          onChange={(e) => setPlant(e.target.value)}
+          sx={compactFieldSx(150)}
+          SelectProps={{ MenuProps: { PaperProps: { sx: { "& .MuiMenuItem-root": { fontSize: 12, minHeight: 28 } } } } }}
+        >
+          <MenuItem sx={{ fontSize: 12 }} value="">All Plants</MenuItem>
+          {filterOptions.plants.map((p) => (
+            <MenuItem sx={{ fontSize: 12 }} key={p.Plant_Code} value={p.Plant_Code}>{p.Plant_Code} - {p.Plant_Name}</MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          select size="small" label="Part Name" value={partNameId}
+          onChange={(e) => setPartNameId(e.target.value)}
+          sx={compactFieldSx(160)}
+          SelectProps={{ MenuProps: { PaperProps: { sx: { "& .MuiMenuItem-root": { fontSize: 12, minHeight: 28 } } } } }}
+        >
+          <MenuItem sx={{ fontSize: 12 }} value="">All Part Names</MenuItem>
+          {filterOptions.partNames.map((p) => (
+            <MenuItem sx={{ fontSize: 12 }} key={p.Prod_ID} value={p.Prod_ID}>{p.Name}</MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          size="small" label="Month" type="month" value={month}
+          onChange={(e) => setMonth(e.target.value)}
+          sx={compactFieldSx(140)}
+          InputLabelProps={{ shrink: true, sx: { fontSize: 12 } }}
+        />
+
+        <div style={{ display: "flex", gap: 8, marginLeft: "auto", flexShrink: 0 }}>
+          <Button
+            onClick={fetchReport}
+            disabled={loading}
+            variant="contained"
+            disableElevation
+            startIcon={loading ? <CircularProgress size={12} color="inherit" /> : <SearchIcon sx={{ fontSize: 15 }} />}
+            sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc" } }}
+          >
+            {loading ? "Loading..." : "Search"}
+          </Button>
+        </div>
+      </div>
+
+      {loaded && (
+        <div
+          style={{
+            fontSize: 11,
+            color: "#586174",
+            backgroundColor: "#f8f9fb",
+            border: "1px solid #eef0f3",
+            borderRadius: 8,
+            padding: "6px 12px",
+            marginBottom: 8,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontWeight: 700, color: "#1a2233" }}>
+            {flatRows.length} record{flatRows.length === 1 ? "" : "s"} found
+          </span>
+          {plantStockAsOf && (
+            <>
+              <span style={{ color: "#d3d7dd" }}>|</span>
+              <span>Plant Stock as of <b style={{ color: "#333" }}>{format(new Date(plantStockAsOf), "dd-MMM-yyyy HH:mm")}</b></span>
+            </>
+          )}
+        </div>
+      )}
+
+      <div style={{ flexGrow: 1, backgroundColor: "#fff", borderRadius: 8, boxShadow: "0 4px 8px rgba(0,0,0,0.1)", minHeight: 0, overflow: "hidden" }}>
+        <DataGrid
+          rows={flatRows}
+          columns={columns}
+          columnGroupingModel={columnGroupingModel}
+          pageSize={25}
+          rowsPerPageOptions={[25, 50, 100]}
+          disableSelectionOnClick
+          loading={loading}
+          columnHeaderHeight={26}
+          rowHeight={30}
+          slots={{ toolbar: CustomToolbar }}
+          localeText={{ noRowsLabel: "No assembly-part rows found for the selected filters." }}
+          sx={{
+            height: "100%",
+            "& .MuiDataGrid-columnHeaders": { position: "sticky", top: 0, zIndex: 2 },
+            "& .MuiDataGrid-columnHeader": { backgroundColor: "#bdbdbd", color: "black", fontWeight: "bold" },
+            "& .MuiDataGrid-columnHeaderTitle": { fontSize: "10.5px", fontWeight: "bold" },
+            "& .MuiDataGrid-columnHeader--filledGroup .MuiDataGrid-columnHeaderTitle": { fontSize: "11px" },
+            "& .MuiDataGrid-row": { backgroundColor: "#f5f5f5", "&:hover": { backgroundColor: "#f5f5f5" } },
+            "& .MuiDataGrid-row.Mui-selected": { backgroundColor: "inherit" },
+            "& .MuiDataGrid-cell": { color: "#333", fontSize: "11px", padding: "0 6px" },
+            "& .MuiDataGrid-toolbarContainer": { padding: "2px 6px", minHeight: 30 },
+            "& .MuiDataGrid-toolbarContainer button": { fontSize: "11px", padding: "2px 6px" },
+            "& .mat-ih-cell": { backgroundColor: "#ffffff" },
+            "& .mat-tot-cell": { fontWeight: "bold", backgroundColor: "#e2efda" },
+          }}
+        />
+      </div>
+    </>
+  );
+};
+
+// Pill-style segmented tab control (icon + label + live record-count badge),
+// with a sliding highlight that animates to the active segment's measured
+// position — the same "capsule" tab pattern used in modern dashboard UIs.
+const TAB_DEFS = [
+  { key: "materials", label: "Materials", Icon: DescriptionOutlinedIcon },
+  { key: "productionIH", label: "Production-IH", Icon: PrecisionManufacturingOutlinedIcon },
+];
+
+const PillTabs = ({ value, onChange, counts }) => {
+  const btnRefs = React.useRef([]);
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+
+  useEffect(() => {
+    const el = btnRefs.current[value];
+    if (el) {
+      setIndicator({ left: el.offsetLeft, width: el.offsetWidth });
+    }
+  }, [value, counts]);
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        display: "inline-flex",
+        gap: 4,
+        padding: 4,
+        backgroundColor: "#eef0f3",
+        borderRadius: 999,
+        width: "fit-content",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 4,
+          bottom: 4,
+          left: indicator.left,
+          width: indicator.width,
+          backgroundColor: "#fff",
+          borderRadius: 999,
+          boxShadow: "0 1px 6px rgba(16,24,40,0.14)",
+          transition: "left .25s cubic-bezier(.4,0,.2,1), width .25s cubic-bezier(.4,0,.2,1)",
+        }}
+      />
+      {TAB_DEFS.map((t, i) => {
+        const active = value === i;
+        const count = counts[t.key] ?? 0;
+        return (
+          <button
+            key={t.key}
+            ref={(el) => (btnRefs.current[i] = el)}
+            onClick={() => onChange(i)}
+            style={{
+              position: "relative",
+              zIndex: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              borderRadius: 999,
+              padding: "7px 14px",
+              fontFamily: "inherit",
+              fontSize: 12.5,
+              fontWeight: 600,
+              color: active ? "#0066FF" : "#6b7280",
+              transition: "color .2s ease",
+            }}
+          >
+            <t.Icon sx={{ fontSize: 16 }} />
+            <span>{t.label}</span>
+            <span
+              style={{
+                fontSize: 10.5,
+                fontWeight: 700,
+                padding: "1px 7px",
+                borderRadius: 999,
+                backgroundColor: active ? "#e8f0ff" : "#e2e5ea",
+                color: active ? "#0066FF" : "#6b7280",
+                transition: "background-color .2s ease, color .2s ease",
+              }}
+            >
+              {count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+// Shared page frame: title + Materials/Production-IH tabs. Materials keeps
+// its exact original behavior (MaterialsBody, untouched); Production-IH is
+// the new assembly-part-only IH view reusing the same report API/logic.
+const MatAvailabilityStatus = () => {
+  const [tab, setTab] = useState(0);
+  const [counts, setCounts] = useState({ materials: 0, productionIH: 0 });
+
+  return (
+    <div
+      style={{
+        padding: "20px 20px",
+        backgroundColor: "#F5F5F5",
+        marginTop: "50px",
+        display: "flex",
+        flexDirection: "column",
+        height: "calc(100vh - 50px)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
+          marginBottom: 12,
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: 17,
+            fontWeight: 700,
+            color: "#1a2233",
+            letterSpacing: 0.1,
+            lineHeight: 1.3,
+          }}
+        >
+          MFG Set of Parts - Stock Report{" "}
+          <Typography component="span" sx={{ fontSize: 13, fontWeight: 500, color: "#6b7280" }}>
+            [MB52 / MBLB]
+          </Typography>
+        </Typography>
+
+        <PillTabs value={tab} onChange={setTab} counts={counts} />
+      </div>
+
+      <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+        {tab === 0 ? (
+          <MaterialsBody onCountChange={(c) => setCounts((s) => ({ ...s, materials: c }))} />
+        ) : (
+          <ProductionIHBody onCountChange={(c) => setCounts((s) => ({ ...s, productionIH: c }))} />
+        )}
       </div>
     </div>
   );

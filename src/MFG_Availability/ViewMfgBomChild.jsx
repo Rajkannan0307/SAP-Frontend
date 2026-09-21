@@ -42,6 +42,30 @@ const ViewMfgBomChildDialog = ({ open, setOpenAddModal, mfgBomData }) => {
     { field: "Vendor_Code", headerName: "Vendor Code", width: 65 },
     { field: "Vendor_Name", headerName: "Vendor Name", flex: 1 },
     {
+      field: "Is_assembly_part",
+      headerName: "Assembly Part",
+      width: 110,
+      align: "center",
+      headerAlign: "center",
+      renderCell: (params) => {
+        const isAssembly = Boolean(params.value);
+        return (
+          <span
+            style={{
+              padding: "3px 12px",
+              borderRadius: "12px",
+              fontSize: "12px",
+              fontWeight: "bold",
+              color: "white",
+              backgroundColor: isAssembly ? "#1565c0" : "#9e9e9e",
+            }}
+          >
+            {isAssembly ? "Yes" : "No"}
+          </span>
+        );
+      },
+    },
+    {
       field: "status",
       headerName: "Status",
       width: 110,
