@@ -19,4 +19,10 @@ export const getAdd = async (data) => {
     const response = await axios.put(`${api}/SupvCodeMaster/get_Updates`, data);
     return response;
   };
-  
+
+  export const bulkUploadSupvCode = async (formData) => {
+    const response = await axios.post(`${api}/SupvCodeMaster/bulkUpload`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response;
+  };

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import { PiNuclearPlantFill } from "react-icons/pi";
 import { GrCubes } from "react-icons/gr";
 import { MdCalendarMonth, MdOutlineReportGmailerrorred } from "react-icons/md";
@@ -111,7 +112,7 @@ const Sidebar = ({ setSidebarOpen }) => {
   return (
     <div
       style={{ scrollbarGutter: "stable" }}
-      className={`fixed top-[60px] left-0 h-[calc(100vh-60px)] bg-[#595959] text-white transition-all duration-300 z-50 overflow-y-auto overflow-x-hidden pb-12 shadow-lg
+      className={`fixed top-[60px] left-0 h-[calc(100vh-60px)] bg-[#595959] text-white transition-[width] duration-300 ease-in-out z-50 overflow-y-auto overflow-x-hidden pb-12 shadow-lg
         [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent
         [&::-webkit-scrollbar-thumb]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full
         ${open ? "w-[260px]" : "w-[60px]"}`}
@@ -122,21 +123,21 @@ const Sidebar = ({ setSidebarOpen }) => {
           open ? "justify-between" : "justify-center"
         }`}
       >
-        {open && (
-          <h3
-            className="m-0 text-white font-bold cursor-pointer hover:text-gray-300 transition-colors"
-            onClick={() => {
-              const roleId = parseInt(Role);
-              if (roleId === 1 || roleId === 9) {
-                navigate("/home/Home");
-              } else if ([2, 3, 4, 5, 6, 7, 8].includes(roleId)) {
-                navigate("/home/HomePage");
-              }
-            }}
-          >
-            HOME
-          </h3>
-        )}
+        <h3
+          className={`m-0 text-white font-bold cursor-pointer hover:text-gray-300 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${
+            open ? "max-w-[160px] opacity-100" : "max-w-0 opacity-0 pointer-events-none"
+          }`}
+          onClick={() => {
+            const roleId = parseInt(Role);
+            if (roleId === 1 || roleId === 9) {
+              navigate("/home/Home");
+            } else if ([2, 3, 4, 5, 6, 7, 8].includes(roleId)) {
+              navigate("/home/HomePage");
+            }
+          }}
+        >
+          HOME
+        </h3>
 
         <button
           onClick={toggleSidebar}
@@ -311,6 +312,17 @@ const Sidebar = ({ setSidebarOpen }) => {
               code: "Module",
             },
             {
+              name: "Shift",
+              path: "/home/ShiftMaster",
+              icon: (
+                <AccessTimeIcon
+                  style={{ color: "lightcoral" }}
+                  className="text-[22px]"
+                />
+              ),
+              code: "ShiftMaster",
+            },
+            {
               name: "Line",
               path: "/home/Line",
               icon: (
@@ -436,6 +448,7 @@ const Sidebar = ({ setSidebarOpen }) => {
             "CostCenter",
             "ValuationType",
             "SupvCode",
+            "ShiftMaster",
             "Module",
             "Line",
             "Mst_Operation",
@@ -527,8 +540,19 @@ const Sidebar = ({ setSidebarOpen }) => {
               ),
               code: "MatAvailabilityStatus",
             },
+            {
+              name: "Daily Production Plan",
+              path: "/home/MfgProductionDailyPlan",
+              icon: (
+                <PrecisionManufacturingIcon
+                  style={{ color: "darkseagreen" }}
+                  className="text-[22px]"
+                />
+              ),
+              code: "MfgProductionDailyPlan",
+            },
           ]}
-          codeList={["MFG_BOM", "PlantStock", "SupplierStock", "MatAvailabilityStatus"]}
+          codeList={["MFG_BOM", "PlantStock", "SupplierStock", "MatAvailabilityStatus", "MfgProductionDailyPlan"]}
         />
         {/* Approval Section */}
         <SidebarSection
@@ -1154,11 +1178,13 @@ const StandaloneButton = ({ open, onClick, icon, label, active = false }) => (
     <span className="flex items-center justify-center w-5 h-5 shrink-0 leading-none">
       {icon}
     </span>
-    {open && (
-      <span className="font-semibold text-[14px] leading-snug text-left break-words">
-        {label}
-      </span>
-    )}
+    <span
+      className={`font-semibold text-[14px] leading-snug text-left whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${
+        open ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"
+      }`}
+    >
+      {label}
+    </span>
   </button>
 );
 
@@ -1204,46 +1230,54 @@ const SidebarSection = ({
           <span className="flex items-center justify-center w-5 h-5 shrink-0 leading-none">
             {icon}
           </span>
-          {open && (
-            <span className="font-semibold text-[14px] leading-snug text-left break-words">
-              {label}
-            </span>
-          )}
-        </div>
-        {open && (
-          <ArrowRightIcon
-            fontSize="small"
-            className={`shrink-0 transition-transform duration-200 ease-in-out ${
-              isOpen ? "rotate-90" : "rotate-0"
+          <span
+            className={`font-semibold text-[14px] leading-snug text-left whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${
+              open ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"
             }`}
-          />
-        )}
+          >
+            {label}
+          </span>
+        </div>
+        <ArrowRightIcon
+          fontSize="small"
+          className={`shrink-0 transition-all duration-200 ease-in-out ${
+            isOpen ? "rotate-90" : "rotate-0"
+          } ${open ? "max-w-[24px] opacity-100" : "max-w-0 opacity-0 overflow-hidden"}`}
+        />
       </button>
 
-      {open && isOpen && (
-        <div className="mt-0.5 mb-0.5 p-1 pl-3 flex flex-col gap-0.5 bg-[#4b4b4b] rounded-md shadow-inner">
-          {filteredLinks.map((link, index) => {
-            const isActive = currentPath === link.path;
-            return (
-              <Link
-                key={index}
-                to={link.path}
-                title={link.name}
-                className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] leading-snug no-underline transition-colors duration-150 ${
-                  isActive
-                    ? "bg-gray-500 text-white font-semibold"
-                    : "text-gray-200 hover:bg-gray-500 hover:text-white"
-                }`}
-              >
-                {link.icon && (
-                  <span className="flex items-center justify-center w-5 h-5 shrink-0 leading-none">
-                    {link.icon}
-                  </span>
-                )}
-                <span className="break-words">{link.name}</span>
-              </Link>
-            );
-          })}
+      {open && (
+        <div
+          className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+            isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          }`}
+        >
+          <div className="overflow-hidden">
+            <div className="mt-0.5 mb-0.5 p-1 pl-3 flex flex-col gap-0.5 bg-[#4b4b4b] rounded-md shadow-inner">
+              {filteredLinks.map((link, index) => {
+                const isActive = currentPath === link.path;
+                return (
+                  <Link
+                    key={index}
+                    to={link.path}
+                    title={link.name}
+                    className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] leading-snug no-underline transition-colors duration-150 ${
+                      isActive
+                        ? "bg-gray-500 text-white font-semibold"
+                        : "text-gray-200 hover:bg-gray-500 hover:text-white"
+                    }`}
+                  >
+                    {link.icon && (
+                      <span className="flex items-center justify-center w-5 h-5 shrink-0 leading-none">
+                        {link.icon}
+                      </span>
+                    )}
+                    <span className="break-words">{link.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>

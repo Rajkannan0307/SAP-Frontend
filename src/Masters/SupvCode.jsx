@@ -18,10 +18,15 @@ import {
 } from "@mui/x-data-grid";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
-import { FaFileExcel } from "react-icons/fa";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import { FaFileExcel, FaDownload } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
-import { getdetails, getAdd, getUpdates, getPlants } from "../controller/SupvCodeMasterapiservice";
-import { MenuItem, InputLabel, FormControl } from '@mui/material';
+import * as ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
+import { getdetails, getAdd, getUpdates, getPlants, bulkUploadSupvCode } from "../controller/SupvCodeMasterapiservice";
+import { MenuItem, InputLabel, FormControl, Typography } from '@mui/material';
+import { deepPurple } from "@mui/material/colors";
+import ValidationResponseGrid from "../components/ValidationResponseTable";
 const UserID = localStorage.getItem('UserID');
 const SupvCode = () => {
   const [searchText, setSearchText] = useState("");
@@ -37,6 +42,11 @@ const SupvCode = () => {
   const [Sup_Name, setSup_Name] = useState("");
   const [Supv_Lead_Time, setSupv_Lead_Time] = useState("");
   const [Supv_ID, setSupv_ID] = useState([]);
+
+  const [openUploadModal, setOpenUploadModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [uploadResponse, setUploadResponse] = useState(null);
   const columns = [
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
     { field: "Sup_Code", headerName: "Supervisor Code ", flex: 1 },
@@ -135,13 +145,27 @@ const SupvCode = () => {
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
 
-  const handleRowClick = (params) => {
-    setPlantCode(params.row.Plant_Code);
+  const handleRowClick = async (params) => {
     setSupv_ID(params.row.Supv_ID);
     setSup_Code(params.row.Sup_Code);
     setSup_Name(params.row.Sup_Name);
     setSupv_Lead_Time(params.row.Supv_Lead_Time)
     setActiveStatus(params.row.Active_Status);
+
+    try {
+      // GetSupvCodeMaster only returns Plant_Code (the code, e.g. 1150),
+      // not Plant_ID — but the Plant dropdown's options key off Plant_Id
+      // (matching the Add form's convention). Resolve it once the Plant
+      // list is loaded, then seed the dropdown with the matching Plant_Id.
+      const plantRes = await getPlants();
+      const plants = plantRes.data || [];
+      setPlantTable(plants);
+      const matchedPlant = plants.find((p) => String(p.Plant_Code) === String(params.row.Plant_Code));
+      setPlantCode(matchedPlant ? matchedPlant.Plant_Id : "");
+    } catch (error) {
+      console.error("Error loading Plant for edit:", error);
+    }
+
     setOpenEditModal(true); // Open the modal
   };
 
@@ -203,9 +227,19 @@ const SupvCode = () => {
   };
 
   const handleUpdate = async () => {
+    if (PlantCode === "" || Sup_Code === "" || Sup_Name === "" || Supv_Lead_Time === "") {
+      alert("Please fill in all required fields");
+      return;
+    }
+    if (Sup_Code.toString().length !== 3) {
+      alert("Supervisor Code must be exactly 3 characters");
+      return;
+    }
     const data = {
       UserID: UserID,
       Supv_ID: Supv_ID,
+      Plant_Code: PlantCode,
+      Sup_Code: Sup_Code,
       Sup_Name: Sup_Name,
       Supv_Lead_Time: Supv_Lead_Time,
       Active_Status: ActiveStatus,
@@ -290,6 +324,90 @@ const SupvCode = () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "StorageLocation");
     XLSX.writeFile(workbook, "SupervisorMaster_Data.xlsx");
   };
+
+  // ✅ Bulk Upload
+  const handleOpenUploadModal = () => {
+    setUploadedFile(null);
+    setUploadResponse(null);
+    setOpenUploadModal(true);
+  };
+  const handleCloseUploadModal = () => {
+    setOpenUploadModal(false);
+    setUploadedFile(null);
+    setUploadResponse(null);
+    setIsUploading(false);
+  };
+
+  const downloadSupvCodeTemplate = async () => {
+    const plantRes = await getPlants();
+    const plantCodeList = (plantRes.data || []).map((p) => `${p.Plant_Code}`);
+
+    const HEADER_COLUMNS = ["Plant_Code", "Sup_Code", "Sup_Name", "Supv_Lead_Time", "Active_Status"];
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "SupvCodeMaster";
+    workbook.created = new Date();
+
+    const worksheet = workbook.addWorksheet("SupvCode");
+    worksheet.addRow(HEADER_COLUMNS);
+    worksheet.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true };
+      cell.alignment = { horizontal: "center" };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFADD8E6" } };
+    });
+    worksheet.columns = HEADER_COLUMNS.map(() => ({ width: 20 }));
+    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+    worksheet.dataValidations.add("A2:A1000", {
+      type: "list",
+      allowBlank: false,
+      formulae: [`"${plantCodeList.join(",")}"`],
+    });
+
+    worksheet.dataValidations.add("E2:E1000", {
+      type: "list",
+      allowBlank: false,
+      formulae: ['"Active,Inactive"'],
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(
+      new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+      "SupvCodeMaster_Template.xlsx"
+    );
+  };
+
+  const handleFileChange = (event) => {
+    setUploadedFile(event.target.files[0]);
+  };
+
+  const handleUploadData = async () => {
+    if (!uploadedFile) {
+      alert("Please select a file first.");
+      return;
+    }
+    if (isUploading) return;
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("userId", UserID);
+      formData.append("file", uploadedFile);
+      const response = await bulkUploadSupvCode(formData);
+      setUploadResponse(response.data);
+      alert(response.data.message || "File uploaded successfully");
+      getData();
+      handleCloseUploadModal();
+    } catch (error) {
+      console.error("Upload error:", error);
+      if (error.response?.status === 422) {
+        setUploadResponse(error.response.data);
+      } else {
+        alert(error.response?.data?.message || error.message || "Something went wrong! Try again later.");
+      }
+    }
+    setIsUploading(false);
+  };
+
   return (
     <div
       style={{
@@ -386,6 +504,20 @@ const SupvCode = () => {
             }}
           >
             <FaFileExcel size={18} />
+          </IconButton>
+
+          {/* Bulk Upload Button */}
+          <IconButton
+            onClick={handleOpenUploadModal}
+            style={{
+              borderRadius: "50%",
+              backgroundColor: "#FF6699",
+              color: "white",
+              width: "40px",
+              height: "40px",
+            }}
+          >
+            <CloudUploadIcon />
           </IconButton>
 
           {/* Add Button */}
@@ -626,25 +758,32 @@ const SupvCode = () => {
           >
             Edit Supervisor Master
           </h3>
-          <TextField
-            label="Plant"
-            name="Plant"
-            value={PlantCode} // Use the current value of PlantCode
-            fullWidth
-            InputProps={{
-              readOnly: true, // Make it read-only
-            }}
-            required
-          />
+          <FormControl fullWidth>
+            <InputLabel>Plant Code</InputLabel>
+            <Select
+              label="Plant Code"
+              name="PlantCode"
+              value={PlantCode}
+              onChange={(e) => setPlantCode(e.target.value)}
+              required
+            >
+              {PlantTable.map((item, index) => (
+                <MenuItem key={index} value={item.Plant_Id}>{item.Plant_Code}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <TextField
             label="Supervisor Code"
             name="Supervisor Code"
-            value={Sup_Code} // Use the current value of PlantCode
-            fullWidth
-            InputProps={{
-              readOnly: true, // Make it read-only
+            value={Sup_Code}
+            type="text"
+            onChange={(e) => {
+              const cleaned = e.target.value.replace(/[^a-zA-Z0-9]/g, "");
+              setSup_Code(cleaned);
             }}
+            inputProps={{ maxLength: 3 }}
+            fullWidth
             required
           />
           <TextField
@@ -724,6 +863,86 @@ const SupvCode = () => {
               Update
             </Button>
           </Box>
+        </Box>
+      </Modal>
+
+      {/* Bulk Upload Modal */}
+      <Modal open={openUploadModal} onClose={() => {}}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            textAlign: "center",
+            width: uploadResponse ? "60%" : "30%",
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            maxHeight: "80vh",
+            overflowY: "auto",
+            outline: "none",
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              mb: 2,
+              color: "#2e59d9",
+              textDecoration: "underline",
+              textDecorationColor: "#88c57a",
+              textDecorationThickness: "3px",
+            }}
+          >
+            Upload Supervisor Code Master Excel File
+          </Typography>
+
+          <Button
+            variant="contained"
+            sx={{ mb: 2, bgcolor: deepPurple[500], "&:hover": { bgcolor: deepPurple[700] } }}
+            onClick={downloadSupvCodeTemplate}
+          >
+            <FaDownload /> &nbsp; Download Template
+          </Button>
+
+          <input type="file" accept=".xlsx,.xls" id="supvcode-master-excel-upload" hidden onChange={handleFileChange} />
+
+          <label htmlFor="supvcode-master-excel-upload">
+            <Box
+              sx={{
+                border: "2px dashed #1976d2",
+                borderRadius: "8px",
+                p: 2,
+                cursor: "pointer",
+                mb: 1,
+                "&:hover": { backgroundColor: "#f4f6fb" },
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <CloudUploadIcon />
+              <span>{uploadedFile?.name || "Click to choose Excel file"}</span>
+            </Box>
+          </label>
+
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 2, my: 3 }}>
+            <Button variant="contained" color="error" onClick={handleCloseUploadModal} sx={{ width: "30%" }}>
+              Close
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleUploadData}
+              disabled={isUploading}
+              sx={{ width: "30%" }}
+            >
+              {isUploading ? "Uploading..." : "Upload"}
+            </Button>
+          </Box>
+
+          {uploadResponse && <ValidationResponseGrid response={uploadResponse} />}
         </Box>
       </Modal>
     </div>

@@ -37,6 +37,7 @@ import { CloudUploadIcon } from 'lucide-react'
 import { deepPurple } from "@mui/material/colors";
 import ExcelJS from 'exceljs'
 import { getMaterialType } from "../../controller/Masterapiservice";
+import { getdetails as getLines } from "../../controller/LineMasterapiservice";
 import { MaterialGroupEnumTypes } from "../../common/enumValues";
 
 const CC_PackingBomPart = () => {
@@ -89,6 +90,7 @@ const CC_PackingBomPart = () => {
         { field: "Description", headerName: "Description", flex: 1 },
         { field: "uom", headerName: "UOM", flex: 1 },
         { field: "Material_Type", headerName: "Material Type", flex: 1 },
+        { field: "Line_Name", headerName: "Line", flex: 1 },
         {
             field: "Active_Status", headerName: "Active Status", flex: 1,
             renderCell: (params) => {
@@ -412,6 +414,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
     const [submitLoading, setSubmitLoading] = useState(false)
     const [plants, setPlants] = useState([])
     const [materialType, setMaterialType] = useState([])
+    const [lines, setLines] = useState([])
 
     const handleClose = () => {
         setOpenAddModal(false)
@@ -438,6 +441,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
             uom: editData?.uom || "",
             Material_Type: editData?.Material_Type || "",
             Active_Status: editData?.Active_Status ?? true,
+            Line_ID: editData?.Line_ID || "",
         },
         validationSchema,
         enableReinitialize: true,
@@ -484,10 +488,17 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
             const response3 = await getMaterialType(MaterialGroupEnumTypes.indirect)
             console.log(response3.data, 'Material Type')
             setMaterialType(response3.data)
+
+            const response4 = await getLines()
+            setLines((response4 || []).filter((l) => l.Active_Status))
         }
         if (open) fetchData()
 
     }, [open])
+
+    // Lines scoped to the currently selected Plant — both Mst_Line and
+    // Mst_Material store Plant_ID directly here, so this filter is safe.
+    const lineOptions = lines.filter((l) => !formik.values.Plant_ID || String(l.Plant_ID) === String(formik.values.Plant_ID));
 
     return (
         <Dialog
@@ -620,6 +631,31 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                             </MenuItem>
                         ))}
                     </TextField>
+
+                    <TextField
+                        select
+                        id="Line_ID"
+                        name="Line_ID"
+                        label="Line"
+                        size="small"
+                        fullWidth
+                        value={formik.values.Line_ID}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        InputLabelProps={{ sx: { fontSize: 12 } }}
+                        InputProps={{ sx: { fontSize: 13 } }}
+                        sx={{
+                            minWidth: 200,
+                            mt: 1
+                        }}
+                    >
+                        <MenuItem sx={{ fontSize: "small" }} value="">None</MenuItem>
+                        {lineOptions.map((p) => (
+                            <MenuItem sx={{ fontSize: "small" }} key={p.Line_ID} value={p.Line_ID}>
+                                {p.Line_Name}
+                            </MenuItem>
+                        ))}
+                    </TextField>
                 </div>
 
                 <FormControlLabel
@@ -673,6 +709,15 @@ const ExcelUploadModal = ({
     const [uploadedFile, setUploadedFile] = useState(null)
     const [loadingTemplate, setLoadingTemplate] = useState(false)
     const [uploadResponse, setUploadResponse] = useState(null)
+    const [lines, setLines] = useState([])
+
+    useEffect(() => {
+        const fetchLines = async () => {
+            const response = await getLines()
+            setLines((response || []).filter((l) => l.Active_Status))
+        }
+        if (open) fetchLines()
+    }, [open])
 
     const handleFileChange = (event) => {
         setUploadedFile(event.target.files[0]);
@@ -694,7 +739,8 @@ const ExcelUploadModal = ({
             'part_no',
             'description',
             'uom',
-            'material_type'
+            'material_type',
+            'line_name'
         ];
 
         // 1️⃣ Create workbook
@@ -721,23 +767,37 @@ const ExcelUploadModal = ({
             };
         });
 
-        // 5️⃣ Set column widths
+        // 5️⃣ Set column widths (positional — matches headerColumns above)
         worksheet.columns = [
-            { width: 15 }, // Plant_Code
-            { width: 20 }, // Customer
-            { width: 20 }, // FG_Partno
-            { width: 12 }, // Per_qty
-            { width: 18 }, // Segment
-            { width: 18 }, // Line_Name
-            { width: 12 }, // PMPD_SMH
-            { width: 14 }, // Production
-            { width: 14 }, // Inspection
-            { width: 14 }, // Packing
-            { width: 18 }, // Effective Date
+            { width: 15 }, // plant
+            { width: 20 }, // part_no
+            { width: 25 }, // description
+            { width: 12 }, // uom
+            { width: 18 }, // material_type
+            { width: 20 }, // line_name (optional)
         ];
 
         // 6️⃣ Freeze header row
         worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+        // line_name has no dropdown (list is large and keeps growing) —
+        // instead a second VISIBLE sheet lists every Plant + Line so the
+        // user can look up the exact spelling and type it into line_name
+        // on the main sheet themselves.
+        if ((lines || []).length) {
+            const lookupSheet = workbook.addWorksheet("All Lines (reference)");
+            lookupSheet.addRow(["Plant_Code", "Line_Name"]);
+            lookupSheet.getRow(1).eachCell((cell) => {
+                cell.font = { bold: true };
+                cell.alignment = { horizontal: "center" };
+                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFADD8E6" } };
+            });
+            lookupSheet.columns = [{ width: 14 }, { width: 30 }];
+            lookupSheet.views = [{ state: "frozen", ySplit: 1 }];
+            lines.forEach((l) => {
+                lookupSheet.addRow([l.Plant_Code, l.Line_Name]);
+            });
+        }
 
         // 7️⃣ Write & download file
         const buffer = await workbook.xlsx.writeBuffer();

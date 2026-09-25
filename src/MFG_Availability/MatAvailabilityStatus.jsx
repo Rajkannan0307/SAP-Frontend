@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { TextField, Button, MenuItem, CircularProgress, Tooltip, Typography } from "@mui/material";
-import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarFilterButton, GridToolbarExport } from "@mui/x-data-grid";
+import React, { useContext, useEffect, useMemo, useState } from "react";
+import { TextField, Button, CircularProgress, Tooltip, Typography, Autocomplete } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import PrecisionManufacturingOutlinedIcon from "@mui/icons-material/PrecisionManufacturingOutlined";
@@ -8,20 +7,14 @@ import { FaFileExcel } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { format } from "date-fns";
 import * as XLSX from "xlsx-js-style";
+import { AuthContext } from "../Authentication/AuthContext";
+import { getdetails as getLines } from "../controller/LineMasterapiservice";
 import {
   GetMatAvailabilityFiltersApi,
   GetMatAvailabilityReportApi,
   GetPlantStockSnapshotApi,
   GetSupplierStockSnapshotApi,
 } from "../controller/MfgBomApiService";
-
-const CustomToolbar = () => (
-  <GridToolbarContainer>
-    <GridToolbarColumnsButton />
-    <GridToolbarFilterButton />
-    <GridToolbarExport />
-  </GridToolbarContainer>
-);
 
 const currentMonth = () => {
   const now = new Date();
@@ -126,15 +119,21 @@ const ChildPartTooltip = ({ value, children, side, supplierMap, plant }) => {
       >
         {side === "supplier_qty" ? "SUPPLIER STOCK BREAKDOWN" : "PLANT STOCK BREAKDOWN"}
       </div>
-      {children.map((c, i) => (
-        <ChildPartSection
-          key={i}
-          child={c}
-          side={side}
-          suppliers={supplierMap ? supplierMap.get(`${plant}|${c.child_part_no}`) : undefined}
-          isLast={i === children.length - 1}
-        />
-      ))}
+      {/* Scrollable list, header stays fixed above — with many child parts
+          this could otherwise grow taller than the viewport and run off
+          screen, since a Tooltip/Popper never clips or repositions its own
+          content height. */}
+      <div style={{ maxHeight: 320, overflowY: "auto" }}>
+        {children.map((c, i) => (
+          <ChildPartSection
+            key={i}
+            child={c}
+            side={side}
+            suppliers={supplierMap ? supplierMap.get(`${plant}|${c.child_part_no}`) : undefined}
+            isLast={i === children.length - 1}
+          />
+        ))}
+      </div>
     </div>
   );
   return (
@@ -151,45 +150,160 @@ const ChildPartTooltip = ({ value, children, side, supplierMap, plant }) => {
   );
 };
 
-// Compact, single-line filter controls: smaller padding/font than the default
-// MUI size, achieved via input padding (safe) rather than forcing a fixed
-// height on MuiInputBase-root (which breaks the outlined label/fieldset box model).
+// Compact, single-line filter controls — styling exactly matches the Daily
+// Production Plan's own compactFieldSx/compactButtonSx (same file's design
+// reference), so both screens share one visual language. Purely visual
+// tokens: no filter behavior/logic here is affected.
 const compactFieldSx = (minWidth) => ({
   minWidth,
   flexShrink: 0,
   "& .MuiOutlinedInput-root": {
-    borderRadius: "8px",
+    borderRadius: "6px",
     backgroundColor: "#fafbfc",
+    minHeight: 30,
+    display: "flex",
+    alignItems: "center",
+    padding: "0 7px !important",
     "& fieldset": { borderColor: "#dde1e7" },
     "&:hover fieldset": { borderColor: "#0066FF" },
     "&.Mui-focused fieldset": { borderColor: "#0066FF", borderWidth: "1.5px" },
+    "&.Mui-disabled": {
+      backgroundColor: "#f1f2f5",
+      cursor: "not-allowed",
+      "& fieldset": { borderColor: "#e2e4e9", borderStyle: "dashed" },
+    },
   },
-  "& .MuiInputBase-input, & .MuiSelect-select": { padding: "8px 10px", fontSize: 12.5 },
-  "& .MuiInputLabel-root": { fontSize: 12.5, color: "#6b7280" },
-  "& .MuiInputLabel-root.MuiInputLabel-shrink": { fontSize: 12 },
+  "& .MuiInputBase-input, & .MuiSelect-select, & .MuiAutocomplete-input": {
+    padding: "0 !important",
+    fontSize: 11,
+  },
+  "& .Mui-disabled": { cursor: "not-allowed", WebkitTextFillColor: "#a4a9b3" },
+  "& .MuiAutocomplete-endAdornment": { right: 4 },
+  "& .MuiInputLabel-root": { fontSize: 11, color: "#6b7280" },
+  "& .MuiInputLabel-root.Mui-disabled": { color: "#b6bac3" },
+  "& .MuiInputLabel-root.MuiInputLabel-shrink": { fontSize: 10.5, transform: "translate(7px, -7px) scale(0.85)" },
 });
 
 const compactButtonSx = {
-  height: 34,
-  fontSize: 12.5,
+  height: 30,
+  fontSize: 11,
   fontWeight: 600,
   textTransform: "none",
-  borderRadius: "8px",
+  borderRadius: "6px",
   boxShadow: "none",
-  padding: "0 14px",
+  padding: "0 10px",
   whiteSpace: "nowrap",
   transition: "background-color .15s ease, box-shadow .15s ease",
 };
+
+// Shared plain-<table> styling for the Materials/Production-IH report
+// grids (native table/thead/tbody/tr/th/td — same pattern as the Daily
+// Production Plan screen's own plan-entry grid — instead of DataGrid or
+// MUI's Table wrapper components), restyled with Tailwind utility classes.
+// Sticky positioning and column widths are mechanical (table-layout:
+// fixed + a <colgroup>, so columns never auto-stretch), so `top`/`left`/
+// `width`/`height` stay inline; everything else
+// (color/spacing/typography/borders/hover) is plain Tailwind classes —
+// real utility classes, not inline style, so `group-hover:` etc. apply
+// with normal CSS specificity.
+const FIXED_COLS = [
+  { field: "plant", label: "Line", width: 90, left: 0 },
+  { field: "fg_part_no", label: "FG_Part_No", width: 82, left: 70 },
+  { field: "fg_desc", label: "FG Part Description", width: 190, left: 152 },
+  { field: "plan", label: "Plan", width: 62, left: 342, align: "right" },
+  { field: "actual", label: "Actual", width: 62, left: 404, align: "right" },
+  { field: "gap", label: "GAP", width: 60, left: 466, align: "right" },
+];
+const FIXED_COLS_TOTAL_WIDTH = FIXED_COLS.reduce((sum, c) => sum + c.width, 0);
+
+// Fixed pixel widths for the dynamic (scrollable) columns — used both in
+// the <colgroup> and the header cells, so widths stay in sync and the
+// table (rendered with `table-layout: fixed`) never auto-stretches
+// existing columns to fill leftover space: any unused width just stays
+// blank after the last real column, ready for more columns to appear.
+const MAT_OP_COL_WIDTH = 52; // Materials: per-operation IH/Supp leaf columns
+const MAT_GROUP_TOTAL_IH_SUPP_WIDTH = 58; // Materials: per-group TOTAL IH/Supp
+const MAT_GROUP_TOTAL_TOT_WIDTH = 78; // Materials: per-group TOTAL TOT
+const IH_OP_COL_WIDTH = 100; // Production-IH: per-operation column
+const IH_SET_OF_PARTS_WIDTH = 92; // Production-IH: trailing Set of Parts
+
+// Sticky header row height (px) — every header cell gets this EXACT
+// height (not just padding) so the 3 stacked sticky rows have no
+// sub-pixel rounding gap between them; without it, a hairline of body
+// content peeks through the header seam while scrolling.
+const HEAD_ROW_H = 24;
+
+// Thin, unobtrusive scrollbar for the table's own scroll container — no
+// core Tailwind utility covers ::-webkit-scrollbar, so this stays plain CSS.
+const matScrollbarCss = `
+  .mat-avail-scroll::-webkit-scrollbar { height: 10px; width: 10px; }
+  .mat-avail-scroll::-webkit-scrollbar-track { background: transparent; }
+  .mat-avail-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 9999px; border: 2px solid #fff; }
+  .mat-avail-scroll::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+`;
+
+// A right-edge shadow + border on the last pinned column (GAP), marking
+// the boundary between the fixed summary section and the scrollable
+// detail section.
+const gapSeparatorClass = "border-r border-gray-300 shadow-[4px_0_6px_-4px_rgba(15,23,42,0.25)]";
+// Subtle separators between logical column groups in the header only
+// (Forging / Semi Machined / … / TOTAL), not around every cell.
+const groupSeparatorClass = "border-l border-gray-300/70";
+
+// No vertical padding here — header cell height is set explicitly (see
+// HEAD_ROW_H) on every non-rowSpan header cell instead, so the 3 stacked
+// sticky rows stack at EXACT pixel multiples with no seam. Table cells
+// default to vertical-align: middle, so text still centers correctly.
+const theadCellBase = "sticky whitespace-nowrap overflow-hidden text-ellipsis bg-[#d3ddf4] text-slate-800 font-semibold text-[10.5px] tracking-wide px-2 border-b border-slate-300 box-border";
+const tbodyCellBase = "whitespace-nowrap overflow-hidden text-ellipsis text-[11px] text-slate-700 px-2 py-1 border-b border-slate-100 box-border";
+
+const matTheadCellClass = (extra = "") => `${theadCellBase} z-20 text-center ${extra}`;
+
+// Fixed-column header cells: sticky on both axes (top for the header,
+// left for the column), spans all header rows (rowSpan) so it stretches
+// to match the other rows' explicit HEAD_ROW_H heights automatically —
+// no height of its own needed. Elevated above the plain sticky-top header
+// cells so it wins the top-left overlap while scrolling either way.
+const matFixedHeadClass = (col) =>
+  `${theadCellBase} z-30 py-1 ${col.align === "right" ? "text-right" : "text-left"} ${col.field === "gap" ? gapSeparatorClass : ""}`;
+
+const matFixedHeadStyle = (col) => ({ top: 0, left: col.left, width: col.width });
+
+// Fixed-column body cells: sticky-left, own solid background (a
+// scrolling column slides directly underneath a pinned one, so a
+// transparent cell can't reliably occlude it), hover driven by the
+// parent `<tr>`'s Tailwind `group` state rather than a CSS descendant
+// hack, so it composes correctly with the opaque background above.
+const matFixedBodyClass = (col) =>
+  `${tbodyCellBase} sticky z-10 bg-white group-hover:bg-[#f2f6fd] ${col.align === "right" ? "text-right" : "text-left"} ${col.field === "gap" ? gapSeparatorClass : ""}`;
+
+const matFixedBodyStyle = (col) => ({ left: col.left, width: col.width });
+
+const matTintCellClass = (tint, extra = "") =>
+  `${tbodyCellBase} text-right ${
+    tint === "supp" ? "bg-[#fde9d9]" : tint === "tot" ? "bg-[#e2efda] font-semibold text-slate-800" : "bg-white"
+  } ${extra}`;
+
+// Light grey divider marking where one Part Name group's columns end and
+// the next begins in the body — mirrors the header's own group separator
+// so the boundary stays visible scrolling down, not just in the header.
+const bodyGroupSeparatorClass = "border-l border-gray-200";
 
 // Tab 1: Materials — the original MAT Availability report, completely
 // unchanged in filters/calculations/columns/APIs/behavior. Only its outer
 // page frame (title) moved up to the shared MatAvailabilityStatus wrapper
 // so both tabs sit under one title + tab bar.
-const MaterialsBody = ({ onCountChange }) => {
+const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) => {
+  const { user } = useContext(AuthContext);
+  // Plant is locked to the user's own plant for everyone except CORP
+  // ADMIN, who can view any plant's stock.
+  const isCorpAdmin = user?.Role === "CORP ADMIN";
   const [filterOptions, setFilterOptions] = useState({ plants: [], partNames: [] });
-  const [plant, setPlant] = useState("");
+  const [plant, setPlant] = useState(user?.PlantCode || "");
   const [partNameId, setPartNameId] = useState("");
   const [month, setMonth] = useState(currentMonth());
+  const [lines, setLines] = useState([]);
+  const [lineId, setLineId] = useState("");
 
   const [reportRows, setReportRows] = useState([]);
   const [operationColumns, setOperationColumns] = useState([]);
@@ -214,16 +328,34 @@ const MaterialsBody = ({ onCountChange }) => {
       }
     };
     loadFilters();
+    getLines()
+      .then((rows) => setLines((rows || []).filter((l) => l.Active_Status)))
+      .catch((error) => {
+        console.error(error);
+        toast.error("Failed to load Line filter options.");
+      });
   }, []);
+
+  // Line narrows to the selected Plant, same reasoning as Daily Production
+  // Plan's own Module/Line filters — Line names repeat per plant.
+  const lineOptions = useMemo(
+    () => (plant ? lines.filter((l) => String(l.Plant_Code) === String(plant)) : []),
+    [lines, plant]
+  );
 
   const buildParams = () => ({
     plant: plant || undefined,
     partNameId: partNameId || undefined,
+    lineId: lineId || undefined,
     month,
   });
 
   const fetchReport = async () => {
     if (loading) return;
+    if (!plant) {
+      toast.warning("Please select a Plant before searching.");
+      return;
+    }
     setLoading(true);
     try {
       const [data, supplierSnapshot] = await Promise.all([
@@ -237,6 +369,7 @@ const MaterialsBody = ({ onCountChange }) => {
       setOperationColumns(data?.operationColumns || []);
       setPlantStockAsOf(data?.plantStockAsOf || null);
       setSupplierStockAsOf(data?.supplierStockAsOf || null);
+      onStockAsOfChange?.(data?.plantStockAsOf || null, data?.supplierStockAsOf || null);
       onCountChange?.(data?.rows?.length || 0);
 
       const map = new Map();
@@ -271,11 +404,27 @@ const MaterialsBody = ({ onCountChange }) => {
   // when that operation doesn't apply to this FG at all (blank cell). Each
   // op cell also carries the list of child parts that fed into it (for the
   // hover tooltip) alongside the plain summed number DataGrid sorts/exports.
+  // Distinct Part Names present in the CURRENT result set, in the order the
+  // backend already sorted operationColumns (Part Name label, then opt_no)
+  // — never hardcoded, and naturally collapses to just one group when a
+  // Part Name filter is applied (or when only one Part Name has BOM data).
+  const partNameGroups = useMemo(() => {
+    const map = new Map();
+    operationColumns.forEach((op) => {
+      if (!map.has(op.part_name)) {
+        map.set(op.part_name, { part_name: op.part_name, part_name_label: op.part_name_label, ops: [] });
+      }
+      map.get(op.part_name).ops.push(op);
+    });
+    return Array.from(map.values());
+  }, [operationColumns]);
+
   const flatRows = useMemo(() => {
     return reportRows.map((fg, idx) => {
       const row = {
         id: `${fg.plant}-${fg.fg_part_no}-${idx}`,
         plant: fg.plant,
+        line_name: fg.line_name,
         fg_part_no: fg.fg_part_no,
         fg_desc: fg.fg_desc,
         plan: fg.plan,
@@ -287,88 +436,59 @@ const MaterialsBody = ({ onCountChange }) => {
         all_children: fg.children,
       };
       fg.operations.forEach((op) => {
-        const childrenForOp = fg.children.filter((c) => c.opt_no === op.opt_no);
-        row[`op_${op.opt_no}_ih`] = op.plant_qty;
-        row[`op_${op.opt_no}_supp`] = op.supplier_qty;
-        row[`op_${op.opt_no}_children`] = childrenForOp;
+        // Matched by (part_name, opt_no) together — op.col_key already
+        // encodes that pair, so two Part Names sharing an operation name
+        // (e.g. both have "Forging") never mix up each other's children.
+        const childrenForOp = fg.children.filter((c) => c.part_name === op.part_name && c.opt_no === op.opt_no);
+        row[`op_${op.col_key}_ih`] = op.plant_qty;
+        row[`op_${op.col_key}_supp`] = op.supplier_qty;
+        row[`op_${op.col_key}_children`] = childrenForOp;
+      });
+      // Per-Part-Name subtotal (only that Part Name's own operations) —
+      // e.g. SOCKET's own TOTAL vs BALLPIN's own TOTAL, each independent.
+      partNameGroups.forEach((group) => {
+        const opsForGroup = fg.operations.filter((op) => op.part_name === group.part_name);
+        const ihSum = opsForGroup.reduce((sum, op) => sum + op.plant_qty, 0);
+        const suppSum = opsForGroup.reduce((sum, op) => sum + op.supplier_qty, 0);
+        row[`ptot_${group.part_name}_ih`] = ihSum;
+        row[`ptot_${group.part_name}_supp`] = suppSum;
+        row[`ptot_${group.part_name}_tot`] = ihSum + suppSum;
+        row[`ptot_${group.part_name}_children`] = fg.children.filter((c) => c.part_name === group.part_name);
       });
       return row;
     });
-  }, [reportRows]);
+  }, [reportRows, partNameGroups]);
 
-  const columns = useMemo(() => {
-    const base = [
-      { field: "plant", headerName: "Plant", width: 60 },
-      { field: "fg_part_no", headerName: "FG_Part_No", width: 90 },
-      { field: "fg_desc", headerName: "FG Part Description", width: 280 },
-      { field: "plan", headerName: "Plan", width: 80, align: "right", headerAlign: "center", renderCell: (p) => numberFmt(p.value) },
-      { field: "actual", headerName: "Actual", width: 80, align: "right", headerAlign: "center", renderCell: (p) => numberFmt(p.value) },
-      { field: "gap", headerName: "GAP", width: 80, align: "right", headerAlign: "center", renderCell: (p) => numberFmt(p.value) },
-    ];
-    const opCols = operationColumns.flatMap((op) => [
-      {
-        field: `op_${op.opt_no}_ih`, headerName: "IH", width: 55, align: "right", headerAlign: "center",
-        sortable: false,
-        renderCell: (p) => (
-          <ChildPartTooltip value={p.value} children={p.row[`op_${op.opt_no}_children`]} side="plant_qty" plant={p.row.plant} supplierMap={supplierSnapshotMap} />
-        ),
-        cellClassName: "mat-ih-cell",
-      },
-      {
-        field: `op_${op.opt_no}_supp`, headerName: "Supp", width: 55, align: "right", headerAlign: "center",
-        sortable: false,
-        renderCell: (p) => (
-          <ChildPartTooltip value={p.value} children={p.row[`op_${op.opt_no}_children`]} side="supplier_qty" plant={p.row.plant} supplierMap={supplierSnapshotMap} />
-        ),
-        cellClassName: "mat-supp-cell",
-      },
-    ]);
-    const totalCols = [
-      {
-        field: "total_ih", headerName: "IH", width: 60, align: "right", headerAlign: "center", sortable: false,
-        renderCell: (p) => (
-          <ChildPartTooltip value={p.value} children={(p.row.all_children || []).filter((c) => c.plant_qty > 0)} side="plant_qty" plant={p.row.plant} supplierMap={supplierSnapshotMap} />
-        ),
-        cellClassName: "mat-ih-cell",
-      },
-      {
-        field: "total_supp", headerName: "Supp", width: 60, align: "right", headerAlign: "center", sortable: false,
-        renderCell: (p) => (
-          <ChildPartTooltip value={p.value} children={(p.row.all_children || []).filter((c) => c.supplier_qty > 0)} side="supplier_qty" plant={p.row.plant} supplierMap={supplierSnapshotMap} />
-        ),
-        cellClassName: "mat-supp-cell",
-      },
-      { field: "grand_total", headerName: "TOT", width: 90, align: "right", headerAlign: "center", sortable: false, renderCell: (p) => numberFmt(p.value), cellClassName: "mat-tot-cell" },
-    ];
-    return [...base, ...opCols, ...totalCols];
-  }, [operationColumns, supplierSnapshotMap]);
+  // Search filters the already-fetched rows by Plant code, Part No., or
+  // Description — same behavior as the Daily Production Plan's own search
+  // box, extended to also match Plant (no separate Plant filter needed).
+  const filteredRows = useMemo(() => {
+    const q = searchText.trim().toLowerCase();
+    if (!q) return flatRows;
+    return flatRows.filter(
+      (r) => r.fg_part_no?.toLowerCase().includes(q) || r.fg_desc?.toLowerCase().includes(q) || String(r.plant).toLowerCase().includes(q)
+    );
+  }, [flatRows, searchText]);
 
-  // Grouped header row: SOCKET spans every operation + the TOTAL block,
-  // each operation spans its own IH/Supp pair. MUI requires a genuinely
-  // nested tree here (groups nested directly inside "children"), not a
-  // flat list referencing sibling groupIds.
-  const columnGroupingModel = useMemo(() => {
-    const operationGroups = operationColumns.map((op) => ({
-      groupId: `op_group_${op.opt_no}`,
-      headerName: op.opt_name,
-      headerAlign: "center",
-      children: [{ field: `op_${op.opt_no}_ih` }, { field: `op_${op.opt_no}_supp` }],
-    }));
-    const totalGroup = {
-      groupId: "total_group",
-      headerName: "TOTAL",
-      headerAlign: "center",
-      children: [{ field: "total_ih" }, { field: "total_supp" }, { field: "grand_total" }],
-    };
-    return [
-      {
-        groupId: "socket_group",
-        headerName: "SOCKET",
-        headerAlign: "center",
-        children: [...operationGroups, totalGroup],
-      },
-    ];
-  }, [operationColumns]);
+  // Grand-TOTAL block (summing across every Part Name) removed on screen
+  // — each Part Name group already shows its own TOTAL, so a second
+  // overall TOTAL block next to it was redundant. Excel export keeps its
+  // own independent flag inside handleDownloadExcel, unaffected by this.
+  const showGrandTotal = false;
+
+  // Explicit pixel width for the whole table (fixed cols + every dynamic
+  // op/total column at its own fixed width) — required for `table-layout:
+  // fixed` to size columns exactly instead of stretching them to fill the
+  // scroll container, which is what left extra blank room for future
+  // columns instead of bloating Plan/Actual/GAP/etc.
+  const matTotalWidth = useMemo(() => {
+    const dynamicWidth = partNameGroups.reduce(
+      (sum, group) => sum + group.ops.length * 2 * MAT_OP_COL_WIDTH + 2 * MAT_GROUP_TOTAL_IH_SUPP_WIDTH + MAT_GROUP_TOTAL_TOT_WIDTH,
+      0
+    );
+    const grandTotalWidth = showGrandTotal ? 2 * MAT_GROUP_TOTAL_IH_SUPP_WIDTH + MAT_GROUP_TOTAL_TOT_WIDTH : 0;
+    return FIXED_COLS_TOTAL_WIDTH + dynamicWidth + grandTotalWidth;
+  }, [partNameGroups, showGrandTotal]);
 
   const handleDownloadExcel = async () => {
     if (excelLoading) return;
@@ -385,55 +505,96 @@ const MaterialsBody = ({ onCountChange }) => {
         GetSupplierStockSnapshotApi(month),
       ]);
 
-      // Sheet 1 — the exact pivot layout: grouped 2-row header (SOCKET spans
-      // every operation's IH/Supp pair, plus a TOTAL block), one row per Plant+FG.
-      // Fixed-column headers (Plant/FG Part No/Plan/Actual/GAP) must live in
-      // row 1 — the "!merges" below span rows 1-3 for each of them, and a
-      // merged cell only ever displays its TOP-LEFT cell's value, so putting
-      // the text in row 3 instead (as before) rendered as blank headers.
+      // Sheet 1 — the exact pivot layout: grouped 2-row header, one group
+      // PER PART NAME actually present (dynamic label — never hardcoded
+      // "SOCKET"), each spanning its own operations' IH/Supp pairs plus its
+      // own TOTAL block; an extra overall TOTAL block only when more than
+      // one Part Name is present. One row per Plant+FG. Fixed-column
+      // headers (Plant/FG Part No/Plan/Actual/GAP) must live in row 1 — the
+      // "!merges" below span rows 1-3 for each of them, and a merged cell
+      // only ever displays its TOP-LEFT cell's value, so putting the text
+      // in row 3 instead (as before) rendered as blank headers.
       const fixedCols = ["Plant", "FG_Part_No", "FG Part Description", "Plan", "Actual", "GAP"];
-      const headerRow1 = [...fixedCols, "SOCKET"];
-      const headerRow2 = [...fixedCols.map(() => ""), ...operationColumns.flatMap(() => ["", ""]), "TOTAL"];
-      const headerRow3 = [...fixedCols.map(() => ""), ...operationColumns.flatMap(() => ["IH", "Supp"]), "IH", "Supp", "TOT"];
-      // Row 2 needs each operation's name once, spanning its IH/Supp pair.
-      let col = fixedCols.length;
-      operationColumns.forEach((op) => {
-        headerRow2[col] = op.opt_name;
-        col += 2;
+      const showGrandTotal = partNameGroups.length > 1;
+      const headerRow1 = [...fixedCols.map(() => "")];
+      const headerRow2 = [...fixedCols.map(() => "")];
+      const headerRow3 = [...fixedCols.map(() => "")];
+      // Each Part Name's own column span: its Part Name label (row 0, first
+      // cell of the span — the rest padded blank, since a merge only shows
+      // its top-left cell but the row array must still match column count),
+      // each operation's name (row 1) spanning its IH/Supp pair (row 2),
+      // then that Part Name's own "TOTAL" (row 1) spanning IH/Supp/TOT (row 2).
+      partNameGroups.forEach((group) => {
+        const spanWidth = group.ops.length * 2 + 3; // + this group's own TOTAL's IH/Supp/TOT
+        headerRow1.push(group.part_name_label, ...Array(spanWidth - 1).fill(""));
+        group.ops.forEach((op) => {
+          headerRow2.push(op.opt_name, "");
+          headerRow3.push("IH", "Supp");
+        });
+        headerRow2.push("TOTAL", "", "");
+        headerRow3.push("IH", "Supp", "TOT");
       });
+      if (showGrandTotal) {
+        // This "TOTAL" lives in row 0 (not row 1, unlike each Part Name's
+        // own TOTAL above) because its merge spans rows 0-1 vertically (no
+        // operation sub-groups sit above it), and a merge only ever
+        // displays its TOP-LEFT cell's value.
+        headerRow1.push("TOTAL", "", "");
+        headerRow2.push("", "", "");
+        headerRow3.push("IH", "Supp", "TOT");
+      }
 
       const pivotAoa = [headerRow1, headerRow2, headerRow3];
       reportRows.forEach((fg) => {
-        const opMap = new Map(fg.operations.map((op) => [op.opt_no, op]));
+        const opMap = new Map(fg.operations.map((op) => [op.col_key, op]));
         const row = [fg.plant, fg.fg_part_no, fg.fg_desc, fg.plan, fg.actual, fg.gap];
-        operationColumns.forEach((op) => {
-          const found = opMap.get(op.opt_no);
-          row.push(found ? found.plant_qty : "", found ? found.supplier_qty : "");
+        partNameGroups.forEach((group) => {
+          let ihSum = 0;
+          let suppSum = 0;
+          group.ops.forEach((op) => {
+            const found = opMap.get(op.col_key);
+            const ih = found ? found.plant_qty : 0;
+            const supp = found ? found.supplier_qty : 0;
+            row.push(found ? ih : "", found ? supp : "");
+            ihSum += ih;
+            suppSum += supp;
+          });
+          row.push(ihSum, suppSum, ihSum + suppSum);
         });
-        row.push(fg.ih_total, fg.supp_total, fg.grand_total);
+        if (showGrandTotal) row.push(fg.ih_total, fg.supp_total, fg.grand_total);
         pivotAoa.push(row);
       });
 
       const pivotSheet = XLSX.utils.aoa_to_sheet(pivotAoa);
-      const opCount = operationColumns.length;
-      const socketColStart = fixedCols.length;
-      const socketColEnd = fixedCols.length + opCount * 2 + 2; // + TOTAL's IH/Supp/TOT
+      const lastCol = headerRow3.length - 1;
       pivotSheet["!merges"] = [
         // Fixed columns' headers span all 3 header rows.
         ...fixedCols.map((_, i) => ({ s: { r: 0, c: i }, e: { r: 2, c: i } })),
-        // "SOCKET" spans every operation + TOTAL group, row 0.
-        { s: { r: 0, c: socketColStart }, e: { r: 0, c: socketColEnd } },
-        // Each operation name spans its own IH/Supp pair, row 1.
-        ...operationColumns.map((_, i) => ({
-          s: { r: 1, c: socketColStart + i * 2 }, e: { r: 1, c: socketColStart + i * 2 + 1 },
-        })),
-        // "TOTAL" spans IH/Supp/TOT, row 1.
-        { s: { r: 1, c: socketColEnd - 2 }, e: { r: 1, c: socketColEnd } },
       ];
+      let mergeCol = fixedCols.length;
+      partNameGroups.forEach((group) => {
+        const groupStart = mergeCol;
+        const groupEnd = mergeCol + group.ops.length * 2 + 2; // + this group's own TOTAL's IH/Supp/TOT
+        // Part Name label spans every one of its operations + its own TOTAL, row 0.
+        pivotSheet["!merges"].push({ s: { r: 0, c: groupStart }, e: { r: 0, c: groupEnd } });
+        // Each operation name spans its own IH/Supp pair, row 1.
+        group.ops.forEach((_, i) => {
+          pivotSheet["!merges"].push({ s: { r: 1, c: groupStart + i * 2 }, e: { r: 1, c: groupStart + i * 2 + 1 } });
+        });
+        // This Part Name's own "TOTAL" spans IH/Supp/TOT, row 1.
+        pivotSheet["!merges"].push({ s: { r: 1, c: groupEnd - 2 }, e: { r: 1, c: groupEnd } });
+        mergeCol = groupEnd + 1;
+      });
+      if (showGrandTotal) {
+        // Overall "TOTAL" spans IH/Supp/TOT, row 0 AND row 1 (no operation
+        // sub-groups underneath it, so it merges straight down like the
+        // fixed columns do).
+        pivotSheet["!merges"].push({ s: { r: 0, c: mergeCol }, e: { r: 1, c: mergeCol + 2 } });
+      }
       const fixedColWidths = [8, 14, 28, 10, 10, 10]; // Plant, FG_Part_No, FG Part Description, Plan, Actual, GAP
-      pivotSheet["!cols"] = [...fixedColWidths.map((wch) => ({ wch })), ...Array(opCount * 2 + 3).fill({ wch: 9 })];
+      pivotSheet["!cols"] = [...fixedColWidths.map((wch) => ({ wch })), ...Array(lastCol + 1 - fixedCols.length).fill({ wch: 9 })];
       for (let r = 0; r <= 2; r++) {
-        for (let c = 0; c <= socketColEnd; c++) {
+        for (let c = 0; c <= lastCol; c++) {
           const cell = pivotSheet[XLSX.utils.encode_cell({ r, c })];
           if (cell) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: "DCE6F1" } }, alignment: { horizontal: "center", vertical: "center" } };
         }
@@ -449,6 +610,7 @@ const MaterialsBody = ({ onCountChange }) => {
             Description: fg.fg_desc,
             "Child Part / Socket": child.child_part_no,
             "Child Description": child.child_desc,
+            "Part Name": child.part_name_label,
             Operation: child.opt_name,
             "IH (Plant) Qty": child.plant_qty,
             "Supp (Supplier) Qty": child.supplier_qty,
@@ -522,10 +684,10 @@ const MaterialsBody = ({ onCountChange }) => {
       <div
         style={{
           backgroundColor: "#fff",
-          borderRadius: 10,
+          borderRadius: 8,
           border: "1px solid #e8eaee",
-          boxShadow: "0 1px 3px rgba(16,24,40,0.05)",
-          padding: "10px 12px",
+          boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
+          padding: "7px 10px",
           marginBottom: 8,
           display: "flex",
           flexWrap: "wrap",
@@ -533,29 +695,43 @@ const MaterialsBody = ({ onCountChange }) => {
           alignItems: "center",
         }}
       >
-        <TextField
-          select size="small" label="Plant" value={plant}
-          onChange={(e) => setPlant(e.target.value)}
-          sx={compactFieldSx(150)}
-          SelectProps={{ MenuProps: { PaperProps: { sx: { "& .MuiMenuItem-root": { fontSize: 12, minHeight: 28 } } } } }}
-        >
-          <MenuItem sx={{ fontSize: 12 }} value="">All Plants</MenuItem>
-          {filterOptions.plants.map((p) => (
-            <MenuItem sx={{ fontSize: 12 }} key={p.Plant_Code} value={p.Plant_Code}>{p.Plant_Code} - {p.Plant_Name}</MenuItem>
-          ))}
-        </TextField>
+        <Autocomplete
+          size="small"
+          disabled={!isCorpAdmin}
+          options={filterOptions.plants}
+          value={filterOptions.plants.find((p) => String(p.Plant_Code) === String(plant)) || null}
+          onChange={(e, newVal) => setPlant(newVal ? newVal.Plant_Code : "")}
+          getOptionLabel={(p) => (p ? String(p.Plant_Code) : "")}
+          isOptionEqualToValue={(o, v) => o.Plant_Code === v.Plant_Code}
+          sx={compactFieldSx(70)}
+          ListboxProps={{ style: { fontSize: 11.5 } }}
+          renderInput={(params) => <TextField {...params} label="Plant" placeholder="Select Plant" required error={!plant} />}
+        />
 
-        <TextField
-          select size="small" label="Part Name" value={partNameId}
-          onChange={(e) => setPartNameId(e.target.value)}
-          sx={compactFieldSx(160)}
-          SelectProps={{ MenuProps: { PaperProps: { sx: { "& .MuiMenuItem-root": { fontSize: 12, minHeight: 28 } } } } }}
-        >
-          <MenuItem sx={{ fontSize: 12 }} value="">All Part Names</MenuItem>
-          {filterOptions.partNames.map((p) => (
-            <MenuItem sx={{ fontSize: 12 }} key={p.Prod_ID} value={p.Prod_ID}>{p.Name}</MenuItem>
-          ))}
-        </TextField>
+        <Autocomplete
+          size="small"
+          options={filterOptions.partNames}
+          value={filterOptions.partNames.find((p) => String(p.Prod_ID) === String(partNameId)) || null}
+          onChange={(e, newVal) => setPartNameId(newVal ? newVal.Prod_ID : "")}
+          getOptionLabel={(p) => (p ? p.Name : "")}
+          isOptionEqualToValue={(o, v) => o.Prod_ID === v.Prod_ID}
+          sx={compactFieldSx(180)}
+          ListboxProps={{ style: { fontSize: 11.5 } }}
+          renderInput={(params) => <TextField {...params} label="Part Name" placeholder="All Part Names" />}
+        />
+
+        <Autocomplete
+          size="small"
+          disabled={!plant}
+          options={lineOptions}
+          value={lineOptions.find((l) => String(l.Line_ID) === String(lineId)) || null}
+          onChange={(e, newVal) => setLineId(newVal ? newVal.Line_ID : "")}
+          getOptionLabel={(l) => (l ? l.Line_Name : "")}
+          isOptionEqualToValue={(o, v) => o.Line_ID === v.Line_ID}
+          sx={compactFieldSx(170)}
+          ListboxProps={{ style: { fontSize: 11.5 } }}
+          renderInput={(params) => <TextField {...params} label="Line" placeholder={plant ? "All Lines" : "Select Plant first"} />}
+        />
 
         <TextField
           size="small" label="Month" type="month" value={month}
@@ -567,7 +743,7 @@ const MaterialsBody = ({ onCountChange }) => {
         <div style={{ display: "flex", gap: 8, marginLeft: "auto", flexShrink: 0 }}>
           <Button
             onClick={fetchReport}
-            disabled={loading}
+            disabled={loading || !plant}
             variant="contained"
             disableElevation
             startIcon={loading ? <CircularProgress size={12} color="inherit" /> : <SearchIcon sx={{ fontSize: 15 }} />}
@@ -588,70 +764,155 @@ const MaterialsBody = ({ onCountChange }) => {
         </div>
       </div>
 
-      {loaded && (
-        <div
-          style={{
-            fontSize: 11,
-            color: "#586174",
-            backgroundColor: "#f8f9fb",
-            border: "1px solid #eef0f3",
-            borderRadius: 8,
-            padding: "6px 12px",
-            marginBottom: 8,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          <span style={{ fontWeight: 700, color: "#1a2233" }}>
-            {flatRows.length} record{flatRows.length === 1 ? "" : "s"} found
-          </span>
-          {plantStockAsOf && (
-            <>
-              <span style={{ color: "#d3d7dd" }}>|</span>
-              <span>Plant Stock as of <b style={{ color: "#333" }}>{format(new Date(plantStockAsOf), "dd-MMM-yyyy HH:mm")}</b></span>
-            </>
-          )}
-          {supplierStockAsOf && (
-            <>
-              <span style={{ color: "#d3d7dd" }}>|</span>
-              <span>Supplier Stock as of <b style={{ color: "#333" }}>{format(new Date(supplierStockAsOf), "dd-MMM-yyyy HH:mm")}</b></span>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Main report grid — takes the maximum remaining vertical space */}
-      <div style={{ flexGrow: 1, backgroundColor: "#fff", borderRadius: 8, boxShadow: "0 4px 8px rgba(0,0,0,0.1)", minHeight: 0, overflow: "hidden" }}>
-        <DataGrid
-          rows={flatRows}
-          columns={columns}
-          columnGroupingModel={columnGroupingModel}
-          pageSize={25}
-          rowsPerPageOptions={[25, 50, 100]}
-          disableSelectionOnClick
-          loading={loading}
-          columnHeaderHeight={26}
-          rowHeight={30}
-          slots={{ toolbar: CustomToolbar }}
-          localeText={{ noRowsLabel: "No MAT Availability data found for the selected filters." }}
-          sx={{
-            height: "100%",
-            "& .MuiDataGrid-columnHeaders": { position: "sticky", top: 0, zIndex: 2 },
-            "& .MuiDataGrid-columnHeader": { backgroundColor: "#bdbdbd", color: "black", fontWeight: "bold" },
-            "& .MuiDataGrid-columnHeaderTitle": { fontSize: "10.5px", fontWeight: "bold" },
-            "& .MuiDataGrid-columnHeader--filledGroup .MuiDataGrid-columnHeaderTitle": { fontSize: "11px" },
-            "& .MuiDataGrid-row": { backgroundColor: "#f5f5f5", "&:hover": { backgroundColor: "#f5f5f5" } },
-            "& .MuiDataGrid-row.Mui-selected": { backgroundColor: "inherit" },
-            "& .MuiDataGrid-cell": { color: "#333", fontSize: "11px", padding: "0 6px" },
-            "& .MuiDataGrid-toolbarContainer": { padding: "2px 6px", minHeight: 30 },
-            "& .MuiDataGrid-toolbarContainer button": { fontSize: "11px", padding: "2px 6px" },
-            "& .mat-ih-cell": { backgroundColor: "#ffffff" },
-            "& .mat-supp-cell": { backgroundColor: "#fde9d9" },
-            "& .mat-tot-cell": { fontWeight: "bold", backgroundColor: "#e2efda" },
-          }}
-        />
+      {/* Main report grid — a plain, scrollable native <table> (same
+          pattern as the Daily Production Plan screen's own plan-entry
+          grid) instead of DataGrid, styled with Tailwind utility classes:
+          a manually-built 3-row grouped sticky header mirroring the
+          original columnGroupingModel/Excel merge layout, PLUS the first
+          6 columns (Plant/FG_Part_No/FG Part Description/Plan/Actual/GAP)
+          pinned via sticky-left so they stay visible while the dynamic
+          operation columns scroll horizontally, with a shadow/border
+          after GAP marking the fixed/scrollable boundary. */}
+      <style>{matScrollbarCss}</style>
+      <div className="mat-avail-scroll flex-1 min-h-0 overflow-auto bg-white rounded-lg border border-gray-200 shadow-sm">
+        <table style={{ width: matTotalWidth, tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
+          <colgroup>
+            {FIXED_COLS.map((col) => (
+              <col key={col.field} style={{ width: col.width }} />
+            ))}
+            {partNameGroups.map((group) => (
+              <React.Fragment key={group.part_name}>
+                {group.ops.flatMap((op) => [
+                  <col key={`${op.col_key}_ih`} style={{ width: MAT_OP_COL_WIDTH }} />,
+                  <col key={`${op.col_key}_supp`} style={{ width: MAT_OP_COL_WIDTH }} />,
+                ])}
+                <col key={`${group.part_name}_tih`} style={{ width: MAT_GROUP_TOTAL_IH_SUPP_WIDTH }} />
+                <col key={`${group.part_name}_tsupp`} style={{ width: MAT_GROUP_TOTAL_IH_SUPP_WIDTH }} />
+                <col key={`${group.part_name}_ttot`} style={{ width: MAT_GROUP_TOTAL_TOT_WIDTH }} />
+              </React.Fragment>
+            ))}
+            {showGrandTotal && (
+              <>
+                <col style={{ width: MAT_GROUP_TOTAL_IH_SUPP_WIDTH }} />
+                <col style={{ width: MAT_GROUP_TOTAL_IH_SUPP_WIDTH }} />
+                <col style={{ width: MAT_GROUP_TOTAL_TOT_WIDTH }} />
+              </>
+            )}
+          </colgroup>
+          <thead>
+            <tr>
+              {FIXED_COLS.map((col) => (
+                <th key={col.field} rowSpan={3} className={matFixedHeadClass(col)} style={matFixedHeadStyle(col)}>
+                  {col.label}
+                </th>
+              ))}
+              {partNameGroups.map((group) => (
+                <th key={group.part_name} colSpan={group.ops.length * 2 + 3} className={`${matTheadCellClass()} ${groupSeparatorClass}`} style={{ top: 0, height: HEAD_ROW_H }}>
+                  {group.part_name_label}
+                </th>
+              ))}
+              {showGrandTotal && (
+                <th rowSpan={2} colSpan={3} className={`${matTheadCellClass()} ${groupSeparatorClass}`} style={{ top: 0 }}>TOTAL</th>
+              )}
+            </tr>
+            <tr>
+              {partNameGroups.map((group) => (
+                <React.Fragment key={group.part_name}>
+                  {group.ops.map((op) => (
+                    <th key={op.col_key} colSpan={2} className={`${matTheadCellClass()} ${groupSeparatorClass}`} style={{ top: HEAD_ROW_H, height: HEAD_ROW_H }}>
+                      {op.opt_name}
+                    </th>
+                  ))}
+                  <th colSpan={3} className={`${matTheadCellClass()} ${groupSeparatorClass}`} style={{ top: HEAD_ROW_H, height: HEAD_ROW_H }}>TOTAL</th>
+                </React.Fragment>
+              ))}
+            </tr>
+            <tr>
+              {partNameGroups.map((group) => (
+                <React.Fragment key={group.part_name}>
+                  {group.ops.map((op) => (
+                    <React.Fragment key={op.col_key}>
+                      <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>IH</th>
+                      <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>Supp</th>
+                    </React.Fragment>
+                  ))}
+                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>IH</th>
+                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>Supp</th>
+                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>TOT</th>
+                </React.Fragment>
+              ))}
+              {showGrandTotal && (
+                <>
+                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>IH</th>
+                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>Supp</th>
+                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>TOT</th>
+                </>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={1000} className="text-center py-7">
+                  <CircularProgress size={20} />
+                </td>
+              </tr>
+            ) : filteredRows.length === 0 ? (
+              <tr>
+                <td colSpan={1000} className="text-center py-7 text-slate-400 text-xs">
+                  No MAT Availability data found for the selected filters.
+                </td>
+              </tr>
+            ) : (
+              filteredRows.map((row, idx) => (
+                <tr key={idx} className="group">
+                  <td className={matFixedBodyClass(FIXED_COLS[0])} style={matFixedBodyStyle(FIXED_COLS[0])} title={row.line_name || ""}>{row.line_name || "-"}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[1])} style={matFixedBodyStyle(FIXED_COLS[1])}>{row.fg_part_no}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[2])} style={matFixedBodyStyle(FIXED_COLS[2])} title={row.fg_desc}>{row.fg_desc}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[3])} style={matFixedBodyStyle(FIXED_COLS[3])}>{numberFmt(row.plan)}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[4])} style={matFixedBodyStyle(FIXED_COLS[4])}>{numberFmt(row.actual)}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[5])} style={matFixedBodyStyle(FIXED_COLS[5])}>{numberFmt(row.gap)}</td>
+                  {partNameGroups.map((group) => (
+                    <React.Fragment key={group.part_name}>
+                      {group.ops.map((op) => (
+                        <React.Fragment key={op.col_key}>
+                          <td className={matTintCellClass("ih")}>
+                            <ChildPartTooltip value={row[`op_${op.col_key}_ih`]} children={row[`op_${op.col_key}_children`]} side="plant_qty" plant={row.plant} supplierMap={supplierSnapshotMap} />
+                          </td>
+                          <td className={matTintCellClass("supp")}>
+                            <ChildPartTooltip value={row[`op_${op.col_key}_supp`]} children={row[`op_${op.col_key}_children`]} side="supplier_qty" plant={row.plant} supplierMap={supplierSnapshotMap} />
+                          </td>
+                        </React.Fragment>
+                      ))}
+                      <td className={matTintCellClass("ih")}>
+                        <ChildPartTooltip value={row[`ptot_${group.part_name}_ih`]} children={(row[`ptot_${group.part_name}_children`] || []).filter((c) => c.plant_qty > 0)} side="plant_qty" plant={row.plant} supplierMap={supplierSnapshotMap} />
+                      </td>
+                      <td className={matTintCellClass("supp")}>
+                        <ChildPartTooltip value={row[`ptot_${group.part_name}_supp`]} children={(row[`ptot_${group.part_name}_children`] || []).filter((c) => c.supplier_qty > 0)} side="supplier_qty" plant={row.plant} supplierMap={supplierSnapshotMap} />
+                      </td>
+                      <td className={matTintCellClass("tot")}>
+                        {numberFmt(row[`ptot_${group.part_name}_tot`])}
+                      </td>
+                    </React.Fragment>
+                  ))}
+                  {showGrandTotal && (
+                    <>
+                      <td className={matTintCellClass("ih")}>
+                        <ChildPartTooltip value={row.total_ih} children={(row.all_children || []).filter((c) => c.plant_qty > 0)} side="plant_qty" plant={row.plant} supplierMap={supplierSnapshotMap} />
+                      </td>
+                      <td className={matTintCellClass("supp")}>
+                        <ChildPartTooltip value={row.total_supp} children={(row.all_children || []).filter((c) => c.supplier_qty > 0)} side="supplier_qty" plant={row.plant} supplierMap={supplierSnapshotMap} />
+                      </td>
+                      <td className={matTintCellClass("tot")}>
+                        {numberFmt(row.grand_total)}
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </>
   );
@@ -661,11 +922,17 @@ const MaterialsBody = ({ onCountChange }) => {
 // restricted server-side to assembly-part child rows (assemblyOnly=true),
 // showing only IH data plus the derived Set of Parts column (MIN of IH
 // across this FG's operation columns).
-const ProductionIHBody = ({ onCountChange }) => {
+const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) => {
+  const { user } = useContext(AuthContext);
+  // Plant is locked to the user's own plant for everyone except CORP
+  // ADMIN, who can view any plant's stock.
+  const isCorpAdmin = user?.Role === "CORP ADMIN";
   const [filterOptions, setFilterOptions] = useState({ plants: [], partNames: [] });
-  const [plant, setPlant] = useState("");
+  const [plant, setPlant] = useState(user?.PlantCode || "");
   const [partNameId, setPartNameId] = useState("");
   const [month, setMonth] = useState(currentMonth());
+  const [lines, setLines] = useState([]);
+  const [lineId, setLineId] = useState("");
 
   const [reportRows, setReportRows] = useState([]);
   const [operationColumns, setOperationColumns] = useState([]);
@@ -684,23 +951,42 @@ const ProductionIHBody = ({ onCountChange }) => {
       }
     };
     loadFilters();
+    getLines()
+      .then((rows) => setLines((rows || []).filter((l) => l.Active_Status)))
+      .catch((error) => {
+        console.error(error);
+        toast.error("Failed to load Line filter options.");
+      });
   }, []);
+
+  // Line narrows to the selected Plant, same reasoning as Daily Production
+  // Plan's own Module/Line filters — Line names repeat per plant.
+  const lineOptions = useMemo(
+    () => (plant ? lines.filter((l) => String(l.Plant_Code) === String(plant)) : []),
+    [lines, plant]
+  );
 
   const buildParams = () => ({
     plant: plant || undefined,
     partNameId: partNameId || undefined,
+    lineId: lineId || undefined,
     month,
     assemblyOnly: true,
   });
 
   const fetchReport = async () => {
     if (loading) return;
+    if (!plant) {
+      toast.warning("Please select a Plant before searching.");
+      return;
+    }
     setLoading(true);
     try {
       const data = await GetMatAvailabilityReportApi(buildParams());
       setReportRows(data?.rows || []);
       setOperationColumns(data?.operationColumns || []);
       setPlantStockAsOf(data?.plantStockAsOf || null);
+      onStockAsOfChange?.(data?.plantStockAsOf || null, null);
       onCountChange?.(data?.rows?.length || 0);
       setLoaded(true);
     } catch (error) {
@@ -724,6 +1010,7 @@ const ProductionIHBody = ({ onCountChange }) => {
       const row = {
         id: `${fg.plant}-${fg.fg_part_no}-${idx}`,
         plant: fg.plant,
+        line_name: fg.line_name,
         fg_part_no: fg.fg_part_no,
         fg_desc: fg.fg_desc,
         plan: fg.plan,
@@ -733,65 +1020,62 @@ const ProductionIHBody = ({ onCountChange }) => {
         all_children: fg.children,
       };
       fg.operations.forEach((op) => {
-        const childrenForOp = fg.children.filter((c) => c.opt_no === op.opt_no);
-        row[`op_${op.opt_no}_ih`] = op.plant_qty;
-        row[`op_${op.opt_no}_children`] = childrenForOp;
+        // Matched by (part_name, opt_no) together via op.col_key — two Part
+        // Names sharing an operation name (e.g. both have "Forging") never
+        // get merged into one column.
+        const childrenForOp = fg.children.filter((c) => c.part_name === op.part_name && c.opt_no === op.opt_no);
+        row[`op_${op.col_key}_ih`] = op.plant_qty;
+        row[`op_${op.col_key}_children`] = childrenForOp;
       });
       return row;
     });
   }, [reportRows]);
 
-  const columns = useMemo(() => {
-    const base = [
-      { field: "plant", headerName: "Plant", width: 60 },
-      { field: "fg_part_no", headerName: "FG_Part_No", width: 90 },
-      { field: "fg_desc", headerName: "FG Part Description", width: 280 },
-      { field: "plan", headerName: "Plan", width: 80, align: "right", headerAlign: "center", renderCell: (p) => numberFmt(p.value) },
-      { field: "actual", headerName: "Actual", width: 80, align: "right", headerAlign: "center", renderCell: (p) => numberFmt(p.value) },
-      { field: "gap", headerName: "GAP", width: 80, align: "right", headerAlign: "center", renderCell: (p) => numberFmt(p.value) },
-    ];
-    const opCols = operationColumns.map((op) => ({
-      field: `op_${op.opt_no}_ih`,
-      headerName: `${op.opt_name} - IH`,
-      width: 130,
-      align: "right",
-      headerAlign: "center",
-      sortable: false,
-      renderCell: (p) => (
-        <ChildPartTooltip value={p.value} children={p.row[`op_${op.opt_no}_children`]} side="plant_qty" plant={p.row.plant} />
-      ),
-      cellClassName: "mat-ih-cell",
-    }));
-    const setOfPartsCol = [
-      { field: "set_of_parts", headerName: "Set of Parts", width: 120, align: "right", headerAlign: "center", sortable: false, renderCell: (p) => numberFmt(p.value), cellClassName: "mat-tot-cell" },
-    ];
-    return [...base, ...opCols, ...setOfPartsCol];
+  // Search filters the already-fetched rows by Plant code, Part No., or
+  // Description — same behavior as the Daily Production Plan's own search
+  // box, extended to also match Plant (no separate Plant filter needed).
+  const filteredRows = useMemo(() => {
+    const q = searchText.trim().toLowerCase();
+    if (!q) return flatRows;
+    return flatRows.filter(
+      (r) => r.fg_part_no?.toLowerCase().includes(q) || r.fg_desc?.toLowerCase().includes(q) || String(r.plant).toLowerCase().includes(q)
+    );
+  }, [flatRows, searchText]);
+
+  // Distinct Part Names present in the CURRENT result set — never
+  // hardcoded, and naturally collapses to one group when a Part Name
+  // filter is applied (or only one Part Name has assembly-part BOM data).
+  const partNameGroups = useMemo(() => {
+    const map = new Map();
+    operationColumns.forEach((op) => {
+      if (!map.has(op.part_name)) {
+        map.set(op.part_name, { part_name: op.part_name, part_name_label: op.part_name_label, ops: [] });
+      }
+      map.get(op.part_name).ops.push(op);
+    });
+    return Array.from(map.values());
   }, [operationColumns]);
 
-  // Grouped header row: SOCKET spans every operation column directly (each
-  // column's own header already reads "<Operation> - IH", so there's no
-  // separate per-operation sub-group/IH row underneath). Set of Parts sits
-  // outside the SOCKET group as its own top-level column.
-  const columnGroupingModel = useMemo(() => {
-    return [
-      {
-        groupId: "socket_group",
-        headerName: "SOCKET",
-        headerAlign: "center",
-        children: operationColumns.map((op) => ({ field: `op_${op.opt_no}_ih` })),
-      },
-    ];
-  }, [operationColumns]);
+  // Set of Parts sits outside every Part Name group as its own top-level
+  // column — it's a whole-FG bottleneck figure across ALL operations
+  // regardless of Part Name, unchanged from before this fix.
+
+  // Explicit pixel width for the whole table — see matTotalWidth in
+  // MaterialsBody for why `table-layout: fixed` needs this.
+  const ihTotalWidth = useMemo(() => {
+    const opCount = partNameGroups.reduce((sum, group) => sum + group.ops.length, 0);
+    return FIXED_COLS_TOTAL_WIDTH + opCount * IH_OP_COL_WIDTH + IH_SET_OF_PARTS_WIDTH;
+  }, [partNameGroups]);
 
   return (
     <>
       <div
         style={{
           backgroundColor: "#fff",
-          borderRadius: 10,
+          borderRadius: 8,
           border: "1px solid #e8eaee",
-          boxShadow: "0 1px 3px rgba(16,24,40,0.05)",
-          padding: "10px 12px",
+          boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
+          padding: "7px 10px",
           marginBottom: 8,
           display: "flex",
           flexWrap: "wrap",
@@ -799,29 +1083,43 @@ const ProductionIHBody = ({ onCountChange }) => {
           alignItems: "center",
         }}
       >
-        <TextField
-          select size="small" label="Plant" value={plant}
-          onChange={(e) => setPlant(e.target.value)}
-          sx={compactFieldSx(150)}
-          SelectProps={{ MenuProps: { PaperProps: { sx: { "& .MuiMenuItem-root": { fontSize: 12, minHeight: 28 } } } } }}
-        >
-          <MenuItem sx={{ fontSize: 12 }} value="">All Plants</MenuItem>
-          {filterOptions.plants.map((p) => (
-            <MenuItem sx={{ fontSize: 12 }} key={p.Plant_Code} value={p.Plant_Code}>{p.Plant_Code} - {p.Plant_Name}</MenuItem>
-          ))}
-        </TextField>
+        <Autocomplete
+          size="small"
+          disabled={!isCorpAdmin}
+          options={filterOptions.plants}
+          value={filterOptions.plants.find((p) => String(p.Plant_Code) === String(plant)) || null}
+          onChange={(e, newVal) => setPlant(newVal ? newVal.Plant_Code : "")}
+          getOptionLabel={(p) => (p ? String(p.Plant_Code) : "")}
+          isOptionEqualToValue={(o, v) => o.Plant_Code === v.Plant_Code}
+          sx={compactFieldSx(70)}
+          ListboxProps={{ style: { fontSize: 11.5 } }}
+          renderInput={(params) => <TextField {...params} label="Plant" placeholder="Select Plant" required error={!plant} />}
+        />
 
-        <TextField
-          select size="small" label="Part Name" value={partNameId}
-          onChange={(e) => setPartNameId(e.target.value)}
-          sx={compactFieldSx(160)}
-          SelectProps={{ MenuProps: { PaperProps: { sx: { "& .MuiMenuItem-root": { fontSize: 12, minHeight: 28 } } } } }}
-        >
-          <MenuItem sx={{ fontSize: 12 }} value="">All Part Names</MenuItem>
-          {filterOptions.partNames.map((p) => (
-            <MenuItem sx={{ fontSize: 12 }} key={p.Prod_ID} value={p.Prod_ID}>{p.Name}</MenuItem>
-          ))}
-        </TextField>
+        <Autocomplete
+          size="small"
+          options={filterOptions.partNames}
+          value={filterOptions.partNames.find((p) => String(p.Prod_ID) === String(partNameId)) || null}
+          onChange={(e, newVal) => setPartNameId(newVal ? newVal.Prod_ID : "")}
+          getOptionLabel={(p) => (p ? p.Name : "")}
+          isOptionEqualToValue={(o, v) => o.Prod_ID === v.Prod_ID}
+          sx={compactFieldSx(180)}
+          ListboxProps={{ style: { fontSize: 11.5 } }}
+          renderInput={(params) => <TextField {...params} label="Part Name" placeholder="All Part Names" />}
+        />
+
+        <Autocomplete
+          size="small"
+          disabled={!plant}
+          options={lineOptions}
+          value={lineOptions.find((l) => String(l.Line_ID) === String(lineId)) || null}
+          onChange={(e, newVal) => setLineId(newVal ? newVal.Line_ID : "")}
+          getOptionLabel={(l) => (l ? l.Line_Name : "")}
+          isOptionEqualToValue={(o, v) => o.Line_ID === v.Line_ID}
+          sx={compactFieldSx(170)}
+          ListboxProps={{ style: { fontSize: 11.5 } }}
+          renderInput={(params) => <TextField {...params} label="Line" placeholder={plant ? "All Lines" : "Select Plant first"} />}
+        />
 
         <TextField
           size="small" label="Month" type="month" value={month}
@@ -830,10 +1128,11 @@ const ProductionIHBody = ({ onCountChange }) => {
           InputLabelProps={{ shrink: true, sx: { fontSize: 12 } }}
         />
 
+
         <div style={{ display: "flex", gap: 8, marginLeft: "auto", flexShrink: 0 }}>
           <Button
             onClick={fetchReport}
-            disabled={loading}
+            disabled={loading || !plant}
             variant="contained"
             disableElevation
             startIcon={loading ? <CircularProgress size={12} color="inherit" /> : <SearchIcon sx={{ fontSize: 15 }} />}
@@ -844,62 +1143,81 @@ const ProductionIHBody = ({ onCountChange }) => {
         </div>
       </div>
 
-      {loaded && (
-        <div
-          style={{
-            fontSize: 11,
-            color: "#586174",
-            backgroundColor: "#f8f9fb",
-            border: "1px solid #eef0f3",
-            borderRadius: 8,
-            padding: "6px 12px",
-            marginBottom: 8,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          <span style={{ fontWeight: 700, color: "#1a2233" }}>
-            {flatRows.length} record{flatRows.length === 1 ? "" : "s"} found
-          </span>
-          {plantStockAsOf && (
-            <>
-              <span style={{ color: "#d3d7dd" }}>|</span>
-              <span>Plant Stock as of <b style={{ color: "#333" }}>{format(new Date(plantStockAsOf), "dd-MMM-yyyy HH:mm")}</b></span>
-            </>
-          )}
-        </div>
-      )}
-
-      <div style={{ flexGrow: 1, backgroundColor: "#fff", borderRadius: 8, boxShadow: "0 4px 8px rgba(0,0,0,0.1)", minHeight: 0, overflow: "hidden" }}>
-        <DataGrid
-          rows={flatRows}
-          columns={columns}
-          columnGroupingModel={columnGroupingModel}
-          pageSize={25}
-          rowsPerPageOptions={[25, 50, 100]}
-          disableSelectionOnClick
-          loading={loading}
-          columnHeaderHeight={26}
-          rowHeight={30}
-          slots={{ toolbar: CustomToolbar }}
-          localeText={{ noRowsLabel: "No assembly-part rows found for the selected filters." }}
-          sx={{
-            height: "100%",
-            "& .MuiDataGrid-columnHeaders": { position: "sticky", top: 0, zIndex: 2 },
-            "& .MuiDataGrid-columnHeader": { backgroundColor: "#bdbdbd", color: "black", fontWeight: "bold" },
-            "& .MuiDataGrid-columnHeaderTitle": { fontSize: "10.5px", fontWeight: "bold" },
-            "& .MuiDataGrid-columnHeader--filledGroup .MuiDataGrid-columnHeaderTitle": { fontSize: "11px" },
-            "& .MuiDataGrid-row": { backgroundColor: "#f5f5f5", "&:hover": { backgroundColor: "#f5f5f5" } },
-            "& .MuiDataGrid-row.Mui-selected": { backgroundColor: "inherit" },
-            "& .MuiDataGrid-cell": { color: "#333", fontSize: "11px", padding: "0 6px" },
-            "& .MuiDataGrid-toolbarContainer": { padding: "2px 6px", minHeight: 30 },
-            "& .MuiDataGrid-toolbarContainer button": { fontSize: "11px", padding: "2px 6px" },
-            "& .mat-ih-cell": { backgroundColor: "#ffffff" },
-            "& .mat-tot-cell": { fontWeight: "bold", backgroundColor: "#e2efda" },
-          }}
-        />
+      <style>{matScrollbarCss}</style>
+      <div className="mat-avail-scroll flex-1 min-h-0 overflow-auto bg-white rounded-lg border border-gray-200 shadow-sm">
+        <table style={{ width: ihTotalWidth, tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
+          <colgroup>
+            {FIXED_COLS.map((col) => (
+              <col key={col.field} style={{ width: col.width }} />
+            ))}
+            {partNameGroups.flatMap((group) => group.ops.map((op) => <col key={op.col_key} style={{ width: IH_OP_COL_WIDTH }} />))}
+            <col style={{ width: IH_SET_OF_PARTS_WIDTH }} />
+          </colgroup>
+          <thead>
+            <tr>
+              {FIXED_COLS.map((col) => (
+                <th key={col.field} rowSpan={2} className={matFixedHeadClass(col)} style={matFixedHeadStyle(col)}>
+                  {col.label}
+                </th>
+              ))}
+              {partNameGroups.map((group) => (
+                <th key={group.part_name} colSpan={group.ops.length} className={`${matTheadCellClass()} ${groupSeparatorClass}`} style={{ top: 0, height: HEAD_ROW_H }}>
+                  {group.part_name_label}
+                </th>
+              ))}
+              <th rowSpan={2} className={`${matTheadCellClass("text-right")} ${groupSeparatorClass}`} style={{ top: 0 }}>Set of Parts</th>
+            </tr>
+            <tr>
+              {partNameGroups.map((group) => (
+                <React.Fragment key={group.part_name}>
+                  {group.ops.map((op, opIdx) => (
+                    <th key={op.col_key} className={`${matTheadCellClass()} ${opIdx === 0 ? groupSeparatorClass : ""}`} style={{ top: HEAD_ROW_H, height: HEAD_ROW_H }}>
+                      {op.opt_name}
+                    </th>
+                  ))}
+                </React.Fragment>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={1000} className="text-center py-7">
+                  <CircularProgress size={20} />
+                </td>
+              </tr>
+            ) : filteredRows.length === 0 ? (
+              <tr>
+                <td colSpan={1000} className="text-center py-7 text-slate-400 text-xs">
+                  No assembly-part rows found for the selected filters.
+                </td>
+              </tr>
+            ) : (
+              filteredRows.map((row, idx) => (
+                <tr key={idx} className="group">
+                  <td className={matFixedBodyClass(FIXED_COLS[0])} style={matFixedBodyStyle(FIXED_COLS[0])} title={row.line_name || ""}>{row.line_name || "-"}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[1])} style={matFixedBodyStyle(FIXED_COLS[1])}>{row.fg_part_no}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[2])} style={matFixedBodyStyle(FIXED_COLS[2])} title={row.fg_desc}>{row.fg_desc}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[3])} style={matFixedBodyStyle(FIXED_COLS[3])}>{numberFmt(row.plan)}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[4])} style={matFixedBodyStyle(FIXED_COLS[4])}>{numberFmt(row.actual)}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[5])} style={matFixedBodyStyle(FIXED_COLS[5])}>{numberFmt(row.gap)}</td>
+                  {partNameGroups.map((group) => (
+                    <React.Fragment key={group.part_name}>
+                      {group.ops.map((op, opIdx) => (
+                        <td key={op.col_key} className={matTintCellClass("ih", opIdx === 0 ? bodyGroupSeparatorClass : "")}>
+                          <ChildPartTooltip value={row[`op_${op.col_key}_ih`]} children={row[`op_${op.col_key}_children`]} side="plant_qty" plant={row.plant} />
+                        </td>
+                      ))}
+                    </React.Fragment>
+                  ))}
+                  <td className={matTintCellClass("tot", bodyGroupSeparatorClass)}>
+                    {numberFmt(row.set_of_parts)}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </>
   );
@@ -1003,6 +1321,19 @@ const PillTabs = ({ value, onChange, counts }) => {
 const MatAvailabilityStatus = () => {
   const [tab, setTab] = useState(0);
   const [counts, setCounts] = useState({ materials: 0, productionIH: 0 });
+  // Plant/Supplier "stock as of" timestamps, reported up by whichever tab
+  // last fetched — shown as a small grey line under the page title instead
+  // of inside each tab's own filter toolbar.
+  const [stockAsOf, setStockAsOf] = useState({
+    materials: { plant: null, supplier: null },
+    productionIH: { plant: null, supplier: null },
+  });
+  const activeStockAsOf = tab === 0 ? stockAsOf.materials : stockAsOf.productionIH;
+  // Shared search box, sitting before the tabs — same placement as the
+  // Daily Production Plan's own header search. Filters whichever tab is
+  // currently active, each tab doing its own client-side filtering on its
+  // own already-fetched rows by Part No. / Description.
+  const [searchText, setSearchText] = useState("");
 
   return (
     <div
@@ -1025,29 +1356,58 @@ const MatAvailabilityStatus = () => {
           marginBottom: 12,
         }}
       >
-        <Typography
-          sx={{
-            fontSize: 17,
-            fontWeight: 700,
-            color: "#1a2233",
-            letterSpacing: 0.1,
-            lineHeight: 1.3,
-          }}
-        >
-          MFG Set of Parts - Stock Report{" "}
-          <Typography component="span" sx={{ fontSize: 13, fontWeight: 500, color: "#6b7280" }}>
-            [MB52 / MBLB]
+        <div>
+          <Typography
+            sx={{
+              fontSize: 17,
+              fontWeight: 700,
+              color: "#1a2233",
+              letterSpacing: 0.1,
+              lineHeight: 1.3,
+            }}
+          >
+            MFG Set of Parts - Stock Report{" "}
+            <Typography component="span" sx={{ fontSize: 13, fontWeight: 500, color: "#6b7280" }}>
+              [MB52 / MBLB]
+            </Typography>
           </Typography>
-        </Typography>
+          {(activeStockAsOf.plant || activeStockAsOf.supplier) && (
+            <Typography sx={{ fontSize: 9.5, color: "#9aa1ac", mt: 0.25, display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
+              {activeStockAsOf.plant && <span>PS - {format(new Date(activeStockAsOf.plant), "dd-MMM-yyyy HH:mm")}</span>}
+              {activeStockAsOf.plant && activeStockAsOf.supplier && <span style={{ color: "#d3d7dd" }}>|</span>}
+              {activeStockAsOf.supplier && <span>SS - {format(new Date(activeStockAsOf.supplier), "dd-MMM-yyyy HH:mm")}</span>}
+            </Typography>
+          )}
+        </div>
 
-        <PillTabs value={tab} onChange={setTab} counts={counts} />
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <TextField
+            size="small"
+            placeholder="Search Part No / Description"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            InputProps={{
+              startAdornment: <SearchIcon sx={{ fontSize: 16, color: "#8a93a3", mr: 0.5 }} />,
+            }}
+            sx={compactFieldSx(230)}
+          />
+          <PillTabs value={tab} onChange={setTab} counts={counts} />
+        </div>
       </div>
 
       <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
         {tab === 0 ? (
-          <MaterialsBody onCountChange={(c) => setCounts((s) => ({ ...s, materials: c }))} />
+          <MaterialsBody
+            searchText={searchText}
+            onCountChange={(c) => setCounts((s) => ({ ...s, materials: c }))}
+            onStockAsOfChange={(plant, supplier) => setStockAsOf((s) => ({ ...s, materials: { plant, supplier } }))}
+          />
         ) : (
-          <ProductionIHBody onCountChange={(c) => setCounts((s) => ({ ...s, productionIH: c }))} />
+          <ProductionIHBody
+            searchText={searchText}
+            onCountChange={(c) => setCounts((s) => ({ ...s, productionIH: c }))}
+            onStockAsOfChange={(plant, supplier) => setStockAsOf((s) => ({ ...s, productionIH: { plant, supplier } }))}
+          />
         )}
       </div>
     </div>

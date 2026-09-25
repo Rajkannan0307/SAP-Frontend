@@ -18,8 +18,11 @@ import {
 } from "@mui/x-data-grid";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
-import { FaFileExcel } from "react-icons/fa";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import { FaFileExcel, FaDownload } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
+import * as ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import {
   getdetails,
   getAdd,
@@ -28,9 +31,12 @@ import {
   getDepartment,
   getSupvCode,
   getModule,
+  bulkUploadLine,
 } from "../controller/LineMasterapiservice";
 import { MenuItem, InputLabel, FormControl } from "@mui/material";
 import SectionHeading from "../components/Header";
+import ValidationResponseGrid from "../components/ValidationResponseTable";
+import { deepPurple } from "@mui/material/colors";
 const UserID = localStorage.getItem("UserID");
 const Line = () => {
   const [searchText, setSearchText] = useState("");
@@ -53,6 +59,11 @@ const Line = () => {
   const [DepartmentTable, setDepartmentTable] = useState([]);
   const [loadingSupv, setLoadingSupv] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+
+  const [openUploadModal, setOpenUploadModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [uploadResponse, setUploadResponse] = useState(null);
 
   const columns = [
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
@@ -146,10 +157,12 @@ const Line = () => {
     }
   };
   useEffect(() => {
-    if (PlantCode && !isEditMode) {
-      get_SupvCode(PlantCode); // ✅ only fetch for Add modal
+    // Plant is now editable in both Add and Edit — refetch the Supervisor
+    // list for whichever Plant is currently selected either way.
+    if (PlantCode) {
+      get_SupvCode(PlantCode);
     }
-  }, [PlantCode, isEditMode]);
+  }, [PlantCode]);
 
   const get_SupvCode = async (plantId, setStateDirectly = true) => {
     try {
@@ -206,22 +219,28 @@ const Line = () => {
 
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
-  const filteredSupvs = SupvTable.filter((item) => item.Plant_ID === PlantID);
-  console.log("🧮 Filtered Supvs:", filteredSupvs);
 
   const handleRowClick = async (params) => {
     setLoadingSupv(true);
     setIsEditMode(true);
     setLine_ID(params.row.Line_ID);
-    setPlantCode(params.row.Plant_Code); // just for UI
-    setDept_Name(params.row.Dept_Name);
-    setModule_Name(params.row.Module_Name);
+    // All fields are now editable dropdowns, so every field must be seeded
+    // with the master ID (matching each Select's `value`), not the display
+    // text — e.g. Dept_Name/Module_Name here hold Dept_ID/Module_ID.
+    setPlantCode(params.row.Plant_ID);
+    setDept_Name(params.row.Dept_ID);
+    setModule_Name(params.row.Module_ID);
     setLine_Name(params.row.Line_Name);
     setSupv_Code(params.row.Supv_ID);
     setActiveStatus(params.row.Active_Status);
 
-    setPlantID(params.row.Plant_ID);           // ✅ 1. Set this first
-    await get_SupvCode(params.row.Plant_ID);   // ✅ 2. Fetch data with correct ID
+    setPlantID(params.row.Plant_ID);
+    await Promise.all([
+      get_Plant(),
+      GetDepartment(),
+      get_Module(),
+      get_SupvCode(params.row.Plant_ID),
+    ]);
 
     setLoadingSupv(false);
     setOpenEditModal(true);
@@ -297,9 +316,16 @@ const Line = () => {
   };
 
   const handleUpdate = async () => {
+    if (PlantCode === "" || Dept_Name === "" || Module_Name === "" || Line_Name === "" || Supv_Code === "") {
+      alert("Please fill in all required fields");
+      return;
+    }
     const data = {
       UserID: UserID,
       Line_ID: Line_ID,
+      Plant_Code: PlantCode,
+      Dept_Name: Dept_Name,
+      Module_Name: Module_Name,
       Sup_Code: Supv_Code,
       Line_Name: Line_Name,
       Active_Status: ActiveStatus,
@@ -392,6 +418,112 @@ const Line = () => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "StorageLocation");
     XLSX.writeFile(workbook, "LineMaster_Data.xlsx");
+  };
+
+  // ✅ Bulk Upload — Download Template
+  const handleOpenUploadModal = () => {
+    setUploadedFile(null);
+    setUploadResponse(null);
+    setOpenUploadModal(true);
+  };
+  const handleCloseUploadModal = () => {
+    setOpenUploadModal(false);
+    setUploadedFile(null);
+    setUploadResponse(null);
+    setIsUploading(false);
+  };
+
+  const downloadLineTemplate = async () => {
+    const [plantRes, deptRes, moduleRes] = await Promise.all([
+      getPlants(),
+      getDepartment(),
+      getModule(),
+    ]);
+
+    const plantCodeList = (plantRes.data || []).map((p) => `${p.Plant_Code}`);
+    const deptNameList = (deptRes.data || []).map((d) => d.Dept_Name);
+    const moduleNameList = (moduleRes.data || []).map((m) => m.Module_Name);
+
+    const HEADER_COLUMNS = ["Plant_Code", "Dept_Name", "Module_Name", "Line_Name", "Supv_Code", "Active_Status"];
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "LineMaster";
+    workbook.created = new Date();
+
+    const worksheet = workbook.addWorksheet("LineMaster");
+    worksheet.addRow(HEADER_COLUMNS);
+    worksheet.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true };
+      cell.alignment = { horizontal: "center" };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFADD8E6" } };
+    });
+    worksheet.columns = HEADER_COLUMNS.map(() => ({ width: 20 }));
+    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+    // Plant_Code
+    worksheet.dataValidations.add("A2:A1000", {
+      type: "list",
+      allowBlank: false,
+      formulae: [`"${plantCodeList.join(",")}"`],
+    });
+
+    // Dept_Name
+    worksheet.dataValidations.add("B2:B1000", {
+      type: "list",
+      allowBlank: false,
+      formulae: [`"${deptNameList.join(",")}"`],
+    });
+
+    // Module_Name
+    worksheet.dataValidations.add("C2:C1000", {
+      type: "list",
+      allowBlank: false,
+      formulae: [`"${moduleNameList.join(",")}"`],
+    });
+
+    // Active_Status
+    worksheet.dataValidations.add("F2:F1000", {
+      type: "list",
+      allowBlank: false,
+      formulae: ['"Active,Inactive"'],
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(
+      new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+      "LineMaster_Template.xlsx"
+    );
+  };
+
+  const handleFileChange = (event) => {
+    setUploadedFile(event.target.files[0]);
+  };
+
+  const handleUploadData = async () => {
+    if (!uploadedFile) {
+      alert("Please select a file first.");
+      return;
+    }
+    if (isUploading) return;
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("userId", UserID);
+      formData.append("file", uploadedFile);
+      const response = await bulkUploadLine(formData);
+      setUploadResponse(response.data);
+      alert(response.data.message || "File uploaded successfully");
+      getData();
+      handleCloseUploadModal();
+    } catch (error) {
+      console.error("Upload error:", error);
+      if (error.response?.status === 422) {
+        setUploadResponse(error.response.data);
+      } else {
+        alert(error.response?.data?.message || error.message || "Something went wrong! Try again later.");
+      }
+    }
+    setIsUploading(false);
   };
   //   console.log("🧪 Supv_Code:", Supv_Code);
   // console.log("🧪 PlantCode:", PlantCode);
@@ -498,6 +630,20 @@ const Line = () => {
             }}
           >
             <FaFileExcel size={18} />
+          </IconButton>
+
+          {/* Bulk Upload Button */}
+          <IconButton
+            onClick={handleOpenUploadModal}
+            style={{
+              borderRadius: "50%",
+              backgroundColor: "#FF6699",
+              color: "white",
+              width: "40px",
+              height: "40px",
+            }}
+          >
+            <CloudUploadIcon />
           </IconButton>
 
           {/* Add Button */}
@@ -768,37 +914,54 @@ const Line = () => {
           <SectionHeading>
             Edit Line Master
           </SectionHeading>
-          <TextField
-            label="Plant"
-            name="Plant"
-            value={PlantCode} // Use the current value of PlantCode
-            fullWidth
-            InputProps={{
-              readOnly: true, // Make it read-only
-            }}
-            required
-          />
+          <FormControl fullWidth>
+            <InputLabel>Plant Code</InputLabel>
+            <Select
+              label="Plant Code"
+              name="PlantCode"
+              value={PlantCode}
+              onChange={(e) => {
+                setPlantCode(e.target.value);
+                setSupv_Code(""); // previous plant's supervisor no longer valid
+              }}
+              required
+            >
+              {PlantTable.map((item, index) => (
+                <MenuItem key={index} value={item.Plant_Id}>{item.Plant_Code}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-          <TextField
-            label="Department Name"
-            name="Department Name"
-            value={Dept_Name} // Use the current value of PlantCode
-            fullWidth
-            InputProps={{
-              readOnly: true, // Make it read-only
-            }}
-            required
-          />
+          <FormControl fullWidth>
+            <InputLabel>Department</InputLabel>
+            <Select
+              label="Department"
+              name="Department"
+              value={Dept_Name}
+              onChange={(e) => setDept_Name(e.target.value)}
+              required
+            >
+              {DepartmentTable.map((item, index) => (
+                <MenuItem key={index} value={item.Dept_ID}>{item.Dept_Name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-          <TextField
-            label="Module Name"
-            name="Module Name"
-            value={Module_Name}
-            onChange={(e) => setModule_Name(e.target.value)}
-            InputProps={{
-              readOnly: true, // This makes the TextField read-only
-            }}
-          />
+          <FormControl fullWidth>
+            <InputLabel>Module Name</InputLabel>
+            <Select
+              label="Module Name"
+              name="Module Name"
+              value={Module_Name}
+              onChange={(e) => setModule_Name(e.target.value)}
+              required
+            >
+              {ModuleTable.map((item) => (
+                <MenuItem key={item.Module_ID} value={item.Module_ID}>{item.Module_Name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
           <FormControl fullWidth>
             <InputLabel>Supervisor Code</InputLabel>
             <Select
@@ -815,7 +978,7 @@ const Line = () => {
                 },
               }}
             >
-              {filteredSupvs.map((item) => (
+              {(SupvTable || []).map((item) => (
                 <MenuItem key={item.Supv_ID} value={item.Supv_ID}>
                   {item.Sup_Code} - {item.Sup_Name}
                 </MenuItem>
@@ -885,6 +1048,75 @@ const Line = () => {
               Update
             </Button>
           </Box>
+        </Box>
+      </Modal>
+
+      {/* Bulk Upload Modal */}
+      <Modal open={openUploadModal} onClose={() => {}}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            textAlign: "center",
+            width: uploadResponse ? "60%" : "30%",
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            maxHeight: "80vh",
+            overflowY: "auto",
+            outline: "none",
+          }}
+        >
+          <SectionHeading>Upload Line Master Excel File</SectionHeading>
+
+          <Button
+            variant="contained"
+            sx={{ mt: 2, mb: 2, bgcolor: deepPurple[500], "&:hover": { bgcolor: deepPurple[700] } }}
+            onClick={downloadLineTemplate}
+          >
+            <FaDownload /> &nbsp; Download Template
+          </Button>
+
+          <input type="file" accept=".xlsx,.xls" id="line-master-excel-upload" hidden onChange={handleFileChange} />
+
+          <label htmlFor="line-master-excel-upload">
+            <Box
+              sx={{
+                border: "2px dashed #1976d2",
+                borderRadius: "8px",
+                p: 2,
+                cursor: "pointer",
+                mb: 1,
+                "&:hover": { backgroundColor: "#f4f6fb" },
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <CloudUploadIcon />
+              <span>{uploadedFile?.name || "Click to choose Excel file"}</span>
+            </Box>
+          </label>
+
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 2, my: 3 }}>
+            <Button variant="contained" color="error" onClick={handleCloseUploadModal} sx={{ width: "30%" }}>
+              Close
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleUploadData}
+              disabled={isUploading}
+              sx={{ width: "30%" }}
+            >
+              {isUploading ? "Uploading..." : "Upload"}
+            </Button>
+          </Box>
+
+          {uploadResponse && <ValidationResponseGrid response={uploadResponse} />}
         </Box>
       </Modal>
     </div>

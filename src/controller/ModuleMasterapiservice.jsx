@@ -25,3 +25,10 @@ export const getAdd = async (data) => {
     const response = await axios.get(`${api}/ModuleMaster/Get_Department`);
     return response;
   };
+
+  export const bulkUploadModule = async (formData) => {
+    const response = await axios.post(`${api}/ModuleMaster/bulkUpload`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response;
+  };

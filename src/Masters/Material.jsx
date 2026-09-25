@@ -21,6 +21,8 @@ import AddIcon from "@mui/icons-material/Add";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from 'xlsx-js-style';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 import { MenuItem, InputLabel, FormControl } from '@mui/material';
 
@@ -29,6 +31,7 @@ import { FaDownload } from "react-icons/fa";
 import { deepPurple } from '@mui/material/colors';
 import { api } from "../controller/constants";
 import { getdetails, getAdd, getPlants, getUpdates, getMaterialType, } from '../controller/Masterapiservice';
+import { getdetails as getLines } from '../controller/LineMasterapiservice';
 import SectionHeading from "../components/Header";
 import { MaterialGroupEnumTypes } from "../common/enumValues";
 
@@ -64,6 +67,8 @@ const Material = () => {
   const [ActiveStatus, setActiveStatus] = useState(false);
   const [PlantTable, setPlantTable] = useState([]);
   const [MaterialTable, setMaterialTable] = useState([])
+  const [LineTable, setLineTable] = useState([]);
+  const [LineID, setLineID] = useState("");
 
   // const [userID, setUserID] = useState("");
 
@@ -75,6 +80,7 @@ const Material = () => {
 
     { field: "Material_Code", headerName: "Material Code", flex: 1 },
     { field: "Description", headerName: "Description", flex: 2 },
+    { field: "Line_Name", headerName: "Line", flex: 1 },
 
     { field: "Rate", headerName: "Rate", flex: 1 },
     {
@@ -155,6 +161,19 @@ const Material = () => {
     }
   };
 
+  const get_Line = async () => {
+    try {
+      const response = await getLines();
+      setLineTable((response || []).filter((l) => l.Active_Status));
+    } catch (error) {
+      console.error("Error loading Line list:", error);
+    }
+  };
+
+  // Lines scoped to the currently selected Plant — Mst_Line.Plant_ID and
+  // Mst_Material.Plant_ID both reference Mst_Plant.Plant_ID directly.
+  const lineOptions = LineTable.filter((l) => !PlantCode || String(l.Plant_ID) === String(PlantCode));
+
 
 
   // ✅ Custom Toolbar
@@ -172,19 +191,104 @@ const Material = () => {
     setMaterialCode("");
     setDescription("");
     setMaterialType("");
+    setLineID("");
 
     setRate("");
     setActiveStatus(true);
     setOpenAddModal(true);
     get_Plant();
     get_Material_Type();
+    get_Line();
 
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
 
   // ✅ Handle Upload Modal
-  const handleOpenUploadModal = () => setOpenUploadModal(true);
+  const handleOpenUploadModal = () => {
+    setOpenUploadModal(true);
+    get_Plant();
+    get_Material_Type();
+    get_Line();
+  };
+
+  // Dynamic template (replaces the old static MaterialMaster.xlsx) so the
+  // Active_Status/Plant_Code/Material_Type/Line_Name columns carry real
+  // dropdown lists — users typing free text into Active_Status had no idea
+  // 'Active'/'Inactive' was the expected value, and the backend's old
+  // Boolean(status) check silently treated ANY non-empty text as Active=1
+  // (now fixed server-side to require exactly Active/Inactive too).
+  const downloadMaterialTemplate = async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'MATERIAL_MASTER';
+    workbook.created = new Date();
+
+    const headers = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Active_Status', 'Line_Name'];
+    const worksheet = workbook.addWorksheet('MATERIAL');
+    worksheet.addRow(headers);
+    worksheet.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true };
+      cell.alignment = { horizontal: 'center' };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFADD8E6' } };
+    });
+    worksheet.columns = [
+      { width: 14 }, // Plant_Code
+      { width: 16 }, // Material_Type
+      { width: 22 }, // Material_Code
+      { width: 30 }, // Description
+      { width: 12 }, // Rate
+      { width: 14 }, // Active_Status
+      { width: 22 }, // Line_Name (optional)
+    ];
+    worksheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+    const plantCodes = (PlantTable || []).map((p) => `${p.Plant_Code}`);
+    const materialTypes = (MaterialTable || []).map((m) => m.Mat_Type || m.Material_Type).filter(Boolean);
+    const lineNames = [...new Set((LineTable || []).map((l) => l.Line_Name).filter(Boolean))];
+
+    // Plant_Code / Material_Type / Active_Status are short lists — inline
+    // list formula works fine (Excel's ~255-char limit is not a concern).
+    worksheet.dataValidations.add('A2:A1000', {
+      type: 'list',
+      allowBlank: false,
+      formulae: [`"${plantCodes.join(',')}"`],
+    });
+    worksheet.dataValidations.add('B2:B1000', {
+      type: 'list',
+      allowBlank: false,
+      formulae: [`"${materialTypes.join(',')}"`],
+    });
+    worksheet.dataValidations.add('F2:F1000', {
+      type: 'list',
+      allowBlank: false,
+      formulae: ['"Active,Inactive"'],
+    });
+
+    // Line_Name has no dropdown (332+ rows, growing, and a dropdown that
+    // large is unwieldy to scroll) — instead a second VISIBLE sheet lists
+    // every Plant + Line so the user can look up the exact spelling and type
+    // it into the Line_Name column on the main sheet themselves.
+    if ((LineTable || []).length) {
+      const lookupSheet = workbook.addWorksheet('All Lines (reference)');
+      lookupSheet.addRow(['Plant_Code', 'Line_Name']);
+      lookupSheet.getRow(1).eachCell((cell) => {
+        cell.font = { bold: true };
+        cell.alignment = { horizontal: 'center' };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFADD8E6' } };
+      });
+      lookupSheet.columns = [{ width: 14 }, { width: 30 }];
+      lookupSheet.views = [{ state: 'frozen', ySplit: 1 }];
+      LineTable.forEach((l) => {
+        lookupSheet.addRow([l.Plant_Code, l.Line_Name]);
+      });
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(
+      new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      'MaterialMaster_Template.xlsx'
+    );
+  };
   const handleCloseUploadModal = () => {
     setOpenUploadModal(false);
     setUploadStatus("");
@@ -353,10 +457,12 @@ const Material = () => {
     setDescription(params.row.Description);
     setRate(params.row.Rate);
     setActiveStatus(params.row.Active_Status);
+    setLineID(params.row.Line_ID || "");
     setOpenEditModal(true);  // Open the modal
     setMaterialID(params.row.Material_ID);
     // setUserID(params.User_ID);
     get_Material_Type(); // populate the Material Type dropdown options for editing
+    get_Line();
   };
 
   // ✅ Search Functionality
@@ -398,6 +504,7 @@ const Material = () => {
         Description: Description,
         Rate: Rate,
         Active_Status: ActiveStatus,
+        Line_ID: LineID || null,
       }
       const response = await getAdd(data);
       if (response.data.success) {
@@ -428,6 +535,7 @@ const Material = () => {
         Material_Type: MaterialType,
         Rate: Rate,
         Active_Status: ActiveStatus,
+        Line_ID: LineID || null,
         // UserID: userID,  // Ensure the UserID is also included
       };
 
@@ -730,6 +838,15 @@ const Material = () => {
             </Select>
           </FormControl>
 
+          <FormControl fullWidth>
+            <InputLabel>Line</InputLabel>
+            <Select label="Line" name="LineID" value={LineID} onChange={(e) => setLineID(e.target.value)}>
+              <MenuItem value="">None</MenuItem>
+              {lineOptions.map((item) => (
+                <MenuItem key={item.Line_ID} value={item.Line_ID}>{item.Line_Name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <TextField
             label="Material Code"
@@ -852,6 +969,19 @@ const Material = () => {
             </Select>
           </FormControl>
 
+          <FormControl fullWidth>
+            <InputLabel>Line</InputLabel>
+            {/* Not filtered by Plant here — the row's PlantCode is the Plant
+                Code (e.g. 1150), not Plant_ID, so it can't be matched against
+                Mst_Line.Plant_ID the way the Add form's PlantCode (Plant_ID)
+                dropdown can. Shows every active Line instead. */}
+            <Select label="Line" name="Line_ID" value={LineID} onChange={(e) => setLineID(e.target.value)}>
+              <MenuItem value="">None</MenuItem>
+              {LineTable.map((item) => (
+                <MenuItem key={item.Line_ID} value={item.Line_ID}>{item.Line_Name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <TextField
             label="Material Code"
@@ -953,15 +1083,10 @@ const Material = () => {
 
           <Button
             variant="contained"
+            onClick={downloadMaterialTemplate}
             style={{ marginBottom: '10px', backgroundColor: deepPurple[500], color: 'white' }}
           >
-            <a
-              style={{ textDecoration: "none", color: "white" }}
-              href={`${api}/Master/Template/MaterialMaster.xlsx`}
-            >
-              {" "}
-              <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
-            </a>{" "}
+            <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
           </Button>
           <input
             type="file"

@@ -35,3 +35,10 @@ export const getModule = async ()=>{
     const response = await axios.get(`${api}/LineMaster/Get_Module`);
     return response;
 };
+
+export const bulkUploadLine = async (formData) => {
+  const response = await axios.post(`${api}/LineMaster/bulkUpload`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response;
+};

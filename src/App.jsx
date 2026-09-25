@@ -64,6 +64,7 @@ import Purchase from "./Dashboard/Purchase";
 import InwardApproval from "./Approval/InwardApproval"
 import EmergencyApproval from "./Approval/EmergencyProcurementAprroval"
 import SupvCode from "./Masters/SupvCode"
+import Shift from "./Masters/Shift"
 import Module from "./Masters/Module"
 import Line from "./Masters/Line"
 import Mst_Operation from "./Masters/Mst_Operation"
@@ -71,6 +72,7 @@ import MFG_BOM from "./MFG_Availability"
 import PlantStock from "./MFG_Availability/PlantStock"
 import SupplierStock from "./MFG_Availability/SupplierStock"
 import MatAvailabilityStatus from "./MFG_Availability/MatAvailabilityStatus"
+import MfgProductionDailyPlan from "./MFG_Availability/MfgProductionDailyPlan"
 import ProductionPlan from "./Production plan/ProductionPlan"
 import StoreDashboard from "./Store Dashboard/StoreDashboard"
 import Store1 from "./StoreUrl/store1url"
@@ -134,6 +136,7 @@ const App = () => {
             <Route path="Customer" element={<ProtectedRoute screenCode="Customer"><Customer /></ProtectedRoute>} />
             <Route path="StorageLocation" element={<ProtectedRoute screenCode="StorageLocation"><StorageLocation /></ProtectedRoute>} />
             <Route path="SupvCode" element={<ProtectedRoute screenCode="SupvCode"><SupvCode /></ProtectedRoute>} />
+            <Route path="ShiftMaster" element={<ProtectedRoute screenCode="ShiftMaster"><Shift /></ProtectedRoute>} />
             <Route path="Module" element={<ProtectedRoute screenCode="Module"><Module /></ProtectedRoute>} />
             <Route path="Line" element={<ProtectedRoute screenCode="Line"><Line /></ProtectedRoute>} />
             <Route path="Mst_Operation" element={<ProtectedRoute screenCode="Mst_Operation"><Mst_Operation /></ProtectedRoute>} />
@@ -141,6 +144,7 @@ const App = () => {
             <Route path="PlantStock" element={<ProtectedRoute screenCode="PlantStock"><PlantStock /></ProtectedRoute>} />
             <Route path="SupplierStock" element={<ProtectedRoute screenCode="SupplierStock"><SupplierStock /></ProtectedRoute>} />
             <Route path="MatAvailabilityStatus" element={<ProtectedRoute screenCode="MatAvailabilityStatus"><MatAvailabilityStatus /></ProtectedRoute>} />
+            <Route path="MfgProductionDailyPlan" element={<ProtectedRoute screenCode="MfgProductionDailyPlan"><MfgProductionDailyPlan /></ProtectedRoute>} />
             <Route path="ProductionPlan" element={<ProtectedRoute ><ProductionPlan screenId={32} /></ProtectedRoute>} />
             <Route path="StoreDashboard" element={<ProtectedRoute ><StoreDashboard screenId={31} /></ProtectedRoute>} />
             <Route path="Movement_Type" element={<ProtectedRoute screenCode="Movement_Type"><Movement_Type /></ProtectedRoute>} />
