@@ -131,6 +131,12 @@ const Login = () => {
               case 16:
                 window.location.href = "/home/PMPD_ProductionPlan";
                 break;
+              case 17:
+                window.location.href = "/home/MatAvailabilityStatus";
+                break;
+              default:
+                window.location.href = "/home/Home";
+                break;
             }
           }, 100);
         }
@@ -165,162 +171,50 @@ const Login = () => {
 
   return (
     <>
-      <div
-        style={{
-          minHeight: "calc(100vh - 1px)",
-          width: "100vw",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundAttachment: "fixed",
-          backgroundColor: "#f5f5f5 ",
-        }}
-      >
-        {/* Centered Header with Home Icon on Right */}
-        {/* Header Wrapper */}
-        <div
-          style={{
-            position: "relative",
-            width: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            marginBottom: "30px",
-          }}
-        >
-          <h1
-            style={{
-              textAlign: "center",
-              color: "#1B5088",
-              fontSize: "40px",
-              fontFamily: "serif",
-              margin: "15px 0",
-            }}
-            className="text-3xl! text-center font-bold! mt-2 text-[#1B5088]"
-          >
+      <div className="min-h-screen w-screen flex flex-col justify-center items-center bg-slate-50 animate-[fadeIn_0.5s_ease-in-out]">
+        <style>{`
+          @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+          @keyframes floatUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        `}</style>
+
+        {/* Header */}
+        <div className="relative w-full flex justify-center items-center mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-center text-[#1B5088] my-4">
             MANUFACTURING WORKSPACE
           </h1>
 
-          {/* Home Icon aligned to right end */}
           <IoHome
-            style={{
-              position: "absolute",
-              right: "20px",
-              fontSize: "40px",
-              color: "black",
-              cursor: "pointer",
-              marginRight: '2%'
-            }}
+            className="absolute right-5 mr-[2%] text-4xl text-slate-800 cursor-pointer transition-transform duration-200 hover:scale-110 hover:text-[#1B5088]"
             onClick={() => navigate("/")}
           />
         </div>
 
-
-
-
         {/* Outer Centered Box */}
         <div
-          style={{
-            width: "600px",
-            height: "450px",
-            backgroundColor: "#1B5088",
-            display: "flex",
-            borderRadius: "12px",
-            overflow: "hidden",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-            marginBottom: "30px",
-            marginTop: "15px"
-          }}
+          className="w-[90vw] max-w-[600px] md:h-[450px] bg-gradient-to-br from-[#1B5088] to-[#123b66] flex flex-col md:flex-row rounded-xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.15)] mb-8 mt-4"
+          style={{ animation: "floatUp 0.5s ease-out both" }}
         >
-          <div
-            style={{
-              width: "50%",
-              backgroundColor: "#1B5088",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "20px",
-            }}
-          >
+          <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-5">
             <img
               src={LoginImage}
               alt="Login Visual"
-              style={{
-                width: "87%",
-                height: "100vh",
-                objectFit: "contain",
-                borderRadius: "10px",
-              }}
+              className="w-[87%] max-h-[220px] md:max-h-none md:h-[70vh] object-contain rounded-[10px]"
             />
           </div>
 
           {/* Right Column with Inner Login Box */}
-          <div
-            style={{
-              width: "50%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "30px",
-              flexDirection: "column",
-            }}
-          >
-
-            <div
-              style={{
-                height: "220px", // Increased height
-                width: "250px",
-                backgroundColor: "white",
-                padding: "20px",
-                borderRadius: "20px",
-                boxShadow: "0 4px 12px rgb(131, 130, 130)",
-                right: 4,
-              }}
-            >
-              <div
-                // style={{
-                //   textAlign: "center",
-                //   marginBottom: "10px",
-                //   marginTop: "20px",
-                //   color: "#2994d1",
-                //   fontSize: "25px"
-                // }}
-                className="text-xl font-bold text-center text-[#2994d1] mb-3"
-              >
+          <div className="w-full md:w-1/2 flex justify-center items-center p-6 md:p-8 flex-col">
+            <div className="h-auto w-[260px] bg-white p-5 rounded-2xl shadow-[0_4px_12px_rgba(131,130,130,0.6)] transition-transform duration-300 hover:-translate-y-0.5">
+              <div className="text-xl font-bold text-center text-[#2994d1] mb-4">
                 Login
               </div>
-              <form
-                onSubmit={handleLogin}
-                style={{ display: "flex", flexDirection: "column" }}
-              >
-
+              <form onSubmit={handleLogin} className="flex flex-col">
                 <input
                   type="text"
                   placeholder="Login ID"
                   value={username}
                   onChange={(e) => setUserName(e.target.value)}
-                  style={{
-                    width: "180px",
-                    height: "17px",
-                    padding: "12px",
-                    borderRadius: "20px",
-                    border: "1px solid #1B5088",
-                    marginBottom: "15px",
-                    textAlign: "center",
-                    margin: "5px auto",
-                    display: "block",
-                    outline: "none", // Remove black border on focus
-                    transition: "border 0.3s",
-                    fontSize: "16px",
-                  }}
-                  onFocus={(e) =>
-                    (e.target.style.border = "1px solid rgb(22, 129, 243)")
-                  } // Green border on focus
-                  onBlur={(e) => (e.target.style.border = "1px solid  #1B5088")} // Gray border on blur
+                  className="w-[200px] mx-auto my-1.5 block text-center px-3 py-3 rounded-full border border-[#1B5088] outline-none text-base transition-all duration-300 focus:border-[#0ea5e9] focus:shadow-[0_0_0_3px_rgba(14,165,233,0.15)]"
                 />
 
                 <input
@@ -328,50 +222,12 @@ const Login = () => {
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  style={{
-                    padding: "12px",
-                    borderRadius: "20px",
-                    border: "1px solid #1B5088",
-                    marginBottom: "20px",
-                    textAlign: "center",
-                    width: "180px",
-                    height: "17px",
-                    margin: "5px auto",
-                    display: "block",
-                    outline: "none", // Remove black border on focus
-                    transition: "border 0.3s",
-                    fontSize: "16px",
-                  }}
-                  onFocus={(e) =>
-                    (e.target.style.border = "1px solid rgb(22, 129, 243)")
-                  } // Green border on focus
-                  onBlur={(e) => (e.target.style.border = "1px solid  #1B5088")} // Gray border on blur
+                  className="w-[200px] mx-auto my-1.5 mb-1 block text-center px-3 py-3 rounded-full border border-[#1B5088] outline-none text-base transition-all duration-300 focus:border-[#0ea5e9] focus:shadow-[0_0_0_3px_rgba(14,165,233,0.15)]"
                 />
 
                 <button
                   type="submit"
-                  style={{
-                    padding: "7px 38px",
-                    fontSize: "14px",
-                    borderRadius: "16px",
-                    textAlign: "center",
-                    backgroundColor: "#2994d1",
-                    color: "#fff",
-                    fontWeight: "bold",
-                    border: "none",
-                    cursor: "pointer",
-                    width: "120px",
-                    height: "30px",
-                    display: "block",
-                    margin: "20px auto",
-                    bottom: 4,
-                  }}
-                  onMouseOver={(e) =>
-                    (e.target.style.backgroundColor = "#00CCFF")
-                  }
-                  onMouseOut={(e) =>
-                    (e.target.style.backgroundColor = "rgb(65, 171, 230)")
-                  }
+                  className="mt-5 mx-auto block w-[130px] h-[36px] rounded-2xl text-sm font-bold text-white bg-[#2994d1] transition-all duration-300 hover:bg-[#00CCFF] hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
                 >
                   Login
                 </button>
