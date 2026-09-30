@@ -119,14 +119,12 @@ const Sidebar = ({ setSidebarOpen }) => {
     >
       {/* Sidebar Header */}
       <div
-        className={`flex items-center p-3 border-b border-gray-600 ${
-          open ? "justify-between" : "justify-center"
-        }`}
+        className={`flex items-center p-3 border-b border-gray-600 ${open ? "justify-between" : "justify-center"
+          }`}
       >
         <h3
-          className={`m-0 text-white font-bold cursor-pointer hover:text-gray-300 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${
-            open ? "max-w-[160px] opacity-100" : "max-w-0 opacity-0 pointer-events-none"
-          }`}
+          className={`m-0 text-white font-bold cursor-pointer hover:text-gray-300 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${open ? "max-w-[160px] opacity-100" : "max-w-0 opacity-0 pointer-events-none"
+            }`}
           onClick={() => {
             const roleId = parseInt(Role);
             if (roleId === 1 || roleId === 9) {
@@ -494,7 +492,7 @@ const Sidebar = ({ setSidebarOpen }) => {
           }
           Permissions={Permissions}
           currentPath={location.pathname}
-          label="Material Availability Status"
+          label="PPC & MRPC"
           links={[
             {
               name: "MFG BOM",
@@ -541,7 +539,7 @@ const Sidebar = ({ setSidebarOpen }) => {
               code: "MatAvailabilityStatus",
             },
             {
-              name: "Daily Production Plan",
+              name: "Daily ASSY Plan",
               path: "/home/MfgProductionDailyPlan",
               icon: (
                 <PrecisionManufacturingIcon
@@ -878,7 +876,7 @@ const Sidebar = ({ setSidebarOpen }) => {
           ]}
           codeList={["StartTesting", "RigStatus", "RigMonthlyStatus"]}
         />
-   
+
         {/* PMPD Section */}
         <SidebarSection
           open={open}
@@ -887,12 +885,12 @@ const Sidebar = ({ setSidebarOpen }) => {
           icon={
             <GiFactory style={{ color: "#FFA500" }} className="text-[27px]" />
           }
-          
+
           Permissions={Permissions}
           currentPath={location.pathname}
           label="PMPD"
           links={[
-            
+
             {
               name: "PMPD Master",
               path: "/home/PMPD_Master",
@@ -1171,17 +1169,15 @@ const Sidebar = ({ setSidebarOpen }) => {
 const StandaloneButton = ({ open, onClick, icon, label, active = false }) => (
   <button
     onClick={onClick}
-    className={`flex items-center w-full gap-2.5 px-3 py-2 rounded-md text-left transition-colors duration-150 ${
-      active ? "bg-gray-600 text-white" : "text-white bg-transparent hover:bg-gray-600"
-    }`}
+    className={`flex items-center w-full gap-2.5 px-3 py-2 rounded-md text-left transition-colors duration-150 ${active ? "bg-gray-600 text-white" : "text-white bg-transparent hover:bg-gray-600"
+      }`}
   >
     <span className="flex items-center justify-center w-5 h-5 shrink-0 leading-none">
       {icon}
     </span>
     <span
-      className={`font-semibold text-[14px] leading-snug text-left whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${
-        open ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"
-      }`}
+      className={`font-semibold text-[14px] leading-snug text-left whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${open ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"
+        }`}
     >
       {label}
     </span>
@@ -1222,35 +1218,31 @@ const SidebarSection = ({
     <div>
       <button
         onClick={toggleSection}
-        className={`flex items-center justify-between w-full gap-2 px-3 py-2 rounded-md text-left transition-colors duration-150 ${
-          isOpen ? "bg-gray-600 text-white" : "text-white bg-transparent hover:bg-gray-600"
-        }`}
+        className={`flex items-center justify-between w-full gap-2 px-3 py-2 rounded-md text-left transition-colors duration-150 ${isOpen ? "bg-gray-600 text-white" : "text-white bg-transparent hover:bg-gray-600"
+          }`}
       >
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="flex items-center justify-center w-5 h-5 shrink-0 leading-none">
             {icon}
           </span>
           <span
-            className={`font-semibold text-[14px] leading-snug text-left whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${
-              open ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"
-            }`}
+            className={`font-semibold text-[14px] leading-snug text-left whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${open ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"
+              }`}
           >
             {label}
           </span>
         </div>
         <ArrowRightIcon
           fontSize="small"
-          className={`shrink-0 transition-all duration-200 ease-in-out ${
-            isOpen ? "rotate-90" : "rotate-0"
-          } ${open ? "max-w-[24px] opacity-100" : "max-w-0 opacity-0 overflow-hidden"}`}
+          className={`shrink-0 transition-all duration-200 ease-in-out ${isOpen ? "rotate-90" : "rotate-0"
+            } ${open ? "max-w-[24px] opacity-100" : "max-w-0 opacity-0 overflow-hidden"}`}
         />
       </button>
 
       {open && (
         <div
-          className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-            isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-          }`}
+          className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+            }`}
         >
           <div className="overflow-hidden">
             <div className="mt-0.5 mb-0.5 p-1 pl-3 flex flex-col gap-0.5 bg-[#4b4b4b] rounded-md shadow-inner">
@@ -1261,11 +1253,10 @@ const SidebarSection = ({
                     key={index}
                     to={link.path}
                     title={link.name}
-                    className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] leading-snug no-underline transition-colors duration-150 ${
-                      isActive
-                        ? "bg-gray-500 text-white font-semibold"
-                        : "text-gray-200 hover:bg-gray-500 hover:text-white"
-                    }`}
+                    className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] leading-snug no-underline transition-colors duration-150 ${isActive
+                      ? "bg-gray-500 text-white font-semibold"
+                      : "text-gray-200 hover:bg-gray-500 hover:text-white"
+                      }`}
                   >
                     {link.icon && (
                       <span className="flex items-center justify-center w-5 h-5 shrink-0 leading-none">

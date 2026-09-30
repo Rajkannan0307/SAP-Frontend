@@ -158,6 +158,14 @@ export const AddTrnActualProdPlan_BULK = async (body) => {
     return response;
 }
 
+// Manual trigger for the MB51 Prod Data auto-upload — same service the
+// every-4-hours cron uses, so a manual click and the scheduled run behave
+// identically.
+export const fetchProdDataMB51 = async (userId) => {
+    const response = await axios.post(`${api}/PMPDRouter/fetchProdDataMB51`, { userId });
+    return response.data;
+}
+
 
 
 

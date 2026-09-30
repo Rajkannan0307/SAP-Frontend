@@ -529,6 +529,21 @@ const Line = () => {
   // console.log("🧪 PlantCode:", PlantCode);
   // console.log("🧪 Filtered SupvTable:", SupvTable.filter((item) => item.Plant_ID === PlantCode));
 
+  // Module dropdown stays EMPTY until both Plant and Department are picked
+  // — not "show everything until narrowed down" — then narrows to that
+  // exact Plant + Department (a Module belongs to one Department within
+  // one Plant). The same Module Name can legitimately repeat across
+  // different plants (per the backend's own Plant+Module duplicate check),
+  // and different departments in the same plant have their own distinct
+  // modules too, so this can never fall back to an unfiltered list.
+  // PlantCode/Dept_Name here hold Plant_ID/Dept_ID in both Add and Edit
+  // forms (unlike Material.jsx, which mixes Plant_ID/Plant_Code), so the
+  // comparison is safe as-is.
+  const moduleOptions =
+    PlantCode && Dept_Name
+      ? ModuleTable.filter((m) => String(m.Plant_ID) === String(PlantCode) && String(m.Dept_ID) === String(Dept_Name))
+      : [];
+
   return (
     <div
       style={{
@@ -750,7 +765,10 @@ const Line = () => {
               label="Plant Code"
               name="PlantCode"
               value={PlantCode}
-              onChange={(e) => setPlantCode(e.target.value)}
+              onChange={(e) => {
+                setPlantCode(e.target.value);
+                setModule_Name(""); // previous plant's module no longer valid
+              }}
               required
             >
               {PlantTable.map((item, index) => (
@@ -767,7 +785,7 @@ const Line = () => {
               label="Department"
               name="Department"
               value={Dept_Name}
-              onChange={(e) => setDept_Name(e.target.value)}
+              onChange={(e) => { setDept_Name(e.target.value); setModule_Name(""); }}
               required
             >
               {DepartmentTable.map((item, index) => (
@@ -812,8 +830,9 @@ const Line = () => {
               value={Module_Name}
               onChange={(e) => setModule_Name(e.target.value)}
               required
+              disabled={!(PlantCode && Dept_Name)}
             >
-              {ModuleTable.map((item) => (
+              {moduleOptions.map((item) => (
                 <MenuItem key={item.Module_ID} value={item.Module_ID}>
                   {item.Module_Name}
                 </MenuItem>
@@ -925,6 +944,7 @@ const Line = () => {
                 setSupv_Code(""); // previous plant's supervisor no longer valid
               }}
               required
+              disabled // Plant is locked during Edit — existing value stays unchanged
             >
               {PlantTable.map((item, index) => (
                 <MenuItem key={index} value={item.Plant_Id}>{item.Plant_Code}</MenuItem>
@@ -938,7 +958,7 @@ const Line = () => {
               label="Department"
               name="Department"
               value={Dept_Name}
-              onChange={(e) => setDept_Name(e.target.value)}
+              onChange={(e) => { setDept_Name(e.target.value); setModule_Name(""); }}
               required
             >
               {DepartmentTable.map((item, index) => (
@@ -955,8 +975,9 @@ const Line = () => {
               value={Module_Name}
               onChange={(e) => setModule_Name(e.target.value)}
               required
+              disabled={!(PlantCode && Dept_Name)}
             >
-              {ModuleTable.map((item) => (
+              {moduleOptions.map((item) => (
                 <MenuItem key={item.Module_ID} value={item.Module_ID}>{item.Module_Name}</MenuItem>
               ))}
             </Select>

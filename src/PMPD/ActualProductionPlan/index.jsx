@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import SectionHeading from '../../components/Header'
-import { Box, Button, IconButton, MenuItem, Modal, TextField, Typography } from '@mui/material'
+import { Box, Button, CircularProgress, IconButton, MenuItem, Modal, TextField, Typography } from '@mui/material'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import { CloudUploadIcon, EditIcon, SearchIcon } from 'lucide-react'
 import { PiUploadDuotone } from 'react-icons/pi'
 import { FaDownload, FaUpload } from 'react-icons/fa6'
@@ -8,7 +9,7 @@ import { deepPurple } from '@mui/material/colors';
 import * as ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
 import { getPlantdetails } from '../../controller/CommonApiService'
-import { AddTrnActualProdPlan_BULK, getTrnActualProdPlan } from '../../controller/PMPDApiService'
+import { AddTrnActualProdPlan_BULK, fetchProdDataMB51, getTrnActualProdPlan } from '../../controller/PMPDApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import { endOfDay, format, isValid, startOfDay } from 'date-fns'
 import { useFormik } from 'formik'
@@ -18,14 +19,80 @@ import { AuthContext } from '../../Authentication/AuthContext'
 import ValidationResponseGrid from '../../components/ValidationResponseTable'
 import { finYearsList } from '../../common/data'
 
+// Compact filter-field/button styling — same design tokens as the MFG Daily
+// Production Plan screen's own filter toolbar, copied verbatim so both
+// screens share one visual language.
+const compactFieldSx = (minWidth) => ({
+  minWidth,
+  flexShrink: 0,
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "6px",
+    backgroundColor: "#fafbfc",
+    minHeight: 30,
+    display: "flex",
+    alignItems: "center",
+    padding: "0 7px !important",
+    "& fieldset": { borderColor: "#dde1e7" },
+    "&:hover fieldset": { borderColor: "#0066FF" },
+    "&.Mui-focused fieldset": { borderColor: "#0066FF", borderWidth: "1.5px" },
+    "&.Mui-disabled": {
+      backgroundColor: "#f1f2f5",
+      cursor: "not-allowed",
+      "& fieldset": { borderColor: "#e2e4e9", borderStyle: "dashed" },
+    },
+  },
+  "& .MuiInputBase-input, & .MuiSelect-select, & .MuiAutocomplete-input": {
+    padding: "0 !important",
+    fontSize: 11,
+  },
+  "& .Mui-disabled": { cursor: "not-allowed", WebkitTextFillColor: "#a4a9b3" },
+  "& .MuiAutocomplete-endAdornment": { right: 4 },
+  "& .MuiInputLabel-root": { fontSize: 11, color: "#6b7280" },
+  "& .MuiInputLabel-root.Mui-disabled": { color: "#b6bac3" },
+  "& .MuiInputLabel-root.MuiInputLabel-shrink": { fontSize: 10.5, transform: "translate(7px, -7px) scale(0.85)" },
+});
+
+const compactButtonSx = {
+  height: 30,
+  fontSize: 11,
+  fontWeight: 600,
+  textTransform: "none",
+  borderRadius: "6px",
+  boxShadow: "none",
+  padding: "0 10px",
+  whiteSpace: "nowrap",
+};
+
 const PMPD_ActualProductionPlan = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
   const [originalRows, setOriginalRows] = useState([]);
   const [openUploadModal, setOpenUploadModal] = useState(false);
   const [refreshData, setRefreshData] = useState(false)
+  const [fetchingProdData, setFetchingProdData] = useState(false)
   const { user } = useContext(AuthContext);
   const currentUserPlantCode = user.PlantCode
+
+  // Manual trigger for the MB51 Prod Data auto-upload — runs the exact same
+  // insert-only processing the every-4-hours cron already does.
+  const handleFetchProdData = async () => {
+    if (fetchingProdData) return
+    setFetchingProdData(true)
+    try {
+      const userId = localStorage.getItem('EmpId')
+      const result = await fetchProdDataMB51(userId)
+      alert(result?.message || 'MB51 Prod Data fetched successfully.')
+      setRefreshData((prev) => !prev)
+    } catch (error) {
+      console.error('Fetch MB51 Prod Data error:', error)
+      alert(
+        error.response?.data?.message ||
+        error.message ||
+        'Something went wrong while fetching MB51 Prod Data.'
+      )
+    }
+    setFetchingProdData(false)
+  }
 
   const PMPDAccess = getPMPDAccess()
 
@@ -154,7 +221,8 @@ const PMPD_ActualProductionPlan = () => {
       headerName: "Entry_Time",
       width: 120,
       renderCell: (params) => params.value
-    }
+    },
+    { field: "reservation_item_no", headerName: "Item No. of Reservation", width: 180 },
   ];
 
   const CustomToolbar = () => (
@@ -189,8 +257,22 @@ const PMPD_ActualProductionPlan = () => {
         </SectionHeading>
       </div>
 
-      <div className='flex justify-between items-center mb-3'>
-        <div className='flex justify-start items-start gap-3'>
+      <div
+        style={{
+          backgroundColor: "#fff",
+          borderRadius: 8,
+          border: "1px solid #e8eaee",
+          boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
+          padding: "7px 10px",
+          marginBottom: 12,
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
           <TextField
             select
             size="small"
@@ -198,23 +280,13 @@ const PMPD_ActualProductionPlan = () => {
             name="plant"
             value={formik.values.plant}
             onChange={formik.handleChange}
-            sx={{ minWidth: 240 }}
+            sx={compactFieldSx(190)}
             disabled={PMPDAccess.disableAction}
-            InputLabelProps={{
-              sx: {
-                fontSize: "12px",
-              },
-            }}
-            InputProps={{
-              sx: {
-                fontSize: "13px",
-              },
-            }}
             error={formik.touched.plant && Boolean(formik.errors.plant)}
             helperText={formik.touched.plant && formik.errors.plant}
           >
             {plants.map((p) => (
-              <MenuItem sx={{ fontSize: "small" }} key={p.Plant_ID} value={p.Plant_Code}>
+              <MenuItem sx={{ fontSize: 11.5 }} key={p.Plant_ID} value={p.Plant_Code}>
                 {`${p.Plant_Code} - ${p.Plant_Name}`}
               </MenuItem>
             ))}
@@ -228,23 +300,26 @@ const PMPD_ActualProductionPlan = () => {
             name="fin_year"
             value={formik.values.fin_year}
             onChange={formik.handleChange}
-            sx={{ minWidth: 240 }}
-            InputLabelProps={{ sx: { fontSize: 12 } }}
-            InputProps={{ sx: { fontSize: 13 } }}
+            sx={compactFieldSx(160)}
             error={formik.touched.fin_year && Boolean(formik.errors.fin_year)}
             helperText={formik.touched.fin_year && formik.errors.fin_year}
           >
             {finYearsList.map((fy) => (
-              <MenuItem key={fy} value={fy} sx={{ fontSize: 13 }}>
+              <MenuItem key={fy} value={fy} sx={{ fontSize: 11.5 }}>
                 {fy}
               </MenuItem>
             ))}
           </TextField>
 
-          <Button variant='contained' onClick={(e) => {
-            formik.setFieldValue('type', 'SUBMIT')
-            formik.handleSubmit(e)
-          }}>
+          <Button
+            variant="contained"
+            disableElevation
+            onClick={(e) => {
+              formik.setFieldValue('type', 'SUBMIT')
+              formik.handleSubmit(e)
+            }}
+            sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc" } }}
+          >
             {loading ? "Loading..." : "Submit"}
           </Button>
         </div>
@@ -253,13 +328,14 @@ const PMPD_ActualProductionPlan = () => {
         <div
           style={{
             display: "flex",
+            flexWrap: "wrap",
             justifyContent: "space-between",
             alignItems: "center",
-            gap: 50
+            gap: 12
           }}
         >
           {/* Search Box - requester */}
-          <div style={{ display: "flex", gap: "10px" }}>
+          <div style={{ display: "flex", gap: 8 }}>
             <TextField
               size="small"
               variant="outlined"
@@ -267,23 +343,30 @@ const PMPD_ActualProductionPlan = () => {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               onKeyUp={handleSearch}
-              style={{ width: "400px" }}
+              sx={compactFieldSx(260)}
             />
             <Button
               onClick={handleSearch}
-              style={{
-                borderRadius: "25px",
-                border: "2px solid skyblue",
-                color: "skyblue",
-                fontWeight: "bold",
-                textTransform: "none",
-              }}
+              variant="outlined"
+              disableElevation
+              startIcon={<SearchIcon size={15} />}
+              sx={{ ...compactButtonSx, borderColor: "#0066FF", color: "#0066FF", "&:hover": { borderColor: "#0052cc", backgroundColor: "#f0f6ff" } }}
             >
-              <SearchIcon style={{ marginRight: "5px" }} />
               Search
             </Button>
           </div>
-          <div style={{ display: PMPDAccess.disableAction ? "none" : "flex", gap: "10px" }}>
+          <div style={{ display: PMPDAccess.disableAction ? "none" : "flex", gap: 8, alignItems: "center" }}>
+            <Button
+              variant="contained"
+              disableElevation
+              onClick={handleFetchProdData}
+              disabled={fetchingProdData}
+              startIcon={fetchingProdData ? <CircularProgress size={14} color="inherit" /> : <RefreshIcon sx={{ fontSize: 15 }} />}
+              sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc" } }}
+              title="Fetch latest MB51 Prod Data from the FTP source and insert new records"
+            >
+              {fetchingProdData ? "Fetching..." : "Fetch"}
+            </Button>
             <ExcelUploadModal open={openUploadModal}
               onClose={() => {
                 setOpenUploadModal(false)
@@ -300,14 +383,19 @@ const PMPD_ActualProductionPlan = () => {
       </div>
 
 
-      {/* DataGrid */}
+      {/* DataGrid — compact enterprise styling matching the MFG Daily
+          Production Plan grid (header #d0dcf5/bold 10.5px, 11px cells,
+          zebra rows, hover tint, compact toolbar/footer). Only visual
+          styling changed here; rows/columns/pagination/behavior untouched. */}
       <div
         style={{
           flexGrow: 1, // Ensures it grows to fill the remaining space
+          minHeight: 0,
           backgroundColor: "#fff",
           borderRadius: 8,
-          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-          height: "calc(5 * 48px)",
+          border: "1px solid #e8eaee",
+          boxShadow: "0 1px 3px rgba(16,24,40,0.05)",
+          overflow: "hidden",
         }}
       >
         <DataGrid
@@ -317,33 +405,42 @@ const PMPD_ActualProductionPlan = () => {
           rowsPerPageOptions={[5]}
           getRowId={(row) => row.act_prod_id} // Specify a custom id field
           disableSelectionOnClick
+          disableColumnMenu
+          columnHeaderHeight={36}
+          rowHeight={38}
           slots={{ toolbar: CustomToolbar }}
           sx={{
-            // Header Style
-            "& .MuiDataGrid-columnHeader": {
-              backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
-              color: "black",
-              fontWeight: "bold",
+            height: "100%",
+            border: "none",
+            "& .MuiDataGrid-columnSeparator": { display: "none" },
+            "& .MuiDataGrid-cell": { color: "#333", fontSize: "11px", padding: "0 8px", borderRight: "none" },
+            "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within": { outline: "none" },
+            "& .MuiDataGrid-columnHeaders": { position: "sticky", top: 0, zIndex: 2 },
+            "& .MuiDataGrid-columnHeader": { backgroundColor: "#d0dcf5", color: "#000000", padding: "0 8px" },
+            "& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within": { outline: "none" },
+            "& .MuiDataGrid-columnHeaderTitle": { fontSize: "10.5px", fontWeight: "bold", color: "#000000" },
+            "& .MuiDataGrid-sortIcon, & .MuiDataGrid-menuIconButton": { color: "#000000" },
+            "& .MuiDataGrid-row": { backgroundColor: "#fff" },
+            "& .MuiDataGrid-row:nth-of-type(even)": { backgroundColor: "#fafbfc" },
+            "& .MuiDataGrid-row:hover": { backgroundColor: "#eef4ff" },
+            "& .MuiDataGrid-row.Mui-selected": { backgroundColor: "inherit" },
+            "& .MuiDataGrid-toolbarContainer": { padding: "2px 6px", minHeight: 28 },
+            "& .MuiDataGrid-toolbarContainer button": { fontSize: "11px", padding: "2px 6px" },
+            "& .MuiDataGrid-footerContainer": { minHeight: 34 },
+            "& .MuiTablePagination-root": { overflow: "visible" },
+            "& .MuiTablePagination-toolbar": {
+              minHeight: "34px !important",
+              height: 34,
+              paddingLeft: 8,
+              paddingRight: 4,
             },
-            "& .MuiDataGrid-columnHeaderTitle": {
-              fontSize: "16px",
-              fontWeight: "bold",
+            "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
+              fontSize: 11, marginTop: 0, marginBottom: 0,
             },
-            "& .MuiDataGrid-row": {
-              backgroundColor: "#f5f5f5", // Default row background
-              "&:hover": {
-                backgroundColor: "#f5f5f5",
-              },
+            "& .MuiTablePagination-select": {
+              fontSize: 11, paddingTop: "2px !important", paddingBottom: "2px !important", minHeight: "unset",
             },
-            // ✅ Remove Selected Row Background
-            "& .MuiDataGrid-row.Mui-selected": {
-              backgroundColor: "inherit", // No background on selection
-            },
-
-            "& .MuiDataGrid-cell": {
-              color: "#333",
-              fontSize: "14px",
-            },
+            "& .MuiTablePagination-selectIcon": { fontSize: 16 },
           }}
         />
       </div>
@@ -404,7 +501,8 @@ const ExcelUploadModal = ({
       "Prod_Qty",
       "Prod_Order",
       "Material_Doc",
-      "Entry_Time_hh_mm_ss"
+      "Entry_Time_hh_mm_ss",
+      "Reservation_Item_No"
     ];
 
     worksheet.addRow(headers);
@@ -496,21 +594,17 @@ const ExcelUploadModal = ({
 
   return (
     <>
-      <IconButton
-        component="span"
+      <Button
+        variant="contained"
+        disableElevation
         onClick={() => {
           if (onOpen) onOpen()
         }}
-        style={{
-          borderRadius: "50%",
-          backgroundColor: "#FF6699",
-          color: "white",
-          width: "40px",
-          height: "40px",
-        }}
+        startIcon={<CloudUploadIcon size={15} />}
+        sx={{ ...compactButtonSx, backgroundColor: "#1B7A43", "&:hover": { backgroundColor: "#166238" } }}
       >
-        <CloudUploadIcon />
-      </IconButton>
+        Upload
+      </Button>
 
       <Modal open={open} onClose={() => { }}>
         <Box

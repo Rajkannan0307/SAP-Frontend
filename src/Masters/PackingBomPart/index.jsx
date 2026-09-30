@@ -498,7 +498,11 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
 
     // Lines scoped to the currently selected Plant — both Mst_Line and
     // Mst_Material store Plant_ID directly here, so this filter is safe.
-    const lineOptions = lines.filter((l) => !formik.values.Plant_ID || String(l.Plant_ID) === String(formik.values.Plant_ID));
+    // Empty until a Plant is actually picked — not "show everything until
+    // narrowed down" — same convention as Line Master's Module dropdown.
+    const lineOptions = formik.values.Plant_ID
+        ? lines.filter((l) => String(l.Plant_ID) === String(formik.values.Plant_ID))
+        : [];
 
     return (
         <Dialog
@@ -526,10 +530,14 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                         label="Plant"
                         name="Plant_ID"
                         value={formik.values.Plant_ID}
-                        onChange={formik.handleChange}
+                        onChange={(e) => {
+                            formik.handleChange(e);
+                            formik.setFieldValue('Line_ID', ''); // previous plant's line no longer valid
+                        }}
                         onBlur={formik.handleBlur}
                         error={formik.touched.Plant_ID && Boolean(formik.errors.Plant_ID)}
                         helperText={formik.touched.Plant_ID && formik.errors.Plant_ID}
+                        disabled={Boolean(editData)} // Plant is locked during Edit — existing value stays unchanged
                         InputLabelProps={{ sx: { fontSize: 12 } }}
                         InputProps={{ sx: { fontSize: 13 } }}
                         sx={{
@@ -642,6 +650,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                         value={formik.values.Line_ID}
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
+                        disabled={!formik.values.Plant_ID}
                         InputLabelProps={{ sx: { fontSize: 12 } }}
                         InputProps={{ sx: { fontSize: 13 } }}
                         sx={{

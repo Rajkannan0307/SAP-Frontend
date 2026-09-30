@@ -170,9 +170,21 @@ const Material = () => {
     }
   };
 
-  // Lines scoped to the currently selected Plant — Mst_Line.Plant_ID and
-  // Mst_Material.Plant_ID both reference Mst_Plant.Plant_ID directly.
-  const lineOptions = LineTable.filter((l) => !PlantCode || String(l.Plant_ID) === String(PlantCode));
+  // Add form: PlantCode here holds Plant_ID (matches the Add Plant dropdown's
+  // own value below and InsertMstMaterial's @PlantCode, which is inserted
+  // straight into Mst_Material.Plant_ID). Empty until a Plant is actually
+  // picked — not "show everything until narrowed down" — then scoped to
+  // that exact Plant, same convention as Line Master's Module dropdown.
+  const lineOptions = PlantCode ? LineTable.filter((l) => String(l.Plant_ID) === String(PlantCode)) : [];
+
+  // Edit form: PlantCode here holds Plant_Code (the row's own business code,
+  // e.g. 1150 — see handleEditOpen), NOT Plant_ID, since Plant isn't part of
+  // the Update payload at all (UpdateMaterial has no @PlantCode param) and
+  // this field exists for display/filtering only. GetLine returns both
+  // Plant_ID and Plant_Code per line, so this filters on Plant_Code instead
+  // — fixes the previous bug where Edit's Line dropdown showed every line
+  // from every plant because it filtered on the wrong field.
+  const editLineOptions = PlantCode ? LineTable.filter((l) => String(l.Plant_Code) === String(PlantCode)) : [];
 
 
 
@@ -820,7 +832,10 @@ const Material = () => {
               label="Plant Code"
               name="PlantCode"
               value={PlantCode}
-              onChange={(e) => setPlantCode(e.target.value)}
+              onChange={(e) => {
+                setPlantCode(e.target.value);
+                setLineID(""); // previous plant's line no longer valid
+              }}
               required
             >
               {PlantTable.map((item, index) => (
@@ -840,7 +855,7 @@ const Material = () => {
 
           <FormControl fullWidth>
             <InputLabel>Line</InputLabel>
-            <Select label="Line" name="LineID" value={LineID} onChange={(e) => setLineID(e.target.value)}>
+            <Select label="Line" name="LineID" value={LineID} onChange={(e) => setLineID(e.target.value)} disabled={!PlantCode}>
               <MenuItem value="">None</MenuItem>
               {lineOptions.map((item) => (
                 <MenuItem key={item.Line_ID} value={item.Line_ID}>{item.Line_Name}</MenuItem>
@@ -971,13 +986,12 @@ const Material = () => {
 
           <FormControl fullWidth>
             <InputLabel>Line</InputLabel>
-            {/* Not filtered by Plant here — the row's PlantCode is the Plant
-                Code (e.g. 1150), not Plant_ID, so it can't be matched against
-                Mst_Line.Plant_ID the way the Add form's PlantCode (Plant_ID)
-                dropdown can. Shows every active Line instead. */}
-            <Select label="Line" name="Line_ID" value={LineID} onChange={(e) => setLineID(e.target.value)}>
+            {/* Filtered by Plant_Code (see editLineOptions above) — Plant
+                itself is read-only in this form, so this always resolves to
+                the row's own plant's lines only. */}
+            <Select label="Line" name="Line_ID" value={LineID} onChange={(e) => setLineID(e.target.value)} disabled={!PlantCode}>
               <MenuItem value="">None</MenuItem>
-              {LineTable.map((item) => (
+              {editLineOptions.map((item) => (
                 <MenuItem key={item.Line_ID} value={item.Line_ID}>{item.Line_Name}</MenuItem>
               ))}
             </Select>
