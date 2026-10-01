@@ -1,114 +1,68 @@
-import React, { useState, useEffect } from "react";
-import { TextField, Button, CircularProgress, Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
+import React, { useState } from "react";
+import { Button, CircularProgress, Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
 import { MdOutlineCancel } from "react-icons/md";
-import {
-  DataGrid,
-  GridToolbarContainer,
-  GridToolbarColumnsButton,
-  GridToolbarFilterButton,
-  GridToolbarExport,
-} from "@mui/x-data-grid";
-import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import { format } from "date-fns";
 import { toast } from "react-toastify";
-import SectionHeading from "../components/Header";
-import { GetSupplierStockListApi, FetchSupplierStockApi } from "../controller/MfgBomApiService";
+import MfgListScreen, { compactButtonSx } from "../components/MfgListScreen";
 import ValidationResponseGrid from "../components/ValidationResponseTable";
+import { GetSupplierStockActiveApi, DownloadSupplierStockApi, FetchSupplierStockApi } from "../controller/MfgBomApiService";
 
 // Error codes that are "nothing to do right now" rather than a real failure —
 // shown as a warning toast, not an error toast.
 const WARNING_CODES = new Set(["NO_FILE_FOUND", "NO_NEW_FILE"]);
 
-const CustomToolbar = () => (
-  <GridToolbarContainer>
-    <GridToolbarColumnsButton />
-    <GridToolbarFilterButton />
-    <GridToolbarExport />
-  </GridToolbarContainer>
-);
+const qtyFmt = (v) => Number(v ?? 0).toLocaleString("en-IN");
+
+const COLUMNS = [
+  { field: "plant", headerName: "Plant", width: 80 },
+  { field: "supplier_code", headerName: "Supplier Code", width: 130 },
+  { field: "supplier_name", headerName: "Supplier Name", flex: 1, minWidth: 180 },
+  { field: "material_code", headerName: "Material Code", width: 150 },
+  { field: "material_desc", headerName: "Material Description", flex: 1, minWidth: 200 },
+  { field: "unrestricted_qty", headerName: "Unrestricted Qty", width: 130, type: "number", align: "right", headerAlign: "right", renderCell: (p) => qtyFmt(p.value) },
+  { field: "stock_date", headerName: "Stock Date", width: 140 },
+  {
+    field: "status",
+    headerName: "Status",
+    width: 90,
+    renderCell: (params) => {
+      const isActive = Boolean(params.value);
+      return (
+        <span
+          style={{
+            padding: "2px 10px", borderRadius: "12px", fontSize: "10.5px", fontWeight: "bold",
+            color: "white", backgroundColor: isActive ? "#2e7d32" : "#d32f2f",
+          }}
+        >
+          {isActive ? "Active" : "Inactive"}
+        </span>
+      );
+    },
+  },
+];
+
+const SEARCH_FIELDS = ["plant", "supplier_code", "supplier_name", "material_code", "material_desc"];
+
+const loadRows = (params) => GetSupplierStockActiveApi(params);
+const downloadExcel = (params) => DownloadSupplierStockApi(params);
+const downloadFileName = ({ plant }) => `Supplier_Stock_${plant}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+const getRowId = (row) => row.row_id;
+
+// Stock is a point-in-time snapshot, so say which one the table is showing.
+const summary = (rows) =>
+  rows.length
+    ? `Showing the latest active Supplier Stock snapshot (dated ${rows[0].stock_date}) · ${rows.length.toLocaleString("en-IN")} rows`
+    : null;
+
+const emptyLabel = ({ searching }) =>
+  searching
+    ? "No records match your search."
+    : "No Supplier Stock data found. Click \"Fetch\" to import the latest MBLB file.";
 
 const SupplierStock = () => {
-  const [searchText, setSearchText] = useState("");
-  const [rows, setRows] = useState([]);
-  const [originalRows, setOriginalRows] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
   const [validationResponse, setValidationResponse] = useState(null);
-
-  const columns = [
-    {
-      field: "supplier_stock_id",
-      headerName: "SI No",
-      width: 70,
-      renderCell: (params) => params.api.getRowIndexRelativeToVisibleRows(params.id) + 1,
-    },
-    { field: "plant", headerName: "Plant", width: 90 },
-    { field: "supplier_code", headerName: "Supplier Code", width: 130 },
-    { field: "supplier_name", headerName: "Supplier Name", flex: 1, minWidth: 160 },
-    { field: "material_code", headerName: "Material Code", width: 150 },
-    { field: "material_desc", headerName: "Material Description", flex: 1, minWidth: 180 },
-    { field: "unrestricted_qty", headerName: "Unrestricted Qty", width: 130, align: "center", headerAlign: "center" },
-    {
-      field: "stock_date",
-      headerName: "Stock Date",
-      width: 150,
-      renderCell: (params) => (params.value ? format(new Date(params.value), "dd-MM-yyyy HH:mm") : ""),
-    },
-    {
-      field: "status",
-      headerName: "Status",
-      width: 100,
-      renderCell: (params) => {
-        const isActive = Boolean(params.value);
-        return (
-          <span
-            style={{
-              padding: "3px 12px",
-              borderRadius: "12px",
-              fontSize: "12px",
-              fontWeight: "bold",
-              color: "white",
-              backgroundColor: isActive ? "#2e7d32" : "#d32f2f",
-            }}
-          >
-            {isActive ? "Active" : "Inactive"}
-          </span>
-        );
-      },
-    },
-  ];
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const response = await GetSupplierStockListApi();
-      setOriginalRows(response || []);
-      setRows(response || []);
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to load Supplier Stock data.");
-      setOriginalRows([]);
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const handleSearch = () => {
-    const text = searchText.trim().toLowerCase();
-    const filteredRows = originalRows.filter((row) =>
-      ["plant", "supplier_code", "supplier_name", "material_code", "material_desc"].some((key) => {
-        const value = row[key];
-        return value?.toString().toLowerCase().includes(text);
-      })
-    );
-    setRows(text ? filteredRows : originalRows);
-  };
+  const [reloadKey, setReloadKey] = useState(0);
 
   const handleFetch = async () => {
     // Guard against duplicate clicks while a fetch is already in flight.
@@ -120,9 +74,9 @@ const SupplierStock = () => {
       const response = await FetchSupplierStockApi({ userId });
       const result = response.data;
       toast.success(
-        `Supplier Stock fetched successfully. New snapshot inserted: ${result.inserted} row(s), previous batch deactivated: ${result.inactivated} row(s).`
+        `Supplier Stock fetched successfully. New snapshot inserted: ${result.inserted} row(s), previous batch deactivated: ${result.inactivated} row(s)${result.purged ? `, old rows deleted: ${result.purged}` : ""}.`
       );
-      await fetchData();
+      setReloadKey((k) => k + 1);
     } catch (error) {
       const data = error?.response?.data;
       const code = data?.code;
@@ -143,86 +97,34 @@ const SupplierStock = () => {
   };
 
   return (
-    <div
-      style={{
-        padding: 20,
-        backgroundColor: "#F5F5F5",
-        marginTop: "50px",
-        display: "flex",
-        flexDirection: "column",
-        height: "calc(100vh - 90px)",
-      }}
-    >
-      {/* Header Section */}
-      <div
-        style={{
-          marginBottom: 20,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <SectionHeading>Supplier Stock</SectionHeading>
-      </div>
-
-      {/* Search and Icons */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 10,
-        }}
-      >
-        <div style={{ display: "flex", gap: "10px" }}>
-          <TextField
-            size="small"
-            variant="outlined"
-            placeholder="Type here..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onKeyUp={handleSearch}
-            sx={{
-              width: "400px",
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": { border: "2px solid grey" },
-                "&:hover fieldset": { border: "2px solid grey" },
-                "&.Mui-focused fieldset": { border: "2px solid grey" },
-              },
-            }}
-          />
-          <Button
-            onClick={handleSearch}
-            style={{
-              borderRadius: "25px",
-              border: "2px solid grey",
-              color: "grey",
-              fontWeight: "bold",
-            }}
-          >
-            <SearchIcon style={{ marginRight: "5px" }} />
-            Search
-          </Button>
-        </div>
-
+    <MfgListScreen
+      title="Supplier Stock"
+      columns={COLUMNS}
+      getRowId={getRowId}
+      searchFields={SEARCH_FIELDS}
+      loadRows={loadRows}
+      downloadExcel={downloadExcel}
+      downloadFileName={downloadFileName}
+      summary={summary}
+      emptyLabel={emptyLabel}
+      showPeriod={false}
+      downloadWithDateRange={false}
+      allowAllPlants
+      reloadKey={reloadKey}
+      extraActions={
         <Button
           variant="contained"
+          disableElevation
           onClick={handleFetch}
           disabled={fetching}
-          startIcon={fetching ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
-          sx={{
-            backgroundColor: "#0066FF",
-            textTransform: "none",
-            fontWeight: "bold",
-            borderRadius: "8px",
-            boxShadow: "none",
-            "&:hover": { backgroundColor: "#0052cc", boxShadow: "none" },
-          }}
+          startIcon={fetching ? <CircularProgress size={14} color="inherit" /> : <RefreshIcon sx={{ fontSize: 15 }} />}
+          sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc" } }}
+          title="Fetch the latest MBLB Supplier Stock file from the FTP source"
         >
           {fetching ? "Fetching..." : "Fetch"}
         </Button>
-      </div>
-
+      }
+    >
       <Dialog
         open={Boolean(validationResponse)}
         onClose={() => setValidationResponse(null)}
@@ -241,49 +143,7 @@ const SupplierStock = () => {
           {validationResponse && <ValidationResponseGrid response={validationResponse} />}
         </DialogContent>
       </Dialog>
-
-      {/* DataGrid */}
-      <div
-        style={{
-          flexGrow: 1,
-          backgroundColor: "#fff",
-          borderRadius: 8,
-          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-          height: "calc(5 * 48px)",
-        }}
-      >
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          pageSize={10}
-          rowsPerPageOptions={[10, 25, 50]}
-          getRowId={(row) => row.supplier_stock_id}
-          disableSelectionOnClick
-          loading={loading}
-          columnHeaderHeight={35}
-          rowHeight={35}
-          slots={{ toolbar: CustomToolbar }}
-          localeText={{ noRowsLabel: "No Supplier Stock data found. Click \"Fetch\" to import the latest MBLB file." }}
-          sx={{
-            "& .MuiDataGrid-columnHeader": {
-              backgroundColor: "#bdbdbd",
-              color: "black",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-columnHeaderTitle": {
-              fontSize: "13px",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-row": {
-              backgroundColor: "#f5f5f5",
-              "&:hover": { backgroundColor: "#f5f5f5" },
-            },
-            "& .MuiDataGrid-row.Mui-selected": { backgroundColor: "inherit" },
-            "& .MuiDataGrid-cell": { color: "#333", fontSize: "12px" },
-          }}
-        />
-      </div>
-    </div>
+    </MfgListScreen>
   );
 };
 

@@ -3,6 +3,9 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import ScheduleIcon from "@mui/icons-material/Schedule";
+import ViewColumnIcon from "@mui/icons-material/ViewColumn";
+import HistoryToggleOffIcon from "@mui/icons-material/HistoryToggleOff";
 import { PiNuclearPlantFill } from "react-icons/pi";
 import { GrCubes } from "react-icons/gr";
 import { MdCalendarMonth, MdOutlineReportGmailerrorred } from "react-icons/md";
@@ -528,6 +531,17 @@ const Sidebar = ({ setSidebarOpen }) => {
               code: "SupplierStock",
             },
             {
+              name: "Subcontract Daily Plan",
+              path: "/home/SubcontractDailyPlan",
+              icon: (
+                <PrecisionManufacturingIcon
+                  style={{ color: "darkseagreen" }}
+                  className="text-[22px]"
+                />
+              ),
+              code: "SubcontractDailyPlan",
+            },
+            {
               name: "MFG Report",
               path: "/home/MatAvailabilityStatus",
               icon: (
@@ -549,8 +563,70 @@ const Sidebar = ({ setSidebarOpen }) => {
               ),
               code: "MfgProductionDailyPlan",
             },
+            {
+              name: "Daily Component Plan",
+              path: "/home/MfgComponentDailyPlan",
+              icon: (
+                <PrecisionManufacturingIcon
+                  style={{ color: "darkseagreen" }}
+                  className="text-[22px]"
+                />
+              ),
+              code: "MfgComponentDailyPlan",
+            },
           ]}
-          codeList={["MFG_BOM", "PlantStock", "SupplierStock", "MatAvailabilityStatus", "MfgProductionDailyPlan"]}
+          codeList={["MFG_BOM", "PlantStock", "SupplierStock", "SubcontractDailyPlan", "MatAvailabilityStatus", "MfgProductionDailyPlan", "MfgComponentDailyPlan"]}
+        />
+        {/* Scheduler Section */}
+        <SidebarSection
+          open={open}
+          isOpen={activeSection === "Scheduler"}
+          toggleSection={() => toggleSection("Scheduler")}
+          icon={
+            <ScheduleIcon
+              style={{ color: "#5b8def" }}
+              className="text-[22px]"
+            />
+          }
+          Permissions={Permissions}
+          currentPath={location.pathname}
+          label="Scheduler"
+          links={[
+            {
+              name: "Scheduler Jobs",
+              path: "/home/SchedulerJobs",
+              icon: (
+                <ScheduleIcon
+                  style={{ color: "#5b8def" }}
+                  className="text-[20px]"
+                />
+              ),
+              code: "SchedulerJobs",
+            },
+            {
+              name: "Column Mapping Studio",
+              path: "/home/SchedulerColumnMapping",
+              icon: (
+                <ViewColumnIcon
+                  style={{ color: "#5b8def" }}
+                  className="text-[20px]"
+                />
+              ),
+              code: "SchedulerColumnMapping",
+            },
+            {
+              name: "Run History",
+              path: "/home/SchedulerRunHistory",
+              icon: (
+                <HistoryToggleOffIcon
+                  style={{ color: "#5b8def" }}
+                  className="text-[20px]"
+                />
+              ),
+              code: "SchedulerRunHistory",
+            },
+          ]}
+          codeList={["SchedulerJobs", "SchedulerColumnMapping", "SchedulerRunHistory"]}
         />
         {/* Approval Section */}
         <SidebarSection

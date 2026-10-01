@@ -9,15 +9,38 @@ import { deepPurple } from '@mui/material/colors';
 import * as ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
 import { getPlantdetails } from '../../controller/CommonApiService'
-import { AddTrnActualProdPlan_BULK, fetchProdDataMB51, getTrnActualProdPlan } from '../../controller/PMPDApiService'
+import { AddTrnActualProdPlan_BULK, downloadTrnActualProdPlanExcel, fetchProdDataMB51, getTrnActualProdPlan } from '../../controller/PMPDApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
-import { endOfDay, format, isValid, startOfDay } from 'date-fns'
+import { format, isValid } from 'date-fns'
 import { useFormik } from 'formik'
 import * as yup from 'yup'
 import { getPMPDAccess } from '../../Authentication/ActionAccessType'
 import { AuthContext } from '../../Authentication/AuthContext'
 import ValidationResponseGrid from '../../components/ValidationResponseTable'
-import { finYearsList } from '../../common/data'
+import DateRangeDownloadDialog from '../../components/DateRangeDownloadDialog'
+
+// Month/Year filter helpers - the month converts to the Start/End date range
+// the backend expects (plain 'YYYY-MM-DD' strings, no timezone involved).
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+]
+const padNum = (n) => String(n).padStart(2, '0')
+const monthStartStr = (year, month) => `${year}-${padNum(month)}-01`
+const monthEndStr = (year, month) => `${year}-${padNum(month)}-${padNum(new Date(year, month, 0).getDate())}`
+
+// A blob-typed request returns its error body as a Blob too - read the
+// backend's { message } out of it.
+const downloadErrorMessage = async (error) => {
+  const data = error?.response?.data
+  if (data instanceof Blob) {
+    try {
+      const parsed = JSON.parse(await data.text())
+      if (parsed?.message) return parsed.message
+    } catch (_) { /* not JSON */ }
+  }
+  return data?.message || error?.message || 'Failed to download the Excel file.'
+}
 
 // Compact filter-field/button styling — same design tokens as the MFG Daily
 // Production Plan screen's own filter toolbar, copied verbatim so both
@@ -134,42 +157,64 @@ const PMPD_ActualProductionPlan = () => {
 
   const validationschema = yup.object({
     plant: yup.string().required('Required'),
-    fin_year: yup.string().required('Required'),
+    month: yup.number().required('Required'),
+    year: yup.number().required('Required'),
   })
 
   const formik = useFormik({
     initialValues: {
       plant: currentUserPlantCode,
-      fin_year: "",
+      month: new Date().getMonth() + 1,
+      year: new Date().getFullYear(),
       type: "SUBMIT"
     },
     validationSchema: validationschema,
     enableReinitialize: true,
     onSubmit: async (values) => {
-      console.log(values)
-      const fin_Year = values.fin_year
-      const plant = values.plant
-      const startYear = Number(fin_Year.split("-")[0]); // 2025
-      const endYear = startYear + 1;                   // 2026
+      await loadMonthData(values)
+    }
+  })
 
-      const startDate = startOfDay(new Date(startYear, 3, 1));  // 01-Apr-2025
-      const endDate = endOfDay(new Date(endYear, 2, 31));    // 31-Mar-2026
-      console.log(startDate, endDate)
-
-
-      if (loading) return
-
-      setLoading(true)
+  // Loads the selected Month/Year (first to last day) for the selected plant.
+  async function loadMonthData(values) {
+    if (loading) return
+    setLoading(true)
+    try {
       const response = await getTrnActualProdPlan({
-        startDate, endDate, plant
+        plant: values.plant,
+        startDate: monthStartStr(values.year, values.month),
+        endDate: monthEndStr(values.year, values.month),
       })
       setOriginalRows(response || [])
       setRows(response || [])
-
-
-      setLoading(false)
+    } catch (error) {
+      console.error('Load Production Actual error:', error)
+      setOriginalRows([])
+      setRows([])
+      alert(error.response?.data?.message || error.message || 'Failed to load Production Actual data.')
     }
-  })
+    setLoading(false)
+  }
+
+  // Current month loads by default for the user's own plant; re-loads after a
+  // manual Fetch or an Excel upload (both toggle refreshData).
+  useEffect(() => {
+    if (formik.values.plant) loadMonthData(formik.values)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshData])
+
+  const [downloadOpen, setDownloadOpen] = useState(false)
+
+  const handleDownloadExcel = async (startDate, endDate) => {
+    try {
+      const blob = await downloadTrnActualProdPlanExcel({ plant: formik.values.plant, startDate, endDate })
+      saveAs(blob, `Production_Actual_${formik.values.plant}_${startDate}_to_${endDate}.xlsx`)
+    } catch (error) {
+      console.error('Download Production Actual error:', error)
+      alert(await downloadErrorMessage(error))
+      throw error // keep the popup open so the range can be adjusted
+    }
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -293,20 +338,35 @@ const PMPD_ActualProductionPlan = () => {
           </TextField>
 
           <TextField
-            id="fin_year"
+            id="month"
             select
             size="small"
-            label="Financial Year"
-            name="fin_year"
-            value={formik.values.fin_year}
+            label="Month"
+            name="month"
+            value={formik.values.month}
             onChange={formik.handleChange}
-            sx={compactFieldSx(160)}
-            error={formik.touched.fin_year && Boolean(formik.errors.fin_year)}
-            helperText={formik.touched.fin_year && formik.errors.fin_year}
+            sx={compactFieldSx(130)}
           >
-            {finYearsList.map((fy) => (
-              <MenuItem key={fy} value={fy} sx={{ fontSize: 11.5 }}>
-                {fy}
+            {MONTH_NAMES.map((name, idx) => (
+              <MenuItem key={name} value={idx + 1} sx={{ fontSize: 11.5 }}>
+                {name}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            id="year"
+            select
+            size="small"
+            label="Year"
+            name="year"
+            value={formik.values.year}
+            onChange={formik.handleChange}
+            sx={compactFieldSx(100)}
+          >
+            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+              <MenuItem key={y} value={y} sx={{ fontSize: 11.5 }}>
+                {y}
               </MenuItem>
             ))}
           </TextField>
@@ -355,6 +415,17 @@ const PMPD_ActualProductionPlan = () => {
               Search
             </Button>
           </div>
+          <Button
+            variant="contained"
+            disableElevation
+            onClick={() => setDownloadOpen(true)}
+            disabled={!formik.values.plant}
+            startIcon={<FaDownload size={12} />}
+            sx={{ ...compactButtonSx, backgroundColor: "#1B7A43", "&:hover": { backgroundColor: "#166238" } }}
+            title="Download records for a date range as Excel"
+          >
+            Excel Download
+          </Button>
           <div style={{ display: PMPDAccess.disableAction ? "none" : "flex", gap: 8, alignItems: "center" }}>
             <Button
               variant="contained"
@@ -446,6 +517,14 @@ const PMPD_ActualProductionPlan = () => {
       </div>
 
 
+      <DateRangeDownloadDialog
+        open={downloadOpen}
+        onClose={() => setDownloadOpen(false)}
+        onDownload={handleDownloadExcel}
+        defaultStart={monthStartStr(formik.values.year, formik.values.month)}
+        defaultEnd={monthEndStr(formik.values.year, formik.values.month)}
+        title="Download Production Actual"
+      />
     </div>
   )
 }

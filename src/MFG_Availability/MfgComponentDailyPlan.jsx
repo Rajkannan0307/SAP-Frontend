@@ -1,10 +1,13 @@
 import React, { useContext, useEffect, useMemo, useState, useCallback } from "react";
 import {
   TextField, Button, CircularProgress, Typography, Autocomplete, MenuItem, Select, Tooltip,
-  Chip, Table, TableHead, TableBody, TableRow, TableCell,
+  Chip, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, Box, Collapse, IconButton,
 } from "@mui/material";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
+import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarFilterButton, GridToolbarExport } from "@mui/x-data-grid";
 import SaveIcon from "@mui/icons-material/Save";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
@@ -21,20 +24,13 @@ import { getMfgPlanEditAccess } from "../Authentication/ActionAccessType";
 import { getPlantdetails } from "../controller/CommonApiService";
 import { getdetails as getModules } from "../controller/ModuleMasterapiservice";
 import { getdetails as getLines } from "../controller/LineMasterapiservice";
+import { getdetails as getOperations } from "../controller/OperationMasterapiservice";
 import {
-  GetMfgProductionDailyPlanGridApi,
-  SaveMfgProductionDailyPlanApi,
-  GetMfgProductionDailyPlanHistorySummaryApi,
-  GetMfgProductionDailyPlanDayDetailApi,
-} from "../controller/MfgProductionDailyPlanApiService";
-
-const CustomToolbar = () => (
-  <GridToolbarContainer>
-    <GridToolbarColumnsButton />
-    <GridToolbarFilterButton />
-    <GridToolbarExport />
-  </GridToolbarContainer>
-);
+  GetMfgComponentDailyPlanGridApi,
+  SaveMfgComponentDailyPlanApi,
+  GetMfgComponentDailyPlanHistorySummaryApi,
+  GetMfgComponentDailyPlanDayDetailApi,
+} from "../controller/MfgComponentDailyPlanApiService";
 
 const todayStr = () => {
   const now = new Date();
@@ -127,12 +123,12 @@ const compactButtonSx = {
   whiteSpace: "nowrap",
 };
 
-const cellKey = (fgPart, periodKey) => `${fgPart}|${periodKey}`;
+const cellKey = (childPart, periodKey) => `${childPart}|${periodKey}`;
 // DAY cells are shift-wise — a distinct key shape from the plain WEEK
 // cellKey above, so the two never collide. The shift lane list itself is
 // never hardcoded here — it always comes from the grid API's own `shifts`
 // array (that plant's active Mst_Shift rows).
-const cellKeyShift = (fgPart, periodKey, shiftName) => `${fgPart}|${periodKey}|${shiftName}`;
+const cellKeyShift = (childPart, periodKey, shiftName) => `${childPart}|${periodKey}|${shiftName}`;
 
 // Plan-vs-Actual coloring for the Plan Entry grid — border-ONLY signal, on
 // plain white backgrounds: green border when Actual has hit at least 90% of
@@ -183,10 +179,10 @@ const getStockCoverageColorKey = (coveragePct, planQty) => {
   return "red";
 };
 
-// Sequential stock consumption across one FG row's entire week of DAY cells,
+// Sequential stock consumption across one Child Part row's entire week of DAY cells,
 // processed in chronological plan_date order and then in the plant's own
 // configured shift order (never hardcoded names/count) — a single Plant
-// Stock pool (the row's "Set of Parts" bottleneck figure from the backend)
+// Stock pool (the row's own plant-stock figure from the backend)
 // is progressively drawn down shift by shift, day by day, exactly per the
 // spec's sequential-consumption rule (never compared independently against
 // the original total). WEEK buckets (W-39/W-40) are untouched — this is a
@@ -268,18 +264,13 @@ const STATUS_CHIP_SX = {
   "No Plan": { backgroundColor: "#f6f7f9", color: "#5b6472" },
 };
 
-// The Plan Entry grid's day-detail popover — replaces the old lightweight
-// hover summary AND the separate click-to-open Dialog with a single hover
-// popover carrying the full content (Plan/Actual/Balance + per-shift Set of
-// Parts tables). Data is fetched once per day cell, on first hover-open
-// only (cached afterwards for that cell). Every number here comes from
-// calculations that already exist elsewhere: the FG-level sequential stock
-// consumption uses the exact same computeStockCoverage() the grid's own
-// border-highlight already runs (called again here with the same inputs,
-// not a second mechanism), and the per-child-part rows reuse that same
-// function fed each child's own stock figure from the /getDayDetail
-// endpoint (itself just the existing Set of Parts BOM+stock query, scoped
-// to one FG). Nothing is computed twice by two different methods.
+// The Plan Entry grid's day-detail popover — a single hover popover with the
+// day's Plan/Actual/Balance summary plus a display-only Operation Wise
+// Quantity table (Part No | Description | Stock | OPT30 | OPT20 | OPT10, not
+// split by shift, stock shown under the component's BOM operation). Data is fetched once per day cell, on first hover-open
+// only (cached afterwards for that cell). The summary numbers come from the
+// same computeStockCoverage() the grid's own border-highlight already runs;
+// /getDayDetail only supplies which BOM operations the component belongs to.
 const DayInfoPopover = ({ plant, row, period, dayPeriods, shifts, rowValues, stockCoverage }) => {
   const [openState, setOpenState] = useState(false);
   const [detail, setDetail] = useState(null);
@@ -289,7 +280,7 @@ const DayInfoPopover = ({ plant, row, period, dayPeriods, shifts, rowValues, sto
     setOpenState(true);
     if (!detail && !loading) {
       setLoading(true);
-      GetMfgProductionDailyPlanDayDetailApi({ plant, fg_part: row.fg_part, date: period.plan_date })
+      GetMfgComponentDailyPlanDayDetailApi({ plant, child_part: row.child_part, date: period.plan_date })
         .then(setDetail)
         .catch((error) => {
           console.error(error);
@@ -318,32 +309,16 @@ const DayInfoPopover = ({ plant, row, period, dayPeriods, shifts, rowValues, sto
   const lastCoverage = shiftTotals[shiftTotals.length - 1]?.coverage;
   const balanceToday = lastCoverage ? lastCoverage.after : (row.stock_available || 0);
 
-  // Set of Parts table, ONE combined table pivoted Part x Shift — for each
-  // child part, the SAME computeStockCoverage(), fed that one child's own
-  // stock figure, read at every shift's slot in the same day/shift
-  // sequence, so each row shows its opening Stock plus a Plan/Balance pair
-  // per shift instead of three separate per-shift tables.
-  const pivotedChildRows = (detail?.children || []).map((child) => {
-    const childCoverage = computeStockCoverage(dayPeriods, shifts, rowValues, child.available_qty);
-    const perShift = shifts.map((s) => {
-      const c = childCoverage.get(`${period.key}|${s.shift_name}`);
-      return {
-        shift_name: s.shift_name,
-        plan: c?.planQty || 0,
-        balance: c?.after ?? child.available_qty,
-      };
-    });
-    return { ...child, perShift };
-  });
-
-  // Wide enough to fit every shift's Plan/Balance columns with no
-  // horizontal scroll — grows with however many shifts this plant has.
-  const setOfPartsTableWidth = 260 + shifts.length * 120;
-  const popoverWidth = Math.max(460, setOfPartsTableWidth + 40);
+  // OPT table — display only, NOT shift-wise: the parts at each BOM operation
+  // (OPT10, OPT20, OPT30) of this component's own BOM route (its own and
+  // earlier operations, from detail.opt_parts in /getDayDetail), each with its
+  // own plant stock.
+  const optParts = detail?.opt_parts || [];
+  const popoverWidth = 460;
 
   const popoverContent = (
     <div style={{ width: popoverWidth, maxHeight: 460, display: "flex", flexDirection: "column" }}>
-      {/* Header — FG part no. + description only, no date row. */}
+      {/* Header — Child Part no. + description only, no date row. */}
       <div
         style={{
           padding: "10px 12px", borderBottom: "1px solid #eef0f3",
@@ -351,8 +326,8 @@ const DayInfoPopover = ({ plant, row, period, dayPeriods, shifts, rowValues, sto
         }}
       >
         <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1a2233" }}>{row.fg_part_no}</span>
-          <span style={{ fontSize: 11, color: "#6b7280" }}>{row.fg_part_desc}</span>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1a2233" }}>{row.child_part_no}</span>
+          <span style={{ fontSize: 11, color: "#6b7280" }}>{row.child_part_desc}</span>
         </div>
       </div>
 
@@ -382,54 +357,40 @@ const DayInfoPopover = ({ plant, row, period, dayPeriods, shifts, rowValues, sto
           </div>
         )}
 
-        <SectionHeader icon={<Inventory2OutlinedIcon sx={{ fontSize: 15, color: "#6b7280" }} />} title="Set of Parts" />
+        <SectionHeader icon={<Inventory2OutlinedIcon sx={{ fontSize: 15, color: "#6b7280" }} />} title="Operation Wise Quantity" />
         {loading ? (
           <div style={{ padding: 12, textAlign: "center" }}><CircularProgress size={16} /></div>
-        ) : (pivotedChildRows.length ? (
-          <div style={{ maxHeight: 220, overflowY: "auto", overflowX: "hidden", border: "1px solid #eef0f3", borderRadius: 8 }}>
-            <Table size="small" stickyHeader sx={{ minWidth: setOfPartsTableWidth }}>
+        ) : (
+          <div style={{ border: "1px solid #eef0f3", borderRadius: 8, overflow: "hidden" }}>
+            <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell rowSpan={2} sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px", verticalAlign: "bottom", backgroundColor: "#d0dcf5", color: "#000" }}>Part No</TableCell>
-                  <TableCell rowSpan={2} sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px", verticalAlign: "bottom", backgroundColor: "#d0dcf5", color: "#000" }}>Description</TableCell>
-                  <TableCell rowSpan={2} align="right" sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px", verticalAlign: "bottom", backgroundColor: "#d0dcf5", color: "#000" }}>Stock</TableCell>
-                  {shifts.map((s) => (
-                    <TableCell key={s.shift_name} colSpan={2} align="center" sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px", borderLeft: "1px solid #c3d0ef", backgroundColor: "#d0dcf5", color: "#000" }}>
-                      {s.shift_name}
-                    </TableCell>
-                  ))}
-                </TableRow>
-                <TableRow>
-                  {shifts.map((s) => (
-                    <React.Fragment key={s.shift_name}>
-                      <TableCell align="right" sx={{ fontSize: 10, fontWeight: 700, padding: "4px 6px", color: "#000", borderLeft: "1px solid #c3d0ef", backgroundColor: "#d0dcf5" }}>Plan</TableCell>
-                      <TableCell align="right" sx={{ fontSize: 10, fontWeight: 700, padding: "4px 6px", color: "#000", backgroundColor: "#d0dcf5" }}>Balance</TableCell>
-                    </React.Fragment>
-                  ))}
+                  <TableCell sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px", backgroundColor: "#d0dcf5", color: "#000" }}>Opt</TableCell>
+                  <TableCell sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px", backgroundColor: "#d0dcf5", color: "#000" }}>Part No</TableCell>
+                  <TableCell sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px", backgroundColor: "#d0dcf5", color: "#000" }}>Description</TableCell>
+                  <TableCell align="right" sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px", backgroundColor: "#d0dcf5", color: "#000" }}>Stock</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {pivotedChildRows.map((c) => (
-                  <TableRow key={c.child_part_no} hover>
-                    <TableCell sx={{ fontSize: 10.5, fontWeight: 700, color: "#0052cc", padding: "4px 6px" }}>
-                      {c.child_part_no}
-                    </TableCell>
-                    <TableCell sx={{ fontSize: 10.5, padding: "4px 6px", color: "#6b7280" }}>{c.child_desc}</TableCell>
-                    <TableCell align="right" sx={{ fontSize: 10.5, padding: "4px 6px" }}>{numberFmt(c.available_qty)}</TableCell>
-                    {c.perShift.map((s) => (
-                      <React.Fragment key={s.shift_name}>
-                        <TableCell align="right" sx={{ fontSize: 10.5, padding: "4px 6px", borderLeft: "1px solid #eef0f3" }}>{numberFmt(s.plan)}</TableCell>
-                        <TableCell align="right" sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px" }}>{numberFmt(s.balance)}</TableCell>
-                      </React.Fragment>
-                    ))}
+                {optParts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} sx={{ fontSize: 10.5, padding: "8px 6px", color: "#8a93a3", textAlign: "center" }}>No OPT10 / OPT20 / OPT30 parts in the BOM route of this component.</TableCell>
                   </TableRow>
-                ))}
+                ) : optParts.map((p, i) => {
+                  const first = i === 0 || optParts[i - 1].opt_no !== p.opt_no;
+                  return (
+                    <TableRow key={`${p.opt_no}-${p.part_no}`} hover sx={first && i > 0 ? { "& td": { borderTop: "2px solid #dfe5f2" } } : undefined}>
+                      <TableCell sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px", color: "#3730a3", whiteSpace: "nowrap" }}>{first ? `OPT${p.opt_no}` : ""}</TableCell>
+                      <TableCell sx={{ fontSize: 10.5, fontWeight: 700, color: "#0052cc", padding: "4px 6px" }}>{p.part_no}</TableCell>
+                      <TableCell sx={{ fontSize: 10.5, padding: "4px 6px", color: "#6b7280" }}>{p.description}</TableCell>
+                      <TableCell align="right" sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px" }}>{numberFmt(p.stock)}</TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
-        ) : (
-          <div style={{ fontSize: 11, color: "#8a93a3", padding: "4px 2px" }}>No Set of Parts BOM configured for this FG.</div>
-        ))}
+        )}
       </div>
     </div>
   );
@@ -487,9 +448,9 @@ const DayInfoPopover = ({ plant, row, period, dayPeriods, shifts, rowValues, sto
   );
 };
 
-// One FG row of the Plan Entry grid, memoized: React.memo does a shallow
+// One Child Part row of the Plan Entry grid, memoized: React.memo does a shallow
 // prop comparison, and `rowValues` only gets a new object reference when
-// THIS row's own values change (see the nested-by-fg_part `values` state in
+// THIS row's own values change (see the nested-by-child_part `values` state in
 // PlanEntryBody) — every other row's props are unchanged reference-wise, so
 // typing in one cell no longer re-renders the whole (often 50-100 row)
 // table on every keystroke, which was the cause of the multi-second input
@@ -518,7 +479,7 @@ const PlanRow = React.memo(function PlanRow({
         {idx + 1}
       </td>
       <td
-        title={`${row.fg_part_no} — ${row.fg_part_desc}`}
+        title={`${row.child_part_no} — ${row.child_part_desc}`}
         style={{
           padding: "5px 8px",
           borderBottom: "1px solid #eef0f3",
@@ -526,8 +487,8 @@ const PlanRow = React.memo(function PlanRow({
           overflow: "hidden",
         }}
       >
-        <div style={{ color: "#0052cc", fontWeight: 700, fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.fg_part_no}</div>
-        <div style={{ color: "#6b7280", fontSize: 10, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.fg_part_desc}</div>
+        <div style={{ color: "#0052cc", fontWeight: 700, fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.child_part_no}</div>
+        <div style={{ color: "#6b7280", fontSize: 10, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.child_part_desc}</div>
       </td>
       {periods.map((p) => {
         const editable = isPeriodEditable(p, today, currentWeekStart);
@@ -596,7 +557,7 @@ const PlanRow = React.memo(function PlanRow({
                         value={value ?? ""}
                         disabled={inputDisabled}
                         onChange={(e) =>
-                          onShiftCellChange(row.fg_part, p.key, shiftName, capDigits(e.target.value, 4))
+                          onShiftCellChange(row.child_part, p.key, shiftName, capDigits(e.target.value, 4))
                         }
                         onFocus={(e) => e.target.select()}
                         placeholder="0"
@@ -677,7 +638,7 @@ const PlanRow = React.memo(function PlanRow({
               inputMode="numeric"
               value={value ?? ""}
               disabled={inputDisabled}
-              onChange={(e) => onCellChange(row.fg_part, p.key, capDigits(e.target.value, digitCap))}
+              onChange={(e) => onCellChange(row.child_part, p.key, capDigits(e.target.value, digitCap))}
               onFocus={(e) => e.target.select()}
               placeholder="Plan"
               title={inputDisabled ? lockedTitle : undefined}
@@ -744,7 +705,7 @@ const PlanRow = React.memo(function PlanRow({
 /* ============================================================
    Tab 2: Plan Entry — compact production-planning grid. Plant is fixed to
    the logged-in user's own plant (no picker). No date picker either —
-   entry is always for the CURRENT ISO week: one row per FG, one column per
+   entry is always for the CURRENT ISO week: one row per Child Part, one column per
    period (W-<n> week bucket, each of that week's 7 days, next W-<n+1> week
    bucket), each column showing a small Plan(editable)/Actual(read-only)
    split, colored green/red at the 90% Actual-vs-Plan threshold.
@@ -766,13 +727,13 @@ const PlanEntryBody = ({ searchText = "" }) => {
   // the day-column sub-header and the number of Plan/Actual lanes per day.
   const [shifts, setShifts] = useState([]);
   const [rows, setRows] = useState([]);
-  // Nested by fg_part: values[fgPart] = { [periodKey]: value } for WEEK
+  // Nested by child_part: values[childPart] = { [periodKey]: value } for WEEK
   // cells, { [`${periodKey}|${shiftName}`]: value } for DAY cells. Nesting
   // (rather than one flat map) means editing one row only replaces THAT
   // row's own sub-object — every other row's reference is untouched, which
   // is what lets the memoized PlanRow below skip re-rendering on keystroke.
   const [values, setValues] = useState({});
-  const [dirtyKeys, setDirtyKeys] = useState(new Set()); // flat "fgPart|periodKey[|shiftName]" strings
+  const [dirtyKeys, setDirtyKeys] = useState(new Set()); // flat "childPart|periodKey[|shiftName]" strings
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -827,7 +788,7 @@ const PlanEntryBody = ({ searchText = "" }) => {
     if (loading) return;
     setLoading(true);
     try {
-      const data = await GetMfgProductionDailyPlanGridApi({
+      const data = await GetMfgComponentDailyPlanGridApi({
         plant,
         date: today,
         moduleId: moduleId || undefined,
@@ -840,25 +801,25 @@ const PlanEntryBody = ({ searchText = "" }) => {
 
       const initialValues = {};
       (data?.rows || []).forEach((row) => {
-        const fgValues = {};
+        const childValues = {};
         (data?.periods || []).forEach((period) => {
           const cell = row.cells[period.key];
           if (period.period_type === "DAY") {
             shiftList.forEach(({ shift_name: shiftName }) => {
-              fgValues[`${period.key}|${shiftName}`] = cell?.plan_shift?.[shiftName] ?? "";
+              childValues[`${period.key}|${shiftName}`] = cell?.plan_shift?.[shiftName] ?? "";
             });
           } else {
-            fgValues[period.key] = cell?.user_input_qty ?? "";
+            childValues[period.key] = cell?.user_input_qty ?? "";
           }
         });
-        initialValues[row.fg_part] = fgValues;
+        initialValues[row.child_part] = childValues;
       });
       setValues(initialValues);
       setDirtyKeys(new Set());
       setLoaded(true);
     } catch (error) {
       console.error(error);
-      toast.error(error?.response?.data?.message || "Failed to load Daily Production Plan.");
+      toast.error(error?.response?.data?.message || "Failed to load Daily Component Plan.");
       setPeriods([]);
       setShifts([]);
       setRows([]);
@@ -890,25 +851,25 @@ const PlanEntryBody = ({ searchText = "" }) => {
   // Wrapped in useCallback (stable across keystrokes, since `periods`/`rows`
   // only change on fetchGrid) so the memoized PlanRow below doesn't lose its
   // memoization just because the parent re-rendered.
-  const handleCellChange = useCallback((fgPart, periodKey, value) => {
+  const handleCellChange = useCallback((childPart, periodKey, value) => {
     setValues((prev) => {
-      const prevFg = prev[fgPart] || {};
-      const mergedFg = { ...prevFg, [periodKey]: value };
+      const prevChild = prev[childPart] || {};
+      const mergedChild = { ...prevChild, [periodKey]: value };
 
       const period = periods.find((p) => p.key === periodKey);
-      if (!period) return { ...prev, [fgPart]: mergedFg };
+      if (!period) return { ...prev, [childPart]: mergedChild };
       const section = periods.filter((p) => p.period_type === period.period_type);
       const idxInSection = section.findIndex((p) => p.key === periodKey);
       if (idxInSection === -1 || idxInSection === section.length - 1) {
-        return { ...prev, [fgPart]: mergedFg };
+        return { ...prev, [childPart]: mergedChild };
       }
 
-      const row = rows.find((r) => r.fg_part === fgPart);
-      if (!row) return { ...prev, [fgPart]: mergedFg };
+      const row = rows.find((r) => r.child_part === childPart);
+      if (!row) return { ...prev, [childPart]: mergedChild };
 
       let balance = Number(row.cells[section[0].key]?.actual_qty) || 0;
       for (let i = 0; i <= idxInSection; i++) {
-        const raw = mergedFg[section[i].key];
+        const raw = mergedChild[section[i].key];
         const num = raw === "" || raw === null || raw === undefined ? 0 : Number(raw);
         balance -= Number.isNaN(num) ? 0 : num;
       }
@@ -916,19 +877,19 @@ const PlanEntryBody = ({ searchText = "" }) => {
 
       section.slice(idxInSection + 1).forEach((p) => {
         const digitCap = p.period_type === "WEEK" ? 5 : 4;
-        mergedFg[p.key] = capDigits(String(balance), digitCap);
+        mergedChild[p.key] = capDigits(String(balance), digitCap);
       });
-      return { ...prev, [fgPart]: mergedFg };
+      return { ...prev, [childPart]: mergedChild };
     });
 
     setDirtyKeys((prev) => {
-      const next = new Set(prev).add(cellKey(fgPart, periodKey));
+      const next = new Set(prev).add(cellKey(childPart, periodKey));
       const period = periods.find((p) => p.key === periodKey);
       if (period) {
         const section = periods.filter((p) => p.period_type === period.period_type);
         const idxInSection = section.findIndex((p) => p.key === periodKey);
         if (idxInSection !== -1) {
-          section.slice(idxInSection + 1).forEach((p) => next.add(cellKey(fgPart, p.key)));
+          section.slice(idxInSection + 1).forEach((p) => next.add(cellKey(childPart, p.key)));
         }
       }
       return next;
@@ -941,13 +902,13 @@ const PlanEntryBody = ({ searchText = "" }) => {
   // section's running-balance behavior, there is no single "day total" to
   // divide between shifts, so nothing here ever writes to another cell.
   // No external deps — stable identity for the entire component lifetime.
-  const handleShiftCellChange = useCallback((fgPart, periodKey, shiftName, value) => {
+  const handleShiftCellChange = useCallback((childPart, periodKey, shiftName, value) => {
     const subKey = `${periodKey}|${shiftName}`;
     setValues((prev) => ({
       ...prev,
-      [fgPart]: { ...(prev[fgPart] || {}), [subKey]: value },
+      [childPart]: { ...(prev[childPart] || {}), [subKey]: value },
     }));
-    setDirtyKeys((prev) => new Set(prev).add(cellKeyShift(fgPart, periodKey, shiftName)));
+    setDirtyKeys((prev) => new Set(prev).add(cellKeyShift(childPart, periodKey, shiftName)));
   }, []);
 
   const handleSubmit = async () => {
@@ -968,14 +929,14 @@ const PlanEntryBody = ({ searchText = "" }) => {
       const cells = [];
       dirtyKeys.forEach((key) => {
         const parts = key.split("|");
-        const [fgPartStr, periodKey, shiftName] = parts;
+        const [childPartStr, periodKey, shiftName] = parts;
         const period = periodMap.get(periodKey);
         if (!period) return;
         const subKey = shiftName ? `${periodKey}|${shiftName}` : periodKey;
-        const raw = values[fgPartStr]?.[subKey];
+        const raw = values[childPartStr]?.[subKey];
         if (raw === "" || raw === null || raw === undefined) return; // skip cleared/empty cells
         cells.push({
-          fg_part: Number(fgPartStr),
+          child_part: Number(childPartStr),
           period_type: period.period_type,
           plan_date: period.plan_date,
           week_number: period.week_number,
@@ -992,13 +953,13 @@ const PlanEntryBody = ({ searchText = "" }) => {
       }
 
       // Module/Line are not saved on the plan row — they're derived from
-      // fg_part (Mst_Material.Line_ID -> Mst_Line.Module_ID) wherever needed.
-      await SaveMfgProductionDailyPlanApi({ plant, userId, cells });
-      toast.success("Daily Production Plan saved successfully.");
+      // child_part (Mst_Material.Line_ID -> Mst_Line.Module_ID) wherever needed.
+      await SaveMfgComponentDailyPlanApi({ plant, userId, cells });
+      toast.success("Daily Component Plan saved successfully.");
       await fetchGrid();
     } catch (error) {
       console.error(error);
-      toast.error(error?.response?.data?.message || "Failed to save Daily Production Plan.");
+      toast.error(error?.response?.data?.message || "Failed to save Daily Component Plan.");
     } finally {
       setSaving(false);
     }
@@ -1010,7 +971,7 @@ const PlanEntryBody = ({ searchText = "" }) => {
     const q = searchText.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter(
-      (r) => r.fg_part_no?.toLowerCase().includes(q) || r.fg_part_desc?.toLowerCase().includes(q)
+      (r) => r.child_part_no?.toLowerCase().includes(q) || r.child_part_desc?.toLowerCase().includes(q)
     );
   }, [rows, searchText]);
 
@@ -1248,25 +1209,25 @@ const PlanEntryBody = ({ searchText = "" }) => {
             {!loading && loaded && rows.length === 0 && (
               <tr>
                 <td colSpan={periods.length + 2} style={{ textAlign: "center", padding: 28, color: "#8a93a3" }}>
-                  No FG parts found for this Plant / filter selection.
+                  No Child Parts found for this Plant / filter selection.
                 </td>
               </tr>
             )}
             {!loading && loaded && rows.length > 0 && filteredRows.length === 0 && (
               <tr>
                 <td colSpan={periods.length + 2} style={{ textAlign: "center", padding: 28, color: "#8a93a3" }}>
-                  No FG parts match "{searchText}".
+                  No Child Parts match "{searchText}".
                 </td>
               </tr>
             )}
             {filteredRows.map((row, idx) => (
               <PlanRow
-                key={row.fg_part}
+                key={row.child_part}
                 row={row}
                 idx={idx}
                 periods={periods}
                 shifts={shifts}
-                rowValues={values[row.fg_part] || EMPTY_ROW_VALUES}
+                rowValues={values[row.child_part] || EMPTY_ROW_VALUES}
                 today={today}
                 currentWeekStart={currentWeekStart}
                 onCellChange={handleCellChange}
@@ -1283,7 +1244,236 @@ const PlanEntryBody = ({ searchText = "" }) => {
 };
 
 /* ============================================================
-   Tab 1: Plan History — one row per FG part with Month/Current-Week/
+   Prod Status table — display-only, grouped by Part Name (Mst_Product.Name
+   via the BOM). Groups are built from whatever the API returns, never
+   hardcoded. One sticky two-level header for the whole table; each Part
+   Name is a collapsible band (MUI Collapse) whose rows sit in a nested
+   fixed-layout table sharing the exact same column widths, so numbers stay
+   aligned with the header. Collapsed groups unmount their rows, which keeps
+   large datasets light.
+   ============================================================ */
+const GROUP_ACCENTS = [
+  { bar: "#4f6bed", tint: "#f4f6fe" },
+  { bar: "#0f9d8a", tint: "#f2f9f8" },
+  { bar: "#c27c0e", tint: "#fbf8f1" },
+  { bar: "#8a5bd6", tint: "#f8f5fc" },
+  { bar: "#5b6b82", tint: "#f5f7f9" },
+];
+const GAP_POS = "#1b7a43";
+const GAP_NEG = "#b42323";
+const GAP_ZERO = "#8a93a3";
+const gapColor = (v) => (v > 0 ? GAP_POS : v < 0 ? GAP_NEG : GAP_ZERO);
+
+const STATUS_HEAD_BG = "#d0dcf5";
+const STATUS_HEAD_LINE = "#b9c8ea";
+const NUM_FONT = { fontVariantNumeric: "tabular-nums" };
+
+// Column widths (%) — shared by the main header table and every nested group
+// table so all of them line up. 6 + 7 + 19 + 13 * (68 / 13) = 100.
+const STATUS_COL_PCT = { line: 6, part: 7, child: 19, num: 68 / 13 };
+
+const STATUS_NUM_COLS = [
+  { label: "MTD Plan", tip: "Month-to-Date Plan — total planned quantity from the 1st of the month", key: "month_plan", kind: "plan" },
+  { label: "MTD Actual", tip: "Month-to-Date Actual — total actual production from the 1st of the month", key: "mtd_actual", kind: "actual" },
+  { label: "MTD Gap", tip: "Month-to-Date Gap — Actual minus Plan (positive = ahead, negative = behind)", key: "month_gap", kind: "gap" },
+  { label: "YD Plan", tip: "Yesterday's Plan", key: "yd_plan", kind: "plan" },
+  { label: "YD Actual", tip: "Yesterday's Actual production", key: "yd_actual", kind: "actual" },
+  { label: "YD Gap", tip: "Yesterday's Gap — Actual minus Plan", key: "yd_gap", kind: "gap" },
+  { label: "TP", tip: "TP — Today Plan: today's planned quantity (all shifts)", key: "day_plan", kind: "plan" },
+  { label: "TA", tip: "TA — Today Actual: today's actual production (all shifts)", key: "day_actual", kind: "actual" },
+  { label: "TG", tip: "TG — Today Gap: Today Actual minus Today Plan (positive = ahead, negative = behind)", key: "day_gap", kind: "gap" },
+  // 541 = movement type 541 (material issued to subcontractor) from the
+  // Subcontract Daily Plan, matched on Plant + this Child Part's material code.
+  { label: "MTD Actual", tip: "541 MTD Actual — month-to-date 541 quantity for this part, from the Subcontract Daily Plan", key: "sub541_mtd_actual", kind: "actual", sub: true },
+  { label: "MTD Gap", tip: "541 MTD Gap — 541 MTD Actual minus MTD Plan", key: "sub541_month_gap", kind: "gap", sub: true },
+  { label: "TA", tip: "541 TA — Today's 541 quantity for this part, from the Subcontract Daily Plan", key: "sub541_day_actual", kind: "actual", sub: true },
+  { label: "TG", tip: "541 TG — 541 TA minus TP (Today Plan)", key: "sub541_day_gap", kind: "gap", sub: true },
+];
+// First column of each section (MTD / YD / Today / 541 Monthly / 541 Daily)
+// gets a divider line.
+const SECTION_START = new Set(["month_plan", "yd_plan", "day_plan", "sub541_mtd_actual", "sub541_day_actual"]);
+const TOTAL_STATUS_COLS = 3 + STATUS_NUM_COLS.length;
+const SUB541_HEAD_BG = "#e6dff0";
+
+const STATUS_GROUP_HEADS = [
+  { t: "MTD", tip: "Month to Date", span: 3 },
+  { t: "YD", tip: "Yesterday", span: 3 },
+  { t: "Today", tip: "Today — Today Plan (TP), Today Actual (TA) and Today Gap (TG)", span: 3 },
+  { t: "541 - Monthly", tip: "Movement type 541 (issued to subcontractor), month to date — from the Subcontract Daily Plan", span: 2, sub: true },
+  { t: "541 - Daily", tip: "Movement type 541 (issued to subcontractor), today — from the Subcontract Daily Plan", span: 2, sub: true },
+];
+
+const headTipProps = {
+  arrow: true,
+  placement: "top",
+  enterDelay: 250,
+  slotProps: { tooltip: { sx: { fontSize: 11, maxWidth: 260 } } },
+};
+
+const StatusColGroup = () => (
+  <colgroup>
+    <col style={{ width: `${STATUS_COL_PCT.line}%` }} />
+    <col style={{ width: `${STATUS_COL_PCT.part}%` }} />
+    <col style={{ width: `${STATUS_COL_PCT.child}%` }} />
+    {STATUS_NUM_COLS.map((c) => <col key={c.key} style={{ width: `${STATUS_COL_PCT.num}%` }} />)}
+  </colgroup>
+);
+
+const bodyCellSx = {
+  height: 28, padding: "0 8px", fontSize: 11, borderBottom: "1px solid #eef0f3",
+  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+};
+
+const PartGroupRows = ({ group, accent, open, onToggle }) => {
+  return (
+    <>
+      <TableRow
+        hover
+        onClick={onToggle}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
+        tabIndex={0}
+        role="button"
+        aria-expanded={open}
+        sx={{
+          cursor: "pointer",
+          "&:hover > td": { filter: "brightness(0.97)" },
+          "&:focus-visible": { outline: "2px solid #0066FF", outlineOffset: -2 },
+        }}
+      >
+        <TableCell
+          colSpan={TOTAL_STATUS_COLS}
+          sx={{
+            p: 0, backgroundColor: accent.tint,
+            borderTop: "1px solid #dfe3ea", borderBottom: "1px solid #dfe3ea",
+            borderLeft: `3px solid ${accent.bar}`,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, height: 34, pl: 1.25, pr: 0.5 }}>
+            <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "#1a2233", letterSpacing: 0.1 }}>{group.name}</Typography>
+            <Typography sx={{ fontSize: 10.5, color: "#6b7280" }}>
+              {group.rows.length} {group.rows.length === 1 ? "part" : "parts"}
+            </Typography>
+            <Tooltip title={open ? "Collapse" : "Expand"} arrow placement="left" enterDelay={400}>
+              <IconButton size="small" tabIndex={-1} aria-label={open ? `Collapse ${group.name}` : `Expand ${group.name}`} sx={{ p: 0.25, ml: "auto" }}>
+                <KeyboardArrowDownIcon
+                  sx={{
+                    fontSize: 20, color: "#5b6472",
+                    transition: "transform .25s ease",
+                    transform: open ? "rotate(180deg)" : "rotate(0deg)",
+                  }}
+                />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell colSpan={TOTAL_STATUS_COLS} sx={{ p: 0, border: "none" }}>
+          <Collapse in={open} timeout={220} unmountOnExit>
+            <Table size="small" sx={{ tableLayout: "fixed", width: "100%", borderLeft: `3px solid ${accent.bar}` }}>
+              <StatusColGroup />
+              <TableBody>
+                {group.rows.map((r) => (
+                  <TableRow key={r.child_part} hover sx={{ "& td": { backgroundColor: "#fff" }, "&:hover td": { backgroundColor: "#f2f6fd" } }}>
+                    <TableCell sx={{ ...bodyCellSx, color: "#4b5565" }} title={r.Line_Name || ""}>{r.Line_Name || "–"}</TableCell>
+                    <TableCell sx={{ ...bodyCellSx, color: "#6b7280" }} title={group.name}>{group.name}</TableCell>
+                    <TableCell sx={bodyCellSx} title={`${r.child_part_no} — ${r.child_part_desc}`}>
+                      <Box component="span" sx={{ color: "#0052cc", fontWeight: 700, mr: 1 }}>{r.child_part_no}</Box>
+                      <Box component="span" sx={{ color: "#6b7280", fontSize: 10 }}>{r.child_part_desc}</Box>
+                    </TableCell>
+                    {STATUS_NUM_COLS.map((c) => {
+                      const n = Number(r[c.key]) || 0;
+                      const color = c.kind === "plan" ? PLAN_TEXT_COLOR : c.kind === "gap" ? gapColor(n) : ACTUAL_TEXT_COLOR;
+                      return (
+                        <TableCell
+                          key={c.key}
+                          align="right"
+                          sx={{
+                            ...bodyCellSx, ...NUM_FONT, padding: "0 10px", fontSize: 11.5,
+                            fontWeight: c.kind === "gap" ? 700 : 600, color,
+                            borderLeft: SECTION_START.has(c.key) ? "1px solid #dfe3ea" : "none",
+                          }}
+                        >
+                          {c.kind === "gap" ? gapFmt(n) : numberFmt(n)}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </>
+  );
+};
+
+const PartStatusTable = ({ groups, collapsed, onToggle, loading, loaded }) => {
+  const headCell = {
+    backgroundColor: STATUS_HEAD_BG, color: "#000", fontSize: 10.5, fontWeight: 700,
+    padding: "0 10px", whiteSpace: "nowrap", borderBottom: `1px solid ${STATUS_HEAD_LINE}`,
+  };
+  return (
+    <Table stickyHeader size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
+      <StatusColGroup />
+      <TableHead>
+        <TableRow sx={{ height: 24 }}>
+          {["Line", "Part Name", "Child Part / Description"].map((h) => (
+            <TableCell key={h} rowSpan={2} sx={{ ...headCell, verticalAlign: "bottom", pb: 0.9 }}>{h}</TableCell>
+          ))}
+          {STATUS_GROUP_HEADS.map((g) => (
+            <TableCell
+              key={g.t}
+              colSpan={g.span}
+              align="center"
+              sx={{ ...headCell, top: 0, height: 24, fontSize: 10, letterSpacing: 0.6, borderLeft: `1px solid ${STATUS_HEAD_LINE}`, ...(g.sub ? { backgroundColor: SUB541_HEAD_BG } : {}) }}
+            >
+              <Tooltip title={g.tip} {...headTipProps}>
+                <span style={{ cursor: "help", textTransform: "uppercase" }}>{g.t}</span>
+              </Tooltip>
+            </TableCell>
+          ))}
+        </TableRow>
+        <TableRow sx={{ height: 26 }}>
+          {STATUS_NUM_COLS.map((c) => (
+            <TableCell
+              key={c.key}
+              align="right"
+              sx={{ ...headCell, top: 24, height: 26, borderLeft: SECTION_START.has(c.key) ? `1px solid ${STATUS_HEAD_LINE}` : "none", ...(c.sub ? { backgroundColor: SUB541_HEAD_BG } : {}) }}
+            >
+              <Tooltip title={c.tip} {...headTipProps}>
+                <span style={{ cursor: "help" }}>{c.label}</span>
+              </Tooltip>
+            </TableCell>
+          ))}
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {groups.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={TOTAL_STATUS_COLS} align="center" sx={{ py: 4, color: "#8a93a3", border: "none", fontSize: 12 }}>
+              {loading ? "Loading…" : loaded ? "No plan history found for the selected filters." : ""}
+            </TableCell>
+          </TableRow>
+        ) : (
+          groups.map((g, gi) => (
+            <PartGroupRows
+              key={g.name}
+              group={g}
+              accent={GROUP_ACCENTS[gi % GROUP_ACCENTS.length]}
+              open={!collapsed.has(g.name)}
+              onToggle={() => onToggle(g.name)}
+            />
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+};
+
+/* ============================================================
+   Tab 1: Plan History — one row per Child Part with Month/Current-Week/
    Yesterday Plan vs Actual vs Gap, resolved via getPlanHistorySummary.
    Plant defaults to the logged-in user's own plant (still changeable);
    Start/End Date default to 1st-of-month -> yesterday.
@@ -1298,6 +1488,8 @@ const PlanHistoryBody = ({ searchText = "" }) => {
   const [plant, setPlant] = useState(user?.PlantCode || "");
   const [moduleId, setModuleId] = useState("");
   const [lineId, setLineId] = useState("");
+  const [operations, setOperations] = useState([]);
+  const [optId, setOptId] = useState("");
   // Monthly report filter — Month/Year only, no manual date entry. Defaults
   // to the current month/year; converted to a Start/End date range only at
   // fetch time, since the backend endpoint still expects fromDate/toDate.
@@ -1312,14 +1504,16 @@ const PlanHistoryBody = ({ searchText = "" }) => {
   useEffect(() => {
     const loadMasters = async () => {
       try {
-        const [plantRes, moduleRes, lineRes] = await Promise.all([
+        const [plantRes, moduleRes, lineRes, optRes] = await Promise.all([
           getPlantdetails(),
           getModules(),
           getLines(),
+          getOperations(),
         ]);
         setPlants(plantRes || []);
         setModules((moduleRes || []).filter((m) => m.Active_Status));
         setLines((lineRes || []).filter((l) => l.Active_Status));
+        setOperations((optRes || []).filter((o) => Number(o.status) === 1).sort((a, b) => Number(a.opt_no) - Number(b.opt_no)));
       } catch (error) {
         console.error(error);
         toast.error("Failed to load Plant/Module/Line filter options.");
@@ -1364,12 +1558,13 @@ const PlanHistoryBody = ({ searchText = "" }) => {
     if (loading) return;
     setLoading(true);
     try {
-      const data = await GetMfgProductionDailyPlanHistorySummaryApi({
+      const data = await GetMfgComponentDailyPlanHistorySummaryApi({
         plant,
         fromDate: monthStartStr(year, month),
         toDate: monthEndStr(year, month),
         moduleId: moduleId || undefined,
         lineId: lineId || undefined,
+        optId: optId || undefined,
       });
       setHistoryRows(data || []);
       setLoaded(true);
@@ -1392,11 +1587,15 @@ const PlanHistoryBody = ({ searchText = "" }) => {
   const flatRows = useMemo(
     () =>
       historyRows.map((r) => ({
-        id: r.fg_part,
+        id: r.child_part,
         ...r,
         month_gap: (r.mtd_actual || 0) - (r.month_plan || 0),
         cw_gap: (r.cw_actual || 0) - (r.cw_plan || 0),
         yd_gap: (r.yd_actual || 0) - (r.yd_plan || 0),
+        day_gap: (r.day_actual || 0) - (r.day_plan || 0),
+        // 541 gaps: 541 MTD Actual - MTD Plan, and 541 TA - TP (Today Plan).
+        sub541_month_gap: (r.sub541_mtd_actual || 0) - (r.month_plan || 0),
+        sub541_day_gap: (r.sub541_day_actual || 0) - (r.day_plan || 0),
       })),
     [historyRows]
   );
@@ -1407,76 +1606,63 @@ const PlanHistoryBody = ({ searchText = "" }) => {
     const q = searchText.trim().toLowerCase();
     if (!q) return flatRows;
     return flatRows.filter(
-      (r) => r.fg_part_no?.toLowerCase().includes(q) || r.fg_part_desc?.toLowerCase().includes(q)
+      (r) => r.child_part_no?.toLowerCase().includes(q) || r.child_part_desc?.toLowerCase().includes(q)
     );
   }, [flatRows, searchText]);
 
 
-  const gapCellSx = (value) => ({
-    color: value > 0 ? "#1b7a43" : value < 0 ? "#b42323" : "#6b7280",
-    fontWeight: 700,
-  });
+  // Group by Part Name — built from the returned data (never hardcoded),
+  // groups A-Z, rows by Line then Child Part.
+  const groups = useMemo(() => {
+    const map = new Map();
+    filteredRows.forEach((r) => {
+      const name = r.part_name_desc || "Unassigned";
+      if (!map.has(name)) map.set(name, []);
+      map.get(name).push(r);
+    });
+    return Array.from(map.entries())
+      .sort((x, y) => x[0].localeCompare(y[0]))
+      .map(([name, rows]) => {
+        const sorted = [...rows].sort(
+          (x, y) =>
+            String(x.Line_Name || "").localeCompare(String(y.Line_Name || "")) ||
+            String(x.child_part_no).localeCompare(String(y.child_part_no))
+        );
+        return { name, rows: sorted };
+      });
+  }, [filteredRows]);
 
-  // Every column uses `flex` (never `width`) so MUI DataGrid distributes
-  // 100% of the container's width across them proportionally — this is
-  // what guarantees no horizontal scroll ever appears, and that the table
-  // reflows automatically when the sidebar is toggled/untoggled. `minWidth`
-  // still protects each column from getting too cramped to read.
-  const columns = useMemo(() => [
-    { field: "Line_Name", headerName: "Line", flex: 0.9, minWidth: 70 },
-    {
-      field: "fg_part_no", headerName: "Part No / Description", flex: 1.9, minWidth: 140,
-      renderCell: (p) => (
-        <div
-          title={`${p.row.fg_part_no} — ${p.row.fg_part_desc}`}
-          style={{ lineHeight: 1.3, padding: "4px 0", overflow: "hidden" }}
-        >
-          <div style={{ color: "#0052cc", fontWeight: 700, fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {p.row.fg_part_no}
-          </div>
-          <div style={{ color: "#6b7280", fontSize: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {p.row.fg_part_desc}
-          </div>
-        </div>
-      ),
-    },
-    {
-      field: "month_plan", headerName: "Month Plan", flex: 0.9, minWidth: 75, align: "right", headerAlign: "center",
-      renderCell: (p) => numberFmt(p.value),
-    },
-    {
-      field: "mtd_actual", headerName: "MTD Actual", flex: 0.9, minWidth: 75, align: "right", headerAlign: "center",
-      renderCell: (p) => numberFmt(p.value),
-    },
-    {
-      field: "month_gap", headerName: "Gap", flex: 0.75, minWidth: 65, align: "right", headerAlign: "center",
-      renderCell: (p) => <span style={gapCellSx(p.value)}>{gapFmt(p.value)}</span>,
-    },
-    {
-      field: "cw_plan", headerName: "C.W Plan", flex: 0.8, minWidth: 68, align: "right", headerAlign: "center",
-      renderCell: (p) => numberFmt(p.value),
-    },
-    {
-      field: "cw_actual", headerName: "C.W Actual", flex: 0.85, minWidth: 72, align: "right", headerAlign: "center",
-      renderCell: (p) => numberFmt(p.value),
-    },
-    {
-      field: "cw_gap", headerName: "CW Gap", flex: 0.75, minWidth: 62, align: "right", headerAlign: "center",
-      renderCell: (p) => <span style={gapCellSx(p.value)}>{gapFmt(p.value)}</span>,
-    },
-    {
-      field: "yd_plan", headerName: "YD Plan", flex: 0.75, minWidth: 62, align: "right", headerAlign: "center",
-      renderCell: (p) => numberFmt(p.value),
-    },
-    {
-      field: "yd_actual", headerName: "YD Actual", flex: 0.75, minWidth: 65, align: "right", headerAlign: "center",
-      renderCell: (p) => numberFmt(p.value),
-    },
-    {
-      field: "yd_gap", headerName: "YD Gap", flex: 0.75, minWidth: 62, align: "right", headerAlign: "center",
-      renderCell: (p) => <span style={gapCellSx(p.value)}>{gapFmt(p.value)}</span>,
-    },
-  ], []);
+  // Expanded/collapsed state is kept per Part Name (a Set of the COLLAPSED
+  // names, so every group — including ones that appear later — defaults to
+  // expanded) and survives refetches, filters and search.
+  const [collapsed, setCollapsed] = useState(() => new Set());
+  const toggleGroup = useCallback((name) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+  }, []);
+  const expandAll = () => setCollapsed(new Set());
+  const collapseAll = () => setCollapsed(new Set(groups.map((g) => g.name)));
+
+  const exportCsv = () => {
+    const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const head = ["Line", "Part Name", "Child Part", "Description", "MTD Plan", "MTD Actual", "MTD Gap", "YD Plan", "YD Actual", "YD Gap", "TP", "TA", "TG", "541 MTD Actual", "541 MTD Gap", "541 TA", "541 TG"];
+    const lines = [head.map(esc).join(",")];
+    groups.forEach((g) => g.rows.forEach((r) => lines.push([
+      r.Line_Name || "", g.name, r.child_part_no, r.child_part_desc,
+      r.month_plan, r.mtd_actual, r.month_gap, r.yd_plan, r.yd_actual, r.yd_gap, r.day_plan, r.day_actual, r.day_gap,
+      r.sub541_mtd_actual, r.sub541_month_gap, r.sub541_day_actual, r.sub541_day_gap,
+    ].map(esc).join(","))));
+    const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Component_Prod_Status_${plant}_${year}-${String(month).padStart(2, "0")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <>
@@ -1530,6 +1716,18 @@ const PlanHistoryBody = ({ searchText = "" }) => {
           sx={compactFieldSx(190)}
           ListboxProps={{ style: { fontSize: 11.5 } }}
           renderInput={(params) => <TextField {...params} label="Line" placeholder={moduleId ? undefined : "Select Module first"} />}
+        />
+
+        <Autocomplete
+          size="small"
+          options={operations}
+          value={operations.find((o) => String(o.opt_id) === String(optId)) || null}
+          onChange={(e, newVal) => setOptId(newVal ? newVal.opt_id : "")}
+          getOptionLabel={(o) => (o ? o.opt_name : "")}
+          isOptionEqualToValue={(o, v) => o.opt_id === v.opt_id}
+          sx={compactFieldSx(190)}
+          ListboxProps={{ style: { fontSize: 11.5 } }}
+          renderInput={(params) => <TextField {...params} label="Operation" />}
         />
 
         {/* Month + Year as ONE grouped "Period" control — a single bordered
@@ -1601,70 +1799,32 @@ const PlanHistoryBody = ({ searchText = "" }) => {
         </div>
       </div>
 
-      <div style={{ flexGrow: 1, backgroundColor: "#fff", borderRadius: 8, border: "1px solid #e8eaee", boxShadow: "0 1px 3px rgba(16,24,40,0.05)", minHeight: 0, overflow: "hidden" }}>
-        <DataGrid
-          rows={filteredRows}
-          columns={columns}
-          pageSize={25}
-          rowsPerPageOptions={[25, 50, 100]}
-          disableSelectionOnClick
-          disableColumnMenu
-          loading={loading}
-          columnHeaderHeight={36}
-          rowHeight={38}
-          slots={{ toolbar: CustomToolbar }}
-          localeText={{ noRowsLabel: "No plan history found for the selected filters." }}
-          sx={{
-            height: "100%",
-            border: "none",
-            // No vertical column lines in the data area — rows are
-            // separated by a thin bottom border + hover tint only.
-            "& .MuiDataGrid-columnSeparator": { display: "none" },
-            "& .MuiDataGrid-cell": { color: "#333", fontSize: "11px", padding: "0 8px", borderRight: "none" },
-            "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within": { outline: "none" },
-            "& .MuiDataGrid-columnHeaders": { position: "sticky", top: 0, zIndex: 2 },
-            "& .MuiDataGrid-columnHeader": { backgroundColor: "#d0dcf5", color: "#000000", padding: "0 8px" },
-            "& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within": { outline: "none" },
-            "& .MuiDataGrid-columnHeaderTitle": { fontSize: "10.5px", fontWeight: "bold", color: "#000000" },
-            "& .MuiDataGrid-sortIcon, & .MuiDataGrid-menuIconButton": { color: "#000000" },
-            "& .MuiDataGrid-row": { backgroundColor: "#fff" },
-            "& .MuiDataGrid-row:nth-of-type(even)": { backgroundColor: "#fafbfc" },
-            // Subtle hover tint — the one visual cue MUI adds by default,
-            // reinforced here since the zebra striping above can mute it.
-            "& .MuiDataGrid-row:hover": { backgroundColor: "#eef4ff" },
-            "& .MuiDataGrid-row.Mui-selected": { backgroundColor: "inherit" },
-            "& .MuiDataGrid-toolbarContainer": { padding: "2px 6px", minHeight: 28 },
-            "& .MuiDataGrid-toolbarContainer button": { fontSize: "11px", padding: "2px 6px" },
-            // Compact pagination footer — the default MUI footer is tall
-            // and padded for a full-page table. Fixing this properly means
-            // shrinking the CHILDREN (Toolbar/Select/IconButtons), not
-            // capping the wrapper: an outer maxHeight clipped them and
-            // forced an internal scrollbar (that was the earlier bug).
-            // MUI's Toolbar applies its own minHeight via a breakpoint
-            // media query with higher specificity than a flat class
-            // selector, so it needs `!important` to actually override.
-            "& .MuiDataGrid-footerContainer": { minHeight: 34 },
-            "& .MuiTablePagination-root": { overflow: "visible" },
-            "& .MuiTablePagination-toolbar": {
-              minHeight: "34px !important",
-              height: 34,
-              paddingLeft: 8,
-              paddingRight: 4,
-            },
-            "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-              fontSize: 11, marginTop: 0, marginBottom: 0,
-            },
-            "& .MuiTablePagination-select": {
-              fontSize: 11, paddingTop: "2px !important", paddingBottom: "2px !important", minHeight: "unset",
-            },
-            "& .MuiTablePagination-selectIcon": { fontSize: 16 },
-            "& .MuiTablePagination-actions": { marginLeft: 4 },
-            "& .MuiTablePagination-actions .MuiIconButton-root": {
-              padding: 4, width: 24, height: 24,
-            },
-            "& .MuiTablePagination-actions svg": { fontSize: 16 },
-          }}
-        />
+      <div
+        style={{
+          flexGrow: 1, backgroundColor: "#fff", borderRadius: 8, border: "1px solid #e8eaee",
+          boxShadow: "0 1px 3px rgba(16,24,40,0.05)", minHeight: 0, overflow: "hidden",
+          display: "flex", flexDirection: "column",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, px: 1.25, py: 0.5, borderBottom: "1px solid #eef0f3", minHeight: 30 }}>
+          <Typography sx={{ fontSize: 11, color: "#6b7280" }}>
+            {groups.length} {groups.length === 1 ? "group" : "groups"} · {filteredRows.length} {filteredRows.length === 1 ? "part" : "parts"}
+          </Typography>
+          <Box sx={{ ml: "auto", display: "flex", gap: 0.5 }}>
+            <Button size="small" onClick={expandAll} disabled={!groups.length} startIcon={<UnfoldMoreIcon sx={{ fontSize: 15 }} />} sx={{ ...compactButtonSx, height: 24, color: "#374151" }}>
+              Expand all
+            </Button>
+            <Button size="small" onClick={collapseAll} disabled={!groups.length} startIcon={<UnfoldLessIcon sx={{ fontSize: 15 }} />} sx={{ ...compactButtonSx, height: 24, color: "#374151" }}>
+              Collapse all
+            </Button>
+            <Button size="small" onClick={exportCsv} disabled={!filteredRows.length} startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 15 }} />} sx={{ ...compactButtonSx, height: 24, color: "#374151" }}>
+              Export
+            </Button>
+          </Box>
+        </Box>
+        <TableContainer sx={{ flexGrow: 1, minHeight: 0, overflowX: "auto" }}>
+          <PartStatusTable groups={groups} collapsed={collapsed} onToggle={toggleGroup} loading={loading} loaded={loaded} />
+        </TableContainer>
       </div>
     </>
   );
@@ -1675,7 +1835,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
    ============================================================ */
 const TAB_DEFS = [
   { key: "history", label: "Prod Status", Icon: HistoryOutlinedIcon },
-  { key: "entry", label: "Prod Daily Plan", Icon: EditNoteOutlinedIcon },
+  { key: "entry", label: "Component Daily Plan", Icon: EditNoteOutlinedIcon },
 ];
 
 const PillTabs = ({ value, onChange }) => {
@@ -1748,10 +1908,10 @@ const PillTabs = ({ value, onChange }) => {
   );
 };
 
-const MfgProductionDailyPlan = () => {
+const MfgComponentDailyPlan = () => {
   const [tab, setTab] = useState(0);
   // Shared search box, sitting before the tabs — filters whichever tab is
-  // currently active (Prod Status's history rows, or Prod Daily Plan's FG
+  // currently active (Prod Status's history rows, or Component Daily Plan's Child Part
   // list), each tab doing its own client-side filtering on its own
   // already-fetched rows by Part No. / Description.
   const [searchText, setSearchText] = useState("");
@@ -1778,7 +1938,7 @@ const MfgProductionDailyPlan = () => {
         }}
       >
         <Typography sx={{ fontSize: 17, fontWeight: 700, color: "#1a2233", letterSpacing: 0.1, lineHeight: 1.3 }}>
-          MFG Daily Production Plan
+          MFG Daily Component Plan
         </Typography>
 
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -1803,4 +1963,4 @@ const MfgProductionDailyPlan = () => {
   );
 };
 
-export default MfgProductionDailyPlan;
+export default MfgComponentDailyPlan;

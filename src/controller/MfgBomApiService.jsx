@@ -77,3 +77,26 @@ export const GetSupplierStockSnapshotApi = async (month) => {
   const response = await axios.get(`${api}/MFG_BOM/getSupplierStockSnapshot`, { params: { month } });
   return response.data;
 };
+
+// Plant Stock / Supplier Stock — the active (latest) snapshot with an optional
+// plant filter ({ plant } or {} for all plants), and a date-range Excel
+// download ({ plant?, startDate, endDate } as YYYY-MM-DD).
+export const GetPlantStockActiveApi = async (body) => {
+  const response = await axios.post(`${api}/MFG_BOM/getPlantStockActive`, body);
+  return response.data;
+};
+
+export const DownloadPlantStockApi = async (body) => {
+  const response = await axios.post(`${api}/MFG_BOM/downloadPlantStock`, body, { responseType: "blob" });
+  return response.data;
+};
+
+export const GetSupplierStockActiveApi = async (body) => {
+  const response = await axios.post(`${api}/MFG_BOM/getSupplierStockActive`, body);
+  return response.data;
+};
+
+export const DownloadSupplierStockApi = async (body) => {
+  const response = await axios.post(`${api}/MFG_BOM/downloadSupplierStock`, body, { responseType: "blob" });
+  return response.data;
+};

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { TextField, Button, IconButton } from "@mui/material";
+import { TextField, Button, IconButton, MenuItem, CircularProgress } from "@mui/material";
 import {
   DataGrid,
   GridToolbarContainer,
@@ -15,6 +15,8 @@ import { EyeIcon } from "lucide-react";
 import * as XLSX from "xlsx-js-style";
 import { format } from "date-fns";
 import SectionHeading from "../components/Header";
+import { compactFieldSx, compactButtonSx } from "../components/MfgListScreen";
+import { getPlantdetails } from "../controller/CommonApiService";
 import { GetMfgBomListApi, GetMfgBomExportApi } from "../controller/MfgBomApiService";
 import AddEditMfgBomDialog from "./AddEditMfgBom";
 import MfgBomBulkUpload from "./BulkUploadMfgBom";
@@ -38,6 +40,12 @@ const MFG_BOM = () => {
   const [refreshData, setRefreshData] = useState(false);
   const [viewData, setViewData] = useState(null);
   const [openViewDialog, setOpenViewDialog] = useState(false);
+  // Plant filter - narrows the list already loaded below; "ALL" = every plant
+  // (exactly the list the screen always showed).
+  const [plants, setPlants] = useState([]);
+  const [plantFilter, setPlantFilter] = useState("ALL"); // dropdown selection
+  const [appliedPlant, setAppliedPlant] = useState("ALL"); // applied on Submit
+  const [loading, setLoading] = useState(false);
 
   const columns = [
     {
@@ -91,24 +99,43 @@ const MFG_BOM = () => {
   ];
 
   const fetchData = async () => {
-    const response = await GetMfgBomListApi();
-    setOriginalRows(response?.data || []);
-    setRows(response?.data || []);
+    setLoading(true);
+    try {
+      const response = await GetMfgBomListApi();
+      setOriginalRows(response?.data || []);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchData();
   }, [refreshData]);
 
-  const handleSearch = () => {
+  useEffect(() => {
+    getPlantdetails()
+      .then((res) => setPlants(res || []))
+      .catch((error) => console.error("Failed to load Plant list.", error));
+  }, []);
+
+  // Visible rows = loaded list -> Plant filter -> search text. Search is the
+  // same live match as before (plant, FG part, description).
+  useEffect(() => {
     const text = searchText.trim().toLowerCase();
-    const filteredRows = originalRows.filter((row) =>
+    const byPlant = appliedPlant === "ALL" ? originalRows : originalRows.filter((row) => String(row.plant) === String(appliedPlant));
+    const filteredRows = byPlant.filter((row) =>
       ["plant", "fg_part_no", "fg_part_desc"].some((key) => {
         const value = row[key];
         return value?.toString().toLowerCase().includes(text);
       })
     );
-    setRows(text ? filteredRows : originalRows);
+    setRows(text ? filteredRows : byPlant);
+  }, [originalRows, appliedPlant, searchText]);
+
+  // Submit: apply the selected Plant and reload the list.
+  const handleSubmit = () => {
+    setAppliedPlant(plantFilter);
+    fetchData();
   };
 
   const handleOpenAdd = () => {
@@ -198,47 +225,60 @@ const MFG_BOM = () => {
         <SectionHeading>Manufacturing BOM</SectionHeading>
       </div>
 
-      {/* Search and Icons */}
+      {/* Filters + actions - same compact card as the other MFG screens */}
       <div
         style={{
+          backgroundColor: "#fff",
+          borderRadius: 8,
+          border: "1px solid #e8eaee",
+          boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
+          padding: "7px 10px",
+          marginBottom: 12,
           display: "flex",
+          flexWrap: "wrap",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: 10,
+          gap: 8,
         }}
       >
-        <div style={{ display: "flex", gap: "10px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
           <TextField
+            select
             size="small"
-            variant="outlined"
-            placeholder="Type here..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onKeyUp={handleSearch}
-            sx={{
-              width: "400px",
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": { border: "2px solid grey" },
-                "&:hover fieldset": { border: "2px solid grey" },
-                "&.Mui-focused fieldset": { border: "2px solid grey" },
-              },
-            }}
-          />
-          <Button
-            onClick={handleSearch}
-            style={{
-              borderRadius: "25px",
-              border: "2px solid grey",
-              color: "grey",
-              fontWeight: "bold",
-            }}
+            label="Plant"
+            value={plantFilter}
+            onChange={(e) => setPlantFilter(e.target.value)}
+            sx={compactFieldSx(190)}
           >
-            <SearchIcon style={{ marginRight: "5px" }} />
-            Search
+            <MenuItem sx={{ fontSize: 11.5, fontWeight: 600 }} value="ALL">All Plants</MenuItem>
+            {plants.map((p) => (
+              <MenuItem sx={{ fontSize: 11.5 }} key={p.Plant_ID} value={p.Plant_Code}>
+                {`${p.Plant_Code} - ${p.Plant_Name}`}
+              </MenuItem>
+            ))}
+          </TextField>
+          <Button
+            variant="contained"
+            disableElevation
+            onClick={handleSubmit}
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={12} color="inherit" /> : <SearchIcon sx={{ fontSize: 15 }} />}
+            sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc" } }}
+          >
+            {loading ? "Loading..." : "Submit"}
           </Button>
         </div>
 
         <div className="flex justify-center items-center gap-2">
+          <TextField
+            size="small"
+            variant="outlined"
+            placeholder="Search FG part / description..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            InputProps={{ startAdornment: <SearchIcon sx={{ fontSize: 16, color: "#8a93a3", mr: 0.5 }} /> }}
+            sx={compactFieldSx(260)}
+          />
           <IconButton
             onClick={handleDownloadExcel}
             title="Download Excel"
@@ -277,38 +317,51 @@ const MFG_BOM = () => {
       <div
         style={{
           flexGrow: 1,
+          minHeight: 0,
           backgroundColor: "#fff",
           borderRadius: 8,
-          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-          height: "calc(5 * 48px)",
+          border: "1px solid #e8eaee",
+          boxShadow: "0 1px 3px rgba(16,24,40,0.05)",
+          overflow: "hidden",
         }}
       >
         <DataGrid
           rows={rows}
           columns={columns}
-          pageSize={5}
-          rowsPerPageOptions={[5]}
+          loading={loading}
+          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+          pageSizeOptions={[25, 50, 100]}
           getRowId={(row) => `${row.plant}_${row.fg_part}`}
-          disableSelectionOnClick
+          disableRowSelectionOnClick
+          disableColumnMenu
           slots={{ toolbar: CustomToolbar }}
-          columnHeaderHeight={35}
-          rowHeight={35}
+          columnHeaderHeight={36}
+          rowHeight={38}
+          localeText={{ noRowsLabel: loading ? "" : "No Manufacturing BOM found for the selected filters." }}
           sx={{
-            "& .MuiDataGrid-columnHeader": {
-              backgroundColor: "#bdbdbd",
-              color: "black",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-columnHeaderTitle": {
-              fontSize: "13px",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-row": {
-              backgroundColor: "#f5f5f5",
-              "&:hover": { backgroundColor: "#f5f5f5" },
-            },
+            height: "100%",
+            border: "none",
+            "& .MuiDataGrid-columnSeparator": { display: "none" },
+            "& .MuiDataGrid-cell": { color: "#333", fontSize: "11px", padding: "0 8px", borderRight: "none" },
+            "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within": { outline: "none" },
+            "& .MuiDataGrid-columnHeaders": { position: "sticky", top: 0, zIndex: 2 },
+            "& .MuiDataGrid-columnHeader": { backgroundColor: "#d0dcf5", color: "#000000", padding: "0 8px" },
+            "& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within": { outline: "none" },
+            "& .MuiDataGrid-columnHeaderTitle": { fontSize: "10.5px", fontWeight: "bold", color: "#000000" },
+            "& .MuiDataGrid-sortIcon, & .MuiDataGrid-menuIconButton": { color: "#000000" },
+            "& .MuiDataGrid-row": { backgroundColor: "#fff" },
+            "& .MuiDataGrid-row:nth-of-type(even)": { backgroundColor: "#fafbfc" },
+            "& .MuiDataGrid-row:hover": { backgroundColor: "#eef4ff" },
             "& .MuiDataGrid-row.Mui-selected": { backgroundColor: "inherit" },
-            "& .MuiDataGrid-cell": { color: "#333", fontSize: "12px" },
+            "& .MuiDataGrid-toolbarContainer": { padding: "2px 6px", minHeight: 28 },
+            "& .MuiDataGrid-toolbarContainer button": { fontSize: "11px", padding: "2px 6px" },
+            "& .MuiDataGrid-footerContainer": { minHeight: 34 },
+            "& .MuiTablePagination-root": { overflow: "visible" },
+            "& .MuiTablePagination-toolbar": { minHeight: "34px !important", height: 34, paddingLeft: 8, paddingRight: 4 },
+            "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": { fontSize: 11, marginTop: 0, marginBottom: 0 },
+            "& .MuiTablePagination-select": { fontSize: 11, paddingTop: "2px !important", paddingBottom: "2px !important", minHeight: "unset" },
+            "& .MuiTablePagination-selectIcon": { fontSize: 16 },
+            "& .MuiTablePagination-actions .MuiIconButton-root": { padding: 4, width: 24, height: 24 },
           }}
         />
       </div>

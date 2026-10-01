@@ -73,6 +73,7 @@ import PlantStock from "./MFG_Availability/PlantStock"
 import SupplierStock from "./MFG_Availability/SupplierStock"
 import MatAvailabilityStatus from "./MFG_Availability/MatAvailabilityStatus"
 import MfgProductionDailyPlan from "./MFG_Availability/MfgProductionDailyPlan"
+import MfgComponentDailyPlan from "./MFG_Availability/MfgComponentDailyPlan"
 import ProductionPlan from "./Production plan/ProductionPlan"
 import StoreDashboard from "./Store Dashboard/StoreDashboard"
 import Store1 from "./StoreUrl/store1url"
@@ -94,6 +95,10 @@ import CategoryBreakupScreen from "./Masters/CategoryBreakup";
 import IndirectManpowerScreen from "./PMPD/Indirect_Manpower";
 import IndirectCategoryScreen from "./Masters/IndirectCategory";
 import PMPD_ActualProductionPlan from "./PMPD/ActualProductionPlan";
+import SubcontractDailyPlan from "./MFG_Availability/SubcontractDailyPlan";
+import SchedulerJobs from "./Scheduler/SchedulerJobs";
+import ColumnMappingStudio from "./Scheduler/ColumnMappingStudio";
+import SchedulerRunHistory from "./Scheduler/RunHistory";
 import PMDP_PlanVsActual from "./PMPD/PMPD_PlanVsActual";
 import PMDP_PlanVsActual_Indirect from './PMPD/PMPD_PlanVsActual_Indirect'
 import PMPD_FixedManpower from "./Masters/PMPD_FixedManpower";
@@ -145,6 +150,7 @@ const App = () => {
             <Route path="SupplierStock" element={<ProtectedRoute screenCode="SupplierStock"><SupplierStock /></ProtectedRoute>} />
             <Route path="MatAvailabilityStatus" element={<ProtectedRoute screenCode="MatAvailabilityStatus"><MatAvailabilityStatus /></ProtectedRoute>} />
             <Route path="MfgProductionDailyPlan" element={<ProtectedRoute screenCode="MfgProductionDailyPlan"><MfgProductionDailyPlan /></ProtectedRoute>} />
+            <Route path="MfgComponentDailyPlan" element={<ProtectedRoute screenCode="MfgComponentDailyPlan"><MfgComponentDailyPlan /></ProtectedRoute>} />
             <Route path="ProductionPlan" element={<ProtectedRoute ><ProductionPlan screenId={32} /></ProtectedRoute>} />
             <Route path="StoreDashboard" element={<ProtectedRoute ><StoreDashboard screenId={31} /></ProtectedRoute>} />
             <Route path="Movement_Type" element={<ProtectedRoute screenCode="Movement_Type"><Movement_Type /></ProtectedRoute>} />
@@ -221,6 +227,10 @@ const App = () => {
             <Route path="PMPD_Report" element={<ProtectedRoute screenCode="PMPD_Report"><PMPD_Report /></ProtectedRoute>} />
             <Route path="PMPD_IndirectManpower" element={<ProtectedRoute screenCode="PMPD_IndirectManpower"><IndirectManpowerScreen /></ProtectedRoute>} />
             <Route path="PMPD_ActualProductionPlan" element={<ProtectedRoute screenCode="PMPD_ActualProductionPlan"><PMPD_ActualProductionPlan /></ProtectedRoute>} />
+            <Route path="SubcontractDailyPlan" element={<ProtectedRoute screenCode="SubcontractDailyPlan"><SubcontractDailyPlan /></ProtectedRoute>} />
+            <Route path="SchedulerJobs" element={<ProtectedRoute screenCode="SchedulerJobs"><SchedulerJobs /></ProtectedRoute>} />
+            <Route path="SchedulerColumnMapping" element={<ProtectedRoute screenCode="SchedulerColumnMapping"><ColumnMappingStudio /></ProtectedRoute>} />
+            <Route path="SchedulerRunHistory" element={<ProtectedRoute screenCode="SchedulerRunHistory"><SchedulerRunHistory /></ProtectedRoute>} />
             <Route path="PMDP_PlanVsActual" element={<ProtectedRoute screenCode="PMDP_PlanVsActual"><PMDP_PlanVsActual /></ProtectedRoute>} />
             <Route path="PMDP_PlanVsActual_Indirect" element={<ProtectedRoute screenCode="PMDP_PlanVsActual_Indirect"><PMDP_PlanVsActual_Indirect /></ProtectedRoute>} />
             <Route path="Inhouse_capacity" element={<ProtectedRoute screenCode="Inhouse_capacity"><InhouseCapacity /></ProtectedRoute>} />
