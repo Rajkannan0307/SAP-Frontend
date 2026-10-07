@@ -4,6 +4,7 @@ import { api } from "./constants";
 const base = `${api}/Scheduler`;
 
 export const getSchedulerJobs = async () => (await axios.get(`${base}/jobs`)).data;
+export const getSchedulerStatus = async () => (await axios.get(`${base}/status`)).data;
 export const getSchedulerTargets = async () => (await axios.get(`${base}/targets`)).data;
 export const getTargetColumns = async (table) => (await axios.get(`${base}/targets/${encodeURIComponent(table)}/columns`)).data;
 export const saveSchedulerJob = async (body) => (await axios.post(`${base}/jobs/save`, body)).data;

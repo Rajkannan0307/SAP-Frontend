@@ -7,6 +7,12 @@ export const getSubcontractPlanList = async (body) => {
   return response.data;
 };
 
+// Active Material Master records of a plant: { materials: [{ part_number, material_type }] }
+export const getSubcontractMaterialLookup = async (body) => {
+  const response = await axios.post(`${api}/SubcontractPlan/lookup`, body);
+  return response.data;
+};
+
 // Manual Fetch — runs the same import the every-4-hours cron runs.
 export const fetchSubcontractPlan = async (userId) => {
   const response = await axios.post(`${api}/SubcontractPlan/fetch`, { userId });

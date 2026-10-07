@@ -1,12 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react'
 import SectionHeading from '../../components/Header'
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Modal, TextField, Typography } from '@mui/material'
+import { Autocomplete, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Modal, TextField, Typography } from '@mui/material'
 import { CloudUploadIcon, EditIcon, SearchIcon } from 'lucide-react'
 import { FaDownload, FaUpload } from 'react-icons/fa6'
 import { deepPurple } from '@mui/material/colors';
 import * as ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
-import { AddTrn_PMPD_Master_BULK, AddTrn_PMPD_Master_Single, getProductSegmentdetails, getTrnPMPD_MasterDetails } from '../../controller/PMPDApiService'
+import { AddTrn_PMPD_Master_BULK, AddTrn_PMPD_Master_Single, getPMPDPartNumbers, getProductSegmentdetails, getTrnPMPD_MasterDetails } from '../../controller/PMPDApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import { format } from 'date-fns'
 import { AuthContext } from '../../Authentication/AuthContext'
@@ -17,8 +17,41 @@ import * as Yup from 'yup'
 import { CommonMuiStyles } from '../../Styles/CommonStyles'
 import { getPlantdetails } from '../../controller/CommonApiService'
 
+// Compact filter-field/button styling — same design tokens as the Production
+// Actual screen's toolbar so both screens share one visual language.
+const compactFieldSx = (minWidth) => ({
+    minWidth,
+    flexShrink: 0,
+    "& .MuiOutlinedInput-root": {
+        borderRadius: "6px",
+        backgroundColor: "#fafbfc",
+        minHeight: 30,
+        display: "flex",
+        alignItems: "center",
+        padding: "0 7px !important",
+        "& fieldset": { borderColor: "#dde1e7" },
+        "&:hover fieldset": { borderColor: "#0066FF" },
+        "&.Mui-focused fieldset": { borderColor: "#0066FF", borderWidth: "1.5px" },
+    },
+    "& .MuiInputBase-input, & .MuiSelect-select": { padding: "0 !important", fontSize: 11 },
+    "& .MuiInputLabel-root": { fontSize: 11, color: "#6b7280" },
+    "& .MuiInputLabel-root.MuiInputLabel-shrink": { fontSize: 10.5, transform: "translate(7px, -7px) scale(0.85)" },
+});
+
+const compactButtonSx = {
+    height: 30,
+    fontSize: 11,
+    fontWeight: 600,
+    textTransform: "none",
+    borderRadius: "6px",
+    boxShadow: "none",
+    padding: "0 10px",
+    whiteSpace: "nowrap",
+};
+
 const PMPD_MasterScreen = () => {
     const [searchText, setSearchText] = useState("");
+    const [materialTypeFilter, setMaterialTypeFilter] = useState("All");
     const [rows, setRows] = useState([]);
     const [originalRows, setOriginalRows] = useState([]);
     const [openUploadModal, setOpenUploadModal] = useState(false);
@@ -42,21 +75,25 @@ const PMPD_MasterScreen = () => {
     };
 
 
-    const handleSearch = () => {
+    const applyFilters = () => {
         const text = searchText.trim().toLowerCase();
 
-        if (!text) {
-            setRows(originalRows);
-        } else {
-            const filteredRows = originalRows.filter((row) =>
-                ['plant', 'customer_name', 'part_number', 'description', 'plan_type'].some((key) => {
-                    const value = row[key];
-                    return value && String(value).toLowerCase().includes(text);
-                })
-            );
-            setRows(filteredRows);
-        }
+        const filteredRows = originalRows.filter((row) => {
+            if (materialTypeFilter !== "All" && row.material_type_group !== materialTypeFilter) return false;
+            if (!text) return true;
+            return ['plant', 'customer_name', 'part_number', 'description', 'plan_type'].some((key) => {
+                const value = row[key];
+                return value && String(value).toLowerCase().includes(text);
+            });
+        });
+        setRows(filteredRows);
     };
+
+    const handleSearch = () => applyFilters();
+
+    useEffect(() => {
+        applyFilters();
+    }, [originalRows, materialTypeFilter]);
 
     const columns = [
         { field: "trn_pmpd_master_id", headerName: "SI No", width: 80 },
@@ -64,6 +101,12 @@ const PMPD_MasterScreen = () => {
         { field: "line", headerName: "Line", flex: 1 },
         // { field: "customer_name", headerName: "Customer", flex: 1 },
         { field: "part_number", headerName: "Part No", flex: 1 },
+        {
+            field: "material_type", headerName: "Material Type", flex: 1,
+            renderCell: (params) => params.value
+                ? <>{params.value}</>
+                : <span style={{ color: "#d32f2f" }}>Not in Material Master (or inactive)</span>
+        },
         { field: "prod_seg_name", headerName: "Segment", flex: 1 },
         { field: "PMPD_SMH", headerName: "PMPD_SMH", flex: 1 },
         {
@@ -105,7 +148,6 @@ const PMPD_MasterScreen = () => {
                 ? await getTrnPMPD_MasterDetails(currentUserPlantCode)
                 : await getTrnPMPD_MasterDetails()
             setOriginalRows(response || [])
-            setRows(response || [])
         }
         fectchData()
     }, [refreshData])
@@ -138,14 +180,21 @@ const PMPD_MasterScreen = () => {
             {/* Search and Icons Section */}
             <div
                 style={{
+                    backgroundColor: "#fff",
+                    borderRadius: 8,
+                    border: "1px solid #e8eaee",
+                    boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
+                    padding: "7px 10px",
+                    marginBottom: 12,
                     display: "flex",
+                    flexWrap: "wrap",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    marginBottom: 10,
+                    gap: 8,
                 }}
             >
                 {/* Search Box - requester */}
-                <div style={{ display: "flex", gap: "10px" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
                     <TextField
                         size="small"
                         variant="outlined"
@@ -153,23 +202,32 @@ const PMPD_MasterScreen = () => {
                         value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
                         onKeyUp={handleSearch}
-                        style={{ width: "400px" }}
+                        sx={compactFieldSx(260)}
                     />
+                    <TextField
+                        select
+                        size="small"
+                        label="Material Type"
+                        value={materialTypeFilter}
+                        onChange={(e) => setMaterialTypeFilter(e.target.value)}
+                        sx={compactFieldSx(150)}
+                    >
+                        <MenuItem sx={{ fontSize: 11.5 }} value="All">All</MenuItem>
+                        <MenuItem sx={{ fontSize: 11.5 }} value="FERT">FERT</MenuItem>
+                        <MenuItem sx={{ fontSize: 11.5 }} value="HALB">HALB</MenuItem>
+                        <MenuItem sx={{ fontSize: 11.5 }} value="Others">Others</MenuItem>
+                    </TextField>
                     <Button
                         onClick={handleSearch}
-                        style={{
-                            borderRadius: "25px",
-                            border: "2px solid skyblue",
-                            color: "skyblue",
-                            fontWeight: "bold",
-                            textTransform: "none",
-                        }}
+                        variant="outlined"
+                        disableElevation
+                        startIcon={<SearchIcon size={15} />}
+                        sx={{ ...compactButtonSx, borderColor: "#0066FF", color: "#0066FF", "&:hover": { borderColor: "#0052cc", backgroundColor: "#f0f6ff" } }}
                     >
-                        <SearchIcon style={{ marginRight: "5px" }} />
                         Search
                     </Button>
                 </div>
-                <div style={{ display: PMPDAccess.disableAction ? "none" : "flex", gap: "10px" }}>
+                <div style={{ display: PMPDAccess.disableAction ? "none" : "flex", gap: 8, alignItems: "center" }}>
                     <ExcelUploadModal open={openUploadModal}
                         onClose={() => {
                             setOpenUploadModal(false)
@@ -181,30 +239,29 @@ const PMPD_MasterScreen = () => {
                         setRefreshData={setRefreshData}
                     />
 
-                    <IconButton
+                    <Button
+                        variant="contained"
+                        disableElevation
                         onClick={handleOpenAddModal}
-                        style={{
-                            borderRadius: "50%",
-                            backgroundColor: "#0066FF",
-                            color: "white",
-                            width: "40px",
-                            height: "40px",
-                            display: PMPDAccess.disableAction ? "none" : null,
-                        }}
+                        startIcon={<AddIcon sx={{ fontSize: 15 }} />}
+                        sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc" }, display: PMPDAccess.disableAction ? "none" : null }}
                     >
-                        <AddIcon />
-                    </IconButton>
+                        Add
+                    </Button>
                 </div>
             </div>
 
-            {/* DataGrid */}
+            {/* DataGrid — compact enterprise styling shared with the Production
+                Actual screen. Only visual styling; rows/columns/behavior untouched. */}
             <div
                 style={{
                     flexGrow: 1, // Ensures it grows to fill the remaining space
+                    minHeight: 0,
                     backgroundColor: "#fff",
                     borderRadius: 8,
-                    boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-                    height: "calc(5 * 48px)",
+                    border: "1px solid #e8eaee",
+                    boxShadow: "0 1px 3px rgba(16,24,40,0.05)",
+                    overflow: "hidden",
                 }}
             >
                 <DataGrid
@@ -214,33 +271,32 @@ const PMPD_MasterScreen = () => {
                     rowsPerPageOptions={[5]}
                     getRowId={(row) => row.trn_pmpd_master_id} // Specify a custom id field
                     disableSelectionOnClick
+                    columnHeaderHeight={36}
+                    rowHeight={38}
                     slots={{ toolbar: CustomToolbar }}
                     sx={{
-                        // Header Style
-                        "& .MuiDataGrid-columnHeader": {
-                            backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
-                            color: "black",
-                            fontWeight: "bold",
-                        },
-                        "& .MuiDataGrid-columnHeaderTitle": {
-                            fontSize: "16px",
-                            fontWeight: "bold",
-                        },
-                        "& .MuiDataGrid-row": {
-                            backgroundColor: "#f5f5f5", // Default row background
-                            "&:hover": {
-                                backgroundColor: "#f5f5f5",
-                            },
-                        },
-                        // ✅ Remove Selected Row Background
-                        "& .MuiDataGrid-row.Mui-selected": {
-                            backgroundColor: "inherit", // No background on selection
-                        },
-
-                        "& .MuiDataGrid-cell": {
-                            color: "#333",
-                            fontSize: "14px",
-                        },
+                        height: "100%",
+                        border: "none",
+                        "& .MuiDataGrid-columnSeparator": { display: "none" },
+                        "& .MuiDataGrid-cell": { color: "#333", fontSize: "11px", padding: "0 8px", borderRight: "none" },
+                        "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within": { outline: "none" },
+                        "& .MuiDataGrid-columnHeaders": { position: "sticky", top: 0, zIndex: 2 },
+                        "& .MuiDataGrid-columnHeader": { backgroundColor: "#d0dcf5", color: "#000000", padding: "0 8px" },
+                        "& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within": { outline: "none" },
+                        "& .MuiDataGrid-columnHeaderTitle": { fontSize: "10.5px", fontWeight: "bold", color: "#000000" },
+                        "& .MuiDataGrid-sortIcon, & .MuiDataGrid-menuIconButton": { color: "#000000" },
+                        "& .MuiDataGrid-row": { backgroundColor: "#fff" },
+                        "& .MuiDataGrid-row:nth-of-type(even)": { backgroundColor: "#fafbfc" },
+                        "& .MuiDataGrid-row:hover": { backgroundColor: "#eef4ff" },
+                        "& .MuiDataGrid-row.Mui-selected": { backgroundColor: "inherit" },
+                        "& .MuiDataGrid-toolbarContainer": { padding: "2px 6px", minHeight: 28 },
+                        "& .MuiDataGrid-toolbarContainer button": { fontSize: "11px", padding: "2px 6px" },
+                        "& .MuiDataGrid-footerContainer": { minHeight: 34 },
+                        "& .MuiTablePagination-root": { overflow: "visible" },
+                        "& .MuiTablePagination-toolbar": { minHeight: "34px !important", height: 34, paddingLeft: 8, paddingRight: 4 },
+                        "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": { fontSize: 11, marginTop: 0, marginBottom: 0 },
+                        "& .MuiTablePagination-select": { fontSize: 11, paddingTop: "2px !important", paddingBottom: "2px !important", minHeight: "unset" },
+                        "& .MuiTablePagination-selectIcon": { fontSize: 16 },
                     }}
                 />
             </div>
@@ -386,21 +442,17 @@ const ExcelUploadModal = ({
 
     return (
         <>
-            <IconButton
-                component="span"
+            <Button
+                variant="contained"
+                disableElevation
                 onClick={() => {
                     if (onOpen) onOpen()
                 }}
-                style={{
-                    borderRadius: "50%",
-                    backgroundColor: "#FF6699",
-                    color: "white",
-                    width: "40px",
-                    height: "40px",
-                }}
+                startIcon={<CloudUploadIcon size={15} />}
+                sx={{ ...compactButtonSx, backgroundColor: "#1B7A43", "&:hover": { backgroundColor: "#166238" } }}
             >
-                <CloudUploadIcon />
-            </IconButton>
+                Upload
+            </Button>
 
             <Modal open={open} onClose={() => { }}>
                 <Box
@@ -588,6 +640,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
     const [submitLoading, setSubmitLoading] = useState(false)
     const [plants, setPlants] = useState([])
     const [productSegment, setProductSegment] = useState([])
+    const [partNumbers, setPartNumbers] = useState([])
 
     const handleClose = () => {
         setOpenAddModal(false)
@@ -661,6 +714,20 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
     });
 
     useEffect(() => {
+        const fetchParts = async () => {
+            if (!open || !formik.values.plant) return setPartNumbers([])
+            try {
+                setPartNumbers(await getPMPDPartNumbers(formik.values.plant) || [])
+            } catch (error) {
+                console.error("Error fetching part numbers", error)
+                setPartNumbers([])
+            }
+        }
+        fetchParts()
+    }, [open, formik.values.plant])
+
+
+    useEffect(() => {
         const fetchInitData = async () => {
             const response = await getPlantdetails()
             console.log('Plants', response)
@@ -704,11 +771,11 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                         fullWidth
                         value={String(formik.values.plant)}
                         onChange={(e) => {
-                            const selectedId = e.target.value;
                             formik.handleChange(e);
+                            formik.setFieldValue("part_number", "");
                         }}
                         onBlur={formik.handleBlur}
-                        error={formik.touched.plant && Boolean(formik.errors.plant)}
+                        error={formik.touched.plant&& Boolean(formik.errors.plant)}
                         helperText={formik.touched.plant && formik.errors.plant}
                         sx={{
                             ...CommonMuiStyles.textFieldSmallSx2,
@@ -763,17 +830,38 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                         sx={{ ...CommonMuiStyles.textFieldSmallSx2, mt: 1 }}
                     />
 
-                    <TextField
+                    <Autocomplete
                         id="part_number"
-                        name="part_number"
-                        label="Part Number"
-                        fullWidth
-                        value={formik.values.part_number}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        error={formik.touched.part_number && Boolean(formik.errors.part_number)}
-                        helperText={formik.touched.part_number && formik.errors.part_number}
-                        sx={{ ...CommonMuiStyles.textFieldSmallSx2, mt: 1 }}
+                        options={partNumbers}
+                        getOptionLabel={(p) => (typeof p === "string" ? p : p.part_number)}
+                        isOptionEqualToValue={(o, v) => o.part_number === (typeof v === "string" ? v : v.part_number)}
+                        filterOptions={(opts, { inputValue }) => {
+                            const q = inputValue.trim().toLowerCase()
+                            return opts.filter((o) => `${o.part_number} ${o.description || ""}`.toLowerCase().includes(q))
+                        }}
+                        value={partNumbers.find((p) => p.part_number === formik.values.part_number) || formik.values.part_number || null}
+                        onChange={(e, value) => formik.setFieldValue("part_number", value ? value.part_number : "")}
+                        onBlur={() => formik.setFieldTouched("part_number", true)}
+                        disabled={!formik.values.plant}
+                        noOptionsText="No active FERT/HALB material for this plant"
+                        renderOption={(props, option) => (
+                            <li {...props} key={option.part_number}>
+                                <span>
+                                    {option.part_number}
+                                    {option.description ? <span style={{ fontSize: 10, color: "#6b7280" }}> / {option.description}</span> : null}
+                                </span>
+                            </li>
+                        )}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                name="part_number"
+                                label="Part Number"
+                                error={formik.touched.part_number && Boolean(formik.errors.part_number)}
+                                helperText={formik.touched.part_number && formik.errors.part_number}
+                                sx={{ ...CommonMuiStyles.textFieldSmallSx2, mt: 1 }}
+                            />
+                        )}
                     />
 
 

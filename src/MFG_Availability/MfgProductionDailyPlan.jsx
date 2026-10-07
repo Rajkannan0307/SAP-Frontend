@@ -178,8 +178,10 @@ const getStockCoverageColorKey = (coveragePct, planQty) => {
   if (planQty === null || planQty === undefined || planQty === "" || Number(planQty) <= 0) {
     return "none";
   }
-  if (coveragePct > 90) return "green";
-  if (coveragePct > 50) return "yellow";
+  // Any shortage is red: the plan is green only when the remaining stock
+  // covers it in full (e.g. stock 1950, plans 1500 + 400 + 51 -> 51 > the 50
+  // left, so the last shift is red, not partially covered).
+  if (coveragePct >= 100) return "green";
   return "red";
 };
 
@@ -212,7 +214,7 @@ const computeStockCoverage = (dayPeriods, shifts, rowValues, totalStock) => {
       // status TEXT always agrees with the border/chip COLOR — previously
       // this said "Partially Covered" for ANY coverage > 0%, even something
       // like 15% (which the border already correctly shows as red/shortage).
-      const status = coveragePct > 90 ? "Fully Covered" : coveragePct > 50 ? "Partially Covered" : "Stock Shortage";
+      const status = coveragePct >= 100 ? "Fully Covered" : "Stock Shortage";
       map.set(key, { planQty, before, used, after, coveragePct, status });
       remaining = after;
     });
@@ -230,9 +232,8 @@ const capDigits = (raw, maxDigits) => raw.replace(/[^0-9]/g, "").slice(0, maxDig
 // hardcoded to a specific date):
 //   - DAY cells: editable only from today onward — a past day within the
 //     current week is locked (nothing left to plan for a day already gone).
-//   - The CURRENT week's own WEEK bucket (W-39): editable only when today
-//     IS that week's Monday — once the week is underway, the week-level
-//     total is considered locked in favor of the daily breakdown.
+//   - The CURRENT week's own WEEK bucket (W-39): always editable (for users
+//     with edit access), even after Monday.
 //   - The NEXT week's WEEK bucket (W-40) is unaffected by any of this —
 //     always editable, since it's a forward-looking estimate regardless of
 //     what day it is today.
@@ -242,9 +243,8 @@ const isPeriodEditable = (period, today, currentWeekStart) => {
   if (period.period_type === "DAY") {
     return period.plan_date >= today;
   }
-  if (period.plan_date === currentWeekStart) {
-    return today === currentWeekStart;
-  }
+  // WEEK buckets (current and next week) are always open; who may type is decided
+  // by the role check (canEdit), not by the date.
   return true;
 };
 

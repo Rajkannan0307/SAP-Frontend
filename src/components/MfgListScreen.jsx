@@ -39,6 +39,9 @@ import { getPlantdetails } from "../controller/CommonApiService";
                         has the Plant filter only and loadRows gets just { plant }
      allowAllPlants     add an "All Plants" option (the default); loadRows/downloadExcel
                         then receive no plant
+     selectFilter       optional { label, field, options: [...] } - adds a dropdown next to the
+                        search box ("All" + options) that keeps only rows whose row[field]
+                        equals the choice
      extraActions       node rendered before Excel Download (e.g. a Fetch button)
      reloadKey          change it to reload the current filters (e.g. after Fetch)
      children           anything rendered after the grid (dialogs)
@@ -126,6 +129,7 @@ const MfgListScreen = ({
   showPeriod = true,
   downloadWithDateRange = true,
   allowAllPlants = false,
+  selectFilter = null,
   extraActions = null,
   reloadKey,
   children = null,
@@ -144,6 +148,7 @@ const MfgListScreen = ({
   const [loadError, setLoadError] = useState("");
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [selectValue, setSelectValue] = useState("All");
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
 
   useEffect(() => {
@@ -229,13 +234,16 @@ const MfgListScreen = ({
   const displayRows = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     const prepared = prepareRows ? prepareRows(rows) : rows;
-    const filtered = q
-      ? prepared.filter((r) => searchFields.some((k) => String(r[k] ?? "").toLowerCase().includes(q)))
+    const byChoice = selectFilter && selectValue !== "All"
+      ? prepared.filter((r) => r[selectFilter.field] === selectValue)
       : prepared;
+    const filtered = q
+      ? byChoice.filter((r) => searchFields.some((k) => String(r[k] ?? "").toLowerCase().includes(q)))
+      : byChoice;
     return filtered.map((r, i) => ({ ...r, si: i + 1 }));
     // prepareRows/searchFields are static per screen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, searchText]);
+  }, [rows, searchText, selectValue]);
 
   const allColumns = useMemo(
     () => [{ field: "si", headerName: "SI No", width: 70, sortable: false }, ...columns],
@@ -308,6 +316,18 @@ const MfgListScreen = ({
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          {selectFilter && (
+            <TextField
+              select size="small" label={selectFilter.label} value={selectValue}
+              onChange={(e) => { setSelectValue(e.target.value); setPaginationModel((prev) => ({ ...prev, page: 0 })); }}
+              sx={compactFieldSx(130)}
+            >
+              <MenuItem sx={{ fontSize: 11.5 }} value="All">All</MenuItem>
+              {selectFilter.options.map((o) => (
+                <MenuItem sx={{ fontSize: 11.5 }} key={o} value={o}>{o}</MenuItem>
+              ))}
+            </TextField>
+          )}
           <TextField
             size="small" variant="outlined" placeholder="Search all columns..."
             value={searchText}

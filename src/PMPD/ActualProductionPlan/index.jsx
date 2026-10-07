@@ -1,6 +1,6 @@
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect, useMemo, useState } from 'react'
 import SectionHeading from '../../components/Header'
-import { Box, Button, CircularProgress, IconButton, MenuItem, Modal, TextField, Typography } from '@mui/material'
+import { Box, Button, CircularProgress, IconButton, MenuItem, Modal, TextField, Tooltip, Typography } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { CloudUploadIcon, EditIcon, SearchIcon } from 'lucide-react'
 import { PiUploadDuotone } from 'react-icons/pi'
@@ -9,7 +9,7 @@ import { deepPurple } from '@mui/material/colors';
 import * as ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
 import { getPlantdetails } from '../../controller/CommonApiService'
-import { AddTrnActualProdPlan_BULK, downloadTrnActualProdPlanExcel, fetchProdDataMB51, getTrnActualProdPlan } from '../../controller/PMPDApiService'
+import { AddTrnActualProdPlan_BULK, downloadTrnActualProdPlanExcel, fetchProdDataMB51, getActualProdLookup, getTrnActualProdPlan } from '../../controller/PMPDApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import { format, isValid } from 'date-fns'
 import { useFormik } from 'formik'
@@ -86,9 +86,21 @@ const compactButtonSx = {
   whiteSpace: "nowrap",
 };
 
+// STEP 1 — only these movement types are read at all: moment_type IN (101, 102, 261, 262).
+// Every other movement type is ignored before anything is grouped or summed.
+const ALLOWED_MOVEMENTS = ['101', '102', '261', '262']
+// STEP 2 — movement types counted under each Material Type (anything else -> Others)
+const FERT_MOVEMENTS = ['101', '102', '261', '262']
+const HALB_MOVEMENTS = ['101', '102']
+
 const PMPD_ActualProductionPlan = () => {
   const [searchText, setSearchText] = useState("");
-  const [rows, setRows] = useState([]);
+  // originalRows = raw records from the existing API; the table shows them
+  // summed per Plant + Part Number + Material Type (see summaryRows below).
+  const [lookup, setLookup] = useState({ materials: [], pmpd: [] });
+  const [materialTypeFilter, setMaterialTypeFilter] = useState("All");
+  const [pmpdFilter, setPmpdFilter] = useState("All");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [originalRows, setOriginalRows] = useState([]);
   const [openUploadModal, setOpenUploadModal] = useState(false);
   const [refreshData, setRefreshData] = useState(false)
@@ -120,37 +132,78 @@ const PMPD_ActualProductionPlan = () => {
   const PMPDAccess = getPMPDAccess()
 
   const handleSearch = () => {
-    const text = searchText.trim().toLowerCase();
-
-    if (!text) {
-      setRows(originalRows);
-    } else {
-      const filteredRows = originalRows.filter((row) =>
-        ['plant', 'part_number', 'description', 'prod_date'].some((key) => {
-          // const value = row[key];
-          // return value && String(value).toLowerCase().includes(text);
-          let value = row[key];
-
-          if (value === null || value === undefined) return false;
-
-          // Handle the date field specifically
-          if (key === 'prod_date') {
-            // parseISO is safer for yyyy-mm-dd strings
-            const dateObj = new Date(value);
-
-            if (isValid(dateObj)) {
-              // Convert the row's date to the searchable format
-              value = format(dateObj, "dd-MM-yyyy");
-            }
-          }
-
-          // Standard string comparison
-          return String(value).toLowerCase().includes(text);
-        })
-      );
-      setRows(filteredRows);
-    }
+    setAppliedSearch(searchText.trim().toLowerCase());
   };
+
+  // Step 1: only movement types 101/102/261/262 are used (everything else is dropped
+  // up front). Step 2: one row per Plant + Part Number + Month with the SUM of
+  // prod_qty. Material Type comes from the ACTIVE Material Master record. FERT
+  // counts movement types 101/102/261/262 and HALB only 101/102; a part that is
+  // not in Material Master, is another type, or has no record with an allowed
+  // movement type is listed under Others (with all of its remaining quantity).
+  // PMPD = Yes when the Plant + Part Number exists in PMPD Master.
+  const summaryRows = useMemo(() => {
+    const key = (v) => String(v ?? "").trim().toLowerCase()
+    const typeByPart = new Map()
+    lookup.materials.forEach((m) => {
+      const k = key(m.part_number)
+      if (!typeByPart.has(k)) typeByPart.set(k, m.material_type)
+    })
+    const pmpdParts = new Set(lookup.pmpd.map(key))
+    const monthOf = (r) => {
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(r.prod_date || ''))
+      const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, 1) : (r.prod_date ? new Date(r.prod_date) : null)
+      return d && isValid(d) ? format(d, "MMM-yyyy") : ""
+    }
+
+    const parts = new Map()
+    originalRows
+      .filter((r) => ALLOWED_MOVEMENTS.includes(String(r.moment_type ?? '').trim()))
+      .forEach((r) => {
+        const k = `${r.plant}|${key(r.part_number)}|${monthOf(r)}`
+        if (!parts.has(k)) parts.set(k, { k, records: [], sample: r, month: monthOf(r) })
+        parts.get(k).records.push(r)
+      })
+
+    return Array.from(parts.values()).map(({ k, records, sample, month }) => {
+      const matType = typeByPart.get(key(sample.part_number))
+      const allowed = matType === 'FERT' ? FERT_MOVEMENTS : matType === 'HALB' ? HALB_MOVEMENTS : null
+      const counted = allowed ? records.filter((r) => allowed.includes(String(r.moment_type ?? '').trim())) : []
+      const isListed = allowed && counted.length > 0
+      const materialType = isListed ? matType : 'Others'
+      const used = isListed ? counted : records
+      let othersReason = ''
+      if (!isListed) {
+        if (matType === undefined) othersReason = 'Part Number is not found (or is inactive) in Material Master for this plant.'
+        else if (allowed) othersReason = `Material Master type is ${matType}, but none of its movement types are in ${allowed.join(', ')}.`
+        else othersReason = `Material Master type is ${matType || '(blank)'}; only FERT and HALB are listed separately.`
+      }
+      return {
+        id: k,
+        plant: sample.plant,
+        month,
+        part_number: sample.part_number,
+        description: (used.find((r) => r.description) || {}).description || "",
+        material_type: materialType,
+        not_in_material_master: matType === undefined,
+        others_reason: othersReason,
+        prod_qty: used.reduce((sum, r) => sum + (Number(r.prod_qty) || 0), 0),
+        pmpd: pmpdParts.has(key(sample.part_number)) ? "Yes" : "No",
+      }
+    })
+  }, [originalRows, lookup])
+
+  const filteredRows = useMemo(() => summaryRows.filter((row) => {
+    if (materialTypeFilter !== "All" && row.material_type !== materialTypeFilter) return false
+    if (pmpdFilter !== "All" && row.pmpd !== pmpdFilter) return false
+    if (!appliedSearch) return true
+    // Typing exactly "yes" / "no" searches the PMPD Yes/No column only
+    // (a plain substring match on "no" would hit unrelated descriptions).
+    if (appliedSearch === 'yes' || appliedSearch === 'no') return row.pmpd.toLowerCase() === appliedSearch
+    return ['plant', 'month', 'part_number', 'description', 'material_type'].some((k) =>
+      String(row[k] ?? '').toLowerCase().includes(appliedSearch)
+    )
+  }), [summaryRows, materialTypeFilter, pmpdFilter, appliedSearch])
 
   const [plants, setPlants] = useState([])
   const [loading, setLoading] = useState(false)
@@ -186,11 +239,16 @@ const PMPD_ActualProductionPlan = () => {
         endDate: monthEndStr(values.year, values.month),
       })
       setOriginalRows(response || [])
-      setRows(response || [])
+      try {
+        setLookup(await getActualProdLookup({ plant: values.plant }))
+      } catch (lookupError) {
+        console.error('Load Material Master lookup error:', lookupError)
+        setLookup({ materials: [], pmpd: [] })
+        alert('Could not load Material Master / PMPD details. Material Type and PMPD may be shown incorrectly.')
+      }
     } catch (error) {
       console.error('Load Production Actual error:', error)
       setOriginalRows([])
-      setRows([])
       alert(error.response?.data?.message || error.message || 'Failed to load Production Actual data.')
     }
     setLoading(false)
@@ -246,28 +304,35 @@ const PMPD_ActualProductionPlan = () => {
   // ];
 
   const columns = [
-    { field: "act_prod_id", headerName: "SI No", width: 80 },
     { field: "plant", headerName: "Plant", width: 100 },
-    { field: "moment_type", headerName: "Moment_Type", width: 110 },
-    { field: "storage_loc", headerName: "Storage_Loc", width: 110 },
     {
-      field: "prod_date",
-      headerName: "Prod_Date",
-      width: 130,
-      renderCell: (params) => params.value ? format(new Date(params.value), "dd-MM-yyyy") : ""
+      field: "material_type", headerName: "Material Type", width: 200,
+      renderCell: (params) => {
+        const cell = params.row.not_in_material_master
+          ? <span>Others <span style={{ color: "#d32f2f", fontSize: 10 }}>(Not in Material Master / inactive)</span></span>
+          : <span>{params.value}</span>
+        if (!params.row.others_reason) return cell
+        return (
+          <Tooltip
+            arrow
+            placement="top"
+            title={params.row.others_reason}
+            slotProps={{
+              popper: { disablePortal: false, modifiers: [{ name: 'preventOverflow', options: { padding: 8 } }, { name: 'flip', enabled: true }] },
+              tooltip: { sx: { bgcolor: "#1f2937", color: "#fff", fontSize: 11, lineHeight: 1.4, borderRadius: "6px", padding: "6px 10px", maxWidth: 260, boxShadow: "0 4px 12px rgba(16,24,40,0.2)" } },
+              arrow: { sx: { color: "#1f2937" } },
+            }}
+          >
+            {cell}
+          </Tooltip>
+        )
+      }
     },
-    { field: "part_number", headerName: "Part_Number", width: 180 },
+    { field: "month", headerName: "Month", width: 120 },
+    { field: "part_number", headerName: "Part Number", width: 180 },
     { field: "description", headerName: "Description", flex: 1, minWidth: 200 },
-    { field: "prod_qty", headerName: "Prod_Qty", width: 110, type: 'number' },
-    { field: "prod_order", headerName: "Prod_Order", width: 150 },
-    { field: "material_doc", headerName: "Material_Doc", width: 150 },
-    {
-      field: "time_of_entry",
-      headerName: "Entry_Time",
-      width: 120,
-      renderCell: (params) => params.value
-    },
-    { field: "reservation_item_no", headerName: "Item No. of Reservation", width: 180 },
+    { field: "prod_qty", headerName: "Prod Qty", width: 120, type: 'number' },
+    { field: "pmpd", headerName: "PMPD", width: 100, type: "singleSelect", valueOptions: ["Yes", "No"] },
   ];
 
   const CustomToolbar = () => (
@@ -405,6 +470,31 @@ const PMPD_ActualProductionPlan = () => {
               onKeyUp={handleSearch}
               sx={compactFieldSx(260)}
             />
+            <TextField
+              select
+              size="small"
+              label="Material Type"
+              value={materialTypeFilter}
+              onChange={(e) => setMaterialTypeFilter(e.target.value)}
+              sx={compactFieldSx(130)}
+            >
+              <MenuItem sx={{ fontSize: 11.5 }} value="All">All</MenuItem>
+              <MenuItem sx={{ fontSize: 11.5 }} value="FERT">FERT</MenuItem>
+              <MenuItem sx={{ fontSize: 11.5 }} value="HALB">HALB</MenuItem>
+              <MenuItem sx={{ fontSize: 11.5 }} value="Others">Others</MenuItem>
+            </TextField>
+            <TextField
+              select
+              size="small"
+              label="PMPD"
+              value={pmpdFilter}
+              onChange={(e) => setPmpdFilter(e.target.value)}
+              sx={compactFieldSx(100)}
+            >
+              <MenuItem sx={{ fontSize: 11.5 }} value="All">All</MenuItem>
+              <MenuItem sx={{ fontSize: 11.5 }} value="Yes">Yes</MenuItem>
+              <MenuItem sx={{ fontSize: 11.5 }} value="No">No</MenuItem>
+            </TextField>
             <Button
               onClick={handleSearch}
               variant="outlined"
@@ -470,13 +560,12 @@ const PMPD_ActualProductionPlan = () => {
         }}
       >
         <DataGrid
-          rows={rows}
+          rows={filteredRows}
           columns={columns}
           pageSize={5} // Set the number of rows per page to 8
           rowsPerPageOptions={[5]}
-          getRowId={(row) => row.act_prod_id} // Specify a custom id field
+          getRowId={(row) => row.id} // Specify a custom id field
           disableSelectionOnClick
-          disableColumnMenu
           columnHeaderHeight={36}
           rowHeight={38}
           slots={{ toolbar: CustomToolbar }}

@@ -19,7 +19,7 @@ import SectionHeading from "../components/Header";
 import LiveCountdown from "./LiveCountdown";
 import { compactButtonSx } from "../components/MfgListScreen";
 import {
-  deleteSchedulerJob, getRetentionPreview, getSchedulerJobs, getSchedulerTargets, getTargetColumns, runSchedulerJob, saveSchedulerJob,
+  deleteSchedulerJob, getRetentionPreview, getSchedulerJobs, getSchedulerStatus, getSchedulerTargets, getTargetColumns, runSchedulerJob, saveSchedulerJob,
 } from "../controller/SchedulerApiService";
 import {
   LOAD_MODES, StatusChip, currentUserId, errorText, fmtDateTime, keepText, scheduleText, statusStyle, useSchedulerCanManage,
@@ -31,7 +31,7 @@ const EMPTY_FORM = {
   job_name: "", description: "", file_prefix: "", source_path: SHARE_ROOT, processed_path: SHARE_ROOT, after_success: "MOVE",
   target_table: "", load_mode: "INSERT_ONLY", validation_mode: "PER_ROW", dup_key_columns: [], dup_prefer_column: "", proc_name: "", proc_temp_table: "#",
   split_plant_month: false, keep_mode: "ALL", keep_days: "", retention_date_column: "",
-  schedule_type: "EVERY_N_HOURS", every_hours: 4, at_minute: 0, daily_time: "08:30", engine: "GENERIC", is_active: true,
+  schedule_type: "EVERY_N_HOURS", every_hours: 4, at_minute: 0, daily_time: "08:30", is_active: true,
 };
 
 const fieldProps = { size: "small", fullWidth: true, InputLabelProps: { shrink: true }, sx: { "& .MuiInputBase-input": { fontSize: 13 } } };
@@ -46,7 +46,7 @@ const formFromJob = (job) => ({
   proc_name: job.proc_name || "", proc_temp_table: job.proc_temp_table || "#", split_plant_month: Boolean(job.split_plant_month),
   keep_mode: job.keep_days === null || job.keep_days === undefined ? "ALL" : "DAYS", keep_days: job.keep_days ?? "",
   retention_date_column: job.retention_date_column || "", schedule_type: job.schedule_type, every_hours: job.every_hours ?? 4,
-  at_minute: job.at_minute ?? 0, daily_time: job.daily_time || "08:30", engine: job.engine, is_active: Boolean(job.is_active),
+  at_minute: job.at_minute ?? 0, daily_time: job.daily_time || "08:30", is_active: Boolean(job.is_active),
 });
 
 // 'yyyy-MM-dd HH:mm' (server time) -> 'HH:mm', or 'dd-MM HH:mm' when it is not today
@@ -155,8 +155,6 @@ const JobDialog = ({ open, job, targets, onClose, onSaved }) => {
     }
   };
 
-  const generic = form.engine === "GENERIC";
-
   return (
     <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="md" fullWidth scroll="paper">
       <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1, fontSize: 16, fontWeight: 700, pb: 1 }}>
@@ -202,9 +200,9 @@ const JobDialog = ({ open, job, targets, onClose, onSaved }) => {
           <TextField
             {...fieldProps} select required label="Target table" value={form.target_table} disabled={editing && job.mapped_columns > 0}
             onChange={(e) => set({ target_table: e.target.value, retention_date_column: "", dup_key_columns: [] })}
-            helperText={editing && job.mapped_columns > 0 ? "Clear the column mapping to change the table." : "Only approved tables are listed."}
+            helperText={editing && job.mapped_columns > 0 ? "Clear the column mapping to change the table." : "All tables starting with Trn_ are listed."}
           >
-            {targets.map((t) => <MenuItem key={t.target_table} value={t.target_table} sx={{ fontSize: 13 }}>{t.display_name} ({t.target_table})</MenuItem>)}
+            {targets.map((t) => <MenuItem key={t.target_table} value={t.target_table} sx={{ fontSize: 13 }}>{t.display_name === t.target_table ? t.target_table : `${t.display_name} (${t.target_table})`}</MenuItem>)}
           </TextField>
           <TextField
             {...fieldProps} select label="Load mode" value={form.load_mode} onChange={(e) => set({ load_mode: e.target.value })}
@@ -312,27 +310,13 @@ const JobDialog = ({ open, job, targets, onClose, onSaved }) => {
           </Alert>
         )}
 
-        <SectionLabel>Engine &amp; status</SectionLabel>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
-          <ToggleButtonGroup
-            exclusive size="small" value={form.engine} onChange={(e, v) => v && set({ engine: v })} disabled={!isBuiltIn}
-            sx={{ "& .MuiToggleButton-root": { textTransform: "none", fontSize: 12, py: 0.25, px: 1.5 } }}
-          >
-            <ToggleButton value="LEGACY">Old importer</ToggleButton>
-            <ToggleButton value="GENERIC">Scheduler engine</ToggleButton>
-          </ToggleButtonGroup>
-          <FormControlLabel
-            control={<Switch size="small" checked={form.is_active} onChange={(e) => set({ is_active: e.target.checked })} />}
-            label="Profile is active" sx={{ "& .MuiTypography-root": { fontSize: 12.5 } }}
-          />
-        </Box>
-        <Alert severity={generic ? "info" : "success"} sx={{ mt: 1.25, fontSize: 12.5 }}>
-          {generic
-            ? "The Scheduler engine runs this profile on its schedule using the column mapping on the Column Mapping Studio screen. The old importer is skipped, and can be switched back on here at any time."
-            : "The old importer (the import code built into the system) keeps running this job exactly as before. It is only a temporary fallback and will be removed; after that every job runs on the Scheduler engine. Settings here are saved for when you switch."}
-        </Alert>
+        <SectionLabel>Status</SectionLabel>
+        <FormControlLabel
+          control={<Switch size="small" checked={form.is_active} onChange={(e) => set({ is_active: e.target.checked })} />}
+          label="Profile is active" sx={{ "& .MuiTypography-root": { fontSize: 12.5 } }}
+        />
         {!isBuiltIn && editing && (
-          <Alert severity="info" sx={{ mt: 1, fontSize: 12.5 }}>Custom profiles always run on the Scheduler engine, and start running on their schedule once their columns are mapped.</Alert>
+          <Alert severity="info" sx={{ mt: 1, fontSize: 12.5 }}>This profile starts running on its schedule once its columns are mapped.</Alert>
         )}
         {!editing && (
           <Alert severity="info" sx={{ mt: 1, fontSize: 12.5 }}>After creating the profile, map its columns on the Column Mapping Studio screen. It starts running on its schedule as soon as columns are mapped.</Alert>
@@ -361,9 +345,8 @@ const InfoRow = ({ label, children }) => (
   </Box>
 );
 
-const JobCard = ({ job, canManage, busy, fetchedAt, onDue, onEdit, onRun, onToggle, onDelete, onNavigate }) => {
+const JobCard = ({ job, canManage, busy, fetchedAt, schedulerOff, onDue, onEdit, onRun, onToggle, onDelete, onNavigate }) => {
   const st = statusStyle(job.last_status);
-  const generic = job.engine === "GENERIC";
   return (
     <Paper
       variant="outlined"
@@ -384,9 +367,6 @@ const JobCard = ({ job, canManage, busy, fetchedAt, onDue, onEdit, onRun, onTogg
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 0.5 }}>
           <Box sx={{ display: "flex", gap: 0.5 }}>
             <Chip size="small" label={job.is_active ? "ACTIVE" : "PAUSED"} sx={{ height: 20, fontSize: 10, fontWeight: 700, backgroundColor: job.is_active ? "#e8f6ee" : "#f3f4f6", color: job.is_active ? "#1b7a43" : "#6b7280" }} />
-            <Tooltip title={generic ? "Runs on the Scheduler engine" : "Runs on the old built-in importer (a temporary fallback until it is removed)"}>
-              <Chip size="small" label={generic ? "SCHEDULER" : "OLD IMPORTER"} sx={{ height: 20, fontSize: 10, fontWeight: 700, backgroundColor: generic ? "#e6f0ff" : "#f3f4f6", color: generic ? "#0052cc" : "#5b6472" }} />
-            </Tooltip>
           </Box>
           {canManage && (
             <Tooltip title={job.is_active ? "Pause this profile" : "Activate this profile"}>
@@ -405,6 +385,10 @@ const JobCard = ({ job, canManage, busy, fetchedAt, onDue, onEdit, onRun, onTogg
         <InfoRow label="Next run">
           {!job.is_active || job.seconds_to_next === null || job.seconds_to_next === undefined ? (
             <Box component="span" sx={{ color: "#8a93a3" }}>Paused - will not run</Box>
+          ) : schedulerOff ? (
+            <Tooltip title="Scheduled runs are switched off on this server (development). Use Run now to test this job.">
+              <Box component="span" sx={{ color: "#b45309", fontWeight: 600 }}>Not scheduled here (development) · use Run now</Box>
+            </Tooltip>
           ) : (
             <LiveCountdown
               targetMs={fetchedAt + job.seconds_to_next * 1000}
@@ -483,14 +467,16 @@ const SchedulerJobs = () => {
   const [dialog, setDialog] = useState({ open: false, job: null });
   const [confirm, setConfirm] = useState(null); // { type: 'run' | 'delete', job }
   const [fetchedAt, setFetchedAt] = useState(Date.now());
+  const [schedStatus, setSchedStatus] = useState(null); // { enabled, environment } of the backend timer
 
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError("");
     try {
-      const [j, t] = await Promise.all([getSchedulerJobs(), getSchedulerTargets()]);
+      const [j, t, st] = await Promise.all([getSchedulerJobs(), getSchedulerTargets(), getSchedulerStatus().catch(() => null)]);
       setJobs(j);
       setTargets(t);
+      setSchedStatus(st);
       setFetchedAt(Date.now());
     } catch (e) {
       setLoadError(errorText(e, "Failed to load the scheduler jobs."));
@@ -512,7 +498,6 @@ const SchedulerJobs = () => {
   const stats = useMemo(() => ({
     total: jobs.length,
     active: jobs.filter((j) => j.is_active).length,
-    generic: jobs.filter((j) => j.engine === "GENERIC").length,
     failed: jobs.filter((j) => j.last_status === "FAILED").length,
   }), [jobs]);
 
@@ -596,9 +581,15 @@ const SchedulerJobs = () => {
       <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", mb: 2 }}>
         <StatTile label="Profiles" value={stats.total} />
         <StatTile label="Active" value={stats.active} color="#1b7a43" />
-        <StatTile label="On Scheduler engine" value={stats.generic} color="#0052cc" />
         <StatTile label="Last run failed" value={stats.failed} color={stats.failed ? "#b42323" : "#1a2233"} />
       </Box>
+
+      {schedStatus && schedStatus.enabled === false && (
+        <Alert severity="warning" sx={{ mb: 2, fontSize: 12.5 }}>
+          <b>Scheduled runs are OFF on this server</b> (environment: {schedStatus.environment}). Jobs do not start on their own here and nothing is written to the
+          history until you click <b>Run now</b> or Fetch. Set APP_ENV=production (or SCHEDULER_ENABLED=true) in the backend .env to switch the timer on.
+        </Alert>
+      )}
 
       {loadError && (
         <Alert severity="error" sx={{ mb: 2, fontSize: 12.5 }} action={<Button color="inherit" size="small" onClick={load} sx={{ textTransform: "none" }}>Retry</Button>}>
@@ -617,7 +608,7 @@ const SchedulerJobs = () => {
         <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(420px, 1fr))", gap: 2 }}>
           {jobs.map((job) => (
             <JobCard
-              key={job.job_id} job={job} canManage={canManage} busy={busyId === job.job_id} fetchedAt={fetchedAt} onDue={handleDue}
+              key={job.job_id} job={job} canManage={canManage} busy={busyId === job.job_id} fetchedAt={fetchedAt} schedulerOff={schedStatus?.enabled === false} onDue={handleDue}
               onEdit={(j) => setDialog({ open: true, job: j })}
               onRun={(j) => setConfirm({ type: "run", job: j })}
               onToggle={toggleActive}
@@ -639,7 +630,7 @@ const SchedulerJobs = () => {
         onCancel={() => setConfirm(null)} onConfirm={runNow}
       >
         Every pending file in the ingest folder will be imported
-        {confirm?.job?.engine === "GENERIC" ? " by the Scheduler engine." : " by the old importer (same as its Fetch button)."} Files are moved after a successful import.
+        . Files are moved after a successful import.
       </ConfirmDialog>
       <ConfirmDialog
         open={confirm?.type === "delete"} title={`Delete “${confirm?.job?.job_name}”?`} confirmLabel="Delete" color="error" busy={busyId !== null}

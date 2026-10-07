@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import {
   TextField,
   Button,
@@ -32,6 +32,7 @@ import { deepPurple } from '@mui/material/colors';
 import { api } from "../controller/constants";
 import { getdetails, getAdd, getPlants, getUpdates, getMaterialType, } from '../controller/Masterapiservice';
 import { getdetails as getLines } from '../controller/LineMasterapiservice';
+import LineSelect from '../components/LineSelect';
 import SectionHeading from "../components/Header";
 import { MaterialGroupEnumTypes } from "../common/enumValues";
 
@@ -173,22 +174,22 @@ const Material = () => {
   // Add form: PlantCode here holds Plant_ID (matches the Add Plant dropdown's
   // own value below and InsertMstMaterial's @PlantCode, which is inserted
   // straight into Mst_Material.Plant_ID). Empty until a Plant is actually
-  // picked — not "show everything until narrowed down" — then scoped to
+  // picked â€” not "show everything until narrowed down" â€” then scoped to
   // that exact Plant, same convention as Line Master's Module dropdown.
   const lineOptions = PlantCode ? LineTable.filter((l) => String(l.Plant_ID) === String(PlantCode)) : [];
 
   // Edit form: PlantCode here holds Plant_Code (the row's own business code,
-  // e.g. 1150 — see handleEditOpen), NOT Plant_ID, since Plant isn't part of
+  // e.g. 1150 â€” see handleEditOpen), NOT Plant_ID, since Plant isn't part of
   // the Update payload at all (UpdateMaterial has no @PlantCode param) and
   // this field exists for display/filtering only. GetLine returns both
   // Plant_ID and Plant_Code per line, so this filters on Plant_Code instead
-  // — fixes the previous bug where Edit's Line dropdown showed every line
+  // â€” fixes the previous bug where Edit's Line dropdown showed every line
   // from every plant because it filtered on the wrong field.
   const editLineOptions = PlantCode ? LineTable.filter((l) => String(l.Plant_Code) === String(PlantCode)) : [];
 
 
 
-  // ✅ Custom Toolbar
+  // âœ… Custom Toolbar
   const CustomToolbar = () => (
     <GridToolbarContainer>
       <GridToolbarColumnsButton />
@@ -197,7 +198,7 @@ const Material = () => {
     </GridToolbarContainer>
   );
 
-  // ✅ Handle Add Modal
+  // âœ… Handle Add Modal
   const handleOpenAddModal = (item) => {
     setPlantCode("");
     setMaterialCode("");
@@ -216,7 +217,7 @@ const Material = () => {
   const handleCloseAddModal = () => setOpenAddModal(false);
   const handleCloseEditModal = () => setOpenEditModal(false);
 
-  // ✅ Handle Upload Modal
+  // âœ… Handle Upload Modal
   const handleOpenUploadModal = () => {
     setOpenUploadModal(true);
     get_Plant();
@@ -226,7 +227,7 @@ const Material = () => {
 
   // Dynamic template (replaces the old static MaterialMaster.xlsx) so the
   // Active_Status/Plant_Code/Material_Type/Line_Name columns carry real
-  // dropdown lists — users typing free text into Active_Status had no idea
+  // dropdown lists â€” users typing free text into Active_Status had no idea
   // 'Active'/'Inactive' was the expected value, and the backend's old
   // Boolean(status) check silently treated ANY non-empty text as Active=1
   // (now fixed server-side to require exactly Active/Inactive too).
@@ -258,7 +259,7 @@ const Material = () => {
     const materialTypes = (MaterialTable || []).map((m) => m.Mat_Type || m.Material_Type).filter(Boolean);
     const lineNames = [...new Set((LineTable || []).map((l) => l.Line_Name).filter(Boolean))];
 
-    // Plant_Code / Material_Type / Active_Status are short lists — inline
+    // Plant_Code / Material_Type / Active_Status are short lists â€” inline
     // list formula works fine (Excel's ~255-char limit is not a concern).
     worksheet.dataValidations.add('A2:A1000', {
       type: 'list',
@@ -277,7 +278,7 @@ const Material = () => {
     });
 
     // Line_Name has no dropdown (332+ rows, growing, and a dropdown that
-    // large is unwieldy to scroll) — instead a second VISIBLE sheet lists
+    // large is unwieldy to scroll) â€” instead a second VISIBLE sheet lists
     // every Plant + Line so the user can look up the exact spelling and type
     // it into the Line_Name column on the main sheet themselves.
     if ((LineTable || []).length) {
@@ -388,7 +389,7 @@ const Material = () => {
       Material_Type_Validation: item.Material_Val,
     }));
 
-    // 🔹 Helper to style header cells
+    // ðŸ”¹ Helper to style header cells
     const styleHeaders = (worksheet, columns) => {
       columns.forEach((_, index) => {
         const cellAddress = XLSX.utils.encode_cell({ c: index, r: 0 });
@@ -402,7 +403,7 @@ const Material = () => {
       });
     };
 
-    // 🔴 Style red text for validation columns only
+    // ðŸ”´ Style red text for validation columns only
     const styleValidationColumns = (worksheet, columns, dataLength) => {
       const validationCols = ['PlantCode_Validation', 'Material_Type_Validation'];
 
@@ -429,33 +430,33 @@ const Material = () => {
     };
 
 
-    // 📄 New Records Sheet
+    // ðŸ“„ New Records Sheet
     if (filteredNewData.length === 0) filteredNewData.push({});
     const wsNewRecords = XLSX.utils.json_to_sheet(filteredNewData, { header: newRecordsColumns });
     styleHeaders(wsNewRecords, newRecordsColumns);
     XLSX.utils.book_append_sheet(wb, wsNewRecords, 'New Records');
 
-    // 📄 Updated Records Sheet
+    // ðŸ“„ Updated Records Sheet
     if (filteredUpdate.length === 0) filteredUpdate.push({});
     const wsUpdated = XLSX.utils.json_to_sheet(filteredUpdate, { header: UpdatedColumns });
     styleHeaders(wsUpdated, UpdatedColumns);
     XLSX.utils.book_append_sheet(wb, wsUpdated, 'Updated Records');
 
-    // 📄 Error Records Sheet
+    // ðŸ“„ Error Records Sheet
     if (filteredError.length === 0) filteredError.push({});
     const wsError = XLSX.utils.json_to_sheet(filteredError, { header: ErrorColumns });
     styleHeaders(wsError, ErrorColumns);
     styleValidationColumns(wsError, ErrorColumns, filteredError.length);
     XLSX.utils.book_append_sheet(wb, wsError, 'Error Records');
 
-    // 📦 Export the Excel file
+    // ðŸ“¦ Export the Excel file
     const fileName = 'Material Data Upload Log.xlsx';
     XLSX.writeFile(wb, fileName);
   };
 
 
 
-  // ✅ Handle Row Click for Edit
+  // âœ… Handle Row Click for Edit
 
 
 
@@ -477,7 +478,7 @@ const Material = () => {
     get_Line();
   };
 
-  // ✅ Search Functionality
+  // âœ… Search Functionality
   const handleSearch = () => {
     const text = searchText.trim().toLowerCase();
 
@@ -495,7 +496,7 @@ const Material = () => {
   };
 
 
-  // ✅ Handle Add Material
+  // âœ… Handle Add Material
   const handleAdd = async () => {
     console.log("Data being sent to the server:", {
       PlantCode, MaterialType, MaterialCode, Description, Rate, ActiveStatus, UserID
@@ -794,7 +795,7 @@ const Material = () => {
                 backgroundColor: "#f5f5f5",
               },
             },
-            // ✅ Remove Selected Row Background
+            // âœ… Remove Selected Row Background
             "& .MuiDataGrid-row.Mui-selected": {
               backgroundColor: "inherit", // No background on selection
             },
@@ -813,7 +814,12 @@ const Material = () => {
           sx={{
             display: "grid",
             gridTemplateColumns: "repeat(2, 1fr)",
-            width: 400,
+            width: 560,
+            maxWidth: "92vw",
+            // one font size for every input and label in this dialog
+            "& .MuiInputBase-root": { fontSize: 14 },
+            "& .MuiInputLabel-root": { fontSize: 14 },
+            "& .MuiMenuItem-root": { fontSize: 14 },
             bgcolor: "background.paper",
             borderRadius: 2,
             boxShadow: 24,
@@ -826,7 +832,7 @@ const Material = () => {
           <h3 style={{ gridColumn: "span 2", textAlign: "center", color: "#2e59d9", textDecoration: "underline", textDecorationColor: "#88c57a", textDecorationThickness: "3px" }}>
             Add Material
           </h3>
-          <FormControl fullWidth>
+          <FormControl fullWidth size="small">
             <InputLabel>Plant Code</InputLabel>
             <Select
               label="Plant Code"
@@ -844,7 +850,7 @@ const Material = () => {
             </Select>
           </FormControl>
 
-          <FormControl fullWidth>
+          <FormControl fullWidth size="small">
             <InputLabel>Material Type</InputLabel>
             <Select label="Material Type" name="MaterialType" value={MaterialType} onChange={(e) => setMaterialType(e.target.value)} required>
               {MaterialTable.map((item) => (
@@ -853,26 +859,18 @@ const Material = () => {
             </Select>
           </FormControl>
 
-          <FormControl fullWidth>
-            <InputLabel>Line</InputLabel>
-            <Select label="Line" name="LineID" value={LineID} onChange={(e) => setLineID(e.target.value)} disabled={!PlantCode}>
-              <MenuItem value="">None</MenuItem>
-              {lineOptions.map((item) => (
-                <MenuItem key={item.Line_ID} value={item.Line_ID}>{item.Line_Name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <LineSelect value={LineID} options={lineOptions} onChange={setLineID} disabled={!PlantCode} size="small14" />
 
-          <TextField
+          <TextField size="small"
             label="Material Code"
             name="MaterialCode"
             value={MaterialCode}
             onChange={(e) => setMaterialCode(e.target.value)} required />
-          <TextField
+          <TextField size="small"
             label="Description"
             name="Description" value={Description}
             onChange={(e) => setDescription(e.target.value)} required />
-          <TextField
+          <TextField size="small"
             label="Rate"
             name="Rate"
             type="number"
@@ -937,13 +935,18 @@ const Material = () => {
         </Box>
       </Modal>
 
-      {/* ✅ Edit Modal */}
+      {/* âœ… Edit Modal */}
       <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
         <Box
           sx={{
             display: "grid",
             gridTemplateColumns: "repeat(2, 1fr)",
-            width: 400,
+            width: 560,
+            maxWidth: "92vw",
+            // one font size for every input and label in this dialog
+            "& .MuiInputBase-root": { fontSize: 14 },
+            "& .MuiInputLabel-root": { fontSize: 14 },
+            "& .MuiMenuItem-root": { fontSize: 14 },
             bgcolor: "background.paper",
             borderRadius: 2,
             boxShadow: 24,
@@ -957,7 +960,7 @@ const Material = () => {
             Edit Material
           </h3>
 
-          <TextField
+          <TextField size="small"
             label="Plant Code"
             name="Plant_Code"
             value={PlantCode}
@@ -969,7 +972,7 @@ const Material = () => {
 
 
 
-          <FormControl fullWidth>
+          <FormControl fullWidth size="small">
             <InputLabel>Material Type</InputLabel>
             <Select
               label="Material Type"
@@ -984,20 +987,12 @@ const Material = () => {
             </Select>
           </FormControl>
 
-          <FormControl fullWidth>
-            <InputLabel>Line</InputLabel>
-            {/* Filtered by Plant_Code (see editLineOptions above) — Plant
-                itself is read-only in this form, so this always resolves to
-                the row's own plant's lines only. */}
-            <Select label="Line" name="Line_ID" value={LineID} onChange={(e) => setLineID(e.target.value)} disabled={!PlantCode}>
-              <MenuItem value="">None</MenuItem>
-              {editLineOptions.map((item) => (
-                <MenuItem key={item.Line_ID} value={item.Line_ID}>{item.Line_Name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {/* Filtered by Plant_Code (see editLineOptions above) â€” Plant
+              itself is read-only in this form, so this always resolves to
+              the row's own plant's lines only. */}
+          <LineSelect value={LineID} options={editLineOptions} onChange={setLineID} disabled={!PlantCode} size="small14" />
 
-          <TextField
+          <TextField size="small"
             label="Material Code"
             name="Material_Code"
             value={MaterialCode}
@@ -1006,7 +1001,7 @@ const Material = () => {
               readOnly: true,  // This makes the TextField read-only
             }}
           />
-          <TextField
+          <TextField size="small"
             label="Description"
             name="Description"
             value={Description}
@@ -1014,7 +1009,7 @@ const Material = () => {
 
           />
 
-          <TextField
+          <TextField size="small"
             label="Rate"
             name="Rate"
             type="number"
@@ -1108,7 +1103,7 @@ const Material = () => {
             onChange={handleFileUpload}
             style={{
               padding: "8px",
-              backgroundColor: "white", // ✅ Blue background
+              backgroundColor: "white", // âœ… Blue background
               color: "black",
               border: "1px solid black",
               borderRadius: "5px",
@@ -1134,7 +1129,7 @@ const Material = () => {
               marginTop: "15px",
             }}
           >
-            {/* ✅ Close Button */}
+            {/* âœ… Close Button */}
             <Button
               variant="contained"
               color="error"
@@ -1143,7 +1138,7 @@ const Material = () => {
             >
               Close
             </Button>
-            {/* ✅ Upload Button */}
+            {/* âœ… Upload Button */}
             <Button
               variant="contained"
 

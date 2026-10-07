@@ -38,6 +38,7 @@ import { deepPurple } from "@mui/material/colors";
 import ExcelJS from 'exceljs'
 import { getMaterialType } from "../../controller/Masterapiservice";
 import { getdetails as getLines } from "../../controller/LineMasterapiservice";
+import LineSelect from "../../components/LineSelect";
 import { MaterialGroupEnumTypes } from "../../common/enumValues";
 
 const CC_PackingBomPart = () => {
@@ -640,31 +641,14 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                         ))}
                     </TextField>
 
-                    <TextField
-                        select
-                        id="Line_ID"
-                        name="Line_ID"
-                        label="Line"
-                        size="small"
-                        fullWidth
+                    <LineSelect
                         value={formik.values.Line_ID}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
+                        options={lineOptions}
+                        onChange={(id) => formik.setFieldValue("Line_ID", id)}
                         disabled={!formik.values.Plant_ID}
-                        InputLabelProps={{ sx: { fontSize: 12 } }}
-                        InputProps={{ sx: { fontSize: 13 } }}
-                        sx={{
-                            minWidth: 200,
-                            mt: 1
-                        }}
-                    >
-                        <MenuItem sx={{ fontSize: "small" }} value="">None</MenuItem>
-                        {lineOptions.map((p) => (
-                            <MenuItem sx={{ fontSize: "small" }} key={p.Line_ID} value={p.Line_ID}>
-                                {p.Line_Name}
-                            </MenuItem>
-                        ))}
-                    </TextField>
+                        size="small"
+                        style={{ marginTop: 8 }}
+                    />
                 </div>
 
                 <FormControlLabel

@@ -18,6 +18,75 @@ import { AuthContext } from '../../Authentication/AuthContext'
 import ValidationResponseGrid from '../../components/ValidationResponseTable'
 import { finYearsList } from '../../common/data'
 
+// Compact filter-field/button styling - same design tokens as the Production
+// Actual screen's toolbar so both screens share one visual language.
+const compactFieldSx = (minWidth) => ({
+    minWidth,
+    flexShrink: 0,
+    "& .MuiOutlinedInput-root": {
+        borderRadius: "6px",
+        backgroundColor: "#fafbfc",
+        minHeight: 30,
+        display: "flex",
+        alignItems: "center",
+        padding: "0 7px !important",
+        "& fieldset": { borderColor: "#dde1e7" },
+        "&:hover fieldset": { borderColor: "#0066FF" },
+        "&.Mui-focused fieldset": { borderColor: "#0066FF", borderWidth: "1.5px" },
+        "&.Mui-disabled": {
+            backgroundColor: "#f1f2f5",
+            cursor: "not-allowed",
+            "& fieldset": { borderColor: "#e2e4e9", borderStyle: "dashed" },
+        },
+    },
+    "& .MuiInputBase-input, & .MuiSelect-select": { padding: "0 !important", fontSize: 11 },
+    "& .Mui-disabled": { cursor: "not-allowed", WebkitTextFillColor: "#a4a9b3" },
+    "& .MuiInputLabel-root": { fontSize: 11, color: "#6b7280" },
+    "& .MuiInputLabel-root.MuiInputLabel-shrink": { fontSize: 10.5, transform: "translate(7px, -7px) scale(0.85)" },
+});
+
+const compactButtonSx = {
+    height: 30,
+    fontSize: 11,
+    fontWeight: 600,
+    textTransform: "none",
+    borderRadius: "6px",
+    boxShadow: "none",
+    padding: "0 10px",
+    whiteSpace: "nowrap",
+};
+
+
+// Financial-year months in Apr..Mar order (value = calendar month 1-12)
+const FY_MONTHS = [
+    { value: 4, label: "April" }, { value: 5, label: "May" }, { value: 6, label: "June" },
+    { value: 7, label: "July" }, { value: 8, label: "August" }, { value: 9, label: "September" },
+    { value: 10, label: "October" }, { value: 11, label: "November" }, { value: 12, label: "December" },
+    { value: 1, label: "January" }, { value: 2, label: "February" }, { value: 3, label: "March" },
+]
+
+// Date-only values come back as ISO strings (yyyy-mm-dd...). Read the date part
+// directly so a timezone offset can never shift the displayed/filtered day.
+const parsePlanDate = (value) => {
+    if (!value) return null
+    if (value instanceof Date) return isValid(value) ? value : null
+    const m = /^(d{4})-(d{2})-(d{2})/.exec(String(value))
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+    const d = new Date(value)
+    return isValid(d) ? d : null
+}
+
+const showNo = (value) => (String(value ?? "").trim().toUpperCase() === "N/A" ? "No" : value)
+
+// Current financial year (Apr-Mar) in the "YYYY-YY" format used by finYearsList
+const getCurrentFinYear = () => {
+    const now = new Date()
+    const start = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1
+    const label = `${start}-${String(start + 1).slice(-2)}`
+    return finYearsList.includes(label) ? label : ""
+}
+const currentFinYear = getCurrentFinYear()
+
 const PMPD_ProductionPlan = () => {
     const [searchText, setSearchText] = useState("");
     const [rows, setRows] = useState([]);
@@ -55,21 +124,23 @@ const PMPD_ProductionPlan = () => {
         }
 
         const filteredRows = originalRows.filter((row) => {
-            return ['plant', 'customer_name', 'part_number', 'description', 'plan_type', 'prod_seg_name', 'effective_date'].some((key) => {
+            return ['plant', 'customer_name', 'part_number', 'description', 'plan_type', 'prod_seg_name', 'effective_date', 'PMPD_effective_date'].some((key) => {
                 let value = row[key];
 
                 if (value === null || value === undefined) return false;
 
                 // Handle the date field specifically
                 if (key === 'effective_date') {
-                    // parseISO is safer for yyyy-mm-dd strings
-                    const dateObj = new Date(value);
+                    const dateObj = parsePlanDate(value);
 
-                    if (isValid(dateObj)) {
-                        // Convert the row's date to the searchable format
-                        value = format(dateObj, "dd-MM-yyyy");
+                    if (dateObj) {
+                        // Searchable in both dd-MM-yyyy and yyyy-MM-dd
+                        const shown = format(dateObj, "dd-MM-yyyy");
+                        return shown.includes(text) || format(dateObj, "yyyy-MM-dd").includes(text);
                     }
                 }
+
+                if (key === 'PMPD_effective_date') value = showNo(value);
 
                 // Standard string comparison
                 return String(value).toLowerCase().includes(text);
@@ -90,7 +161,8 @@ const PMPD_ProductionPlan = () => {
     const formik = useFormik({
         initialValues: {
             plant: currentUserPlantCode,
-            fin_year: "",
+            fin_year: currentFinYear,
+            month: "",
             type: "SUBMIT"
         },
         validationSchema: validationschema,
@@ -102,8 +174,17 @@ const PMPD_ProductionPlan = () => {
             const startYear = Number(fin_Year.split("-")[0]); // 2025
             const endYear = startYear + 1;                   // 2026
 
-            const startDate = startOfDay(new Date(startYear, 3, 1));  // 01-Apr-2025
-            const endDate = endOfDay(new Date(endYear, 2, 31));    // 31-Mar-2026
+            let startDate = startOfDay(new Date(startYear, 3, 1));  // 01-Apr-2025
+            let endDate = endOfDay(new Date(endYear, 2, 31));    // 31-Mar-2026
+
+            // Optional month filter inside the financial year (Apr-Dec fall in
+            // the start year, Jan-Mar in the next one)
+            if (values.month) {
+                const month = Number(values.month);
+                const year = month >= 4 ? startYear : endYear;
+                startDate = startOfDay(new Date(year, month - 1, 1));
+                endDate = endOfDay(new Date(year, month, 0));
+            }
             console.log(startDate, endDate)
 
 
@@ -127,6 +208,11 @@ const PMPD_ProductionPlan = () => {
         fetchData()
     }, [])
 
+    // Initial load: current financial year, all months
+    useEffect(() => {
+        if (formik.values.plant && formik.values.fin_year) formik.submitForm()
+    }, [])
+
     const columns = [
         { field: "trn_monthly_plan_id", headerName: "SI No", width: 80 },
         { field: "plant", headerName: "Plant", width: 80 },
@@ -137,8 +223,12 @@ const PMPD_ProductionPlan = () => {
         { field: "plan_type", headerName: "Plan Type", flex: 1 },
         { field: "plan_qty", headerName: "Plan Qty", flex: 1 },
         { field: "ends", headerName: "Ends", width: 80 },
-        { field: "effective_date", headerName: "Plan Date", flex: 1, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
-        { field: "PMPD_effective_date", headerName: "PMPD Master", flex: 1, renderCell: (params) => (<>{params.value}</>) },
+        {
+            field: "effective_date", headerName: "Plan Date", flex: 1, type: "date",
+            valueGetter: (value) => parsePlanDate(value),
+            valueFormatter: (value) => (value ? format(value, "dd-MM-yyyy") : ""),
+        },
+        { field: "PMPD_effective_date", headerName: "PMPD Master", flex: 1, renderCell: (params) => (<>{showNo(params.value)}</>) },
         // {
         //     field: "action", headerName: "Action", width: 160,
         //     renderCell: (params) => (
@@ -194,8 +284,22 @@ const PMPD_ProductionPlan = () => {
                 </SectionHeading>
             </div>
 
-            <div className='flex justify-between items-center mb-3'>
-                <div className='flex justify-start items-start gap-3'>
+            <div
+                style={{
+                    backgroundColor: "#fff",
+                    borderRadius: 8,
+                    border: "1px solid #e8eaee",
+                    boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
+                    padding: "7px 10px",
+                    marginBottom: 12,
+                    display: "flex",
+                    flexWrap: "wrap",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 8,
+                }}
+            >
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
                     <TextField
                         select
                         size="small"
@@ -203,23 +307,13 @@ const PMPD_ProductionPlan = () => {
                         name="plant"
                         value={formik.values.plant}
                         onChange={formik.handleChange}
-                        sx={{ minWidth: 240 }}
+                        sx={compactFieldSx(190)}
                         disabled={PMPDAccess.disableAction}
-                        InputLabelProps={{
-                            sx: {
-                                fontSize: "12px",
-                            },
-                        }}
-                        InputProps={{
-                            sx: {
-                                fontSize: "13px",
-                            },
-                        }}
                         error={formik.touched.plant && Boolean(formik.errors.plant)}
                         helperText={formik.touched.plant && formik.errors.plant}
                     >
                         {plants.map((p) => (
-                            <MenuItem sx={{ fontSize: "small" }} key={p.Plant_ID} value={p.Plant_Code}>
+                            <MenuItem sx={{ fontSize: 11.5 }} key={p.Plant_ID} value={p.Plant_Code}>
                                 {`${p.Plant_Code} - ${p.Plant_Name}`}
                             </MenuItem>
                         ))}
@@ -233,23 +327,46 @@ const PMPD_ProductionPlan = () => {
                         name="fin_year"
                         value={formik.values.fin_year}
                         onChange={formik.handleChange}
-                        sx={{ minWidth: 240 }}
-                        InputLabelProps={{ sx: { fontSize: 12 } }}
-                        InputProps={{ sx: { fontSize: 13 } }}
+                        sx={compactFieldSx(130)}
                         error={formik.touched.fin_year && Boolean(formik.errors.fin_year)}
                         helperText={formik.touched.fin_year && formik.errors.fin_year}
                     >
                         {finYearsList.map((fy) => (
-                            <MenuItem key={fy} value={fy} sx={{ fontSize: 13 }}>
+                            <MenuItem key={fy} value={fy} sx={{ fontSize: 11.5 }}>
                                 {fy}
                             </MenuItem>
                         ))}
                     </TextField>
 
-                    <Button variant='contained' onClick={(e) => {
-                        formik.setFieldValue('type', 'SUBMIT')
-                        formik.handleSubmit(e)
-                    }}>
+                    <TextField
+                        id="month"
+                        select
+                        size="small"
+                        label="Month"
+                        name="month"
+                        value={formik.values.month}
+                        onChange={formik.handleChange}
+                        sx={compactFieldSx(130)}
+                        InputLabelProps={{ shrink: true }}
+                        SelectProps={{ displayEmpty: true, renderValue: (v) => (v ? FY_MONTHS.find((m) => m.value === Number(v))?.label : "All Months") }}
+                    >
+                        <MenuItem value="" sx={{ fontSize: 11.5 }}>All Months</MenuItem>
+                        {FY_MONTHS.map((m) => (
+                            <MenuItem key={m.value} value={m.value} sx={{ fontSize: 11.5 }}>
+                                {m.label}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+
+                    <Button
+                        variant="contained"
+                        disableElevation
+                        onClick={(e) => {
+                            formik.setFieldValue('type', 'SUBMIT')
+                            formik.handleSubmit(e)
+                        }}
+                        sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc" } }}
+                    >
                         {loading ? "Loading..." : "Submit"}
                     </Button>
                 </div>
@@ -258,13 +375,14 @@ const PMPD_ProductionPlan = () => {
                 <div
                     style={{
                         display: "flex",
+                        flexWrap: "wrap",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        gap: 50
+                        gap: 12
                     }}
                 >
                     {/* Search Box - requester */}
-                    <div style={{ display: "flex", gap: "10px" }}>
+                    <div style={{ display: "flex", gap: 8 }}>
                         <TextField
                             size="small"
                             variant="outlined"
@@ -272,23 +390,19 @@ const PMPD_ProductionPlan = () => {
                             value={searchText}
                             onChange={(e) => setSearchText(e.target.value)}
                             onKeyUp={handleSearch}
-                            style={{ width: "400px" }}
+                            sx={compactFieldSx(260)}
                         />
                         <Button
                             onClick={handleSearch}
-                            style={{
-                                borderRadius: "25px",
-                                border: "2px solid skyblue",
-                                color: "skyblue",
-                                fontWeight: "bold",
-                                textTransform: "none",
-                            }}
+                            variant="outlined"
+                            disableElevation
+                            startIcon={<SearchIcon size={15} />}
+                            sx={{ ...compactButtonSx, borderColor: "#0066FF", color: "#0066FF", "&:hover": { borderColor: "#0052cc", backgroundColor: "#f0f6ff" } }}
                         >
-                            <SearchIcon style={{ marginRight: "5px" }} />
                             Search
                         </Button>
                     </div>
-                    <div style={{ display: PMPDAccess.disableAction ? "none" : "flex", gap: "10px" }}>
+                    <div style={{ display: PMPDAccess.disableAction ? "none" : "flex", gap: 8, alignItems: "center" }}>
                         <ExcelUploadModal open={openUploadModal}
                             onClose={() => {
                                 setOpenUploadModal(false)
@@ -305,14 +419,17 @@ const PMPD_ProductionPlan = () => {
             </div>
 
 
-            {/* DataGrid */}
+            {/* DataGrid — compact enterprise styling shared with the Production
+                Actual screen. Only visual styling; rows/columns/behavior untouched. */}
             <div
                 style={{
                     flexGrow: 1, // Ensures it grows to fill the remaining space
+                    minHeight: 0,
                     backgroundColor: "#fff",
                     borderRadius: 8,
-                    boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-                    height: "calc(5 * 48px)",
+                    border: "1px solid #e8eaee",
+                    boxShadow: "0 1px 3px rgba(16,24,40,0.05)",
+                    overflow: "hidden",
                 }}
             >
                 <DataGrid
@@ -322,33 +439,32 @@ const PMPD_ProductionPlan = () => {
                     rowsPerPageOptions={[5]}
                     getRowId={(row) => row.trn_monthly_plan_id} // Specify a custom id field
                     disableSelectionOnClick
+                    columnHeaderHeight={36}
+                    rowHeight={38}
                     slots={{ toolbar: CustomToolbar }}
                     sx={{
-                        // Header Style
-                        "& .MuiDataGrid-columnHeader": {
-                            backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
-                            color: "black",
-                            fontWeight: "bold",
-                        },
-                        "& .MuiDataGrid-columnHeaderTitle": {
-                            fontSize: "16px",
-                            fontWeight: "bold",
-                        },
-                        "& .MuiDataGrid-row": {
-                            backgroundColor: "#f5f5f5", // Default row background
-                            "&:hover": {
-                                backgroundColor: "#f5f5f5",
-                            },
-                        },
-                        // ✅ Remove Selected Row Background
-                        "& .MuiDataGrid-row.Mui-selected": {
-                            backgroundColor: "inherit", // No background on selection
-                        },
-
-                        "& .MuiDataGrid-cell": {
-                            color: "#333",
-                            fontSize: "14px",
-                        },
+                        height: "100%",
+                        border: "none",
+                        "& .MuiDataGrid-columnSeparator": { display: "none" },
+                        "& .MuiDataGrid-cell": { color: "#333", fontSize: "11px", padding: "0 8px", borderRight: "none" },
+                        "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within": { outline: "none" },
+                        "& .MuiDataGrid-columnHeaders": { position: "sticky", top: 0, zIndex: 2 },
+                        "& .MuiDataGrid-columnHeader": { backgroundColor: "#d0dcf5", color: "#000000", padding: "0 8px" },
+                        "& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within": { outline: "none" },
+                        "& .MuiDataGrid-columnHeaderTitle": { fontSize: "10.5px", fontWeight: "bold", color: "#000000" },
+                        "& .MuiDataGrid-sortIcon, & .MuiDataGrid-menuIconButton": { color: "#000000" },
+                        "& .MuiDataGrid-row": { backgroundColor: "#fff" },
+                        "& .MuiDataGrid-row:nth-of-type(even)": { backgroundColor: "#fafbfc" },
+                        "& .MuiDataGrid-row:hover": { backgroundColor: "#eef4ff" },
+                        "& .MuiDataGrid-row.Mui-selected": { backgroundColor: "inherit" },
+                        "& .MuiDataGrid-toolbarContainer": { padding: "2px 6px", minHeight: 28 },
+                        "& .MuiDataGrid-toolbarContainer button": { fontSize: "11px", padding: "2px 6px" },
+                        "& .MuiDataGrid-footerContainer": { minHeight: 34 },
+                        "& .MuiTablePagination-root": { overflow: "visible" },
+                        "& .MuiTablePagination-toolbar": { minHeight: "34px !important", height: 34, paddingLeft: 8, paddingRight: 4 },
+                        "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": { fontSize: 11, marginTop: 0, marginBottom: 0 },
+                        "& .MuiTablePagination-select": { fontSize: 11, paddingTop: "2px !important", paddingBottom: "2px !important", minHeight: "unset" },
+                        "& .MuiTablePagination-selectIcon": { fontSize: 16 },
                     }}
                 />
             </div>
@@ -524,21 +640,17 @@ const ExcelUploadModal = ({
 
     return (
         <>
-            <IconButton
-                component="span"
+            <Button
+                variant="contained"
+                disableElevation
                 onClick={() => {
                     if (onOpen) onOpen()
                 }}
-                style={{
-                    borderRadius: "50%",
-                    backgroundColor: "#FF6699",
-                    color: "white",
-                    width: "40px",
-                    height: "40px",
-                }}
+                startIcon={<CloudUploadIcon size={15} />}
+                sx={{ ...compactButtonSx, backgroundColor: "#1B7A43", "&:hover": { backgroundColor: "#166238" } }}
             >
-                <CloudUploadIcon />
-            </IconButton>
+                Upload
+            </Button>
 
             <Modal open={open} onClose={() => { }}>
                 <Box

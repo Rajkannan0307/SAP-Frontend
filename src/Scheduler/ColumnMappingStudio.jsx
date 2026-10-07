@@ -182,17 +182,11 @@ const ColumnMappingStudio = () => {
               <div><b>File prefix:</b> {job.file_prefix || "(any file)"}</div>
               <div><b>Load mode:</b> {LOAD_MODES[job.load_mode]?.label}</div>
               <div><b>Schedule:</b> {scheduleText(job)}</div>
-              <div><b>Engine:</b> {job.engine === "GENERIC" ? "Scheduler engine" : "Old importer"}</div>
               <div><b>Mapped:</b> {job.mapped_columns} column(s) saved</div>
             </Box>
           )}
-          {job && job.engine === "LEGACY" && (
-            <Alert severity="info" sx={{ mt: 1.5, fontSize: 11.5 }}>
-              This job still runs on the old importer, so changes here only take effect after you switch it to the Scheduler engine on the Scheduler Jobs screen.
-            </Alert>
-          )}
-          {job && job.engine === "GENERIC" && (
-            <Alert severity="warning" sx={{ mt: 1.5, fontSize: 11.5 }}>This job runs on the Scheduler engine: saved changes apply from its next run.</Alert>
+          {job && (
+            <Alert severity="warning" sx={{ mt: 1.5, fontSize: 11.5 }}>Saved changes apply from this job's next run.</Alert>
           )}
         </Paper>
 

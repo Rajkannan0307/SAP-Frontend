@@ -115,10 +115,10 @@ const Sidebar = ({ setSidebarOpen }) => {
   return (
     <div
       style={{ scrollbarGutter: "stable" }}
-      className={`fixed top-[60px] left-0 h-[calc(100vh-60px)] bg-[#595959] text-white transition-[width] duration-300 ease-in-out z-50 overflow-y-auto overflow-x-hidden pb-12 shadow-lg
+      className={`fixed top-15 left-0 h-[calc(100vh-60px)] bg-[#595959] text-white transition-[width] duration-300 ease-in-out z-50 overflow-y-auto overflow-x-hidden pb-12 shadow-lg
         [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent
         [&::-webkit-scrollbar-thumb]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full
-        ${open ? "w-[260px]" : "w-[60px]"}`}
+        ${open ? "w-65" : "w-15"}`}
     >
       {/* Sidebar Header */}
       <div
@@ -531,7 +531,7 @@ const Sidebar = ({ setSidebarOpen }) => {
               code: "SupplierStock",
             },
             {
-              name: "Subcontract Daily Plan",
+              name: "Subcontract Daily Dispatch",
               path: "/home/SubcontractDailyPlan",
               icon: (
                 <PrecisionManufacturingIcon
@@ -1032,17 +1032,6 @@ const Sidebar = ({ setSidebarOpen }) => {
                 />
               ),
               code: "PMDP_PlanVsActual",
-            },
-            {
-              name: "Plan Vs Actual (InDirect)",
-              path: "/home/PMDP_PlanVsActual_Indirect",
-              icon: (
-                <AssessmentIcon
-                  style={{ color: "#32CD32" }}
-                  className="text-[18px]"
-                />
-              ),
-              code: "PMDP_PlanVsActual_Indirect",
             },
             {
               name: "Plan Vs Actual (InDirect)",

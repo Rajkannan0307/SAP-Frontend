@@ -88,7 +88,12 @@ export const getTrnPMPD_MasterDetails = async (plant) => {
 
 
 
-// PMPD Reports 
+export const getPMPDPartNumbers = async (plant) => {
+    const response = await axios.get(`${api}/PMPDRouter/GetPMPDPartNumbers`, { params: { plant } });
+    return response.data;
+};
+
+// PMPD Reports
 
 export const getPMPD_Reports = async (body) => {
     const response = await axios.post(`${api}/PMPDRouter/GetPMPD_Reports`, body);
@@ -146,6 +151,12 @@ export const AddTrnIndirectManpower = async (data) => {
 
 export const getTrnActualProdPlan = async (body) => {
     const response = await axios.post(`${api}/PMPDRouter/TrnActualProdPlan`, body);
+    return response.data;
+};
+
+// Material Master + PMPD Master lookup for the Production Actual summary table
+export const getActualProdLookup = async (body) => {
+    const response = await axios.post(`${api}/PMPDRouter/TrnActualProdPlan/lookup`, body);
     return response.data;
 };
 
