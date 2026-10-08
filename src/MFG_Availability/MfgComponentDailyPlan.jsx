@@ -1296,38 +1296,35 @@ const STATUS_HEAD_LINE = "#b9c8ea";
 const NUM_FONT = { fontVariantNumeric: "tabular-nums" };
 
 // Column widths (%) — shared by the main header table and every nested group
-// table so all of them line up. 6 + 7 + 19 + 13 * (68 / 13) = 100.
-const STATUS_COL_PCT = { line: 6, part: 7, child: 19, num: 68 / 13 };
+// table so all of them line up. 6 + 7 + 19 + 11 * (68 / 11) = 100.
+const STATUS_COL_PCT = { line: 6, part: 7, child: 19, num: 68 / 11 };
 
 const STATUS_NUM_COLS = [
-  { label: "MTD Plan", tip: "Month-to-Date Plan — total planned quantity from the 1st of the month", key: "month_plan", kind: "plan" },
-  { label: "MTD Actual", tip: "Month-to-Date Actual — total actual production from the 1st of the month", key: "mtd_actual", kind: "actual" },
-  { label: "MTD Gap", tip: "Month-to-Date Gap — Actual minus Plan (positive = ahead, negative = behind)", key: "month_gap", kind: "gap" },
-  { label: "YD Plan", tip: "Yesterday's Plan", key: "yd_plan", kind: "plan" },
-  { label: "YD Actual", tip: "Yesterday's Actual production", key: "yd_actual", kind: "actual" },
-  { label: "YD Gap", tip: "Yesterday's Gap — Actual minus Plan", key: "yd_gap", kind: "gap" },
-  { label: "TP", tip: "TP — Today Plan: today's planned quantity (all shifts)", key: "day_plan", kind: "plan" },
-  { label: "TA", tip: "TA — Today Actual: today's actual production (all shifts)", key: "day_actual", kind: "actual" },
-  { label: "TG", tip: "TG — Today Gap: Today Actual minus Today Plan (positive = ahead, negative = behind)", key: "day_gap", kind: "gap" },
+  { label: "Monthly Plan", tip: "Monthly Plan — sum of the monthly plan (plan type MP) of every FG part that uses this Child Part", key: "monthly_plan", kind: "plan" },
+  { label: "MTD Plan", tip: "MTD Plan = (Monthly Plan / 26) x NWD. NWD = working days of the month up to yesterday (Sundays excluded)", key: "mtd_plan", kind: "plan" },
+  { label: "MTD Actual", tip: "MTD Actual — for every FG part that uses this Child Part: FG production from the 1st of the month (Production Actual, movement types 101, 102, 261 and 262) x the BOM Qty of that FG's line; the FGs are then added together", key: "mtd_actual_fg", kind: "actual" },
+  { label: "MTD Gap", tip: "MTD Gap — MTD Actual minus MTD Plan (positive = ahead, negative = behind)", key: "month_gap", kind: "gap" },
+  { label: "YD Plan", tip: "YD Plan — yesterday's plan: the daily plan entered for this Child Part for yesterday, all shifts added together (Component Daily Plan tab)", key: "yd_plan", kind: "plan" },
+  { label: "YD Actual", tip: "YD Actual — yesterday's production of this Child Part (Production Actual, movement types 101, 102, 261 and 262)", key: "yd_actual", kind: "actual" },
+  { label: "YD Gap", tip: "YD Gap — YD Actual minus YD Plan (positive = ahead, negative = behind)", key: "yd_gap", kind: "gap" },
   // 541 = movement type 541 (material issued to subcontractor) from the
   // Subcontract Daily Plan, matched on Plant + this Child Part's material code.
-  { label: "MTD Actual", tip: "541 MTD Actual — month-to-date 541 quantity for this part, from the Subcontract Daily Plan", key: "sub541_mtd_actual", kind: "actual", sub: true },
-  { label: "MTD Gap", tip: "541 MTD Gap — 541 MTD Actual minus MTD Plan", key: "sub541_month_gap", kind: "gap", sub: true },
-  { label: "TA", tip: "541 TA — Today's 541 quantity for this part, from the Subcontract Daily Plan", key: "sub541_day_actual", kind: "actual", sub: true },
-  { label: "TG", tip: "541 TG — 541 TA minus TP (Today Plan)", key: "sub541_day_gap", kind: "gap", sub: true },
+  { label: "MTD Actual", tip: "541 MTD Actual — month-to-date quantity of movement types 541 and 542 (net) for this Child Part, from the Subcontract Daily Plan", key: "sub541_mtd_actual", kind: "actual", sub: true },
+  { label: "MTD Gap", tip: "541 MTD Gap — 541 MTD Actual minus the plan entered for the month on the Component Daily Plan tab (sum of the daily plan entries)", key: "sub541_month_gap", kind: "gap", sub: true },
+  { label: "YA", tip: "541 YA — yesterday's quantity of movement types 541 and 542 (net) for this Child Part, from the Subcontract Daily Plan", key: "sub541_yd_actual", kind: "actual", sub: true },
+  { label: "YG", tip: "541 YG — 541 YA minus YD Plan (yesterday's plan entered for this Child Part)", key: "sub541_yd_gap", kind: "gap", sub: true },
 ];
-// First column of each section (MTD / YD / Today / 541 Monthly / 541 Daily)
+// First column of each section (MTD / YD / 541 Monthly / 541 Daily)
 // gets a divider line.
-const SECTION_START = new Set(["month_plan", "yd_plan", "day_plan", "sub541_mtd_actual", "sub541_day_actual"]);
+const SECTION_START = new Set(["monthly_plan", "yd_plan", "sub541_mtd_actual", "sub541_yd_actual"]);
 const TOTAL_STATUS_COLS = 3 + STATUS_NUM_COLS.length;
 const SUB541_HEAD_BG = "#e6dff0";
 
 const STATUS_GROUP_HEADS = [
-  { t: "MTD", tip: "Month to Date", span: 3 },
+  { t: "MTD", tip: "Month to Date", span: 4 },
   { t: "YD", tip: "Yesterday", span: 3 },
-  { t: "Today", tip: "Today — Today Plan (TP), Today Actual (TA) and Today Gap (TG)", span: 3 },
-  { t: "541 - Monthly", tip: "Movement type 541 (issued to subcontractor), month to date — from the Subcontract Daily Dispatch", span: 2, sub: true },
-  { t: "541 - Daily", tip: "Movement type 541 (issued to subcontractor), today — from the Subcontract Daily Dispatch", span: 2, sub: true },
+  { t: "541 - Monthly", tip: "Movement types 541 and 542 (issued to subcontractor, net), month to date — from the Subcontract Daily Plan", span: 2, sub: true },
+  { t: "541 - Daily", tip: "Movement types 541 and 542 (issued to subcontractor, net), yesterday — from the Subcontract Daily Plan", span: 2, sub: true },
 ];
 
 const headTipProps = {
@@ -1446,8 +1443,16 @@ const PartStatusTable = ({ groups, collapsed, onToggle, loading, loaded }) => {
       <StatusColGroup />
       <TableHead>
         <TableRow sx={{ height: 24 }}>
-          {["Line", "Part Name", "Child Part / Description"].map((h) => (
-            <TableCell key={h} rowSpan={2} sx={{ ...headCell, verticalAlign: "bottom", pb: 0.9 }}>{h}</TableCell>
+          {[
+            ["Line", "Production line of the Child Part (from the Material Master)"],
+            ["Part Name", "Part Name group from the MFG BOM that this Child Part belongs to"],
+            ["Child Part / Description", "Child Part number and its description"],
+          ].map(([h, tip]) => (
+            <TableCell key={h} rowSpan={2} sx={{ ...headCell, verticalAlign: "bottom", pb: 0.9 }}>
+              <Tooltip title={tip} {...headTipProps}>
+                <span style={{ cursor: "help" }}>{h}</span>
+              </Tooltip>
+            </TableCell>
           ))}
           {STATUS_GROUP_HEADS.map((g) => (
             <TableCell
@@ -1616,13 +1621,15 @@ const PlanHistoryBody = ({ searchText = "" }) => {
       historyRows.map((r) => ({
         id: r.child_part,
         ...r,
-        month_gap: (r.mtd_actual || 0) - (r.month_plan || 0),
+        // MTD Gap = MTD Actual (from the FG parts) - MTD Plan (from the monthly plan). The 541 gaps below are unchanged.
+        month_gap: (r.mtd_actual_fg || 0) - (r.mtd_plan || 0),
         cw_gap: (r.cw_actual || 0) - (r.cw_plan || 0),
         yd_gap: (r.yd_actual || 0) - (r.yd_plan || 0),
         day_gap: (r.day_actual || 0) - (r.day_plan || 0),
-        // 541 gaps: 541 MTD Actual - MTD Plan, and 541 TA - TP (Today Plan).
+        // 541 gaps: 541 MTD Actual - MTD Plan (entries), and 541 YA - YD Plan (yesterday).
         sub541_month_gap: (r.sub541_mtd_actual || 0) - (r.month_plan || 0),
-        sub541_day_gap: (r.sub541_day_actual || 0) - (r.day_plan || 0),
+        // 541 - Daily group shows YESTERDAY: 541 YA minus the plan entered for yesterday (YD Plan)
+        sub541_yd_gap: (r.sub541_yd_actual || 0) - (r.yd_plan || 0),
       })),
     [historyRows]
   );
@@ -1675,12 +1682,12 @@ const PlanHistoryBody = ({ searchText = "" }) => {
 
   const exportCsv = () => {
     const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const head = ["Line", "Part Name", "Child Part", "Description", "MTD Plan", "MTD Actual", "MTD Gap", "YD Plan", "YD Actual", "YD Gap", "TP", "TA", "TG", "541 MTD Actual", "541 MTD Gap", "541 TA", "541 TG"];
+    const head = ["Line", "Part Name", "Child Part", "Description", "Monthly Plan", "MTD Plan", "MTD Actual", "MTD Gap", "YD Plan", "YD Actual", "YD Gap", "541 MTD Actual", "541 MTD Gap", "541 YA", "541 YG"];
     const lines = [head.map(esc).join(",")];
     groups.forEach((g) => g.rows.forEach((r) => lines.push([
       r.Line_Name || "", g.name, r.child_part_no, r.child_part_desc,
-      r.month_plan, r.mtd_actual, r.month_gap, r.yd_plan, r.yd_actual, r.yd_gap, r.day_plan, r.day_actual, r.day_gap,
-      r.sub541_mtd_actual, r.sub541_month_gap, r.sub541_day_actual, r.sub541_day_gap,
+      r.monthly_plan, r.mtd_plan, r.mtd_actual_fg, r.month_gap, r.yd_plan, r.yd_actual, r.yd_gap,
+      r.sub541_mtd_actual, r.sub541_month_gap, r.sub541_yd_actual, r.sub541_yd_gap,
     ].map(esc).join(","))));
     const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

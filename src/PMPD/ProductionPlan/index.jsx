@@ -70,13 +70,15 @@ const FY_MONTHS = [
 const parsePlanDate = (value) => {
     if (!value) return null
     if (value instanceof Date) return isValid(value) ? value : null
-    const m = /^(d{4})-(d{2})-(d{2})/.exec(String(value))
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value))
     if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
     const d = new Date(value)
     return isValid(d) ? d : null
 }
 
-const showNo = (value) => (String(value ?? "").trim().toUpperCase() === "N/A" ? "No" : value)
+// The procedure returns 'YES' when the part exists in PMPD Master and 'N/A' when it does not.
+// The screen shows (and filters, sorts, exports) it as Yes / No.
+const pmpdYesNo = (value) => (String(value ?? "").trim().toUpperCase() === "YES" ? "Yes" : "No")
 
 // Current financial year (Apr-Mar) in the "YYYY-YY" format used by finYearsList
 const getCurrentFinYear = () => {
@@ -123,6 +125,13 @@ const PMPD_ProductionPlan = () => {
             return;
         }
 
+        // Typing exactly "yes" or "no" searches the PMPD Master column only
+        // (a plain substring match on "no" would also hit unrelated descriptions).
+        if (text === 'yes' || text === 'no') {
+            setRows(originalRows.filter((row) => pmpdYesNo(row.PMPD_effective_date).toLowerCase() === text));
+            return;
+        }
+
         const filteredRows = originalRows.filter((row) => {
             return ['plant', 'customer_name', 'part_number', 'description', 'plan_type', 'prod_seg_name', 'effective_date', 'PMPD_effective_date'].some((key) => {
                 let value = row[key];
@@ -140,7 +149,7 @@ const PMPD_ProductionPlan = () => {
                     }
                 }
 
-                if (key === 'PMPD_effective_date') value = showNo(value);
+                if (key === 'PMPD_effective_date') value = pmpdYesNo(value);
 
                 // Standard string comparison
                 return String(value).toLowerCase().includes(text);
@@ -228,7 +237,11 @@ const PMPD_ProductionPlan = () => {
             valueGetter: (value) => parsePlanDate(value),
             valueFormatter: (value) => (value ? format(value, "dd-MM-yyyy") : ""),
         },
-        { field: "PMPD_effective_date", headerName: "PMPD Master", flex: 1, renderCell: (params) => (<>{showNo(params.value)}</>) },
+        {
+            field: "PMPD_effective_date", headerName: "PMPD Master", flex: 1,
+            type: "singleSelect", valueOptions: ["Yes", "No"],
+            valueGetter: (value) => pmpdYesNo(value),
+        },
         // {
         //     field: "action", headerName: "Action", width: 160,
         //     renderCell: (params) => (

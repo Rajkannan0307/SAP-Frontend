@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useMemo, useState, useCallback } from "react";
 import {
   TextField, Button, CircularProgress, Typography, Autocomplete, MenuItem, Select, Tooltip,
-  Chip, Table, TableHead, TableBody, TableRow, TableCell,
+  Chip, Table, TableHead, TableBody, TableRow, TableCell, IconButton,
 } from "@mui/material";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarFilterButton, GridToolbarExport } from "@mui/x-data-grid";
@@ -11,10 +11,12 @@ import SearchIcon from "@mui/icons-material/Search";
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import DateRangeOutlinedIcon from "@mui/icons-material/DateRangeOutlined";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import InfoIcon from "@mui/icons-material/Info";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
-import { format, startOfISOWeek, endOfISOWeek, getISOWeek } from "date-fns";
+import { format, startOfISOWeek, endOfISOWeek, getISOWeek, addDays } from "date-fns";
 import { toast } from "react-toastify";
 import { AuthContext } from "../Authentication/AuthContext";
 import { getMfgPlanEditAccess } from "../Authentication/ActionAccessType";
@@ -64,6 +66,7 @@ const gapFmt = (v) => {
   if (n > 0) return `+${n.toLocaleString("en-IN")}`;
   return n.toLocaleString("en-IN");
 };
+
 
 // Mirrors the backend's buildPeriods() week-1 calculation (ISO week: Mon-Sun)
 // purely for display — matches the "W-N" column the current date falls
@@ -228,24 +231,19 @@ const computeStockCoverage = (dayPeriods, shifts, rowValues, totalStock) => {
 // consistently across browsers).
 const capDigits = (raw, maxDigits) => raw.replace(/[^0-9]/g, "").slice(0, maxDigits);
 
-// Editability rule, computed dynamically off `today` every render (never
-// hardcoded to a specific date):
-//   - DAY cells: editable only from today onward — a past day within the
-//     current week is locked (nothing left to plan for a day already gone).
-//   - The CURRENT week's own WEEK bucket (W-39): always editable (for users
-//     with edit access), even after Monday.
-//   - The NEXT week's WEEK bucket (W-40) is unaffected by any of this —
-//     always editable, since it's a forward-looking estimate regardless of
-//     what day it is today.
+// Editability rule (role access is checked separately by canEdit):
+//   - The CURRENT week and any FUTURE week are fully editable - every day of the
+//     week (even days already gone) and the week buckets.
+//   - PAST weeks are view only: while a past week is on screen (viewingPast)
+//     nothing is editable.
 // All comparisons are plain 'yyyy-MM-dd' string comparisons, which sort
 // chronologically for same-format ISO date strings.
-const isPeriodEditable = (period, today, currentWeekStart) => {
-  if (period.period_type === "DAY") {
-    return period.plan_date >= today;
-  }
-  // WEEK buckets (current and next week) are always open; who may type is decided
-  // by the role check (canEdit), not by the date.
-  return true;
+const isPeriodEditable = (period, today, currentWeekStart, viewingPast = false) => {
+  if (viewingPast) return false;
+  const weekStart = period.period_type === "DAY"
+    ? format(startOfISOWeek(new Date(`${period.plan_date}T00:00:00`)), "yyyy-MM-dd")
+    : period.plan_date;
+  return weekStart >= currentWeekStart;
 };
 
 // The day-detail info icon/popover only shows on today's own DAY cell —
@@ -495,7 +493,7 @@ const DayInfoPopover = ({ plant, row, period, dayPeriods, shifts, rowValues, sto
 // table on every keystroke, which was the cause of the multi-second input
 // lag when typing a 4-digit number.
 const PlanRow = React.memo(function PlanRow({
-  row, idx, periods, shifts, rowValues, today, currentWeekStart, onCellChange, onShiftCellChange, plant, canEdit,
+  row, idx, periods, shifts, rowValues, today, currentWeekStart, onCellChange, onShiftCellChange, plant, canEdit, viewingPast,
 }) {
   // Shift-wise Plant Stock Availability — sequential consumption across this
   // row's whole week of DAY cells (see computeStockCoverage above), recomputed
@@ -530,14 +528,14 @@ const PlanRow = React.memo(function PlanRow({
         <div style={{ color: "#6b7280", fontSize: 10, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.fg_part_desc}</div>
       </td>
       {periods.map((p) => {
-        const editable = isPeriodEditable(p, today, currentWeekStart);
+        const editable = isPeriodEditable(p, today, currentWeekStart, viewingPast);
         // "editable" is the date rule (past days are locked); canEdit is the
         // role rule (only PROD INCHARGE etc. may type). The cell styling keeps
         // following the date rule so view-only users still see the stock-
         // coverage / plan-vs-actual colours; only typing is switched off.
         const inputDisabled = !editable || !canEdit;
         const lockedTitle = canEdit
-          ? "Locked — this date has already passed for entry"
+          ? "Locked — past weeks are view only"
           : "View only — you do not have permission to edit the plan";
 
         // DAY columns: ONE Plan box + ONE Actual box (same outer shape/
@@ -779,11 +777,24 @@ const PlanEntryBody = ({ searchText = "" }) => {
   const [loaded, setLoaded] = useState(false);
 
   const today = useMemo(() => todayStr(), []);
-  const weekInfo = useMemo(() => getIsoWeekInfo(today), [today]);
-  const currentWeekStart = useMemo(
-    () => (weekInfo ? format(weekInfo.start, "yyyy-MM-dd") : today),
-    [weekInfo, today]
+  const currentWeekStart = useMemo(() => {
+    const info = getIsoWeekInfo(today);
+    return info ? format(info.start, "yyyy-MM-dd") : today;
+  }, [today]);
+
+  // Week navigation: 0 = this week, -1 = last week (view only), +1 = next week...
+  const [weekOffset, setWeekOffset] = useState(0);
+  const viewDate = useMemo(
+    () => format(addDays(new Date(`${today}T00:00:00`), weekOffset * 7), "yyyy-MM-dd"),
+    [today, weekOffset]
   );
+  const weekInfo = useMemo(() => getIsoWeekInfo(viewDate), [viewDate]);
+  const viewingPast = weekOffset < 0;
+  const goToWeek = (next) => {
+    if (next === weekOffset) return;
+    if (dirtyKeys.size > 0 && !window.confirm("You have unsaved changes. Discard them and change the week?")) return;
+    setWeekOffset(next);
+  };
 
   useEffect(() => {
     const loadMasters = async () => {
@@ -829,7 +840,7 @@ const PlanEntryBody = ({ searchText = "" }) => {
     try {
       const data = await GetMfgProductionDailyPlanGridApi({
         plant,
-        date: today,
+        date: viewDate,
         moduleId: moduleId || undefined,
         lineId: lineId || undefined,
       });
@@ -874,7 +885,7 @@ const PlanEntryBody = ({ searchText = "" }) => {
   useEffect(() => {
     if (plant) fetchGrid();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plant]);
+  }, [plant, weekOffset]);
 
   // Plain typing — just updates the value (and live color feedback). No
   // cascading here: doing the redistribution per-keystroke was the bug —
@@ -951,8 +962,8 @@ const PlanEntryBody = ({ searchText = "" }) => {
   }, []);
 
   const handleSubmit = async () => {
-    if (!canEdit) {
-      toast.error("You do not have permission to save the plan.");
+    if (!canEdit || viewingPast) {
+      toast.error(viewingPast ? "Past weeks are view only." : "You do not have permission to save the plan.");
       return;
     }
     if (dirtyKeys.size === 0) {
@@ -1090,28 +1101,41 @@ const PlanEntryBody = ({ searchText = "" }) => {
         </Button>
 
         {weekInfo && (
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 11,
-              fontWeight: 600,
-              color: "#0052cc",
-              background: "linear-gradient(135deg, #eaf2ff 0%, #f3f8ff 100%)",
-              border: "1px solid #cfe0ff",
-              borderRadius: 999,
-              padding: "4px 10px",
-              height: 30,
-              boxSizing: "border-box",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <DateRangeOutlinedIcon sx={{ fontSize: 14, color: "#0066FF" }} />
-            Current Week — W {weekInfo.weekNumber}
-            <span style={{ color: "#9fb8ea" }}>|</span>
-            {format(weekInfo.start, "dd MMM")} – {format(weekInfo.end, "dd MMM yyyy")}
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <Tooltip title="Previous week" arrow>
+              <span>
+                <IconButton size="small" onClick={() => goToWeek(weekOffset - 1)} disabled={loading} sx={{ border: "1px solid #dde1e7", borderRadius: 1.5, p: 0.4 }}>
+                  <ChevronLeftIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <span
+              style={{
+                display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600,
+                color: viewingPast ? "#92400e" : "#0052cc",
+                background: viewingPast ? "linear-gradient(135deg, #fff4e0 0%, #fffaf0 100%)" : "linear-gradient(135deg, #eaf2ff 0%, #f3f8ff 100%)",
+                border: `1px solid ${viewingPast ? "#f3d9a4" : "#cfe0ff"}`,
+                borderRadius: 999, padding: "4px 10px", height: 30, boxSizing: "border-box", whiteSpace: "nowrap",
+              }}
+            >
+              <DateRangeOutlinedIcon sx={{ fontSize: 14, color: viewingPast ? "#b45309" : "#0066FF" }} />
+              {weekOffset === 0 ? "Current Week" : weekOffset < 0 ? "Past Week (view only)" : "Next Week"} — W {weekInfo.weekNumber}
+              <span style={{ color: viewingPast ? "#e2c18a" : "#9fb8ea" }}>|</span>
+              {format(weekInfo.start, "dd MMM")} – {format(weekInfo.end, "dd MMM yyyy")}
+            </span>
+            <Tooltip title="Next week" arrow>
+              <span>
+                <IconButton size="small" onClick={() => goToWeek(weekOffset + 1)} disabled={loading} sx={{ border: "1px solid #dde1e7", borderRadius: 1.5, p: 0.4 }}>
+                  <ChevronRightIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+            {weekOffset !== 0 && (
+              <Button onClick={() => goToWeek(0)} disabled={loading} size="small" sx={{ ...compactButtonSx, color: "#0052cc" }}>
+                This week
+              </Button>
+            )}
+          </div>
         )}
 
         <div style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: "auto", flexShrink: 0 }}>
@@ -1120,7 +1144,7 @@ const PlanEntryBody = ({ searchText = "" }) => {
               {dirtyKeys.size} unsaved change{dirtyKeys.size === 1 ? "" : "s"}
             </span>
           )}
-          {canEdit ? (
+          {canEdit && !viewingPast ? (
             <Button
               onClick={handleSubmit}
               disabled={saving || !loaded}
@@ -1133,7 +1157,7 @@ const PlanEntryBody = ({ searchText = "" }) => {
             </Button>
           ) : (
             <span
-              title="Only Prod Incharge can enter and save the plan"
+              title={viewingPast ? "Past weeks cannot be edited" : "Only Prod Incharge can enter and save the plan"}
               style={{
                 fontSize: 11, fontWeight: 600, color: "#5b6472", backgroundColor: "#f1f2f5",
                 border: "1px solid #dde1e7", borderRadius: 6, padding: "6px 10px", whiteSpace: "nowrap",
@@ -1273,6 +1297,7 @@ const PlanEntryBody = ({ searchText = "" }) => {
                 onShiftCellChange={handleShiftCellChange}
                 plant={plant}
                 canEdit={canEdit}
+                viewingPast={viewingPast}
               />
             ))}
           </tbody>
@@ -1394,8 +1419,10 @@ const PlanHistoryBody = ({ searchText = "" }) => {
       historyRows.map((r) => ({
         id: r.fg_part,
         ...r,
-        month_gap: (r.mtd_actual || 0) - (r.month_plan || 0),
-        cw_gap: (r.cw_actual || 0) - (r.cw_plan || 0),
+        // MTD Gap / CW Gap follow the new MTD Plan and C.W Plan (from the monthly plan, whole numbers);
+        // the YD columns are unchanged.
+        month_gap: (r.mtd_actual || 0) - (r.mtd_plan || 0),
+        cw_gap: (r.cw_actual || 0) - (r.cw_plan_calc || 0),
         yd_gap: (r.yd_actual || 0) - (r.yd_plan || 0),
       })),
     [historyRows]
@@ -1423,9 +1450,10 @@ const PlanHistoryBody = ({ searchText = "" }) => {
   // reflows automatically when the sidebar is toggled/untoggled. `minWidth`
   // still protects each column from getting too cramped to read.
   const columns = useMemo(() => [
-    { field: "Line_Name", headerName: "Line", flex: 0.9, minWidth: 70 },
+    { field: "Line_Name", headerName: "Line", flex: 0.9, minWidth: 70, description: "Production line of the FG part (from the Material Master)" },
     {
       field: "fg_part_no", headerName: "Part No / Description", flex: 1.9, minWidth: 140,
+      description: "FG part number and its description",
       renderCell: (p) => (
         <div
           title={`${p.row.fg_part_no} — ${p.row.fg_part_desc}`}
@@ -1441,39 +1469,53 @@ const PlanHistoryBody = ({ searchText = "" }) => {
       ),
     },
     {
-      field: "month_plan", headerName: "Month Plan", flex: 0.9, minWidth: 75, align: "right", headerAlign: "center",
+      field: "monthly_plan", headerName: "Monthly Plan", flex: 0.95, minWidth: 80, align: "right", headerAlign: "center",
+      description: "Monthly Plan = sum of plan_qty (plan type MP) from the production plan for the selected month",
+      renderCell: (p) => numberFmt(p.value),
+    },
+    {
+      field: "mtd_plan", headerName: "MTD Plan", flex: 0.9, minWidth: 75, align: "right", headerAlign: "center",
+      description: "MTD Plan = (Monthly Plan / 26) x NWD. NWD = working days of the month up to yesterday (Sundays excluded)",
       renderCell: (p) => numberFmt(p.value),
     },
     {
       field: "mtd_actual", headerName: "MTD Actual", flex: 0.9, minWidth: 75, align: "right", headerAlign: "center",
+      description: "MTD Actual = production quantity of the selected month (Production Actual, movement types 101, 102, 261 and 262)",
       renderCell: (p) => numberFmt(p.value),
     },
     {
       field: "month_gap", headerName: "Gap", flex: 0.75, minWidth: 65, align: "right", headerAlign: "center",
+      description: "Gap = MTD Actual - MTD Plan",
       renderCell: (p) => <span style={gapCellSx(p.value)}>{gapFmt(p.value)}</span>,
     },
     {
-      field: "cw_plan", headerName: "C.W Plan", flex: 0.8, minWidth: 68, align: "right", headerAlign: "center",
+      field: "cw_plan_calc", headerName: "C.W Plan", flex: 0.8, minWidth: 68, align: "right", headerAlign: "center",
+      description: "C.W Plan = Monthly Plan / 4",
       renderCell: (p) => numberFmt(p.value),
     },
     {
       field: "cw_actual", headerName: "C.W Actual", flex: 0.85, minWidth: 72, align: "right", headerAlign: "center",
+      description: "C.W Actual = production quantity of the current week, Monday to Sunday (movement types 101, 102, 261 and 262)",
       renderCell: (p) => numberFmt(p.value),
     },
     {
       field: "cw_gap", headerName: "CW Gap", flex: 0.75, minWidth: 62, align: "right", headerAlign: "center",
+      description: "CW Gap = C.W Actual - C.W Plan",
       renderCell: (p) => <span style={gapCellSx(p.value)}>{gapFmt(p.value)}</span>,
     },
     {
       field: "yd_plan", headerName: "YD Plan", flex: 0.75, minWidth: 62, align: "right", headerAlign: "center",
+      description: "YD Plan = yesterday's plan: the daily plan entered for yesterday, all shifts added together (Prod Daily Plan tab)",
       renderCell: (p) => numberFmt(p.value),
     },
     {
       field: "yd_actual", headerName: "YD Actual", flex: 0.75, minWidth: 65, align: "right", headerAlign: "center",
+      description: "YD Actual = yesterday's production quantity (movement types 101, 102, 261 and 262)",
       renderCell: (p) => numberFmt(p.value),
     },
     {
       field: "yd_gap", headerName: "YD Gap", flex: 0.75, minWidth: 62, align: "right", headerAlign: "center",
+      description: "YD Gap = YD Actual - YD Plan (positive = ahead, negative = behind)",
       renderCell: (p) => <span style={gapCellSx(p.value)}>{gapFmt(p.value)}</span>,
     },
   ], []);

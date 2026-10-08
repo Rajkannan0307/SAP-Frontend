@@ -18,6 +18,9 @@ import { getPMPDAccess } from '../../Authentication/ActionAccessType'
 import { AuthContext } from '../../Authentication/AuthContext'
 import ValidationResponseGrid from '../../components/ValidationResponseTable'
 import DateRangeDownloadDialog from '../../components/DateRangeDownloadDialog'
+import FilterSelect from '../../components/FilterSelect'
+import { FilterPanel, FilterToggleButton } from '../../components/FilterPanel'
+import { getdetails as getLines } from '../../controller/LineMasterapiservice'
 
 // Month/Year filter helpers - the month converts to the Start/End date range
 // the backend expects (plain 'YYYY-MM-DD' strings, no timezone involved).
@@ -100,6 +103,9 @@ const PMPD_ActualProductionPlan = () => {
   const [lookup, setLookup] = useState({ materials: [], pmpd: [] });
   const [materialTypeFilter, setMaterialTypeFilter] = useState("All");
   const [pmpdFilter, setPmpdFilter] = useState("All");
+  const [lineFilter, setLineFilter] = useState("All");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [lines, setLines] = useState([]);
   const [appliedSearch, setAppliedSearch] = useState("");
   const [originalRows, setOriginalRows] = useState([]);
   const [openUploadModal, setOpenUploadModal] = useState(false);
@@ -145,9 +151,10 @@ const PMPD_ActualProductionPlan = () => {
   const summaryRows = useMemo(() => {
     const key = (v) => String(v ?? "").trim().toLowerCase()
     const typeByPart = new Map()
+    const lineByPart = new Map()
     lookup.materials.forEach((m) => {
       const k = key(m.part_number)
-      if (!typeByPart.has(k)) typeByPart.set(k, m.material_type)
+      if (!typeByPart.has(k)) { typeByPart.set(k, m.material_type); lineByPart.set(k, m.line_name || '') }
     })
     const pmpdParts = new Set(lookup.pmpd.map(key))
     const monthOf = (r) => {
@@ -185,6 +192,7 @@ const PMPD_ActualProductionPlan = () => {
         part_number: sample.part_number,
         description: (used.find((r) => r.description) || {}).description || "",
         material_type: materialType,
+        line_name: lineByPart.get(key(sample.part_number)) || '',
         not_in_material_master: matType === undefined,
         others_reason: othersReason,
         prod_qty: used.reduce((sum, r) => sum + (Number(r.prod_qty) || 0), 0),
@@ -192,18 +200,6 @@ const PMPD_ActualProductionPlan = () => {
       }
     })
   }, [originalRows, lookup])
-
-  const filteredRows = useMemo(() => summaryRows.filter((row) => {
-    if (materialTypeFilter !== "All" && row.material_type !== materialTypeFilter) return false
-    if (pmpdFilter !== "All" && row.pmpd !== pmpdFilter) return false
-    if (!appliedSearch) return true
-    // Typing exactly "yes" / "no" searches the PMPD Yes/No column only
-    // (a plain substring match on "no" would hit unrelated descriptions).
-    if (appliedSearch === 'yes' || appliedSearch === 'no') return row.pmpd.toLowerCase() === appliedSearch
-    return ['plant', 'month', 'part_number', 'description', 'material_type'].some((k) =>
-      String(row[k] ?? '').toLowerCase().includes(appliedSearch)
-    )
-  }), [summaryRows, materialTypeFilter, pmpdFilter, appliedSearch])
 
   const [plants, setPlants] = useState([])
   const [loading, setLoading] = useState(false)
@@ -227,6 +223,32 @@ const PMPD_ActualProductionPlan = () => {
       await loadMonthData(values)
     }
   })
+
+  // Optional Line filter: the options are the lines of the selected plant (Line Master), searchable;
+  // "(No line)" = material without a line.
+  const NO_LINE = '(No line)'
+  const lineOptions = useMemo(() => {
+    const names = (lines || [])
+      .filter((l) => l.Active_Status && String(l.Plant_Code) === String(formik.values.plant))
+      .map((l) => l.Line_Name)
+    return [...new Set(names)].sort((x, y) => x.localeCompare(y)).concat(NO_LINE)
+  }, [lines, formik.values.plant])
+  const activeLine = lineOptions.includes(lineFilter) ? lineFilter : 'All'
+  const activeFilterCount = (materialTypeFilter !== 'All' ? 1 : 0) + (activeLine !== 'All' ? 1 : 0) + (pmpdFilter !== 'All' ? 1 : 0)
+  const clearFilters = () => { setMaterialTypeFilter('All'); setLineFilter('All'); setPmpdFilter('All') }
+
+  const filteredRows = useMemo(() => summaryRows.filter((row) => {
+    if (activeLine !== 'All' && (row.line_name || NO_LINE) !== activeLine) return false
+    if (materialTypeFilter !== "All" && row.material_type !== materialTypeFilter) return false
+    if (pmpdFilter !== "All" && row.pmpd !== pmpdFilter) return false
+    if (!appliedSearch) return true
+    // Typing exactly "yes" / "no" searches the PMPD Yes/No column only
+    // (a plain substring match on "no" would hit unrelated descriptions).
+    if (appliedSearch === 'yes' || appliedSearch === 'no') return row.pmpd.toLowerCase() === appliedSearch
+    return ['plant', 'month', 'part_number', 'description', 'material_type'].some((k) =>
+      String(row[k] ?? '').toLowerCase().includes(appliedSearch)
+    )
+  }), [summaryRows, materialTypeFilter, pmpdFilter, activeLine, appliedSearch])
 
   // Loads the selected Month/Year (first to last day) for the selected plant.
   async function loadMonthData(values) {
@@ -280,6 +302,7 @@ const PMPD_ActualProductionPlan = () => {
       setPlants(resposne)
     }
     fetchData()
+    getLines().then((r) => setLines(r || [])).catch((e) => console.error('Load Line Master error:', e))
   }, [])
 
   // const columns = [
@@ -470,31 +493,6 @@ const PMPD_ActualProductionPlan = () => {
               onKeyUp={handleSearch}
               sx={compactFieldSx(260)}
             />
-            <TextField
-              select
-              size="small"
-              label="Material Type"
-              value={materialTypeFilter}
-              onChange={(e) => setMaterialTypeFilter(e.target.value)}
-              sx={compactFieldSx(130)}
-            >
-              <MenuItem sx={{ fontSize: 11.5 }} value="All">All</MenuItem>
-              <MenuItem sx={{ fontSize: 11.5 }} value="FERT">FERT</MenuItem>
-              <MenuItem sx={{ fontSize: 11.5 }} value="HALB">HALB</MenuItem>
-              <MenuItem sx={{ fontSize: 11.5 }} value="Others">Others</MenuItem>
-            </TextField>
-            <TextField
-              select
-              size="small"
-              label="PMPD"
-              value={pmpdFilter}
-              onChange={(e) => setPmpdFilter(e.target.value)}
-              sx={compactFieldSx(100)}
-            >
-              <MenuItem sx={{ fontSize: 11.5 }} value="All">All</MenuItem>
-              <MenuItem sx={{ fontSize: 11.5 }} value="Yes">Yes</MenuItem>
-              <MenuItem sx={{ fontSize: 11.5 }} value="No">No</MenuItem>
-            </TextField>
             <Button
               onClick={handleSearch}
               variant="outlined"
@@ -504,6 +502,7 @@ const PMPD_ActualProductionPlan = () => {
             >
               Search
             </Button>
+            <FilterToggleButton open={filtersOpen} onClick={() => setFiltersOpen((o) => !o)} activeCount={activeFilterCount} />
           </div>
           <Button
             variant="contained"
@@ -516,30 +515,40 @@ const PMPD_ActualProductionPlan = () => {
           >
             Excel Download
           </Button>
-          <div style={{ display: PMPDAccess.disableAction ? "none" : "flex", gap: 8, alignItems: "center" }}>
-            <Button
-              variant="contained"
-              disableElevation
-              onClick={handleFetchProdData}
-              disabled={fetchingProdData}
-              startIcon={fetchingProdData ? <CircularProgress size={14} color="inherit" /> : <RefreshIcon sx={{ fontSize: 15 }} />}
-              sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc" } }}
-              title="Fetch latest MB51 Prod Data from the FTP source and insert new records"
-            >
-              {fetchingProdData ? "Fetching..." : "Fetch"}
-            </Button>
-            <ExcelUploadModal open={openUploadModal}
-              onClose={() => {
-                setOpenUploadModal(false)
-              }}
-              onOpen={() => {
-                setOpenUploadModal(true)
-              }}
-              templateUrl={""}
-              setRefreshData={setRefreshData}
-            />
-          </div>
         </div>
+
+        <FilterPanel
+          open={filtersOpen} activeCount={activeFilterCount} onClear={clearFilters}
+          actions={(
+            <div style={{ display: PMPDAccess.disableAction ? "none" : "flex", gap: 8, alignItems: "center" }}>
+              <Button
+                variant="contained"
+                disableElevation
+                onClick={handleFetchProdData}
+                disabled={fetchingProdData}
+                startIcon={fetchingProdData ? <CircularProgress size={14} color="inherit" /> : <RefreshIcon sx={{ fontSize: 15 }} />}
+                sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc" } }}
+                title="Fetch latest MB51 Prod Data from the FTP source and insert new records"
+              >
+                {fetchingProdData ? "Fetching..." : "Fetch"}
+              </Button>
+              <ExcelUploadModal open={openUploadModal}
+                onClose={() => {
+                  setOpenUploadModal(false)
+                }}
+                onOpen={() => {
+                  setOpenUploadModal(true)
+                }}
+                templateUrl={""}
+                setRefreshData={setRefreshData}
+              />
+            </div>
+          )}
+        >
+          <FilterSelect label="Material Type" value={materialTypeFilter} options={['FERT', 'HALB', 'Others']} onChange={setMaterialTypeFilter} minWidth={150} />
+          <FilterSelect label="Line" value={activeLine} options={lineOptions} onChange={setLineFilter} minWidth={190} />
+          <FilterSelect label="PMPD" value={pmpdFilter} options={['Yes', 'No']} onChange={setPmpdFilter} minWidth={120} />
+        </FilterPanel>
 
       </div>
 

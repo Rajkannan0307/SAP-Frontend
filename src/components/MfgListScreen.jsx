@@ -9,6 +9,9 @@ import SectionHeading from "./Header";
 import DateRangeDownloadDialog from "./DateRangeDownloadDialog";
 import { AuthContext } from "../Authentication/AuthContext";
 import { getPlantdetails } from "../controller/CommonApiService";
+import { getdetails as getLines } from "../controller/LineMasterapiservice";
+import FilterSelect from "./FilterSelect";
+import { FilterPanel, FilterToggleButton } from "./FilterPanel";
 
 /* ============================================================
    MfgListScreen — the shared "plant + month/year list" screen used by
@@ -43,6 +46,9 @@ import { getPlantdetails } from "../controller/CommonApiService";
                         search box ("All" + options) that keeps only rows whose row[field]
                         equals the choice
      extraActions       node rendered before Excel Download (e.g. a Fetch button)
+     titleInfo          optional node shown as an info (i) icon after the title (use InfoHover)
+     lineFilterField    optional row field name (e.g. "line_name"): adds an optional Line dropdown whose
+                        options are the lines found in the loaded rows; "All" (default) shows everything
      reloadKey          change it to reload the current filters (e.g. after Fetch)
      children           anything rendered after the grid (dialogs)
    ============================================================ */
@@ -131,6 +137,8 @@ const MfgListScreen = ({
   allowAllPlants = false,
   selectFilter = null,
   extraActions = null,
+  titleInfo = null,
+  lineFilterField = null,
   reloadKey,
   children = null,
 }) => {
@@ -149,9 +157,13 @@ const MfgListScreen = ({
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [selectValue, setSelectValue] = useState("All");
+  const [lineValue, setLineValue] = useState("All");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [allLines, setAllLines] = useState([]);
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
 
   useEffect(() => {
+    if (lineFilterField) getLines().then((r) => setAllLines(r || [])).catch((e) => console.error("Load Line Master error:", e));
     getPlantdetails()
       .then((res) => setPlants(res || []))
       .catch((error) => {
@@ -231,19 +243,36 @@ const MfgListScreen = ({
     }
   };
 
+  // Optional Line filter: the options are the distinct lines of the loaded rows (rows with no line = "(No line)").
+  const NO_LINE = "(No line)";
+  const lineOptions = useMemo(() => {
+    if (!lineFilterField) return [];
+    const names = (allLines || [])
+      .filter((l) => l.Active_Status && (plant === ALL_PLANTS || String(l.Plant_Code) === String(plant)))
+      .map((l) => l.Line_Name);
+    return [...new Set(names)].sort((a, b) => a.localeCompare(b)).concat(NO_LINE);
+  }, [allLines, plant, lineFilterField]);
+  const activeLine = lineOptions.includes(lineValue) ? lineValue : "All";
+  const hasFilters = Boolean(lineFilterField || selectFilter);
+  const activeFilterCount = (activeLine !== "All" ? 1 : 0) + (selectFilter && selectValue !== "All" ? 1 : 0);
+  const clearFilters = () => { setLineValue("All"); setSelectValue("All"); setPaginationModel((prev) => ({ ...prev, page: 0 })); };
+
   const displayRows = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     const prepared = prepareRows ? prepareRows(rows) : rows;
-    const byChoice = selectFilter && selectValue !== "All"
-      ? prepared.filter((r) => r[selectFilter.field] === selectValue)
+    const byLine = lineFilterField && activeLine !== "All"
+      ? prepared.filter((r) => (String(r[lineFilterField] || "").trim() || NO_LINE) === activeLine)
       : prepared;
+    const byChoice = selectFilter && selectValue !== "All"
+      ? byLine.filter((r) => r[selectFilter.field] === selectValue)
+      : byLine;
     const filtered = q
       ? byChoice.filter((r) => searchFields.some((k) => String(r[k] ?? "").toLowerCase().includes(q)))
       : byChoice;
     return filtered.map((r, i) => ({ ...r, si: i + 1 }));
     // prepareRows/searchFields are static per screen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, searchText, selectValue]);
+  }, [rows, searchText, selectValue, activeLine]);
 
   const allColumns = useMemo(
     () => [{ field: "si", headerName: "SI No", width: 70, sortable: false }, ...columns],
@@ -263,7 +292,14 @@ const MfgListScreen = ({
       }}
     >
       <div style={{ marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <SectionHeading>{title}</SectionHeading>
+        {titleInfo ? (
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <SectionHeading>{title}</SectionHeading>
+            {titleInfo}
+          </div>
+        ) : (
+          <SectionHeading>{title}</SectionHeading>
+        )}
       </div>
 
       <div
@@ -316,18 +352,6 @@ const MfgListScreen = ({
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-          {selectFilter && (
-            <TextField
-              select size="small" label={selectFilter.label} value={selectValue}
-              onChange={(e) => { setSelectValue(e.target.value); setPaginationModel((prev) => ({ ...prev, page: 0 })); }}
-              sx={compactFieldSx(130)}
-            >
-              <MenuItem sx={{ fontSize: 11.5 }} value="All">All</MenuItem>
-              {selectFilter.options.map((o) => (
-                <MenuItem sx={{ fontSize: 11.5 }} key={o} value={o}>{o}</MenuItem>
-              ))}
-            </TextField>
-          )}
           <TextField
             size="small" variant="outlined" placeholder="Search all columns..."
             value={searchText}
@@ -335,7 +359,10 @@ const MfgListScreen = ({
             InputProps={{ startAdornment: <SearchIcon sx={{ fontSize: 16, color: "#8a93a3", mr: 0.5 }} /> }}
             sx={compactFieldSx(240)}
           />
-          {extraActions}
+          {hasFilters && (
+            <FilterToggleButton open={filtersOpen} onClick={() => setFiltersOpen((o) => !o)} activeCount={activeFilterCount} />
+          )}
+          {!hasFilters && extraActions}
           <Button
             variant="contained" disableElevation
             onClick={downloadWithDateRange ? () => setDownloadOpen(true) : handleDirectDownload}
@@ -347,6 +374,23 @@ const MfgListScreen = ({
             {directDownloading ? "Downloading..." : "Excel Download"}
           </Button>
         </div>
+
+        {hasFilters && (
+          <FilterPanel open={filtersOpen} activeCount={activeFilterCount} onClear={clearFilters} actions={extraActions}>
+            {selectFilter && (
+              <FilterSelect
+                label={selectFilter.label} value={selectValue} options={selectFilter.options} minWidth={150}
+                onChange={(v) => { setSelectValue(v); setPaginationModel((prev) => ({ ...prev, page: 0 })); }}
+              />
+            )}
+            {lineFilterField && (
+              <FilterSelect
+                label="Line" value={activeLine} options={lineOptions} minWidth={190}
+                onChange={(v) => { setLineValue(v); setPaginationModel((prev) => ({ ...prev, page: 0 })); }}
+              />
+            )}
+          </FilterPanel>
+        )}
       </div>
 
       {summaryText && (

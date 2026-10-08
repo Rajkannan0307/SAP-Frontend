@@ -36,6 +36,10 @@ const ViewMfgBomChildDialog = ({ open, setOpenAddModal, mfgBomData }) => {
     { field: "part_name_desc", headerName: "Part Name", width: 110 },
     { field: "part_no_code", headerName: "Part No", width: 100 },
     { field: "part_no_desc", headerName: "Part No Description", flex: 1 },
+    {
+      field: "BOM_Qty", headerName: "BOM Qty", width: 80, align: "right", headerAlign: "center",
+      renderCell: (params) => (params.value === null || params.value === undefined ? "" : Number(params.value).toLocaleString("en-IN", { maximumFractionDigits: 3 })),
+    },
     { field: "opt_no", headerName: "Opt No", width: 65, align: "center", headerAlign: "center" },
     { field: "opt_name", headerName: "Opt Name", flex: 1 },
     { field: "Valuation_Name", headerName: "Valuation/Procurement", flex: 1 },

@@ -25,6 +25,7 @@ const HEADER_COLUMNS = [
   "Vendor_Code",
   "Active_Status",
   "Is_Assembly_Part",
+  "BOM_Qty",
 ];
 
 const MfgBomBulkUpload = ({ open, onClose, onOpen, setRefreshData }) => {
@@ -117,6 +118,17 @@ const MfgBomBulkUpload = ({ open, onClose, onOpen, setRefreshData }) => {
       type: "list",
       allowBlank: true,
       formulae: ['"Yes,No"'],
+    });
+
+    // BOM_Qty — required: pieces of the Part_No needed for one FG (a number greater than 0).
+    worksheet.dataValidations.add("K2:K1000", {
+      type: "decimal",
+      operator: "greaterThan",
+      allowBlank: false,
+      formulae: [0],
+      showErrorMessage: true,
+      errorTitle: "BOM_Qty",
+      error: "BOM_Qty is required and must be a number greater than 0.",
     });
 
     const buffer = await workbook.xlsx.writeBuffer();

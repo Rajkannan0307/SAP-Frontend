@@ -3,6 +3,7 @@ import { Button, CircularProgress, Tooltip } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { toast } from "react-toastify";
 import MfgListScreen, { compactButtonSx } from "../components/MfgListScreen";
+import InfoHover, { InfoChip, InfoSection } from "../components/InfoHover";
 import { getPMPDAccess } from "../Authentication/ActionAccessType";
 import {
   downloadSubcontractPlanExcel,
@@ -80,7 +81,10 @@ const loadRows = async (params) => {
   }
   const key = (v) => String(v ?? "").trim().toLowerCase();
   const typeByPart = new Map();
-  materials.forEach((m) => { if (!typeByPart.has(key(m.part_number))) typeByPart.set(key(m.part_number), m.material_type); });
+  const lineByPart = new Map();
+  materials.forEach((m) => {
+    if (!typeByPart.has(key(m.part_number))) { typeByPart.set(key(m.part_number), m.material_type); lineByPart.set(key(m.part_number), m.line_name || ""); }
+  });
 
   const groups = new Map();
   rows.forEach((r) => {
@@ -102,6 +106,7 @@ const loadRows = async (params) => {
         description: r.description || "",
         supplier_code: r.supplier_code || "",
         material_type: listed ? matType : "Others",
+        line_name: lineByPart.get(key(r.part_number)) || "",
         not_in_material_master: matType === undefined,
         others_reason: listed ? "" : matType === undefined
           ? "Material is not found (or is inactive) in Material Master for this plant."
@@ -117,6 +122,23 @@ const downloadFileName = ({ plant, startDate, endDate }) => `Subcontract_Plan_${
 const getRowId = (row) => row.id;
 const emptyLabel = ({ periodLabel, searching }) =>
   searching ? "No records match your search." : `No Subcontract Plan records found for ${periodLabel}.`;
+
+// What the (i) icon next to the title explains.
+const TITLE_INFO = (
+  <InfoHover title="Movement types & grouping" width={320}>
+    <InfoSection label="Movement types">
+      <InfoChip>541</InfoChip>
+      <InfoChip color="#8a5a00" bg="#fff3d6">542</InfoChip>
+      only
+    </InfoSection>
+    <InfoSection label="Grouped by">
+      Plant + Material + Supplier + Month
+    </InfoSection>
+    <InfoSection label="Quantity">
+      <b>SUM</b> of the 541 and 542 quantities in each group
+    </InfoSection>
+  </InfoHover>
+);
 
 const SubcontractDailyPlan = () => {
   const access = getPMPDAccess();
@@ -145,6 +167,8 @@ const SubcontractDailyPlan = () => {
   return (
     <MfgListScreen
       title="Subcontract Daily Dispatch"
+      titleInfo={TITLE_INFO}
+      lineFilterField="line_name"
       columns={COLUMNS}
       getRowId={getRowId}
       searchFields={SEARCH_FIELDS}

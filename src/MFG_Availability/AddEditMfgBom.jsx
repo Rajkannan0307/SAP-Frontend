@@ -135,6 +135,7 @@ const createEmptyRow = (id) => ({
   part_no: "",
   part_no_desc: "",
   opt_no: "",
+  bom_qty: "",
   opt_id: "",
   valuation_id: "",
   vendor_id: "",
@@ -188,6 +189,15 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
           toast.error(`Row ${i + 1}: all fields are required.`);
           return;
         }
+        const bomQty = Number(r.bom_qty);
+        if (r.bom_qty === "" || r.bom_qty === null || r.bom_qty === undefined || !Number.isFinite(bomQty) || bomQty <= 0) {
+          toast.error(`Row ${i + 1}: BOM Qty is required and must be greater than 0.`);
+          return;
+        }
+        if (Math.round(bomQty * 1000) / 1000 !== bomQty) {
+          toast.error(`Row ${i + 1}: BOM Qty can have at most 3 decimals.`);
+          return;
+        }
         // Vendor is optional only when the Valuation is INHOUSE.
         const valuationName = valuations.find((v) => v.Valuation_ID === r.valuation_id)?.Valuation_Name;
         const isInhouse = String(valuationName || "").trim().toUpperCase() === "INHOUSE";
@@ -219,6 +229,7 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
             part_name: r.part_name,
             part_no: r.part_no,
             opt_no: r.opt_no,
+            bom_qty: Number(r.bom_qty),
             opt_id: r.opt_id,
             valuation_id: r.valuation_id,
             vendor_id: r.vendor_id,
@@ -303,6 +314,7 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
         part_no_code: e.part_no_code,
         part_no_desc: e.part_no_desc,
         opt_no: e.opt_no,
+        bom_qty: e.BOM_Qty ?? "",
         opt_id: e.opt_id,
         opt_name: e.opt_name,
         valuation_id: e.valuation_id,
@@ -400,6 +412,36 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
           <span style={{ color: "#555", fontSize: "12px" }} title={description}>
             {description}
           </span>
+        );
+      },
+    },
+    {
+      // Required: pieces of this Part No needed for ONE FG (greater than 0, up to 3 decimals).
+      field: "bom_qty",
+      headerName: "BOM Qty *",
+      width: 100,
+      align: "right",
+      headerAlign: "center",
+      renderCell: (params) => {
+        const v = params.row.bom_qty;
+        const missing = v === "" || v === null || v === undefined || !(Number(v) > 0);
+        return (
+          <GridSelectCell>
+            <input
+              type="number"
+              min="0"
+              step="any"
+              placeholder="Qty"
+              value={v ?? ""}
+              onChange={(e) => handleProcessRowUpdate({ ...params.row, bom_qty: e.target.value })}
+              onKeyDown={(e) => e.stopPropagation()}
+              style={{
+                width: "100%", height: 30, boxSizing: "border-box", padding: "0 8px", textAlign: "right",
+                fontSize: "12.5px", borderRadius: 4, outline: "none",
+                border: `1px solid ${missing ? "#d32f2f" : "#b9bfc9"}`,
+              }}
+            />
+          </GridSelectCell>
         );
       },
     },
