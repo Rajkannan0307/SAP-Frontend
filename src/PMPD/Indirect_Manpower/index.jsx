@@ -28,7 +28,7 @@ import * as Yup from "yup"
 import SectionHeading from "../../components/Header";
 import { AddMstCategoryBreakup, AddOrEditProductMapping, AddTrnIndirectManpower, getMstCategoryBreakupDetails, getMstIndirectCategoryDetails, getProductdetails, getProductMappingdetails, getTrnIndirectManPower } from "../../controller/PMPDApiService";
 import { format, isValid } from "date-fns";
-import { getDepartmentdetails, getPlantdetails } from "../../controller/CommonApiService";
+import { getDepartmentdetails, getMyPlants, myPlantLabel, filterRowsToMyPlants } from "../../controller/CommonApiService";
 import { AuthContext } from "../../Authentication/AuthContext";
 import { getPMPDAccess } from "../../Authentication/ActionAccessType";
 import { DHRM_DeptHeaderMst } from "../../controller/DHRMApiService";
@@ -141,12 +141,12 @@ const IndirectManpowerScreen = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const response = PMPDAccess.disableAction
-                ? await getTrnIndirectManPower(currentUserPlantCode)
-                : await getTrnIndirectManPower()
+            const response = await getTrnIndirectManPower()
             console.log("getTrnIndirectManPower - ", response)
-            setOriginalRows(response || [])
-            setRows(response || [])
+            // only the rows of the plants this user may use (own plant + User Master > Data Access)
+            const list = await filterRowsToMyPlants(response || [], "plant_code")
+            setOriginalRows(list)
+            setRows(list)
         }
         fetchData()
     }, [refreshData])
@@ -389,9 +389,9 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
 
     useEffect(() => {
         const fetchInitData = async () => {
-            const response = await getPlantdetails()
+            const response = await getMyPlants() // only the plants this user may use (own plant + Data Access)
             console.log('Plants', response)
-            setPlants(response)
+            setPlants(Array.isArray(response) ? response : [])
 
             const deptResponse = await getDepartmentdetails()
             console.log('Department', deptResponse)
@@ -459,7 +459,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                     >
                         {plants?.map((option, i) => (
                             <MenuItem sx={{ fontSize: 12 }} key={i} value={option.Plant_Code}>
-                                {`${option.Plant_Code} - ${option.Plant_Name}`}
+                                {myPlantLabel(option)}
                             </MenuItem>
                         )) || []}
                     </TextField>

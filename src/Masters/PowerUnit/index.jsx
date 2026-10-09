@@ -1,3 +1,4 @@
+import { filterRowsToMyPlants } from "../../controller/CommonApiService";
 import React, { useState, useEffect } from "react";
 import {
     TextField,
@@ -34,7 +35,8 @@ import { api } from "../../controller/constants";
 import SectionHeading from "../../components/Header";
 import { FaDownload, FaUpload } from 'react-icons/fa6'
 import { AddMstPackingPartBULK, AddorEditMstPowerUnitApi, AddOrEditPackingPart, GetMstPowerUnitApi, GetPackingPartApi, MstPowerUnitBulkApi } from "../../controller/ContributionalChartApiService";
-import { getPlantdetails } from "../../controller/CommonApiService";
+import { getPlantdetails, getMyPlants, myPlantLabel } from "../../controller/CommonApiService";
+import { findPlantsNotAllowed, plantsNotAllowedMessage } from "../../common/plantFileCheck";
 import { CloudUploadIcon } from 'lucide-react'
 import { deepPurple } from "@mui/material/colors";
 import ExcelJS from 'exceljs'
@@ -187,8 +189,10 @@ const CC_PowerUnit = () => {
         const fetchData = async () => {
             const response = await GetMstPowerUnitApi()
             console.log("GetMstPowerUnitApi - ", response)
-            setOriginalRows(response || [])
-            setRows(response || [])
+            // only the rows of the plants this user may use (own plant + Data Access)
+            const list = await filterRowsToMyPlants(response || [])
+            setOriginalRows(list)
+            setRows(list)
         }
         fetchData()
     }, [refreshData])
@@ -435,9 +439,9 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const response2 = await getPlantdetails()
+            const response2 = await getMyPlants() // only the plants this user may use (own plant + Data Access)
             console.log(response2, "Plants")
-            setPlants(response2)
+            setPlants(Array.isArray(response2) ? response2 : [])
 
             const response3 = await getMaterialType(MaterialGroupEnumTypes.direct)
             console.log(response3.data, 'Material Type')
@@ -499,7 +503,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                     >
                         {plants.map((p) => (
                             <MenuItem sx={{ fontSize: "small" }} key={p.Plant_Code} value={p.Plant_Code}>
-                                {`${p.Plant_Code} - ${p.Plant_Name}`}
+                                {myPlantLabel(p)}
                             </MenuItem>
                         ))}
                     </TextField>
@@ -747,6 +751,13 @@ const ExcelUploadModal = ({
         if (isUploading) return
         setIsUploading(true)
         try {
+            // Only plants this user may use (own + Data Access): check the Plant column of the file before uploading
+            const { blocked, plants } = await findPlantsNotAllowed(uploadedFile)
+            if (blocked.length > 0) {
+                alert(plantsNotAllowedMessage(blocked, plants))
+                setIsUploading(false)
+                return
+            }
             const formData = new FormData()
             const userId = localStorage.getItem('EmpId')
             formData.append("userId", userId)
@@ -778,10 +789,10 @@ const ExcelUploadModal = ({
 
     const handleDownloadTemplate = async () => {
 
-        const response = await getPlantdetails()
+        const response = await getMyPlants() // only the plants this user may use (own plant + Data Access)
         console.log(response)
 
-        const PlantCodeList = response.map((e) => e.Plant_Code)
+        const PlantCodeList = (Array.isArray(response) ? response : []).map((e) => e.Plant_Code)
 
         await generateExcelTemplate({
             fileName: "PowerUnitTemplate.xlsx",

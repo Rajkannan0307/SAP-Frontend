@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import SectionHeading from '../../components/Header'
 import { useFormik } from 'formik'
 import { Box, Button, MenuItem, TextField } from '@mui/material'
-import { getPlantdetails } from '../../controller/CommonApiService'
+import { getMyPlants, myPlantLabel } from '../../controller/CommonApiService'
 import * as yup from 'yup'
 import { GetPMPD_PlanVsActual_InDirect } from '../../controller/PMPDApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
@@ -138,8 +138,8 @@ const PMDP_PlanVsActual_Indirect = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const resposne = await getPlantdetails()
-            setPlants(resposne)
+            const resposne = await getMyPlants() // only the plants this user may use (own plant + Data Access)
+            setPlants(Array.isArray(resposne) ? resposne : [])
         }
         fetchData()
     }, [])
@@ -326,7 +326,7 @@ const PMDP_PlanVsActual_Indirect = () => {
                     >
                         {plants.map((p) => (
                             <MenuItem sx={{ fontSize: "small" }} key={p.Plant_ID} value={p.Plant_Code}>
-                                {`${p.Plant_Code} - ${p.Plant_Name}`}
+                                {myPlantLabel(p)}
                             </MenuItem>
                         ))}
                     </TextField>

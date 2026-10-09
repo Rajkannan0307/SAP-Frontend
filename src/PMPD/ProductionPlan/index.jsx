@@ -7,7 +7,8 @@ import { FaDownload, FaUpload } from 'react-icons/fa6'
 import { deepPurple } from '@mui/material/colors';
 import * as ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
-import { getPlantdetails } from '../../controller/CommonApiService'
+import { getMyPlants, myPlantLabel } from '../../controller/CommonApiService'
+import { findPlantsNotAllowed, plantsNotAllowedMessage } from '../../common/plantFileCheck'
 import { AddProductionPlan, getProductionPlandetails, getProductSegmentdetails } from '../../controller/PMPDApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import { endOfDay, format, isValid, startOfDay } from 'date-fns'
@@ -211,8 +212,8 @@ const PMPD_ProductionPlan = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const resposne = await getPlantdetails()
-            setPlants(resposne)
+            const resposne = await getMyPlants() // only the plants this user may use (own plant + Data Access)
+            setPlants(Array.isArray(resposne) ? resposne : [])
         }
         fetchData()
     }, [])
@@ -327,7 +328,7 @@ const PMPD_ProductionPlan = () => {
                     >
                         {plants.map((p) => (
                             <MenuItem sx={{ fontSize: 11.5 }} key={p.Plant_ID} value={p.Plant_Code}>
-                                {`${p.Plant_Code} - ${p.Plant_Name}`}
+                                {myPlantLabel(p)}
                             </MenuItem>
                         ))}
                     </TextField>
@@ -514,11 +515,11 @@ const ExcelUploadModal = ({
     async function downloadProductionPlanTemplate() {
         // 1️⃣ Fetch dropdown data
         const [plant, prod_segments] = await Promise.all([
-            getPlantdetails(),
+            getMyPlants(), // only the plants this user may use (own plant + Data Access)
             getProductSegmentdetails(),
         ]);
 
-        const plantCodes = plant.map((e) => e.Plant_Code);
+        const plantCodes = (Array.isArray(plant) ? plant : []).map((e) => e.Plant_Code);
         const prodSegNames = prod_segments.map((e) => e.seg_name);
         const planTypes = ["AOP", "MP"];
 
@@ -622,6 +623,13 @@ const ExcelUploadModal = ({
         if (isUploading) return
         setIsUploading(true)
         try {
+            // Only plants this user may use (own + Data Access): check the Plant column of the file before uploading
+            const { blocked, plants } = await findPlantsNotAllowed(uploadedFile)
+            if (blocked.length > 0) {
+                alert(plantsNotAllowedMessage(blocked, plants))
+                setIsUploading(false)
+                return
+            }
             const formData = new FormData()
             const userId = localStorage.getItem('EmpId')
             formData.append("userId", userId)

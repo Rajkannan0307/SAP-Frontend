@@ -20,7 +20,7 @@ import * as Yup from "yup";
 import { CiSquarePlus } from "react-icons/ci";
 import { MdDelete } from "react-icons/md";
 import { toast } from "react-toastify";
-import { getPlantdetails } from "../controller/CommonApiService";
+import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import { getProductdetails } from "../controller/PMPDApiService";
 import { getdetails as getOperations } from "../controller/OperationMasterapiservice";
 import { getdetails as getValuations } from "../controller/ValuationTypeMasterapiservice";
@@ -254,13 +254,13 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
     if (!open) return;
     const fetchData = async () => {
       const [plantRes, productRes, operationRes, valuationRes, vendorRes] = await Promise.all([
-        getPlantdetails(),
+        getMyPlants(), // only the plants this user may use (own + Data Access), with their Division
         getProductdetails(),
         getOperations(),
         getValuations(),
         getVendors(),
       ]);
-      setPlants(plantRes || []);
+      setPlants(Array.isArray(plantRes) ? plantRes : []);
       setProducts((productRes || []).filter((p) => p.Active_Status));
       setOperations((operationRes || []).filter((o) => o.status));
       setValuations(valuationRes || []);
@@ -603,11 +603,11 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
             helperText={formik.touched.plant && formik.errors.plant}
             InputLabelProps={{ sx: { fontSize: 12.5 } }}
             InputProps={{ sx: { fontSize: 12.5 } }}
-            sx={{ width: 140, mt: 1, flex: "0 0 auto" }}
+            sx={{ width: 250, mt: 1, flex: "0 0 auto" }}
           >
             {plants.map((p) => (
               <MenuItem key={p.Plant_ID} value={p.Plant_Code} sx={{ fontSize: 12.5 }}>
-                {`${p.Plant_Code} - ${p.Plant_Name}`}
+                {myPlantLabel(p)}
               </MenuItem>
             ))}
           </TextField>

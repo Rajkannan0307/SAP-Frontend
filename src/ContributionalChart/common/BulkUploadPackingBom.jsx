@@ -7,6 +7,7 @@ import * as ExcelJS from 'exceljs'
 import { PackingBomBulkUploadApi } from "../../controller/ContributionalChartApiService";
 import { CCTypeEnum, PriSecriEnum } from "../../common/enumValues";
 import ValidationResponseGrid from "../../components/ValidationResponseTable";
+import { findPlantsNotAllowed, plantsNotAllowedMessage } from "../../common/plantFileCheck";
 
 // type CCType = 'SC' | 'TC' | 'PK';
 
@@ -178,6 +179,13 @@ const PackingBomBulkUpload = ({
         if (isUploading) return
         setIsUploading(true)
         try {
+            // Only plants this user may use (own + Data Access): check the Plant column of the file before uploading
+            const { blocked, plants } = await findPlantsNotAllowed(uploadedFile)
+            if (blocked.length > 0) {
+                alert(plantsNotAllowedMessage(blocked, plants))
+                setIsUploading(false)
+                return
+            }
             const formData = new FormData()
             const userId = localStorage.getItem('EmpId')
             console.log(userId, 'UserId')

@@ -6,7 +6,8 @@ import { FaDownload, FaUpload } from "react-icons/fa6";
 import * as ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { MfgBomBulkUploadApi } from "../controller/MfgBomApiService";
-import { getPlantdetails } from "../controller/CommonApiService";
+import { getMyPlants } from "../controller/CommonApiService";
+import { findPlantsNotAllowed, plantsNotAllowedMessage } from "../common/plantFileCheck";
 import { getdetails as getOperations } from "../controller/OperationMasterapiservice";
 import { getdetails as getValuations } from "../controller/ValuationTypeMasterapiservice";
 import { getProductdetails } from "../controller/PMPDApiService";
@@ -46,13 +47,13 @@ const MfgBomBulkUpload = ({ open, onClose, onOpen, setRefreshData }) => {
 
   const downloadTemplate = async () => {
     const [plants, operations, valuations, products] = await Promise.all([
-      getPlantdetails(),
+      getMyPlants(), // the Plant list of the template = only the plants this user may use
       getOperations(),
       getValuations(),
       getProductdetails(),
     ]);
 
-    const plantCodeList = (plants || []).map((p) => `${p.Plant_Code}`);
+    const plantCodeList = (Array.isArray(plants) ? plants : []).map((p) => `${p.Plant_Code}`);
     const operationNameList = (operations || []).filter((o) => o.status).map((o) => o.opt_name);
     const valuationList = (valuations || []).map((v) => v.Valuation_Name);
     const productNameList = (products || []).filter((p) => p.Active_Status).map((p) => p.Name);
@@ -145,6 +146,13 @@ const MfgBomBulkUpload = ({ open, onClose, onOpen, setRefreshData }) => {
     if (isUploading) return;
     setIsUploading(true);
     try {
+      // Only plants this user may use (own + Data Access): check the Plant column of the file before uploading
+      const { blocked, plants } = await findPlantsNotAllowed(uploadedFile);
+      if (blocked.length > 0) {
+        alert(plantsNotAllowedMessage(blocked, plants));
+        setIsUploading(false);
+        return;
+      }
       const formData = new FormData();
       const userId = localStorage.getItem("EmpId");
       formData.append("userId", userId);

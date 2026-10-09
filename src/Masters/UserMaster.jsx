@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   TextField,
   Button,
-  Modal,
+  Dialog,
+  Badge,
   Box,
+  Chip,
   FormControlLabel,
   IconButton,
-  Select,
+  MenuItem,
   Switch,
+  Tooltip,
+  Typography,
 } from "@mui/material";
 import {
   DataGrid,
@@ -18,9 +22,10 @@ import {
 } from "@mui/x-data-grid";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
+import CloseIcon from "@mui/icons-material/Close";
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
-import { MenuItem, InputLabel, FormControl } from "@mui/material";
 import {
   getdetails,
   getPlants,
@@ -28,14 +33,94 @@ import {
   getDepartment,
   getRole,
   getUpdates,
-  getUserLevel
+  getUserLevel,
+  getDataAccessSummary
 } from "../controller/UserMasterapiservice";
-import SectionHeading from "../components/Header";
+import UserDataAccessDialog from "./UserDataAccessDialog";
+import FilterSelect from "../components/FilterSelect";
+import { FilterToggleButton, FilterPanel } from "../components/FilterPanel";
+import {
+  compactFieldSx,
+  compactMenuProps,
+  compactGridSx,
+  primaryButtonSx,
+  successButtonSx,
+  outlineButtonSx,
+} from "../components/compactUi";
+
+const SEARCH_KEYS = ["Plant_Code", "Employee_ID", "User_Name", "Role_Name", "Dept_Name"];
+const DIALOG_FIELD_SX = compactFieldSx("100%", 12);
+
+// Compact select used by the Add / Edit dialogs
+const SelectField = ({ label, value, onChange, options }) => (
+  <TextField
+    select
+    size="small"
+    label={label}
+    value={value}
+    onChange={onChange}
+    sx={DIALOG_FIELD_SX}
+    SelectProps={{ MenuProps: compactMenuProps(12) }}
+  >
+    {options.map((o) => (
+      <MenuItem key={o.value} value={o.value} sx={{ fontSize: 12 }}>
+        {o.label}
+      </MenuItem>
+    ))}
+  </TextField>
+);
+
+const TextInput = ({ label, value, onChange, readOnly = false }) => (
+  <TextField
+    size="small"
+    label={label}
+    value={value}
+    onChange={onChange}
+    sx={DIALOG_FIELD_SX}
+    InputProps={{ readOnly }}
+  />
+);
+
+const ActiveSwitch = ({ checked, onChange }) => (
+  <FormControlLabel
+    sx={{ m: 0, "& .MuiFormControlLabel-label": { fontSize: 12, fontWeight: 700, color: checked ? "#2e7d32" : "#d32f2f" } }}
+    control={
+      <Switch
+        size="small"
+        checked={checked}
+        onChange={onChange}
+        color="success"
+        sx={{
+          "& .MuiSwitch-track": { backgroundColor: checked ? "#2e7d32" : "#d32f2f", opacity: 0.55 },
+          "& .MuiSwitch-thumb": { backgroundColor: checked ? "#2e7d32" : "#d32f2f" },
+        }}
+      />
+    }
+    label={checked ? "Active" : "Inactive"}
+  />
+);
+
+// Shell of the Add / Edit dialogs
+const FormDialog = ({ open, title, onClose, children, actions }) => (
+  <Dialog
+    open={open}
+    onClose={onClose}
+    maxWidth={false}
+    PaperProps={{ sx: { width: 460, maxWidth: "94vw", borderRadius: "10px" } }}
+  >
+    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 2, py: 1, borderBottom: "1px solid #e8eaee", backgroundColor: "#f3f7ff" }}>
+      <Typography sx={{ fontSize: 14, fontWeight: 700, color: "#1a2233" }}>{title}</Typography>
+      <IconButton size="small" onClick={onClose}>
+        <CloseIcon sx={{ fontSize: 16 }} />
+      </IconButton>
+    </Box>
+    <Box sx={{ p: 2, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "14px 12px" }}>{children}</Box>
+    <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, px: 2, py: 1.25, borderTop: "1px solid #e8eaee" }}>{actions}</Box>
+  </Dialog>
+);
 
 const UserMaster = () => {
   const [searchText, setSearchText] = useState("");
-  const [rows, setRows] = useState([]);
-  const [originalRows, setOriginalRows] = useState([]);
   const [data, setData] = useState([]);
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -55,35 +140,87 @@ const UserMaster = () => {
   const [Role_Name, setRoleName] = useState("");
   const [Password, setPassword] = useState("");
   const UserID = localStorage.getItem('UserID');
+  const [accessUserId, setAccessUserId] = useState(null); // user whose Data Access dialog is open
+  const [accessSummary, setAccessSummary] = useState({}); // { User_ID: { plants, divisions } } extra access per user
+
+  const loadAccessSummary = async () => {
+    try {
+      setAccessSummary(await getDataAccessSummary());
+    } catch (error) {
+      console.error("Error loading data access summary:", error);
+    }
+  };
+
+  // filters (the search box above them works on the same rows)
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [fPlant, setFPlant] = useState("All");
+  const [fDept, setFDept] = useState("All");
+  const [fRole, setFRole] = useState("All");
+  const [fStatus, setFStatus] = useState("All");
+
   const columns = [
-    { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
-    { field: "Employee_ID", headerName: "Employee ID", flex: 1 },
-    { field: "User_Name", headerName: "UserName", flex: 1 },
-    { field: "Dept_Name", headerName: "Department", flex: 2 },
-    { field: "Role_Name", headerName: "Role", flex: 1 },
+    { field: "Plant_Code", headerName: "Plant", flex: 0.6, minWidth: 70 },
+    { field: "Employee_ID", headerName: "Employee ID", flex: 0.9, minWidth: 90 },
+    { field: "User_Name", headerName: "User Name", flex: 1.3, minWidth: 130 },
+    { field: "Dept_Name", headerName: "Department", flex: 1.2, minWidth: 120 },
+    { field: "Role_Name", headerName: "Role", flex: 1.2, minWidth: 120 },
     {
-      field: "ActiveStatus",
-      headerName: "Active Status",
-      flex: 1,
+      field: "Active_Status",
+      headerName: "Status",
+      flex: 0.7,
+      minWidth: 80,
+      valueFormatter: (value) => (value ? "Active" : "Inactive"),
       renderCell: (params) => {
-        const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
+        const isActive = !!params.row.Active_Status;
         return (
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isActive} // Use the boolean value directly
-                color="default" // Neutral color for default theme
-                sx={{
-                  "& .MuiSwitch-track": {
-                    backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                  },
-                  "& .MuiSwitch-thumb": {
-                    backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                  },
-                }}
-              />
-            }
+          <Chip
+            size="small"
+            label={isActive ? "Active" : "Inactive"}
+            sx={{
+              height: 20,
+              fontSize: 10.5,
+              fontWeight: 700,
+              backgroundColor: isActive ? "#eafaf1" : "#fdeeee",
+              color: isActive ? "#1b7a43" : "#b42323",
+            }}
           />
+        );
+      },
+    },
+    {
+      field: "DataAccess",
+      headerName: "Data Access",
+      width: 100,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      align: "center",
+      headerAlign: "center",
+      renderCell: (params) => {
+        const s = accessSummary[params.row.User_ID];
+        const tip = s
+          ? `Extra access: ${s.plants} plant${s.plants !== 1 ? "s" : ""}${s.divisions ? `, ${s.divisions} whole division${s.divisions !== 1 ? "s" : ""}` : ""}. Click to manage.`
+          : "Manage Division / Plant data access (own plant only)";
+        return (
+          <Tooltip title={tip}>
+            <IconButton
+              size="small"
+              sx={{ color: s ? "#0052cc" : "#8a93a3", p: 0.5 }}
+              onClick={(e) => {
+                e.stopPropagation(); // do not open the Edit User dialog
+                setAccessUserId(params.row.User_ID);
+              }}
+            >
+              <Badge
+                badgeContent={s ? s.plants : 0}
+                color="primary"
+                max={99}
+                sx={{ "& .MuiBadge-badge": { fontSize: 9.5, height: 15, minWidth: 15, padding: "0 4px", fontWeight: 700, backgroundColor: "#0066FF" } }}
+              >
+                <ManageAccountsIcon sx={{ fontSize: 18 }} />
+              </Badge>
+            </IconButton>
+          </Tooltip>
         );
       },
     },
@@ -93,14 +230,10 @@ const UserMaster = () => {
     try {
       const response = await getdetails();
       console.log(response); // Check the structure of response
-      setData(response); // Ensure that this is correctly setting the data
-      setOriginalRows(response); // for reference during search
-      setRows(response);
+      setData(response);
     } catch (error) {
       console.error(error);
       setData([]); // Handle error by setting empty data
-      setOriginalRows([]); // handle error case
-      setRows([]);
     }
   };
   const get_Plant = async () => {
@@ -122,7 +255,33 @@ const UserMaster = () => {
   };
   useEffect(() => {
     getData();
+    loadAccessSummary();
   }, []);
+
+  // Search box + filters, applied live to the loaded users
+  const rows = useMemo(() => {
+    const text = searchText.trim().toLowerCase();
+    return (data || []).filter((row) => {
+      if (fPlant !== "All" && String(row.Plant_Code) !== fPlant) return false;
+      if (fDept !== "All" && row.Dept_Name !== fDept) return false;
+      if (fRole !== "All" && row.Role_Name !== fRole) return false;
+      if (fStatus !== "All" && (fStatus === "Active") !== !!row.Active_Status) return false;
+      if (!text) return true;
+      return SEARCH_KEYS.some((key) => {
+        const value = row[key];
+        return value && String(value).toLowerCase().includes(text);
+      });
+    });
+  }, [data, searchText, fPlant, fDept, fRole, fStatus]);
+
+  const uniq = (key) => [...new Set((data || []).map((r) => r[key]).filter((v) => v !== null && v !== undefined && v !== "").map(String))].sort();
+  const activeFilterCount = [fPlant, fDept, fRole, fStatus].filter((v) => v !== "All").length;
+  const clearFilters = () => {
+    setFPlant("All");
+    setFDept("All");
+    setFRole("All");
+    setFStatus("All");
+  };
 
   // ✅ Custom Toolbar
   const CustomToolbar = () => (
@@ -133,7 +292,6 @@ const UserMaster = () => {
     </GridToolbarContainer>
   );
 
-  // ✅ Handle Add Modal
   // ✅ Handle Add Modal (Clear Fields and Fetch Dropdowns)
   const handleOpenAddModal = (item) => {
     setDeptName("");
@@ -170,24 +328,6 @@ const UserMaster = () => {
     setActiveStatus(params.row.Active_Status);
     setOpenEditModal(true); // Open the modal
   };
-
-  // ✅ Search Functionality
-  const handleSearch = () => {
-    const text = searchText.trim().toLowerCase();
-
-    if (!text) {
-      setRows(originalRows);
-    } else {
-      const filteredRows = originalRows.filter((row) =>
-        ['Plant_Code', 'Employee_ID', 'User_Name', 'Role_Name', 'Dept_Name'].some((key) => {
-          const value = row[key];
-          return value && String(value).toLowerCase().includes(text);
-        })
-      );
-      setRows(filteredRows);
-    }
-  };
-
 
   // ✅ Handle Add User
   const handleAdd = async () => {
@@ -266,8 +406,6 @@ const UserMaster = () => {
       }
     }
   };
-
-
 
   const handleUpdate = async () => {
     const data = {
@@ -394,541 +532,169 @@ const UserMaster = () => {
     XLSX.writeFile(workbook, "User_Data.xlsx");
   };
 
+  // dropdown option lists of the dialogs
+  const roleOptions = RoleTable.map((i) => ({ value: i.Role_ID, label: i.Role_Name }));
+  const levelOptions = UserLevelTable.map((i) => ({ value: i.User_Level_ID, label: i.User_Level_Name }));
+  const deptOptions = DepartmentTable.map((i) => ({ value: i.Dept_ID, label: i.Dept_Name }));
+  const plantOptions = PlantTable.map((i) => ({ value: i.Plant_Id, label: `${i.Plant_Code} - ${i.Plant_Name}` }));
+
   return (
     <div
       style={{
-        padding: 20,
+        padding: "20px 20px",
         backgroundColor: "#F5F5F5",
         marginTop: "50px",
         display: "flex",
         flexDirection: "column",
-        height: "calc(100vh - 90px)", // or a specific height if necessary
+        height: "calc(100vh - 50px)",
       }}
     >
-      {/* Header Section */}
+      <Typography sx={{ fontSize: 17, fontWeight: 700, color: "#1a2233", letterSpacing: 0.1, lineHeight: 1.3, mb: 1.5 }}>
+        User Master
+      </Typography>
+
+      {/* Search, filters and actions */}
       <div
         style={{
-          marginBottom: 20,
+          backgroundColor: "#fff",
+          borderRadius: 8,
+          border: "1px solid #e8eaee",
+          boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
+          padding: "7px 10px",
+          marginBottom: 6,
           display: "flex",
-          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 8,
           alignItems: "center",
         }}
       >
-        {/* <h2
-          style={{
-            margin: 0,
-            color: "#2e59d9",
-            textDecoration: "underline",
-            textDecorationColor: "#88c57a",
-            textDecorationThickness: "3px",
-            marginBottom: -7,
-          }}
+        <TextField
+          size="small"
+          placeholder="Search plant, employee, name, department, role"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          InputProps={{ startAdornment: <SearchIcon sx={{ fontSize: 16, color: "#8a93a3", mr: 0.5 }} /> }}
+          sx={compactFieldSx(300)}
+        />
+        <FilterToggleButton open={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)} activeCount={activeFilterCount} />
+
+        <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: "#6b7280", whiteSpace: "nowrap" }}>
+          {rows.length === data.length ? `${data.length} users` : `${rows.length} of ${data.length} users`}
+        </span>
+        <Button
+          onClick={handleDownloadExcel}
+          variant="contained"
+          disableElevation
+          startIcon={<FaFileExcel size={13} />}
+          sx={successButtonSx}
         >
-          User Master
-        </h2> */}
+          Excel
+        </Button>
+        <Button
+          onClick={handleOpenAddModal}
+          variant="contained"
+          disableElevation
+          startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+          sx={primaryButtonSx}
+        >
+          Add User
+        </Button>
 
-        <SectionHeading>
-          User Master
-        </SectionHeading>
-      </div>
-
-      {/* Search and Icons */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 10,
-        }}
-      >
-        {/* Search Box */}
-        <div style={{ display: "flex", gap: "10px" }}>
-          <TextField
-            size="small"
-            variant="outlined"
-            placeholder="Type here..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onKeyUp={handleSearch}
-            sx={{
-              width: "400px",
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  border: "2px solid grey", // No border by default
-                },
-                "&:hover fieldset": {
-                  border: "2px solid grey", // Optional: border on hover
-                },
-                "&.Mui-focused fieldset": {
-                  border: "2px solid grey", // Grey border on focus
-                },
-              },
-            }}
-          />
-
-          <Button
-            onClick={handleSearch}
-            style={{
-              borderRadius: "25px",
-              border: "2px solid grey",
-              color: "grey",
-              fontWeight: "bold",
-            }}
-          >
-            <SearchIcon style={{ marginRight: "5px" }} />
-            Search
-          </Button>
-        </div>
-
-        {/* Icons */}
-        <div style={{ display: "flex", gap: "10px" }}>
-          {/* Download Button */}
-          <IconButton
-            onClick={handleDownloadExcel}
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#339900",
-              color: "white",
-              width: "40px",
-              height: "40px",
-            }}
-          >
-            <FaFileExcel size={18} />
-          </IconButton>
-
-          {/* Add Button */}
-          <IconButton
-            onClick={handleOpenAddModal}
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#0066FF",
-              color: "white",
-              width: "40px",
-              height: "40px",
-            }}
-          >
-            <AddIcon />
-          </IconButton>
-        </div>
+        <FilterPanel open={filtersOpen} activeCount={activeFilterCount} onClear={clearFilters}>
+          <FilterSelect label="Plant" value={fPlant} options={uniq("Plant_Code")} onChange={setFPlant} minWidth={140} />
+          <FilterSelect label="Department" value={fDept} options={uniq("Dept_Name")} onChange={setFDept} minWidth={170} />
+          <FilterSelect label="Role" value={fRole} options={uniq("Role_Name")} onChange={setFRole} minWidth={170} />
+          <FilterSelect label="Status" value={fStatus} options={["Active", "Inactive"]} onChange={setFStatus} minWidth={120} isSearchable={false} />
+        </FilterPanel>
       </div>
 
       {/* DataGrid */}
       <div
         style={{
-          flexGrow: 1, // Ensures it grows to fill the remaining space
+          flexGrow: 1,
           backgroundColor: "#fff",
           borderRadius: 8,
-          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-          height: "calc(5 * 48px)",
+          border: "1px solid #e8eaee",
+          boxShadow: "0 1px 3px rgba(16,24,40,0.05)",
+          minHeight: 0,
+          overflow: "hidden",
         }}
       >
         <DataGrid
           rows={rows}
           columns={columns}
-          pageSize={5} // Set the number of rows per page to 8
-          rowsPerPageOptions={[5]}
           getRowId={(row) => row.User_ID} // Specify a custom id field
           onRowClick={handleRowClick}
-          disableSelectionOnClick
+          disableRowSelectionOnClick
+          disableColumnMenu
+          columnHeaderHeight={36}
+          rowHeight={38}
+          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+          pageSizeOptions={[25, 50, 100]}
           slots={{ toolbar: CustomToolbar }}
-          sx={{
-            // Header Style
-            "& .MuiDataGrid-columnHeader": {
-              backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
-              color: "black",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-columnHeaderTitle": {
-              fontSize: "16px",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-row": {
-              backgroundColor: "#f5f5f5", // Default row background
-              "&:hover": {
-                backgroundColor: "#f5f5f5",
-              },
-            },
-            // ✅ Remove Selected Row Background
-            "& .MuiDataGrid-row.Mui-selected": {
-              backgroundColor: "inherit", // No background on selection
-            },
-
-            "& .MuiDataGrid-cell": {
-              color: "#333",
-              fontSize: "14px",
-            },
-          }}
+          localeText={{ noRowsLabel: "No users found." }}
+          sx={compactGridSx}
         />
       </div>
 
-      {/* {Add Model} */}
-      <Modal open={openAddModal} onClose={() => setOpenAddModal(false)}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            width: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            gap: "15px",
-          }}
-        >
-          <h3
-            style={{
-              gridColumn: "span 2",
-              textAlign: "center",
-              color: "#2e59d9",
-              textDecoration: "underline",
-              textDecorationColor: "#88c57a",
-              textDecorationThickness: "3px",
-            }}
-          >
-            Add User
-          </h3>
-          <FormControl fullWidth>
-            <InputLabel>Plant</InputLabel>
-            <Select
-              label="Plant"
-              name="Plant"
-              value={Plant_Id}
-              onChange={(e) => setPlantId(e.target.value)}
-              required
-            >
-              {PlantTable.map((item, index) => (
-                <MenuItem key={index} value={item.Plant_Id}>
-                  {item.Plant_Code} - {item.Plant_Name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl fullWidth>
-            <InputLabel>Role</InputLabel>
-            <Select
-              label="Role"
-              name="Role"
-              value={Role_Name}
-              onChange={(e) => setRoleName(e.target.value)}
-              required
-            >
-              {RoleTable.map((item, index) => (
-                <MenuItem key={index} value={item.Role_ID}>
-                  {item.Role_Name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <TextField
-            label="Employee ID"
-            name="Employee_ID"
-            value={Employee_ID}
-            onChange={(e) => setEmployeeID(e.target.value)}
-            fullWidth
-          />
-          {/* <FormControl fullWidth>
-            <InputLabel>UserLevel</InputLabel>
-            <Select
-              label="UserLevel"
-              name="UserLevel"
-              value={User_Level}
-              onChange={(e) => setUserLevel(e.target.value)}
-              required
-            >
-              <MenuItem value={1}>Level 1</MenuItem>
-              <MenuItem value={2}>Level 2</MenuItem>
-              <MenuItem value={3}>Level 3</MenuItem>
-              <MenuItem value={4}>Level 4</MenuItem>
-              <MenuItem value={5}>Level 5</MenuItem>
-              <MenuItem value={6}>Level 6</MenuItem>
-
-
-            </Select>
-          </FormControl> */}
-          <FormControl fullWidth>
-            <InputLabel>UserLevel</InputLabel>
-            <Select
-              label="UserLevel"
-              name="UserLevel"
-              value={User_Level}
-              onChange={(e) => setUserLevel(e.target.value)}
-              required
-            >
-              {UserLevelTable.map((item, index) => (
-                <MenuItem key={index} value={item.User_Level_ID}>
-                  {item.User_Level_Name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <TextField
-            label="Email"
-            name="Email"
-            value={User_Email}
-            onChange={(e) => setUserEmail(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="User Name"
-            name="User_Name"
-            value={User_Name}
-            onChange={(e) => setUserName(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="Password"
-            name="Password"
-            value={Password}
-            onChange={(e) => setPassword(e.target.value)}
-            fullWidth
-          />
-          <FormControl fullWidth>
-            <InputLabel>Department</InputLabel>
-            <Select
-              label="Department"
-              name="Department"
-              value={Dept_Name}
-              onChange={(e) => setDeptName(e.target.value)}
-              required
-            >
-              {DepartmentTable.map((item, index) => (
-                <MenuItem key={index} value={item.Dept_ID}>
-                  {item.Dept_Name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControlLabel
-            control={
-              <Switch
-                checked={ActiveStatus}
-                onChange={(e) => setActiveStatus(e.target.checked)}
-                color="success" // Always use 'success' to keep the thumb green when active
-                sx={{
-                  "& .MuiSwitch-track": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                    backgroundImage: "none !important", // Disable background image
-                  },
-                  "& .MuiSwitch-thumb": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                    borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                  },
-                }}
-              />
-            }
-            label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-            labelPlacement="end"
-            style={{
-              color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-              fontWeight: "bold",
-            }}
-          />
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            <Button
-              variant="contained"
-              color="error"
-              onClick={() => handleCloseAddModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              style={{ width: "90px" }}
-              variant="contained"
-              color="primary"
-              onClick={handleAdd}
-            >
-              Add
-            </Button>
-          </Box>
+      {/* Add User */}
+      <FormDialog
+        open={openAddModal}
+        title="Add User"
+        onClose={() => setOpenAddModal(false)}
+        actions={
+          <>
+            <Button variant="outlined" onClick={() => handleCloseAddModal(false)} sx={outlineButtonSx}>Cancel</Button>
+            <Button variant="contained" disableElevation onClick={handleAdd} sx={{ ...primaryButtonSx, minWidth: 70 }}>Add</Button>
+          </>
+        }
+      >
+        <SelectField label="Plant" value={Plant_Id} onChange={(e) => setPlantId(e.target.value)} options={plantOptions} />
+        <SelectField label="Role" value={Role_Name} onChange={(e) => setRoleName(e.target.value)} options={roleOptions} />
+        <TextInput label="Employee ID" value={Employee_ID} onChange={(e) => setEmployeeID(e.target.value)} />
+        <SelectField label="User Level" value={User_Level} onChange={(e) => setUserLevel(e.target.value)} options={levelOptions} />
+        <TextInput label="Email" value={User_Email} onChange={(e) => setUserEmail(e.target.value)} />
+        <TextInput label="User Name" value={User_Name} onChange={(e) => setUserName(e.target.value)} />
+        <TextInput label="Password" value={Password} onChange={(e) => setPassword(e.target.value)} />
+        <SelectField label="Department" value={Dept_Name} onChange={(e) => setDeptName(e.target.value)} options={deptOptions} />
+        <Box sx={{ gridColumn: "span 2" }}>
+          <ActiveSwitch checked={!!ActiveStatus} onChange={(e) => setActiveStatus(e.target.checked)} />
         </Box>
-      </Modal>
+      </FormDialog>
 
-      {/* ✅ Edit Modal */}
-      <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            width: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            gap: "15px",
-          }}
-        >
-          <h3
-            style={{
-              gridColumn: "span 2",
-              textAlign: "center",
-              color: "#2e59d9",
-              textDecoration: "underline",
-              textDecorationColor: "#88c57a",
-              textDecorationThickness: "3px",
-            }}
-          >
-            Edit User
-          </h3>
-          <TextField
-            label="Plant"
-            name="Plant"
-            value={PlantCode} // Use the current value of PlantCode
-            fullWidth
-            InputProps={{
-              readOnly: true, // Make it read-only
-            }}
-            required
-          />
-
-          <FormControl fullWidth>
-            <InputLabel>Role</InputLabel>
-            <Select
-              label="Role"
-              name="Role"
-              value={Role_Name}
-              onChange={(e) => setRoleName(e.target.value)}
-              required
-            >
-              {RoleTable.map((item, index) => (
-                <MenuItem key={index} value={item.Role_ID}>
-                  {item.Role_Name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <TextField
-            label="Employee ID"
-            name="Employee_ID"
-            value={Employee_ID}
-            onChange={(e) => setEmployeeID(e.target.value)}
-            fullWidth
-            InputProps={{
-              readOnly: true, // Make it read-only
-            }}
-          />
-
-          <TextField
-            label="Email"
-            name="Email"
-            value={User_Email}
-            onChange={(e) => setUserEmail(e.target.value)}
-            fullWidth
-            required
-          />
-
-          <TextField
-            label="User Name"
-            name="User_Name"
-            value={User_Name}
-            onChange={(e) => setUserName(e.target.value)}
-            fullWidth
-            required
-          />
-          <FormControl fullWidth>
-            <InputLabel>UserLevel</InputLabel>
-            <Select
-              label="UserLevel"
-              name="UserLevel"
-              value={User_Level}
-              onChange={(e) => setUserLevel(e.target.value)}
-              required
-            >
-              {UserLevelTable.map((item, index) => (
-                <MenuItem key={index} value={item.User_Level_ID}>
-                  {item.User_Level_Name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <TextField
-            label="Password"
-            name="Password"
-            value={Password}
-            onChange={(e) => setPassword(e.target.value)}
-            fullWidth
-          />
-
-          <FormControl fullWidth>
-            <InputLabel>Department</InputLabel>
-            <Select
-              label="Department"
-              name="Department"
-              value={Dept_Name}
-              onChange={(e) => setDeptName(e.target.value)}
-              required
-            >
-              {DepartmentTable.map((item, index) => (
-                <MenuItem key={index} value={item.Dept_ID}>
-                  {item.Dept_Name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControlLabel
-            control={
-              <Switch
-                checked={ActiveStatus}
-                onChange={(e) => setActiveStatus(e.target.checked)}
-                color="success" // Always use 'success' to keep the thumb green when active
-                sx={{
-                  "& .MuiSwitch-track": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                    backgroundImage: "none !important", // Disable background image
-                  },
-                  "& .MuiSwitch-thumb": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                    borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                  },
-                }}
-              />
-            }
-            label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-            labelPlacement="end"
-            style={{
-              color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-              fontWeight: "bold",
-            }}
-          />
-
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleCloseEditModal}
-            >
-              Cancel
-            </Button>
-            <Button variant="contained" color="primary" onClick={handleUpdate}>
-              Update
-            </Button>
-          </Box>
+      {/* Edit User */}
+      <FormDialog
+        open={openEditModal}
+        title="Edit User"
+        onClose={() => setOpenEditModal(false)}
+        actions={
+          <>
+            <Button variant="outlined" onClick={handleCloseEditModal} sx={outlineButtonSx}>Cancel</Button>
+            <Button variant="contained" disableElevation onClick={handleUpdate} sx={{ ...primaryButtonSx, minWidth: 70 }}>Update</Button>
+          </>
+        }
+      >
+        <TextInput label="Plant" value={PlantCode} readOnly />
+        <SelectField label="Role" value={Role_Name} onChange={(e) => setRoleName(e.target.value)} options={roleOptions} />
+        <TextInput label="Employee ID" value={Employee_ID} onChange={(e) => setEmployeeID(e.target.value)} readOnly />
+        <TextInput label="Email" value={User_Email} onChange={(e) => setUserEmail(e.target.value)} />
+        <TextInput label="User Name" value={User_Name} onChange={(e) => setUserName(e.target.value)} />
+        <SelectField label="User Level" value={User_Level} onChange={(e) => setUserLevel(e.target.value)} options={levelOptions} />
+        <TextInput label="Password" value={Password} onChange={(e) => setPassword(e.target.value)} />
+        <SelectField label="Department" value={Dept_Name} onChange={(e) => setDeptName(e.target.value)} options={deptOptions} />
+        <Box sx={{ gridColumn: "span 2" }}>
+          <ActiveSwitch checked={!!ActiveStatus} onChange={(e) => setActiveStatus(e.target.checked)} />
         </Box>
-      </Modal>
+      </FormDialog>
+
+      <UserDataAccessDialog
+        open={accessUserId !== null}
+        userId={accessUserId}
+        onClose={(saved) => {
+          setAccessUserId(null);
+          if (saved) loadAccessSummary(); // refresh the badges after a save
+        }}
+      />
     </div>
   );
 };

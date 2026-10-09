@@ -1,3 +1,4 @@
+import { filterRowsToMyPlants } from "../../controller/CommonApiService";
 import React, { useState, useEffect } from "react";
 import {
     TextField,
@@ -175,8 +176,10 @@ const CC_SubContractScreen = () => {
         const fetchData = async () => {
             const response = await GetPackingBomApi({ type: CCTypeEnum.SC })
             console.log("GetPackingBomApi - ", response?.data)
-            setOriginalRows(response?.data || [])
-            setRows(response?.data || [])
+            // only the rows of the plants this user may use (own plant + Data Access)
+            const list = await filterRowsToMyPlants(response?.data || [])
+            setOriginalRows(list)
+            setRows(list)
         }
         fetchData()
     }, [refreshData])

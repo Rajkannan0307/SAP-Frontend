@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import * as XLSX from "xlsx-js-style";
 import { AuthContext } from "../Authentication/AuthContext";
 import { getdetails as getLines } from "../controller/LineMasterapiservice";
+import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import {
   GetMatAvailabilityFiltersApi,
   GetMatAvailabilityReportApi,
@@ -295,9 +296,8 @@ const bodyGroupSeparatorClass = "border-l border-gray-200";
 // so both tabs sit under one title + tab bar.
 const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) => {
   const { user } = useContext(AuthContext);
-  // Plant is locked to the user's own plant for everyone except CORP
-  // ADMIN, who can view any plant's stock.
-  const isCorpAdmin = user?.Role === "CORP ADMIN";
+  // Plant dropdown = only the plants this user may use (own plant + User Master > Data Access);
+  // locked when the user has just the one plant.
   const [filterOptions, setFilterOptions] = useState({ plants: [], partNames: [] });
   const [plant, setPlant] = useState(user?.PlantCode || "");
   const [partNameId, setPartNameId] = useState("");
@@ -320,8 +320,8 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
   useEffect(() => {
     const loadFilters = async () => {
       try {
-        const data = await GetMatAvailabilityFiltersApi();
-        setFilterOptions({ plants: data?.plants || [], partNames: data?.partNames || [] });
+        const [data, mine] = await Promise.all([GetMatAvailabilityFiltersApi(), getMyPlants()]);
+        setFilterOptions({ plants: Array.isArray(mine) ? mine : [], partNames: data?.partNames || [] });
       } catch (error) {
         console.error(error);
         toast.error("Failed to load filter options.");
@@ -632,7 +632,9 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
 
       // Sheet 3 — the exact latest Plant Stock batch used for this month
       // (same batch the report itself pulled IH figures from).
-      const plantStockRows = (plantSnapshot?.rows || []).map((r) => ({
+      // the snapshot sheets contain only the plants this user may use
+      const allowedPlantCodes = new Set(filterOptions.plants.map((p) => String(p.Plant_Code)));
+      const plantStockRows = (plantSnapshot?.rows || []).filter((r) => allowedPlantCodes.has(String(r.plant))).map((r) => ({
         Plant: r.plant,
         "Storage Location": r.storage_location,
         "Material Code": r.material_code,
@@ -646,7 +648,7 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
 
       // Sheet 4 — the exact latest Supplier Stock batch used for this month
       // (same batch the report itself pulled Supp figures from).
-      const supplierStockRows = (supplierSnapshot?.rows || []).map((r) => ({
+      const supplierStockRows = (supplierSnapshot?.rows || []).filter((r) => allowedPlantCodes.has(String(r.plant))).map((r) => ({
         Plant: r.plant,
         "Supplier Code": r.supplier_code,
         "Supplier Name": r.supplier_name,
@@ -697,13 +699,13 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
       >
         <Autocomplete
           size="small"
-          disabled={!isCorpAdmin}
+          disabled={filterOptions.plants.length <= 1}
           options={filterOptions.plants}
           value={filterOptions.plants.find((p) => String(p.Plant_Code) === String(plant)) || null}
           onChange={(e, newVal) => setPlant(newVal ? newVal.Plant_Code : "")}
-          getOptionLabel={(p) => (p ? String(p.Plant_Code) : "")}
+          getOptionLabel={(p) => (p ? myPlantLabel(p) : "")}
           isOptionEqualToValue={(o, v) => o.Plant_Code === v.Plant_Code}
-          sx={compactFieldSx(70)}
+          sx={compactFieldSx(215)}
           ListboxProps={{ style: { fontSize: 11.5 } }}
           renderInput={(params) => <TextField {...params} label="Plant" placeholder="Select Plant" required error={!plant} />}
         />
@@ -924,9 +926,8 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
 // across this FG's operation columns).
 const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) => {
   const { user } = useContext(AuthContext);
-  // Plant is locked to the user's own plant for everyone except CORP
-  // ADMIN, who can view any plant's stock.
-  const isCorpAdmin = user?.Role === "CORP ADMIN";
+  // Plant dropdown = only the plants this user may use (own plant + User Master > Data Access);
+  // locked when the user has just the one plant.
   const [filterOptions, setFilterOptions] = useState({ plants: [], partNames: [] });
   const [plant, setPlant] = useState(user?.PlantCode || "");
   const [partNameId, setPartNameId] = useState("");
@@ -943,8 +944,8 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
   useEffect(() => {
     const loadFilters = async () => {
       try {
-        const data = await GetMatAvailabilityFiltersApi();
-        setFilterOptions({ plants: data?.plants || [], partNames: data?.partNames || [] });
+        const [data, mine] = await Promise.all([GetMatAvailabilityFiltersApi(), getMyPlants()]);
+        setFilterOptions({ plants: Array.isArray(mine) ? mine : [], partNames: data?.partNames || [] });
       } catch (error) {
         console.error(error);
         toast.error("Failed to load filter options.");
@@ -1085,13 +1086,13 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
       >
         <Autocomplete
           size="small"
-          disabled={!isCorpAdmin}
+          disabled={filterOptions.plants.length <= 1}
           options={filterOptions.plants}
           value={filterOptions.plants.find((p) => String(p.Plant_Code) === String(plant)) || null}
           onChange={(e, newVal) => setPlant(newVal ? newVal.Plant_Code : "")}
-          getOptionLabel={(p) => (p ? String(p.Plant_Code) : "")}
+          getOptionLabel={(p) => (p ? myPlantLabel(p) : "")}
           isOptionEqualToValue={(o, v) => o.Plant_Code === v.Plant_Code}
-          sx={compactFieldSx(70)}
+          sx={compactFieldSx(215)}
           ListboxProps={{ style: { fontSize: 11.5 } }}
           renderInput={(params) => <TextField {...params} label="Plant" placeholder="Select Plant" required error={!plant} />}
         />

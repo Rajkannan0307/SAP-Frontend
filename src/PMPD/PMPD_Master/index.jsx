@@ -15,7 +15,8 @@ import AddIcon from "@mui/icons-material/Add";
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import { CommonMuiStyles } from '../../Styles/CommonStyles'
-import { getPlantdetails } from '../../controller/CommonApiService'
+import { getMyPlants, myPlantLabel, filterRowsToMyPlants } from '../../controller/CommonApiService'
+import { findPlantsNotAllowed, plantsNotAllowedMessage } from '../../common/plantFileCheck'
 
 // Compact filter-field/button styling — same design tokens as the Production
 // Actual screen's toolbar so both screens share one visual language.
@@ -144,10 +145,9 @@ const PMPD_MasterScreen = () => {
 
     useEffect(() => {
         const fectchData = async () => {
-            const response = PMPDAccess.disableAction
-                ? await getTrnPMPD_MasterDetails(currentUserPlantCode)
-                : await getTrnPMPD_MasterDetails()
-            setOriginalRows(response || [])
+            const response = await getTrnPMPD_MasterDetails()
+            // only the rows of the plants this user may use (own plant + User Master > Data Access)
+            setOriginalRows(await filterRowsToMyPlants(response || []))
         }
         fectchData()
     }, [refreshData])
@@ -412,6 +412,13 @@ const ExcelUploadModal = ({
         if (isUploading) return
         setIsUploading(true)
         try {
+            // Only plants this user may use (own + Data Access): check the Plant_Code column of the file before uploading
+            const { blocked, plants } = await findPlantsNotAllowed(uploadedFile, 'Plant_Code')
+            if (blocked.length > 0) {
+                alert(plantsNotAllowedMessage(blocked, plants))
+                setIsUploading(false)
+                return
+            }
             const formData = new FormData()
             const userId = localStorage.getItem('EmpId')
             formData.append("userId", userId)
@@ -729,9 +736,9 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
 
     useEffect(() => {
         const fetchInitData = async () => {
-            const response = await getPlantdetails()
+            const response = await getMyPlants() // only the plants this user may use (own plant + Data Access)
             console.log('Plants', response)
-            setPlants(response)
+            setPlants(Array.isArray(response) ? response : [])
 
             const response2 = await getProductSegmentdetails()
             console.log('Segment', response2)
@@ -785,7 +792,7 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
                     >
                         {plants?.map((option, i) => (
                             <MenuItem sx={{ fontSize: 12 }} key={i} value={option.Plant_Code}>
-                                {`${option.Plant_Code} - ${option.Plant_Name}`}
+                                {myPlantLabel(option)}
                             </MenuItem>
                         )) || []}
                     </TextField>

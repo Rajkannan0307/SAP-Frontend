@@ -6,7 +6,7 @@ import { FaDownload, FaUpload } from 'react-icons/fa6'
 import { deepPurple } from '@mui/material/colors';
 import * as ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
-import { getPlantdetails } from '../../controller/CommonApiService'
+import { getPlantdetails, getMyPlants, myPlantLabel } from '../../controller/CommonApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import { format, } from 'date-fns'
 import { useFormik } from 'formik'
@@ -16,6 +16,7 @@ import { AddTrnIndirectMaterialPrice_BULK, getTrnIndirectMaterialPrice } from '.
 import { getMaterialType } from '../../controller/Masterapiservice'
 import { MaterialGroupEnumTypes } from '../../common/enumValues'
 import { toast } from 'react-toastify'
+import { findPlantsNotAllowed, plantsNotAllowedMessage } from '../../common/plantFileCheck'
 
 const CC_IndirectMaterialPrice = () => {
     const [searchText, setSearchText] = useState("");
@@ -87,8 +88,8 @@ const CC_IndirectMaterialPrice = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const resposne = await getPlantdetails()
-            setPlants(resposne)
+            const resposne = await getMyPlants() // only the plants this user may use (own plant + Data Access)
+            setPlants(Array.isArray(resposne) ? resposne : [])
 
             const response2 = await getMaterialType(MaterialGroupEnumTypes.all)
             setMatTypes(response2.data)
@@ -179,7 +180,7 @@ const CC_IndirectMaterialPrice = () => {
                     >
                         {plants.map((p) => (
                             <MenuItem sx={{ fontSize: "small" }} key={p.Plant_ID} value={p.Plant_Code}>
-                                {`${p.Plant_Code} - ${p.Plant_Name}`}
+                                {myPlantLabel(p)}
                             </MenuItem>
                         ))}
                     </TextField>
@@ -368,11 +369,11 @@ const ExcelUploadModal = ({
     async function downloadProductionPlanTemplate() {
         // 1️⃣ Fetch dropdown data
         const [plant, matTypeList] = await Promise.all([
-            getPlantdetails(),
+            getMyPlants(), // only the plants this user may use (own plant + Data Access)
             getMaterialType(MaterialGroupEnumTypes.all)
         ]);
 
-        const plantCodes = plant.map((e) => e.Plant_Code);
+        const plantCodes = (Array.isArray(plant) ? plant : []).map((e) => e.Plant_Code);
 
         const matTypes = matTypeList.data.map((e) => e.Mat_Type);
 
@@ -452,6 +453,13 @@ const ExcelUploadModal = ({
         if (isUploading) return
         setIsUploading(true)
         try {
+            // Only plants this user may use (own + Data Access): check the Plant column of the file before uploading
+            const { blocked, plants } = await findPlantsNotAllowed(uploadedFile)
+            if (blocked.length > 0) {
+                alert(plantsNotAllowedMessage(blocked, plants))
+                setIsUploading(false)
+                return
+            }
             const formData = new FormData()
             const userId = localStorage.getItem('EmpId')
             formData.append("userId", userId)

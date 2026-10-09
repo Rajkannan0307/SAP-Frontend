@@ -8,7 +8,7 @@ import { toast } from "react-toastify";
 import SectionHeading from "./Header";
 import DateRangeDownloadDialog from "./DateRangeDownloadDialog";
 import { AuthContext } from "../Authentication/AuthContext";
-import { getPlantdetails } from "../controller/CommonApiService";
+import { getPlantdetails, getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import { getdetails as getLines } from "../controller/LineMasterapiservice";
 import FilterSelect from "./FilterSelect";
 import { FilterPanel, FilterToggleButton } from "./FilterPanel";
@@ -145,7 +145,11 @@ const MfgListScreen = ({
   const { user } = useContext(AuthContext);
 
   const now = new Date();
+  // Only the plants this user may use (own plant + User Master > Data Access), each with its Division.
   const [plants, setPlants] = useState([]);
+  const [plantsReady, setPlantsReady] = useState(false);
+  // true when the user may NOT use every active plant: "All Plants" then means "all MY plants"
+  const [restricted, setRestricted] = useState(true);
   const [plant, setPlant] = useState(allowAllPlants ? ALL_PLANTS : user?.PlantCode || "");
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
@@ -164,12 +168,18 @@ const MfgListScreen = ({
 
   useEffect(() => {
     if (lineFilterField) getLines().then((r) => setAllLines(r || [])).catch((e) => console.error("Load Line Master error:", e));
-    getPlantdetails()
-      .then((res) => setPlants(res || []))
+    Promise.all([getMyPlants(), getPlantdetails()])
+      .then(([mine, all]) => {
+        const myList = Array.isArray(mine) ? mine : [];
+        const mineCodes = new Set(myList.map((p) => String(p.Plant_Code)));
+        setPlants(myList);
+        setRestricted((all || []).some((p) => p.Active_Status !== false && !mineCodes.has(String(p.Plant_Code))));
+      })
       .catch((error) => {
         console.error(error);
         toast.error("Failed to load Plant list.");
-      });
+      })
+      .finally(() => setPlantsReady(true));
   }, []);
 
   const loadData = useCallback(async () => {
@@ -180,11 +190,15 @@ const MfgListScreen = ({
     setLoading(true);
     setLoadError("");
     try {
-      const data = await loadRows(
+      const params = (plantCode) => (
         showPeriod
-          ? { plant: apiPlantOf(plant), startDate: monthStartStr(year, month), endDate: monthEndStr(year, month) }
-          : { plant: apiPlantOf(plant) }
+          ? { plant: plantCode, startDate: monthStartStr(year, month), endDate: monthEndStr(year, month) }
+          : { plant: plantCode }
       );
+      // "All Plants" for a user who may not use every plant = load each of the user's own plants
+      const data = plant === ALL_PLANTS && restricted
+        ? (await Promise.all(plants.map((p) => loadRows(params(p.Plant_Code))))).flat()
+        : await loadRows(params(apiPlantOf(plant)));
       setRows(data || []);
       setLoaded(true);
       setPaginationModel((prev) => ({ ...prev, page: 0 }));
@@ -197,13 +211,13 @@ const MfgListScreen = ({
     }
     // loadRows is a stable function per screen; filters are the real inputs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plant, month, year, showPeriod]);
+  }, [plant, month, year, showPeriod, plants, restricted]);
 
-  // Current month loads by default for the user's own plant.
+  // Current month loads by default (once the user's plant list is known, so "All Plants" only loads allowed plants).
   useEffect(() => {
-    if (plant) loadData();
+    if (plantsReady && plant) loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [plantsReady]);
 
   // Reload with the current filters when the screen asks (e.g. after Fetch).
   const firstReloadKey = useRef(true);
@@ -248,10 +262,10 @@ const MfgListScreen = ({
   const lineOptions = useMemo(() => {
     if (!lineFilterField) return [];
     const names = (allLines || [])
-      .filter((l) => l.Active_Status && (plant === ALL_PLANTS || String(l.Plant_Code) === String(plant)))
+      .filter((l) => l.Active_Status && (plant === ALL_PLANTS ? plants.some((p) => String(p.Plant_Code) === String(l.Plant_Code)) : String(l.Plant_Code) === String(plant)))
       .map((l) => l.Line_Name);
     return [...new Set(names)].sort((a, b) => a.localeCompare(b)).concat(NO_LINE);
-  }, [allLines, plant, lineFilterField]);
+  }, [allLines, plant, plants, lineFilterField]);
   const activeLine = lineOptions.includes(lineValue) ? lineValue : "All";
   const hasFilters = Boolean(lineFilterField || selectFilter);
   const activeFilterCount = (activeLine !== "All" ? 1 : 0) + (selectFilter && selectValue !== "All" ? 1 : 0);
@@ -282,6 +296,8 @@ const MfgListScreen = ({
   // Without a Month/Year filter the download popup starts from the current month.
   const periodLabel = `${MONTH_NAMES[month - 1]} ${year}`;
   const searching = Boolean(searchText.trim());
+  // The Excel of "All Plants" is built by the server for every plant, so it is only offered to users who may use every plant
+  const downloadBlocked = plant === ALL_PLANTS && restricted;
   const summaryText = loaded && !loadError && summary ? summary(rows, { periodLabel }) : null;
 
   return (
@@ -321,7 +337,7 @@ const MfgListScreen = ({
             )}
             {plants.map((p) => (
               <MenuItem sx={{ fontSize: 11.5 }} key={p.Plant_ID} value={p.Plant_Code}>
-                {`${p.Plant_Code} - ${p.Plant_Name}`}
+                {myPlantLabel(p)}
               </MenuItem>
             ))}
           </TextField>
@@ -366,10 +382,10 @@ const MfgListScreen = ({
           <Button
             variant="contained" disableElevation
             onClick={downloadWithDateRange ? () => setDownloadOpen(true) : handleDirectDownload}
-            disabled={!plant || directDownloading}
+            disabled={!plant || directDownloading || downloadBlocked}
             startIcon={directDownloading ? <CircularProgress size={14} color="inherit" /> : <FileDownloadOutlinedIcon sx={{ fontSize: 15 }} />}
             sx={{ ...compactButtonSx, backgroundColor: "#1B7A43", "&:hover": { backgroundColor: "#166238" } }}
-            title={downloadWithDateRange ? "Download records for a date range as Excel" : "Download the listed data as Excel"}
+            title={downloadBlocked ? "Select a single plant to download - the Excel of 'All Plants' would include plants you cannot access" : downloadWithDateRange ? "Download records for a date range as Excel" : "Download the listed data as Excel"}
           >
             {directDownloading ? "Downloading..." : "Excel Download"}
           </Button>

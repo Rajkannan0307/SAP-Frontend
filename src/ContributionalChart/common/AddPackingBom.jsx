@@ -4,7 +4,7 @@ import { useFormik } from "formik";
 import { AddFixedManpowerApi, getProductSegmentdetails } from '../../controller/PMPDApiService';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormControlLabel, FormHelperText, IconButton, InputLabel, MenuItem, Switch, TextField } from '@mui/material';
 import { CommonMuiStyles } from '../../Styles/CommonStyles';
-import { getPlantdetails } from '../../controller/CommonApiService';
+import { getMyPlants, myPlantLabel } from '../../controller/CommonApiService';
 import { DataGrid } from '@mui/x-data-grid';
 import { format, parse } from 'date-fns';
 import { CiSquarePlus } from "react-icons/ci";
@@ -245,9 +245,9 @@ const AddPackageBomDialog = ({
 
     useEffect(() => {
         const fetchData = async () => {
-            const response2 = await getPlantdetails()
+            const response2 = await getMyPlants() // only the plants this user may use (own plant + Data Access)
             console.log(response2, "Plants")
-            setPlants(response2)
+            setPlants(Array.isArray(response2) ? response2 : [])
         }
         if (open) fetchData()
 
@@ -520,7 +520,7 @@ const AddPackageBomDialog = ({
                     >
                         {plants.map((p) => (
                             <MenuItem sx={{ fontSize: "small" }} key={p.Plant_ID} value={p.Plant_Code}>
-                                {`${p.Plant_Code} - ${p.Plant_Name}`}
+                                {myPlantLabel(p)}
                             </MenuItem>
                         ))}
                     </TextField>

@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import SectionHeading from '../../components/Header'
 import { useFormik } from 'formik'
 import { Box, Button, Collapse, IconButton, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material'
-import { getPlantdetails } from '../../controller/CommonApiService'
+import { getMyPlants, myPlantLabel } from '../../controller/CommonApiService'
 import * as yup from 'yup'
 import { getPMPD_Reports } from '../../controller/PMPDApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
@@ -174,8 +174,8 @@ const PMPD_Report = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const resposne = await getPlantdetails()
-            setPlants(resposne)
+            const resposne = await getMyPlants() // only the plants this user may use (own plant + Data Access)
+            setPlants(Array.isArray(resposne) ? resposne : [])
         }
         fetchData()
     }, [])
@@ -394,7 +394,7 @@ const PMPD_Report = () => {
                     >
                         {plants.map((p) => (
                             <MenuItem sx={{ fontSize: "small" }} key={p.Plant_ID} value={p.Plant_Code}>
-                                {`${p.Plant_Code} - ${p.Plant_Name}`}
+                                {myPlantLabel(p)}
                             </MenuItem>
                         ))}
                     </TextField>

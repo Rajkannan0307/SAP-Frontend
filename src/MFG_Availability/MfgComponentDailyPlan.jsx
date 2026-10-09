@@ -23,7 +23,7 @@ import { format, startOfISOWeek, endOfISOWeek, getISOWeek, addDays } from "date-
 import { toast } from "react-toastify";
 import { AuthContext } from "../Authentication/AuthContext";
 import { getMfgPlanEditAccess } from "../Authentication/ActionAccessType";
-import { getPlantdetails } from "../controller/CommonApiService";
+import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import { getdetails as getModules } from "../controller/ModuleMasterapiservice";
 import { getdetails as getLines } from "../controller/LineMasterapiservice";
 import { getdetails as getOperations } from "../controller/OperationMasterapiservice";
@@ -1323,8 +1323,8 @@ const SUB541_HEAD_BG = "#e6dff0";
 const STATUS_GROUP_HEADS = [
   { t: "MTD", tip: "Month to Date", span: 4 },
   { t: "YD", tip: "Yesterday", span: 3 },
-  { t: "541 - Monthly", tip: "Movement types 541 and 542 (issued to subcontractor, net), month to date — from the Subcontract Daily Plan", span: 2, sub: true },
-  { t: "541 - Daily", tip: "Movement types 541 and 542 (issued to subcontractor, net), yesterday — from the Subcontract Daily Plan", span: 2, sub: true },
+  { t: "541 - MTD", tip: "Movement types 541 and 542 (issued to subcontractor, net), month to date — from the Subcontract Daily Plan", span: 2, sub: true },
+  { t: "541 - Yesterday", tip: "Movement types 541 and 542 (issued to subcontractor, net), yesterday — from the Subcontract Daily Plan", span: 2, sub: true },
 ];
 
 const headTipProps = {
@@ -1537,12 +1537,12 @@ const PlanHistoryBody = ({ searchText = "" }) => {
     const loadMasters = async () => {
       try {
         const [plantRes, moduleRes, lineRes, optRes] = await Promise.all([
-          getPlantdetails(),
+          getMyPlants(), // Prod Status Plant dropdown: only the plants this user may use (own + Data Access)
           getModules(),
           getLines(),
           getOperations(),
         ]);
-        setPlants(plantRes || []);
+        setPlants(Array.isArray(plantRes) ? plantRes : []);
         setModules((moduleRes || []).filter((m) => m.Active_Status));
         setLines((lineRes || []).filter((l) => l.Active_Status));
         setOperations((optRes || []).filter((o) => Number(o.status) === 1).sort((a, b) => Number(a.opt_no) - Number(b.opt_no)));
@@ -1719,7 +1719,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
           options={plants}
           value={plants.find((p) => String(p.Plant_Code) === String(plant)) || null}
           onChange={(e, newVal) => { setPlant(newVal ? newVal.Plant_Code : ""); setModuleId(""); setLineId(""); }}
-          getOptionLabel={(p) => (p ? `${p.Plant_Code} - ${p.Plant_Name}` : "")}
+          getOptionLabel={(p) => (p ? myPlantLabel(p) : "")}
           isOptionEqualToValue={(o, v) => o.Plant_ID === v.Plant_ID}
           sx={compactFieldSx(190)}
           ListboxProps={{ style: { fontSize: 11.5 } }}

@@ -20,7 +20,7 @@ import { format, startOfISOWeek, endOfISOWeek, getISOWeek, addDays } from "date-
 import { toast } from "react-toastify";
 import { AuthContext } from "../Authentication/AuthContext";
 import { getMfgPlanEditAccess } from "../Authentication/ActionAccessType";
-import { getPlantdetails } from "../controller/CommonApiService";
+import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import { getdetails as getModules } from "../controller/ModuleMasterapiservice";
 import { getdetails as getLines } from "../controller/LineMasterapiservice";
 import {
@@ -1338,11 +1338,11 @@ const PlanHistoryBody = ({ searchText = "" }) => {
     const loadMasters = async () => {
       try {
         const [plantRes, moduleRes, lineRes] = await Promise.all([
-          getPlantdetails(),
+          getMyPlants(), // Prod Status Plant dropdown: only the plants this user may use (own + Data Access)
           getModules(),
           getLines(),
         ]);
-        setPlants(plantRes || []);
+        setPlants(Array.isArray(plantRes) ? plantRes : []);
         setModules((moduleRes || []).filter((m) => m.Active_Status));
         setLines((lineRes || []).filter((l) => l.Active_Status));
       } catch (error) {
@@ -1416,15 +1416,27 @@ const PlanHistoryBody = ({ searchText = "" }) => {
 
   const flatRows = useMemo(
     () =>
-      historyRows.map((r) => ({
-        id: r.fg_part,
-        ...r,
-        // MTD Gap / CW Gap follow the new MTD Plan and C.W Plan (from the monthly plan, whole numbers);
-        // the YD columns are unchanged.
-        month_gap: (r.mtd_actual || 0) - (r.mtd_plan || 0),
-        cw_gap: (r.cw_actual || 0) - (r.cw_plan_calc || 0),
-        yd_gap: (r.yd_actual || 0) - (r.yd_plan || 0),
-      })),
+      historyRows.map((r) => {
+        // C.W and YD columns only apply to the current month: for any other month they are 0 (greyed out)
+        const na = r.is_current_month === false;
+        const cwActual = na ? 0 : r.cw_actual || 0;
+        const cwPlan = na ? 0 : r.cw_plan_calc || 0;
+        const ydActual = na ? 0 : r.yd_actual || 0;
+        const ydPlan = na ? 0 : r.yd_plan || 0;
+        return {
+          id: r.fg_part,
+          ...r,
+          cw_plan_calc: cwPlan,
+          cw_actual: cwActual,
+          yd_plan: ydPlan,
+          yd_actual: ydActual,
+          cw_na: na,
+          // MTD Gap / CW Gap follow the MTD Plan and C.W Plan (from the monthly plan, whole numbers)
+          month_gap: (r.mtd_actual || 0) - (r.mtd_plan || 0),
+          cw_gap: cwActual - cwPlan,
+          yd_gap: ydActual - ydPlan,
+        };
+      }),
     [historyRows]
   );
 
@@ -1443,6 +1455,12 @@ const PlanHistoryBody = ({ searchText = "" }) => {
     color: value > 0 ? "#1b7a43" : value < 0 ? "#b42323" : "#6b7280",
     fontWeight: 700,
   });
+
+  // C.W Plan / C.W Actual / CW Gap / YD Plan / YD Actual / YD Gap apply to the current month only.
+  // For any other month they show 0 in a subtle grey ("not applicable").
+  const NA_STYLE = { color: "#b6bac3", fontWeight: 400 };
+  const curMonthCell = (render) => (p) => (p.row.cw_na ? <span style={NA_STYLE} title="Applies to the current month only">0</span> : render(p));
+  const CUR_NOTE = " Applies to the current month only (0 for other months).";
 
   // Every column uses `flex` (never `width`) so MUI DataGrid distributes
   // 100% of the container's width across them proportionally — this is
@@ -1490,33 +1508,33 @@ const PlanHistoryBody = ({ searchText = "" }) => {
     },
     {
       field: "cw_plan_calc", headerName: "C.W Plan", flex: 0.8, minWidth: 68, align: "right", headerAlign: "center",
-      description: "C.W Plan = Monthly Plan / 4",
-      renderCell: (p) => numberFmt(p.value),
+      description: "C.W Plan = (Monthly Plan / 26) x working days elapsed this week (Monday = 1 ... Saturday = 6, today counts; Sunday = 6)." + CUR_NOTE,
+      renderCell: curMonthCell((p) => numberFmt(p.value)),
     },
     {
       field: "cw_actual", headerName: "C.W Actual", flex: 0.85, minWidth: 72, align: "right", headerAlign: "center",
-      description: "C.W Actual = production quantity of the current week, Monday to Sunday (movement types 101, 102, 261 and 262)",
-      renderCell: (p) => numberFmt(p.value),
+      description: "C.W Actual = production quantity of the current week, Monday to Sunday (movement types 101, 102, 261 and 262)." + CUR_NOTE,
+      renderCell: curMonthCell((p) => numberFmt(p.value)),
     },
     {
       field: "cw_gap", headerName: "CW Gap", flex: 0.75, minWidth: 62, align: "right", headerAlign: "center",
-      description: "CW Gap = C.W Actual - C.W Plan",
-      renderCell: (p) => <span style={gapCellSx(p.value)}>{gapFmt(p.value)}</span>,
+      description: "CW Gap = C.W Actual - C.W Plan." + CUR_NOTE,
+      renderCell: curMonthCell((p) => <span style={gapCellSx(p.value)}>{gapFmt(p.value)}</span>),
     },
     {
       field: "yd_plan", headerName: "YD Plan", flex: 0.75, minWidth: 62, align: "right", headerAlign: "center",
-      description: "YD Plan = yesterday's plan: the daily plan entered for yesterday, all shifts added together (Prod Daily Plan tab)",
-      renderCell: (p) => numberFmt(p.value),
+      description: "YD Plan = yesterday's plan: the daily plan entered for yesterday, all shifts added together (Prod Daily Plan tab)." + CUR_NOTE,
+      renderCell: curMonthCell((p) => numberFmt(p.value)),
     },
     {
       field: "yd_actual", headerName: "YD Actual", flex: 0.75, minWidth: 65, align: "right", headerAlign: "center",
-      description: "YD Actual = yesterday's production quantity (movement types 101, 102, 261 and 262)",
-      renderCell: (p) => numberFmt(p.value),
+      description: "YD Actual = yesterday's production quantity (movement types 101, 102, 261 and 262)." + CUR_NOTE,
+      renderCell: curMonthCell((p) => numberFmt(p.value)),
     },
     {
       field: "yd_gap", headerName: "YD Gap", flex: 0.75, minWidth: 62, align: "right", headerAlign: "center",
-      description: "YD Gap = YD Actual - YD Plan (positive = ahead, negative = behind)",
-      renderCell: (p) => <span style={gapCellSx(p.value)}>{gapFmt(p.value)}</span>,
+      description: "YD Gap = YD Actual - YD Plan (positive = ahead, negative = behind)." + CUR_NOTE,
+      renderCell: curMonthCell((p) => <span style={gapCellSx(p.value)}>{gapFmt(p.value)}</span>),
     },
   ], []);
 
@@ -1541,7 +1559,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
           options={plants}
           value={plants.find((p) => String(p.Plant_Code) === String(plant)) || null}
           onChange={(e, newVal) => { setPlant(newVal ? newVal.Plant_Code : ""); setModuleId(""); setLineId(""); }}
-          getOptionLabel={(p) => (p ? `${p.Plant_Code} - ${p.Plant_Name}` : "")}
+          getOptionLabel={(p) => (p ? myPlantLabel(p) : "")}
           isOptionEqualToValue={(o, v) => o.Plant_ID === v.Plant_ID}
           sx={compactFieldSx(190)}
           ListboxProps={{ style: { fontSize: 11.5 } }}

@@ -542,7 +542,7 @@ const Sidebar = ({ setSidebarOpen }) => {
               code: "SubcontractDailyPlan",
             },
             {
-              name: "MFG Report",
+              name: "Material Coverage",
               path: "/home/MatAvailabilityStatus",
               icon: (
                 <PrecisionManufacturingIcon

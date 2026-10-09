@@ -7,7 +7,8 @@ import { FaDownload, FaUpload } from 'react-icons/fa6'
 import { deepPurple } from '@mui/material/colors';
 import * as ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
-import { getPlantdetails } from '../../controller/CommonApiService'
+import { getPlantdetails, getMyPlants, myPlantLabel } from '../../controller/CommonApiService'
+import { findPlantsNotAllowed, plantsNotAllowedMessage } from "../../common/plantFileCheck";
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import { endOfDay, endOfMonth, format, isValid, startOfDay, startOfMonth } from 'date-fns'
 import { useFormik } from 'formik'
@@ -92,8 +93,8 @@ const CC_MstRejection = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const resposne = await getPlantdetails()
-            setPlants(resposne)
+            const resposne = await getMyPlants() // only the plants this user may use (own plant + Data Access)
+            setPlants(Array.isArray(resposne) ? resposne : [])
         }
         fetchData()
     }, [])
@@ -190,7 +191,7 @@ const CC_MstRejection = () => {
                     >
                         {plants.map((p) => (
                             <MenuItem sx={{ fontSize: "small" }} key={p.Plant_ID} value={p.Plant_Code}>
-                                {`${p.Plant_Code} - ${p.Plant_Name}`}
+                                {myPlantLabel(p)}
                             </MenuItem>
                         ))}
                     </TextField>
@@ -369,10 +370,10 @@ const ExcelUploadModal = ({
     async function downloadProductionPlanTemplate() {
         // 1️⃣ Fetch dropdown data
         const [plant] = await Promise.all([
-            getPlantdetails(),
+            getMyPlants(), // only the plants this user may use (own plant + Data Access)
         ]);
 
-        const plantCodes = plant.map((e) => e.Plant_Code);
+        const plantCodes = (Array.isArray(plant) ? plant : []).map((e) => e.Plant_Code);
 
         const statusList = ['Active', 'Inactive'];
         // 2️⃣ Create workbook & worksheet
@@ -453,6 +454,13 @@ const ExcelUploadModal = ({
         if (isUploading) return
         setIsUploading(true)
         try {
+            // Only plants this user may use (own + Data Access): check the Plant column of the file before uploading
+            const { blocked, plants } = await findPlantsNotAllowed(uploadedFile)
+            if (blocked.length > 0) {
+                alert(plantsNotAllowedMessage(blocked, plants))
+                setIsUploading(false)
+                return
+            }
             const formData = new FormData()
             const userId = localStorage.getItem('EmpId')
             formData.append("userId", userId)

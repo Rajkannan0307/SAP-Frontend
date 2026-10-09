@@ -16,7 +16,7 @@ import * as XLSX from "xlsx-js-style";
 import { format } from "date-fns";
 import SectionHeading from "../components/Header";
 import { compactFieldSx, compactButtonSx } from "../components/MfgListScreen";
-import { getPlantdetails } from "../controller/CommonApiService";
+import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import { GetMfgBomListApi, GetMfgBomExportApi } from "../controller/MfgBomApiService";
 import AddEditMfgBomDialog from "./AddEditMfgBom";
 import MfgBomBulkUpload from "./BulkUploadMfgBom";
@@ -112,17 +112,20 @@ const MFG_BOM = () => {
     fetchData();
   }, [refreshData]);
 
+  // Only the plants this user may use (own plant + Data Access plants), each with its Division
   useEffect(() => {
-    getPlantdetails()
-      .then((res) => setPlants(res || []))
+    getMyPlants()
+      .then((res) => setPlants(Array.isArray(res) ? res : []))
       .catch((error) => console.error("Failed to load Plant list.", error));
   }, []);
 
-  // Visible rows = loaded list -> Plant filter -> search text. Search is the
+  // Visible rows = loaded list -> allowed plants (+ Plant filter) -> search text. Search is the
   // same live match as before (plant, FG part, description).
   useEffect(() => {
     const text = searchText.trim().toLowerCase();
-    const byPlant = appliedPlant === "ALL" ? originalRows : originalRows.filter((row) => String(row.plant) === String(appliedPlant));
+    const allowed = new Set(plants.map((p) => String(p.Plant_Code)));
+    const inScope = originalRows.filter((row) => allowed.has(String(row.plant)));
+    const byPlant = appliedPlant === "ALL" ? inScope : inScope.filter((row) => String(row.plant) === String(appliedPlant));
     const filteredRows = byPlant.filter((row) =>
       ["plant", "fg_part_no", "fg_part_desc"].some((key) => {
         const value = row[key];
@@ -130,7 +133,7 @@ const MFG_BOM = () => {
       })
     );
     setRows(text ? filteredRows : byPlant);
-  }, [originalRows, appliedPlant, searchText]);
+  }, [originalRows, plants, appliedPlant, searchText]);
 
   // Submit: apply the selected Plant and reload the list.
   const handleSubmit = () => {
@@ -145,7 +148,9 @@ const MFG_BOM = () => {
 
   const handleDownloadExcel = async () => {
     const response = await GetMfgBomExportApi();
-    const data = response || [];
+    // only the plants this user may use
+    const allowedPlants = new Set(plants.map((p) => String(p.Plant_Code)));
+    const data = (response || []).filter((item) => allowedPlants.has(String(item.plant)));
 
     if (data.length === 0) {
       alert("No Data Found");
@@ -255,7 +260,7 @@ const MFG_BOM = () => {
             <MenuItem sx={{ fontSize: 11.5, fontWeight: 600 }} value="ALL">All Plants</MenuItem>
             {plants.map((p) => (
               <MenuItem sx={{ fontSize: 11.5 }} key={p.Plant_ID} value={p.Plant_Code}>
-                {`${p.Plant_Code} - ${p.Plant_Name}`}
+                {myPlantLabel(p)}
               </MenuItem>
             ))}
           </TextField>
