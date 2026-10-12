@@ -1468,6 +1468,11 @@ const PlanHistoryBody = ({ searchText = "" }) => {
   // reflows automatically when the sidebar is toggled/untoggled. `minWidth`
   // still protects each column from getting too cramped to read.
   const columns = useMemo(() => [
+    {
+      field: "si_no", headerName: "SI", width: 46, minWidth: 46, sortable: false, filterable: false, align: "center", headerAlign: "center",
+      description: "Serial number of the row in the list (follows the current search / sort)",
+      renderCell: (p) => p.api.getRowIndexRelativeToVisibleRows(p.id) + 1,
+    },
     { field: "Line_Name", headerName: "Line", flex: 0.9, minWidth: 70, description: "Production line of the FG part (from the Material Master)" },
     {
       field: "fg_part_no", headerName: "Part No / Description", flex: 1.9, minWidth: 140,
