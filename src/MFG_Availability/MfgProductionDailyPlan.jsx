@@ -4,7 +4,11 @@ import {
   Chip, Table, TableHead, TableBody, TableRow, TableCell, IconButton,
 } from "@mui/material";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarFilterButton, GridToolbarExport } from "@mui/x-data-grid";
+import {
+  DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarFilterButton, GridToolbarExport,
+  GridFooter, useGridApiContext, useGridSelector,
+  gridVisibleColumnDefinitionsSelector, gridFilteredSortedRowEntriesSelector, gridDimensionsSelector,
+} from "@mui/x-data-grid";
 import SaveIcon from "@mui/icons-material/Save";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
@@ -37,6 +41,73 @@ const CustomToolbar = () => (
     <GridToolbarExport />
   </GridToolbarContainer>
 );
+
+// Prod Status "TOTAL" bar — always visible at the bottom of the grid (DataGrid
+// Community has no pinned rows, so it is the grid footer). Each cell takes the
+// width of its column so the totals line up under the numbers, and the sums
+// follow whatever rows are currently shown (search box + grid filters).
+const TOTAL_FIELDS = ["monthly_plan", "mtd_plan", "mtd_actual", "month_gap", "cw_plan_calc", "cw_actual", "cw_gap", "yd_plan", "yd_actual", "yd_gap"];
+const TOTAL_GAP_FIELDS = ["month_gap", "cw_gap", "yd_gap"];
+const TOTAL_CURRENT_MONTH_FIELDS = ["cw_plan_calc", "cw_actual", "cw_gap", "yd_plan", "yd_actual", "yd_gap"];
+
+const StatusTotalsFooter = () => {
+  const apiRef = useGridApiContext();
+  const columns = useGridSelector(apiRef, gridVisibleColumnDefinitionsSelector);
+  const entries = useGridSelector(apiRef, gridFilteredSortedRowEntriesSelector);
+  const dims = useGridSelector(apiRef, gridDimensionsSelector);
+
+  const rows = entries.map((e) => e.model);
+  const totals = {};
+  TOTAL_FIELDS.forEach((f) => { totals[f] = rows.reduce((sum, r) => sum + (Number(r[f]) || 0), 0); });
+  // C.W / YD columns are 0 (greyed) for any month other than the current one
+  const currentMonthNa = rows.length > 0 && rows.every((r) => r.cw_na);
+
+  // Everything before the first totalled column (SI, Line, Part No) becomes one label cell
+  const firstTotalIdx = columns.findIndex((c) => TOTAL_FIELDS.includes(c.field));
+  const labelCols = firstTotalIdx === -1 ? columns : columns.slice(0, firstTotalIdx);
+  const totalCols = firstTotalIdx === -1 ? [] : columns.slice(firstTotalIdx);
+  const labelWidth = labelCols.reduce((w, c) => w + (c.computedWidth || 0), 0);
+
+  const cellStyle = (c) => ({
+    width: c.computedWidth, minWidth: c.computedWidth, boxSizing: "border-box", padding: "0 8px", textAlign: "right",
+    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+  });
+
+  return (
+    <div>
+      <div
+        style={{
+          display: "flex", alignItems: "center", height: 34, boxSizing: "border-box",
+          paddingRight: dims?.hasScrollY ? dims.scrollbarSize : 0,
+          backgroundColor: "#eaf0fc", borderTop: "2px solid #b8c7ec", borderBottom: "1px solid #d0dcf5",
+          fontSize: 11, fontWeight: 700, color: "#1a2233",
+        }}
+      >
+        {labelWidth > 0 && (
+          <div style={{ width: labelWidth, minWidth: labelWidth, boxSizing: "border-box", padding: "0 8px", letterSpacing: 0.3 }}>
+            TOTAL <span style={{ fontWeight: 400, color: "#6b7280", fontSize: 10 }}>({rows.length} FG)</span>
+          </div>
+        )}
+        {totalCols.map((c) => {
+          if (!TOTAL_FIELDS.includes(c.field)) return <div key={c.field} style={cellStyle(c)} />;
+          const value = totals[c.field];
+          if (currentMonthNa && TOTAL_CURRENT_MONTH_FIELDS.includes(c.field)) {
+            return <div key={c.field} style={{ ...cellStyle(c), color: "#b6bac3", fontWeight: 400 }}>0</div>;
+          }
+          if (TOTAL_GAP_FIELDS.includes(c.field)) {
+            return (
+              <div key={c.field} style={{ ...cellStyle(c), color: value > 0 ? "#1b7a43" : value < 0 ? "#b42323" : "#6b7280" }}>
+                {gapFmt(value)}
+              </div>
+            );
+          }
+          return <div key={c.field} style={cellStyle(c)}>{numberFmt(value)}</div>;
+        })}
+      </div>
+      <GridFooter />
+    </div>
+  );
+};
 
 const todayStr = () => {
   const now = new Date();
@@ -1677,7 +1748,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
           loading={loading}
           columnHeaderHeight={36}
           rowHeight={38}
-          slots={{ toolbar: CustomToolbar }}
+          slots={{ toolbar: CustomToolbar, footer: StatusTotalsFooter }}
           localeText={{ noRowsLabel: "No plan history found for the selected filters." }}
           sx={{
             height: "100%",

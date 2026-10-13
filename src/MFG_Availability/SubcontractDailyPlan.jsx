@@ -46,14 +46,28 @@ const COLUMNS = [
   { field: "month", headerName: "Month", width: 110 },
   { field: "part_number", headerName: "Material", width: 170 },
   { field: "description", headerName: "Material Description", flex: 1, minWidth: 220 },
-  { field: "supplier_code", headerName: "Supplier", width: 100 },
+  {
+    // One column: vendor code, with the Vendor Master name in small grey text below it
+    field: "supplier_code", headerName: "Supplier", flex: 0.8, minWidth: 190,
+    renderCell: (p) => {
+      if (!p.value) return null;
+      const notFound = !p.row.vendor_found;
+      const subText = notFound ? "Not in Vendor Master" : `${p.row.vendor_name}${p.row.vendor_active ? "" : " (inactive)"}`;
+      return (
+        <div title={`${p.value} — ${subText}`} style={{ lineHeight: 1.3, padding: "4px 0", overflow: "hidden" }}>
+          <div style={{ fontWeight: 600, fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.value}</div>
+          <div style={{ color: notFound || !p.row.vendor_active ? "#d32f2f" : "#9ca3af", fontSize: 9.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{subText}</div>
+        </div>
+      );
+    },
+  },
   {
     field: "quantity_display", headerName: "Quantity", width: 120, type: "number", align: "right", headerAlign: "right",
     renderCell: (p) => <span style={{ fontWeight: 600, color: Number(p.value) < 0 ? "#b42323" : "#1a2233" }}>{qtyFmt(p.value)}</span>,
   },
 ];
 
-const SEARCH_FIELDS = ["plant", "month", "part_number", "description", "supplier_code", "material_type", "quantity_display"];
+const SEARCH_FIELDS = ["plant", "month", "part_number", "description", "supplier_code", "vendor_name", "material_type", "quantity_display"];
 
 const MATERIAL_TYPE_FILTER = { label: "Material Type", field: "material_type", options: ["FERT", "HALB", "ROH", "Others"] };
 
@@ -105,6 +119,9 @@ const loadRows = async (params) => {
         part_number: r.part_number,
         description: r.description || "",
         supplier_code: r.supplier_code || "",
+        vendor_name: r.vendor_name || "",
+        vendor_found: !!r.vendor_found,
+        vendor_active: !!r.vendor_active,
         material_type: listed ? matType : "Others",
         line_name: lineByPart.get(key(r.part_number)) || "",
         not_in_material_master: matType === undefined,
@@ -132,7 +149,7 @@ const TITLE_INFO = (
       only
     </InfoSection>
     <InfoSection label="Grouped by">
-      Plant + Material + Supplier + Month
+      Plant + Material + Vendor Code + Month
     </InfoSection>
     <InfoSection label="Quantity">
       <b>SUM</b> of the 541 and 542 quantities in each group

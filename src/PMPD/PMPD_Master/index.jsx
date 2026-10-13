@@ -57,6 +57,7 @@ const PMPD_MasterScreen = () => {
     const [originalRows, setOriginalRows] = useState([]);
     const [openUploadModal, setOpenUploadModal] = useState(false);
     const [refreshData, setRefreshData] = useState(false)
+    const [loading, setLoading] = useState(true) // list API in progress (true from the first render, so no empty-grid flash)
     const { user } = useContext(AuthContext);
     const currentUserPlantCode = user.PlantCode
 
@@ -145,9 +146,14 @@ const PMPD_MasterScreen = () => {
 
     useEffect(() => {
         const fectchData = async () => {
-            const response = await getTrnPMPD_MasterDetails()
-            // only the rows of the plants this user may use (own plant + User Master > Data Access)
-            setOriginalRows(await filterRowsToMyPlants(response || []))
+            setLoading(true)
+            try {
+                const response = await getTrnPMPD_MasterDetails()
+                // only the rows of the plants this user may use (own plant + User Master > Data Access)
+                setOriginalRows(await filterRowsToMyPlants(response || []))
+            } finally {
+                setLoading(false)
+            }
         }
         fectchData()
     }, [refreshData])
@@ -271,6 +277,7 @@ const PMPD_MasterScreen = () => {
                     rowsPerPageOptions={[5]}
                     getRowId={(row) => row.trn_pmpd_master_id} // Specify a custom id field
                     disableSelectionOnClick
+                    loading={loading}
                     columnHeaderHeight={36}
                     rowHeight={38}
                     slots={{ toolbar: CustomToolbar }}

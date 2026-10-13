@@ -541,6 +541,28 @@ const Sidebar = ({ setSidebarOpen }) => {
               ),
               code: "SubcontractDailyPlan",
             },
+              {
+              name: "Production Plan",
+              path: "/home/PMPD_ProductionPlan",
+              icon: (
+                <FactoryIcon
+                  style={{ color: "darkseagreen" }}
+                  className="text-[22px]"
+                />
+              ),
+              code: "ProductionPlan",
+            },
+            {
+              name: "Production Actual",
+              path: "/home/PMPD_ActualProductionPlan",
+              icon: (
+                <FactoryIcon
+                  style={{ color: "darkseagreen" }}
+                  className="text-[22px]"
+                />
+              ),
+              code: "PMPD_ActualProductionPlan",
+            },
             {
               name: "Material Coverage",
               path: "/home/MatAvailabilityStatus",
@@ -553,7 +575,7 @@ const Sidebar = ({ setSidebarOpen }) => {
               code: "MatAvailabilityStatus",
             },
             {
-              name: "Daily ASSY Plan",
+              name: "ASSY Prod Status",
               path: "/home/MfgProductionDailyPlan",
               icon: (
                 <PrecisionManufacturingIcon
@@ -564,7 +586,7 @@ const Sidebar = ({ setSidebarOpen }) => {
               code: "MfgProductionDailyPlan",
             },
             {
-              name: "Daily Component Plan",
+              name: "Component Prod Status",
               path: "/home/MfgComponentDailyPlan",
               icon: (
                 <PrecisionManufacturingIcon
@@ -573,9 +595,9 @@ const Sidebar = ({ setSidebarOpen }) => {
                 />
               ),
               code: "MfgComponentDailyPlan",
-            },
+            }
           ]}
-          codeList={["MFG_BOM", "PlantStock", "SupplierStock", "SubcontractDailyPlan", "MatAvailabilityStatus", "MfgProductionDailyPlan", "MfgComponentDailyPlan"]}
+          codeList={["MFG_BOM", "PlantStock", "SupplierStock", "SubcontractDailyPlan", "MatAvailabilityStatus", "MfgProductionDailyPlan", "MfgComponentDailyPlan", "ProductionPlan", "PMPD_ActualProductionPlan"]}
         />
         {/* Scheduler Section */}
         <SidebarSection
@@ -979,17 +1001,6 @@ const Sidebar = ({ setSidebarOpen }) => {
               code: "PMPD_Master",
             },
             {
-              name: "Production Plan",
-              path: "/home/PMPD_ProductionPlan",
-              icon: (
-                <FactoryIcon
-                  style={{ color: "#32CD32" }}
-                  className="text-[18px]"
-                />
-              ),
-              code: "ProductionPlan",
-            },
-            {
               name: "Indirect Manpower",
               path: "/home/PMPD_IndirectManpower",
               icon: (
@@ -1010,17 +1021,6 @@ const Sidebar = ({ setSidebarOpen }) => {
                 />
               ),
               code: "PMPD_Report",
-            },
-            {
-              name: "Production Actual",
-              path: "/home/PMPD_ActualProductionPlan",
-              icon: (
-                <FactoryIcon
-                  style={{ color: "#32CD32" }}
-                  className="text-[18px]"
-                />
-              ),
-              code: "PMPD_ActualProductionPlan",
             },
             {
               name: "Plan Vs Actual (Direct)",
@@ -1058,11 +1058,9 @@ const Sidebar = ({ setSidebarOpen }) => {
             },
           ]}
           codeList={[
-            "ProductionPlan",
             "PMPD_Master",
             "PMPD_Report",
             "PMPD_IndirectManpower",
-            "PMPD_ActualProductionPlan",
             "PMDP_PlanVsActual",
             "PMDP_PlanVsActual_Indirect",
             "Inhouse_capacity",
