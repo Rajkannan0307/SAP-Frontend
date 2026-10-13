@@ -207,14 +207,34 @@ const compactButtonSx = {
 // (color/spacing/typography/borders/hover) is plain Tailwind classes —
 // real utility classes, not inline style, so `group-hover:` etc. apply
 // with normal CSS specificity.
+// "si_no" is the serial number of the row in the list (follows the current
+// search / filter), shown first in both the Materials and Production-IH tables.
+// Monthly Plan / MTD Plan / MTD Actual / Gap follow the MFG Daily Production Plan > Prod Status rules
+// (computed by the backend in ProdStatusCalc.js, shared by both screens).
+// `tip` = the hover explanation of the column header (same wording as the Prod Status screen).
 const FIXED_COLS = [
-  { field: "plant", label: "Line", width: 90, left: 0 },
-  { field: "fg_part_no", label: "FG_Part_No", width: 82, left: 70 },
-  { field: "fg_desc", label: "FG Part Description", width: 190, left: 152 },
-  { field: "plan", label: "Plan", width: 62, left: 342, align: "right" },
-  { field: "actual", label: "Actual", width: 62, left: 404, align: "right" },
-  { field: "gap", label: "GAP", width: 60, left: 466, align: "right" },
+  { field: "si_no", label: "SI", width: 40, left: 0, tip: "Serial number of the row in the list (follows the current search)" },
+  { field: "plant", label: "Line", width: 90, left: 40, tip: "Production line of the FG part (from the Material Master)" },
+  // FG part number with its description underneath (one column, like Prod Status's "Part No / Description")
+  { field: "fg_part_no", label: "Part No / Description", width: 240, left: 110, tip: "FG part number and its description" },
+  { field: "monthly_plan", label: "Monthly Plan", width: 82, left: 350, align: "right", tip: "Monthly Plan = sum of plan_qty (plan type MP) from the production plan for the selected month" },
+  { field: "mtd_plan", label: "MTD Plan", width: 70, left: 432, align: "right", tip: "MTD Plan = (Monthly Plan / 26) x NWD. NWD = working days of the month up to yesterday (Sundays excluded)" },
+  { field: "mtd_actual", label: "MTD Act", width: 76, left: 502, align: "right", tip: "MTD Actual = production quantity of the selected month (movement types 101, 102, 261 and 262)" },
+  { field: "gap", label: "Gap", width: 64, left: 578, align: "right", tip: "Gap = MTD Actual - MTD Plan (positive = ahead, negative = behind)" },
 ];
+
+// Hover explanations for the dynamic header cells.
+const TIP_IH = "IH = plant (in-house) stock of the child parts, from the latest Plant Stock upload up to the month end";
+const TIP_SUPP = "Supp = stock lying with the supplier, from the latest Supplier Stock upload up to the month end";
+const TIP_TOT = "TOT = IH + Supp";
+const TIP_SET_OF_PARTS = "Set of Parts = the lowest IH quantity across this FG's operation columns (the bottleneck: how many complete sets can be made)";
+
+// Wraps a header label so hovering it shows the explanation (the default tooltip, like the grid headers on Prod Status).
+const HeadTip = ({ tip, children }) => (
+  <Tooltip title={tip} arrow placement="top" enterDelay={250}>
+    <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis" }}>{children}</span>
+  </Tooltip>
+);
 const FIXED_COLS_TOTAL_WIDTH = FIXED_COLS.reduce((sum, c) => sum + c.width, 0);
 
 // Fixed pixel widths for the dynamic (scrollable) columns — used both in
@@ -279,6 +299,53 @@ const matFixedBodyClass = (col) =>
   `${tbodyCellBase} sticky z-10 bg-white group-hover:bg-[#f2f6fd] ${col.align === "right" ? "text-right" : "text-left"} ${col.field === "gap" ? gapSeparatorClass : ""}`;
 
 const matFixedBodyStyle = (col) => ({ left: col.left, width: col.width });
+
+// Gap = MTD Actual - MTD Plan, shown signed ("+100" / "-40" / "0") and coloured like the Prod Status
+// screen: green when ahead, red when behind, grey on target. Inline colour so it always wins over the cell class.
+const gapFmt = (v) => {
+  const n = Number(v) || 0;
+  return n > 0 ? `+${n.toLocaleString("en-IN")}` : n.toLocaleString("en-IN");
+};
+const gapColor = (v) => (Number(v) > 0 ? "#1b7a43" : Number(v) < 0 ? "#b42323" : "#6b7280");
+
+// TOTAL row at the bottom of each table (Materials and Production-IH). Always visible (sticky bottom) and
+// sums the rows currently shown, so it follows the search box. Gap total = sum of the row gaps.
+const SummaryFooter = ({ rows }) => {
+  const totals = rows.reduce(
+    (t, r) => ({
+      monthly_plan: t.monthly_plan + (Number(r.monthly_plan) || 0),
+      mtd_plan: t.mtd_plan + (Number(r.mtd_plan) || 0),
+      mtd_actual: t.mtd_actual + (Number(r.mtd_actual) || 0),
+      gap: t.gap + (Number(r.gap) || 0),
+    }),
+    { monthly_plan: 0, mtd_plan: 0, mtd_actual: 0, gap: 0 }
+  );
+  const footCell = `${tbodyCellBase} sticky bg-[#e6edfa] font-bold text-slate-800 border-t-2 border-t-[#b8c7ec]`;
+  const fixedCell = (col, content, style = {}) => (
+    <td
+      key={col.field}
+      className={`${footCell} z-30 ${col.align === "right" ? "text-right" : "text-left"} ${col.field === "gap" ? gapSeparatorClass : ""}`}
+      style={{ left: col.left, bottom: 0, width: col.width, ...style }}
+    >
+      {content}
+    </td>
+  );
+  const [siCol, lineCol, partCol, monthlyCol, mtdPlanCol, mtdActualCol, gapCol] = FIXED_COLS;
+  return (
+    <tfoot>
+      <tr>
+        {fixedCell(siCol, "")}
+        {fixedCell(lineCol, "TOTAL")}
+        {fixedCell(partCol, <span className="font-normal text-slate-500 text-[10px]">{rows.length} FG</span>)}
+        {fixedCell(monthlyCol, numberFmt(totals.monthly_plan))}
+        {fixedCell(mtdPlanCol, numberFmt(totals.mtd_plan))}
+        {fixedCell(mtdActualCol, numberFmt(totals.mtd_actual))}
+        {fixedCell(gapCol, gapFmt(totals.gap), { color: gapColor(totals.gap) })}
+        <td colSpan={1000} className={`${footCell} z-20`} style={{ bottom: 0 }} />
+      </tr>
+    </tfoot>
+  );
+};
 
 const matTintCellClass = (tint, extra = "") =>
   `${tbodyCellBase} text-right ${
@@ -427,8 +494,9 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
         line_name: fg.line_name,
         fg_part_no: fg.fg_part_no,
         fg_desc: fg.fg_desc,
-        plan: fg.plan,
-        actual: fg.actual,
+        monthly_plan: fg.monthly_plan,
+        mtd_plan: fg.mtd_plan,
+        mtd_actual: fg.mtd_actual,
         gap: fg.gap,
         total_ih: fg.ih_total,
         total_supp: fg.supp_total,
@@ -510,11 +578,11 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
       // "SOCKET"), each spanning its own operations' IH/Supp pairs plus its
       // own TOTAL block; an extra overall TOTAL block only when more than
       // one Part Name is present. One row per Plant+FG. Fixed-column
-      // headers (Plant/FG Part No/Plan/Actual/GAP) must live in row 1 — the
+      // headers (Plant/FG Part No/Monthly Plan/MTD Plan/MTD Actual/Gap) must live in row 1 — the
       // "!merges" below span rows 1-3 for each of them, and a merged cell
       // only ever displays its TOP-LEFT cell's value, so putting the text
       // in row 3 instead (as before) rendered as blank headers.
-      const fixedCols = ["Plant", "FG_Part_No", "FG Part Description", "Plan", "Actual", "GAP"];
+      const fixedCols = ["Plant", "FG_Part_No", "FG Part Description", "Monthly Plan", "MTD Plan", "MTD Actual", "Gap"];
       const showGrandTotal = partNameGroups.length > 1;
       const headerRow1 = [...fixedCols.map(() => "")];
       const headerRow2 = [...fixedCols.map(() => "")];
@@ -547,7 +615,7 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
       const pivotAoa = [headerRow1, headerRow2, headerRow3];
       reportRows.forEach((fg) => {
         const opMap = new Map(fg.operations.map((op) => [op.col_key, op]));
-        const row = [fg.plant, fg.fg_part_no, fg.fg_desc, fg.plan, fg.actual, fg.gap];
+        const row = [fg.plant, fg.fg_part_no, fg.fg_desc, fg.monthly_plan, fg.mtd_plan, fg.mtd_actual, fg.gap];
         partNameGroups.forEach((group) => {
           let ihSum = 0;
           let suppSum = 0;
@@ -591,7 +659,7 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
         // fixed columns do).
         pivotSheet["!merges"].push({ s: { r: 0, c: mergeCol }, e: { r: 1, c: mergeCol + 2 } });
       }
-      const fixedColWidths = [8, 14, 28, 10, 10, 10]; // Plant, FG_Part_No, FG Part Description, Plan, Actual, GAP
+      const fixedColWidths = [8, 14, 28, 13, 10, 12, 10]; // Plant, FG_Part_No, FG Part Description, Monthly Plan, MTD Plan, MTD Actual, Gap
       pivotSheet["!cols"] = [...fixedColWidths.map((wch) => ({ wch })), ...Array(lastCol + 1 - fixedCols.length).fill({ wch: 9 })];
       for (let r = 0; r <= 2; r++) {
         for (let c = 0; c <= lastCol; c++) {
@@ -771,10 +839,11 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
           grid) instead of DataGrid, styled with Tailwind utility classes:
           a manually-built 3-row grouped sticky header mirroring the
           original columnGroupingModel/Excel merge layout, PLUS the first
-          6 columns (Plant/FG_Part_No/FG Part Description/Plan/Actual/GAP)
-          pinned via sticky-left so they stay visible while the dynamic
-          operation columns scroll horizontally, with a shadow/border
-          after GAP marking the fixed/scrollable boundary. */}
+          fixed columns (SI/Line/Part No + Description/Monthly
+          Plan/MTD Plan/MTD Actual/Gap) pinned via sticky-left so they stay
+          visible while the dynamic operation columns scroll horizontally,
+          with a shadow/border after Gap marking the fixed/scrollable
+          boundary, and a sticky TOTAL row at the bottom. */}
       <style>{matScrollbarCss}</style>
       <div className="mat-avail-scroll flex-1 min-h-0 overflow-auto bg-white rounded-lg border border-gray-200 shadow-sm">
         <table style={{ width: matTotalWidth, tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
@@ -805,16 +874,16 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
             <tr>
               {FIXED_COLS.map((col) => (
                 <th key={col.field} rowSpan={3} className={matFixedHeadClass(col)} style={matFixedHeadStyle(col)}>
-                  {col.label}
+                  <HeadTip tip={col.tip}>{col.label}</HeadTip>
                 </th>
               ))}
               {partNameGroups.map((group) => (
                 <th key={group.part_name} colSpan={group.ops.length * 2 + 3} className={`${matTheadCellClass()} ${groupSeparatorClass}`} style={{ top: 0, height: HEAD_ROW_H }}>
-                  {group.part_name_label}
+                  <HeadTip tip={`${group.part_name_label}: its operations (IH / Supp stock of the child parts) and its own TOTAL`}>{group.part_name_label}</HeadTip>
                 </th>
               ))}
               {showGrandTotal && (
-                <th rowSpan={2} colSpan={3} className={`${matTheadCellClass()} ${groupSeparatorClass}`} style={{ top: 0 }}>TOTAL</th>
+                <th rowSpan={2} colSpan={3} className={`${matTheadCellClass()} ${groupSeparatorClass}`} style={{ top: 0 }}><HeadTip tip="TOTAL across all part names: IH, Supp and TOT added up">TOTAL</HeadTip></th>
               )}
             </tr>
             <tr>
@@ -822,10 +891,12 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
                 <React.Fragment key={group.part_name}>
                   {group.ops.map((op) => (
                     <th key={op.col_key} colSpan={2} className={`${matTheadCellClass()} ${groupSeparatorClass}`} style={{ top: HEAD_ROW_H, height: HEAD_ROW_H }}>
-                      {op.opt_name}
+                      <HeadTip tip={`${op.opt_name}: IH (plant) and Supp (supplier) stock of the child parts used at this operation`}>{op.opt_name}</HeadTip>
                     </th>
                   ))}
-                  <th colSpan={3} className={`${matTheadCellClass()} ${groupSeparatorClass}`} style={{ top: HEAD_ROW_H, height: HEAD_ROW_H }}>TOTAL</th>
+                  <th colSpan={3} className={`${matTheadCellClass()} ${groupSeparatorClass}`} style={{ top: HEAD_ROW_H, height: HEAD_ROW_H }}>
+                    <HeadTip tip={`TOTAL of ${group.part_name_label}: IH, Supp and TOT added up across all its operations`}>TOTAL</HeadTip>
+                  </th>
                 </React.Fragment>
               ))}
             </tr>
@@ -834,20 +905,20 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
                 <React.Fragment key={group.part_name}>
                   {group.ops.map((op) => (
                     <React.Fragment key={op.col_key}>
-                      <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>IH</th>
-                      <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>Supp</th>
+                      <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}><HeadTip tip={TIP_IH}>IH</HeadTip></th>
+                      <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}><HeadTip tip={TIP_SUPP}>Supp</HeadTip></th>
                     </React.Fragment>
                   ))}
-                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>IH</th>
-                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>Supp</th>
-                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>TOT</th>
+                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}><HeadTip tip={TIP_IH}>IH</HeadTip></th>
+                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}><HeadTip tip={TIP_SUPP}>Supp</HeadTip></th>
+                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}><HeadTip tip={TIP_TOT}>TOT</HeadTip></th>
                 </React.Fragment>
               ))}
               {showGrandTotal && (
                 <>
-                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>IH</th>
-                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>Supp</th>
-                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}>TOT</th>
+                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}><HeadTip tip={TIP_IH}>IH</HeadTip></th>
+                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}><HeadTip tip={TIP_SUPP}>Supp</HeadTip></th>
+                  <th className={matTheadCellClass()} style={{ top: HEAD_ROW_H * 2, height: HEAD_ROW_H }}><HeadTip tip={TIP_TOT}>TOT</HeadTip></th>
                 </>
               )}
             </tr>
@@ -868,12 +939,18 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
             ) : (
               filteredRows.map((row, idx) => (
                 <tr key={idx} className="group">
-                  <td className={matFixedBodyClass(FIXED_COLS[0])} style={matFixedBodyStyle(FIXED_COLS[0])} title={row.line_name || ""}>{row.line_name || "-"}</td>
-                  <td className={matFixedBodyClass(FIXED_COLS[1])} style={matFixedBodyStyle(FIXED_COLS[1])}>{row.fg_part_no}</td>
-                  <td className={matFixedBodyClass(FIXED_COLS[2])} style={matFixedBodyStyle(FIXED_COLS[2])} title={row.fg_desc}>{row.fg_desc}</td>
-                  <td className={matFixedBodyClass(FIXED_COLS[3])} style={matFixedBodyStyle(FIXED_COLS[3])}>{numberFmt(row.plan)}</td>
-                  <td className={matFixedBodyClass(FIXED_COLS[4])} style={matFixedBodyStyle(FIXED_COLS[4])}>{numberFmt(row.actual)}</td>
-                  <td className={matFixedBodyClass(FIXED_COLS[5])} style={matFixedBodyStyle(FIXED_COLS[5])}>{numberFmt(row.gap)}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[0])} style={matFixedBodyStyle(FIXED_COLS[0])}>{idx + 1}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[1])} style={matFixedBodyStyle(FIXED_COLS[1])} title={row.line_name || ""}>{row.line_name || "-"}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[2])} style={matFixedBodyStyle(FIXED_COLS[2])} title={`${row.fg_part_no} — ${row.fg_desc}`}>
+                    <div style={{ lineHeight: 1.3 }}>
+                      <div style={{ color: "#0052cc", fontWeight: 700, fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.fg_part_no}</div>
+                      <div style={{ color: "#6b7280", fontSize: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.fg_desc}</div>
+                    </div>
+                  </td>
+                  <td className={matFixedBodyClass(FIXED_COLS[3])} style={matFixedBodyStyle(FIXED_COLS[3])}>{numberFmt(row.monthly_plan)}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[4])} style={matFixedBodyStyle(FIXED_COLS[4])}>{numberFmt(row.mtd_plan)}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[5])} style={matFixedBodyStyle(FIXED_COLS[5])}>{numberFmt(row.mtd_actual)}</td>
+                  <td className={`${matFixedBodyClass(FIXED_COLS[6])} font-semibold`} style={{ ...matFixedBodyStyle(FIXED_COLS[6]), color: gapColor(row.gap) }}>{gapFmt(row.gap)}</td>
                   {partNameGroups.map((group) => (
                     <React.Fragment key={group.part_name}>
                       {group.ops.map((op) => (
@@ -914,6 +991,7 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
               ))
             )}
           </tbody>
+          {!loading && filteredRows.length > 0 && <SummaryFooter rows={filteredRows} />}
         </table>
       </div>
     </>
@@ -1014,8 +1092,9 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
         line_name: fg.line_name,
         fg_part_no: fg.fg_part_no,
         fg_desc: fg.fg_desc,
-        plan: fg.plan,
-        actual: fg.actual,
+        monthly_plan: fg.monthly_plan,
+        mtd_plan: fg.mtd_plan,
+        mtd_actual: fg.mtd_actual,
         gap: fg.gap,
         set_of_parts: fg.set_of_parts,
         all_children: fg.children,
@@ -1158,22 +1237,22 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
             <tr>
               {FIXED_COLS.map((col) => (
                 <th key={col.field} rowSpan={2} className={matFixedHeadClass(col)} style={matFixedHeadStyle(col)}>
-                  {col.label}
+                  <HeadTip tip={col.tip}>{col.label}</HeadTip>
                 </th>
               ))}
               {partNameGroups.map((group) => (
                 <th key={group.part_name} colSpan={group.ops.length} className={`${matTheadCellClass()} ${groupSeparatorClass}`} style={{ top: 0, height: HEAD_ROW_H }}>
-                  {group.part_name_label}
+                  <HeadTip tip={`${group.part_name_label}: IH (plant) stock of the assembly child parts at each of its operations`}>{group.part_name_label}</HeadTip>
                 </th>
               ))}
-              <th rowSpan={2} className={`${matTheadCellClass("text-right")} ${groupSeparatorClass}`} style={{ top: 0 }}>Set of Parts</th>
+              <th rowSpan={2} className={`${matTheadCellClass("text-right")} ${groupSeparatorClass}`} style={{ top: 0 }}><HeadTip tip={TIP_SET_OF_PARTS}>Set of Parts</HeadTip></th>
             </tr>
             <tr>
               {partNameGroups.map((group) => (
                 <React.Fragment key={group.part_name}>
                   {group.ops.map((op, opIdx) => (
                     <th key={op.col_key} className={`${matTheadCellClass()} ${opIdx === 0 ? groupSeparatorClass : ""}`} style={{ top: HEAD_ROW_H, height: HEAD_ROW_H }}>
-                      {op.opt_name}
+                      <HeadTip tip={`${op.opt_name}: IH (plant) stock of the assembly child parts used at this operation`}>{op.opt_name}</HeadTip>
                     </th>
                   ))}
                 </React.Fragment>
@@ -1196,12 +1275,18 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
             ) : (
               filteredRows.map((row, idx) => (
                 <tr key={idx} className="group">
-                  <td className={matFixedBodyClass(FIXED_COLS[0])} style={matFixedBodyStyle(FIXED_COLS[0])} title={row.line_name || ""}>{row.line_name || "-"}</td>
-                  <td className={matFixedBodyClass(FIXED_COLS[1])} style={matFixedBodyStyle(FIXED_COLS[1])}>{row.fg_part_no}</td>
-                  <td className={matFixedBodyClass(FIXED_COLS[2])} style={matFixedBodyStyle(FIXED_COLS[2])} title={row.fg_desc}>{row.fg_desc}</td>
-                  <td className={matFixedBodyClass(FIXED_COLS[3])} style={matFixedBodyStyle(FIXED_COLS[3])}>{numberFmt(row.plan)}</td>
-                  <td className={matFixedBodyClass(FIXED_COLS[4])} style={matFixedBodyStyle(FIXED_COLS[4])}>{numberFmt(row.actual)}</td>
-                  <td className={matFixedBodyClass(FIXED_COLS[5])} style={matFixedBodyStyle(FIXED_COLS[5])}>{numberFmt(row.gap)}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[0])} style={matFixedBodyStyle(FIXED_COLS[0])}>{idx + 1}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[1])} style={matFixedBodyStyle(FIXED_COLS[1])} title={row.line_name || ""}>{row.line_name || "-"}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[2])} style={matFixedBodyStyle(FIXED_COLS[2])} title={`${row.fg_part_no} — ${row.fg_desc}`}>
+                    <div style={{ lineHeight: 1.3 }}>
+                      <div style={{ color: "#0052cc", fontWeight: 700, fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.fg_part_no}</div>
+                      <div style={{ color: "#6b7280", fontSize: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.fg_desc}</div>
+                    </div>
+                  </td>
+                  <td className={matFixedBodyClass(FIXED_COLS[3])} style={matFixedBodyStyle(FIXED_COLS[3])}>{numberFmt(row.monthly_plan)}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[4])} style={matFixedBodyStyle(FIXED_COLS[4])}>{numberFmt(row.mtd_plan)}</td>
+                  <td className={matFixedBodyClass(FIXED_COLS[5])} style={matFixedBodyStyle(FIXED_COLS[5])}>{numberFmt(row.mtd_actual)}</td>
+                  <td className={`${matFixedBodyClass(FIXED_COLS[6])} font-semibold`} style={{ ...matFixedBodyStyle(FIXED_COLS[6]), color: gapColor(row.gap) }}>{gapFmt(row.gap)}</td>
                   {partNameGroups.map((group) => (
                     <React.Fragment key={group.part_name}>
                       {group.ops.map((op, opIdx) => (
@@ -1218,6 +1303,7 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
               ))
             )}
           </tbody>
+          {!loading && filteredRows.length > 0 && <SummaryFooter rows={filteredRows} />}
         </table>
       </div>
     </>
