@@ -21,6 +21,7 @@ import InfoIcon from "@mui/icons-material/Info";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import { format, startOfISOWeek, endOfISOWeek, getISOWeek, addDays } from "date-fns";
 import { toast } from "react-toastify";
+import { downloadStatusExcel } from "./statusExcel";
 import { AuthContext } from "../Authentication/AuthContext";
 import { getMfgPlanEditAccess } from "../Authentication/ActionAccessType";
 import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
@@ -994,6 +995,64 @@ const PlanEntryBody = ({ searchText = "" }) => {
   // WEEK (W-39/W-40) only ever holds a single 5-digit value, so it needs
   // less room than a DAY column, which splits into 3 shift sub-fields —
   // narrower WEEK columns free up width for the more cramped DAY columns.
+  // Excel of the plan table as it is on screen (search applied, the plan values as currently typed): per week / day the Plan
+  // and Actual, per shift for the day columns. Nothing is saved or changed by this.
+  const handleExportExcel = () => {
+    if (!filteredRows.length) {
+      toast.warning("No data available to export.");
+      return;
+    }
+    try {
+      const columns = [
+        { header: "SI", width: 6 },
+        { header: "Part No", width: 18 },
+        { header: "Description", width: 34 },
+      ];
+      const groups = [];
+      periods.forEach((p) => {
+        const from = columns.length;
+        if (p.period_type === "DAY" && shifts.length > 0) {
+          shifts.forEach((sh) => {
+            columns.push({ header: `${sh.shift_name} Plan`, width: 9, total: true });
+            columns.push({ header: `${sh.shift_name} Actual`, width: 10, total: true });
+          });
+        } else {
+          columns.push({ header: "Plan", width: 10, total: true });
+          columns.push({ header: "Actual", width: 10, total: true });
+        }
+        groups.push({ label: [p.label, p.sub_label].filter(Boolean).join(" "), from, to: columns.length - 1 });
+      });
+      const num = (v) => (v === "" || v === null || v === undefined ? "" : Number(v) || 0);
+      const rows = filteredRows.map((row, i) => {
+        const rv = values[row.child_part] || EMPTY_ROW_VALUES;
+        const line = [i + 1, row.child_part_no, row.child_part_desc];
+        periods.forEach((p) => {
+          const cell = row.cells?.[p.key];
+          if (p.period_type === "DAY" && shifts.length > 0) {
+            shifts.forEach((sh) => {
+              line.push(num(rv[`${p.key}|${sh.shift_name}`]), cell?.actual_shift?.[sh.shift_name] || 0);
+            });
+          } else {
+            line.push(num(rv[p.key]), cell?.actual_qty || 0);
+          }
+        });
+        return line;
+      });
+      downloadStatusExcel({
+        sheetName: "Component Daily Plan",
+        fileName: `Component_Daily_Plan_${plant}_${viewDate}.xlsx`,
+        columns,
+        groups,
+        rows,
+        totalLabel: `TOTAL (${rows.length} parts)`,
+      });
+      toast.success("Excel downloaded successfully.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to generate Excel file.");
+    }
+  };
+
   const SI_COL_PCT = 3.5;
   const PART_COL_PCT = 14.5;
   const WEEK_COL_PCT = 6;
@@ -1107,6 +1166,15 @@ const PlanEntryBody = ({ searchText = "" }) => {
               {dirtyKeys.size} unsaved change{dirtyKeys.size === 1 ? "" : "s"}
             </span>
           )}
+          <Button
+            onClick={handleExportExcel}
+            disabled={!loaded || loading || !filteredRows.length}
+            variant="outlined"
+            startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 15 }} />}
+            sx={{ ...compactButtonSx, color: "#1B7A43", borderColor: "#1B7A43", "&:hover": { borderColor: "#166238", backgroundColor: "#f1f8f3" } }}
+          >
+            Export Excel
+          </Button>
           {canEdit && !viewingPast ? (
             <Button
               onClick={handleSubmit}
@@ -1680,22 +1748,51 @@ const PlanHistoryBody = ({ searchText = "" }) => {
   const expandAll = () => setCollapsed(new Set());
   const collapseAll = () => setCollapsed(new Set(groups.map((g) => g.name)));
 
-  const exportCsv = () => {
-    const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const head = ["Line", "Part Name", "Child Part", "Description", "Monthly Plan", "MTD Plan", "MTD Actual", "MTD Gap", "YD Plan", "YD Actual", "YD Gap", "541 MTD Actual", "541 MTD Gap", "541 YA", "541 YG"];
-    const lines = [head.map(esc).join(",")];
-    groups.forEach((g) => g.rows.forEach((r) => lines.push([
-      r.Line_Name || "", g.name, r.child_part_no, r.child_part_desc,
-      r.monthly_plan, r.mtd_plan, r.mtd_actual_fg, r.month_gap, r.yd_plan, r.yd_actual, r.yd_gap,
-      r.sub541_mtd_actual, r.sub541_month_gap, r.sub541_yd_actual, r.sub541_yd_gap,
-    ].map(esc).join(","))));
-    const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Component_Prod_Status_${plant}_${year}-${String(month).padStart(2, "0")}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  // Excel of the Prod Status table as shown (search applied, grouped by Part Name): MTD / YD columns and the 541 group, with a TOTAL row.
+  const exportExcel = () => {
+    if (!filteredRows.length) {
+      toast.warning("No data available to export.");
+      return;
+    }
+    try {
+      const columns = [
+        { header: "SI", width: 6 },
+        { header: "Line", width: 14 },
+        { header: "Part Name", width: 18 },
+        { header: "Child Part", width: 18 },
+        { header: "Description", width: 34 },
+        { header: "Monthly Plan", width: 13, total: true },
+        { header: "MTD Plan", width: 11, total: true },
+        { header: "MTD Actual", width: 12, total: true },
+        { header: "MTD Gap", width: 10, total: true, gap: true },
+        { header: "YD Plan", width: 11, total: true },
+        { header: "YD Actual", width: 12, total: true },
+        { header: "YD Gap", width: 10, total: true, gap: true },
+        { header: "541 MTD Actual", width: 14, total: true },
+        { header: "541 MTD Gap", width: 13, total: true, gap: true },
+        { header: "541 YA", width: 10, total: true },
+        { header: "541 YG", width: 10, total: true, gap: true },
+      ];
+      const rows = [];
+      groups.forEach((g) => g.rows.forEach((r) => rows.push([
+        rows.length + 1, r.Line_Name || "", g.name, r.child_part_no, r.child_part_desc,
+        r.monthly_plan || 0, r.mtd_plan || 0, r.mtd_actual_fg || 0, r.month_gap || 0,
+        r.yd_plan || 0, r.yd_actual || 0, r.yd_gap || 0,
+        r.sub541_mtd_actual || 0, r.sub541_month_gap || 0, r.sub541_yd_actual || 0, r.sub541_yd_gap || 0,
+      ])));
+      downloadStatusExcel({
+        sheetName: "Component Prod Status",
+        fileName: `Component_Prod_Status_${plant}_${year}-${String(month).padStart(2, "0")}.xlsx`,
+        columns,
+        groups: [{ label: "541", from: 12, to: 15 }],
+        rows,
+        totalLabel: `TOTAL (${rows.length} parts)`,
+      });
+      toast.success("Excel downloaded successfully.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to generate Excel file.");
+    }
   };
 
   return (
@@ -1851,8 +1948,8 @@ const PlanHistoryBody = ({ searchText = "" }) => {
             <Button size="small" onClick={collapseAll} disabled={!groups.length} startIcon={<UnfoldLessIcon sx={{ fontSize: 15 }} />} sx={{ ...compactButtonSx, height: 24, color: "#374151" }}>
               Collapse all
             </Button>
-            <Button size="small" onClick={exportCsv} disabled={!filteredRows.length} startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 15 }} />} sx={{ ...compactButtonSx, height: 24, color: "#374151" }}>
-              Export
+            <Button size="small" onClick={exportExcel} disabled={!filteredRows.length} startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 15 }} />} sx={{ ...compactButtonSx, height: 24, color: "#374151" }}>
+              Export Excel
             </Button>
           </Box>
         </Box>

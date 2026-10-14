@@ -432,6 +432,17 @@ const Sidebar = ({ setSidebarOpen }) => {
               ),
               code: "Indirect_Material",
             },
+            {
+              name: "Material - Vendor Mapping",
+              path: "/home/MaterialVendorMapping",
+              icon: (
+                <FaExchangeAlt
+                  style={{ color: "#80cbc4" }}
+                  className="text-[20px]"
+                />
+              ),
+              code: "MaterialVendorMapping",
+            },
           ]}
           codeList={[
             "company",
@@ -462,6 +473,7 @@ const Sidebar = ({ setSidebarOpen }) => {
             "IndirectCategory",
             "PMPD_FixedManpower",
             "Indirect_Material",
+            "MaterialVendorMapping",
           ]}
         />
         {/* Transaction Button */}
@@ -595,9 +607,20 @@ const Sidebar = ({ setSidebarOpen }) => {
                 />
               ),
               code: "MfgComponentDailyPlan",
+            },
+            {
+              name: "RM Coverage",
+              path: "/home/RmCoverage",
+              icon: (
+                <PrecisionManufacturingIcon
+                  style={{ color: "darkseagreen" }}
+                  className="text-[22px]"
+                />
+              ),
+              code: "RmCoverage",
             }
           ]}
-          codeList={["MFG_BOM", "PlantStock", "SupplierStock", "SubcontractDailyPlan", "MatAvailabilityStatus", "MfgProductionDailyPlan", "MfgComponentDailyPlan", "ProductionPlan", "PMPD_ActualProductionPlan"]}
+          codeList={["MFG_BOM", "PlantStock", "SupplierStock", "SubcontractDailyPlan", "MatAvailabilityStatus", "MfgProductionDailyPlan", "MfgComponentDailyPlan", "ProductionPlan", "PMPD_ActualProductionPlan", "RmCoverage"]}
         />
         {/* Scheduler Section */}
         <SidebarSection

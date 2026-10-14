@@ -24,3 +24,10 @@ export const getPlants = async ()=>{
     const response = await axios.get(`${api}/VendorMaster/Get_Plants`);
     return response;
 };
+
+// Buyers for the Vendor Master: the active users of the User Master (Employee_ID is stored as the vendor's buyer_id).
+// params = { plantId } or { plantCode }: only the users of that plant (own plant + Data Access); no params = every active user
+export const getBuyers = async (params) => {
+    const response = await axios.get(`${api}/VendorMaster/Get_Buyers`, { params });
+    return response;
+};

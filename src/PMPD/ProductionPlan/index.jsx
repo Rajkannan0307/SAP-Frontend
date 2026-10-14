@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import SectionHeading from '../../components/Header'
 import { Box, Button, IconButton, MenuItem, Modal, TextField, Typography } from '@mui/material'
+import InfoTip from '../../components/InfoTip'
 import { CloudUploadIcon, EditIcon, SearchIcon } from 'lucide-react'
 import { PiUploadDuotone } from 'react-icons/pi'
 import { FaDownload, FaUpload } from 'react-icons/fa6'
@@ -10,7 +11,7 @@ import { saveAs } from 'file-saver'
 import { getMyPlants, myPlantLabel } from '../../controller/CommonApiService'
 import { findPlantsNotAllowed, plantsNotAllowedMessage } from '../../common/plantFileCheck'
 import { AddProductionPlan, getProductionPlandetails, getProductSegmentdetails } from '../../controller/PMPDApiService'
-import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
+import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton, gridFilteredSortedRowIdsSelector, useGridApiContext } from '@mui/x-data-grid'
 import { endOfDay, format, isValid, startOfDay } from 'date-fns'
 import { useFormik } from 'formik'
 import * as yup from 'yup'
@@ -89,6 +90,50 @@ const getCurrentFinYear = () => {
     return finYearsList.includes(label) ? label : ""
 }
 const currentFinYear = getCurrentFinYear()
+
+// Downloads the rows the grid is showing right now (after the filters and sorting), with the visible columns, as Excel.
+const ExcelExportButton = () => {
+    const apiRef = useGridApiContext()
+    const [busy, setBusy] = useState(false)
+
+    const handleDownload = async () => {
+        if (busy) return
+        setBusy(true)
+        try {
+            const columns = apiRef.current.getVisibleColumns().filter((c) => c.field !== "__check__")
+            const ids = gridFilteredSortedRowIdsSelector(apiRef)
+            const workbook = new ExcelJS.Workbook()
+            const sheet = workbook.addWorksheet("Production Plan")
+            sheet.addRow(columns.map((c) => c.headerName || c.field))
+            sheet.getRow(1).eachCell((cell) => {
+                cell.font = { bold: true }
+                cell.alignment = { horizontal: "center" }
+                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD0DCF5" } }
+            })
+            ids.forEach((id) => {
+                sheet.addRow(columns.map((c) => {
+                    const value = apiRef.current.getCellParams(id, c.field).value
+                    return value instanceof Date ? format(value, "dd-MM-yyyy") : (value ?? "")
+                }))
+            })
+            columns.forEach((c, i) => { sheet.getColumn(i + 1).width = Math.max(12, Math.min(40, String(c.headerName || c.field).length + 6)) })
+            sheet.views = [{ state: "frozen", ySplit: 1 }]
+            const buffer = await workbook.xlsx.writeBuffer()
+            saveAs(
+                new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+                `Production_Plan_${format(new Date(), "yyyy-MM-dd")}.xlsx`
+            )
+        } finally {
+            setBusy(false)
+        }
+    }
+
+    return (
+        <Button size="small" onClick={handleDownload} disabled={busy} startIcon={<FaDownload size={12} />}>
+            {busy ? "Preparing..." : "Download Excel"}
+        </Button>
+    )
+}
 
 const PMPD_ProductionPlan = () => {
     const [searchText, setSearchText] = useState("");
@@ -262,6 +307,7 @@ const PMPD_ProductionPlan = () => {
             <GridToolbarColumnsButton />
             <GridToolbarFilterButton />
             <GridToolbarExport />
+            <ExcelExportButton />
         </GridToolbarContainer>
     );
 
@@ -489,6 +535,32 @@ const PMPD_ProductionPlan = () => {
 }
 
 
+const UniqueKeyInfo = () => (
+    <InfoTip label="Unique grouping info" placement="bottom-start">
+        <b style={{ color: "#1a2233", fontSize: 12 }}>Unique grouping</b>
+        <div>
+            <b>AOP</b>
+            <ul style={{ margin: "2px 0 0", paddingLeft: 18 }}>
+                <li>Plant</li>
+                <li>Customer Name</li>
+                <li>Part Number</li>
+                <li>Plan Type (AOP)</li>
+                <li>Plan Date</li>
+            </ul>
+        </div>
+        <div>
+            <b>MP</b>
+            <ul style={{ margin: "2px 0 0", paddingLeft: 18 }}>
+                <li>Plant</li>
+                <li>Part Number</li>
+                <li>Plan Type (MP)</li>
+                <li>Plan Date</li>
+            </ul>
+        </div>
+        <span>Same combination already exists: the plan is <b>updated</b>. Otherwise a new row is <b>added</b>.</span>
+    </InfoTip>
+)
+
 const ExcelUploadModal = ({
     open,
     onClose,
@@ -672,6 +744,7 @@ const ExcelUploadModal = ({
             >
                 Upload
             </Button>
+            <UniqueKeyInfo />
 
             <Modal open={open} onClose={() => { }}>
                 <Box

@@ -150,7 +150,7 @@ const MfgListScreen = ({
   const [plantsReady, setPlantsReady] = useState(false);
   // true when the user may NOT use every active plant: "All Plants" then means "all MY plants"
   const [restricted, setRestricted] = useState(true);
-  const [plant, setPlant] = useState(allowAllPlants ? ALL_PLANTS : user?.PlantCode || "");
+  const [plant, setPlant] = useState(user?.PlantCode || (allowAllPlants ? ALL_PLANTS : "")) // the logged-in plant first; "All Plants" stays in the list;
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
 

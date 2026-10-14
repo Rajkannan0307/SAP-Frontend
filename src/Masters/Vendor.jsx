@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
+  Autocomplete,
+  CircularProgress,
+  createFilterOptions,
   TextField,
   Button,
-  Modal,
+  Dialog,
   Box,
+  Chip,
   FormControlLabel,
   IconButton,
-  Select,
+  MenuItem,
   Switch,
+  Typography,
 } from "@mui/material";
 import {
   DataGrid,
@@ -20,19 +25,107 @@ import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx-js-style";
-import { MenuItem, InputLabel, FormControl } from "@mui/material";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
+import CloseIcon from "@mui/icons-material/Close";
 import { FaDownload } from "react-icons/fa";
-import { deepPurple } from "@mui/material/colors";
 import { api } from "../controller/constants";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import {
   getAdd,
   getUpdates,
   getdetails,
-  getPlants,
+  getBuyers,
 } from "../controller/VendorMasterapiservice";
+import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
+import { findPlantsNotAllowed, plantsNotAllowedMessage } from "../common/plantFileCheck";
 import { VendorMaster } from "../controller/VendorMasterapiservice";
-import SectionHeading from "../components/Header";
+import FilterSelect from "../components/FilterSelect";
+import { FilterToggleButton, FilterPanel } from "../components/FilterPanel";
+import {
+  compactFieldSx,
+  compactMenuProps,
+  compactGridSx,
+  primaryButtonSx,
+  successButtonSx,
+  outlineButtonSx,
+} from "../components/compactUi";
+
+const DIALOG_FIELD_SX = compactFieldSx("100%", 12);
+
+// the buyer list of a plant can be long: filter as the user types and render only the first matches
+const optionFilter = createFilterOptions({ limit: 200 });
+
+// Compact select used by the Add / Edit dialogs
+const SelectField = ({ label, value, onChange, options }) => (
+  <TextField
+    select
+    size="small"
+    label={label}
+    value={value}
+    onChange={onChange}
+    sx={DIALOG_FIELD_SX}
+    SelectProps={{ MenuProps: compactMenuProps(12) }}
+  >
+    {options.map((o) => (
+      <MenuItem key={o.value} value={o.value} sx={{ fontSize: 12 }}>
+        {o.label}
+      </MenuItem>
+    ))}
+  </TextField>
+);
+
+const TextInput = ({ label, value, onChange, readOnly = false, placeholder, inputProps }) => (
+  <TextField
+    size="small"
+    label={label}
+    value={value}
+    onChange={onChange}
+    placeholder={placeholder}
+    sx={DIALOG_FIELD_SX}
+    InputProps={{ readOnly }}
+    inputProps={inputProps}
+  />
+);
+
+const ActiveSwitch = ({ checked, onChange }) => (
+  <FormControlLabel
+    sx={{ m: 0, "& .MuiFormControlLabel-label": { fontSize: 12, fontWeight: 700, color: checked ? "#2e7d32" : "#d32f2f" } }}
+    control={
+      <Switch
+        size="small"
+        checked={checked}
+        onChange={onChange}
+        color="success"
+        sx={{
+          "& .MuiSwitch-track": { backgroundColor: checked ? "#2e7d32" : "#d32f2f", opacity: 0.55 },
+          "& .MuiSwitch-thumb": { backgroundColor: checked ? "#2e7d32" : "#d32f2f" },
+        }}
+      />
+    }
+    label={checked ? "Active" : "Inactive"}
+  />
+);
+
+// Shell of the Add / Edit / Upload dialogs
+const FormDialog = ({ open, title, onClose, children, actions }) => (
+  <Dialog
+    open={open}
+    onClose={onClose}
+    maxWidth={false}
+    PaperProps={{ sx: { width: 460, maxWidth: "94vw", borderRadius: "10px" } }}
+  >
+    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 2, py: 1, borderBottom: "1px solid #e8eaee", backgroundColor: "#f3f7ff" }}>
+      <Typography sx={{ fontSize: 14, fontWeight: 700, color: "#1a2233" }}>{title}</Typography>
+      <IconButton size="small" onClick={onClose}>
+        <CloseIcon sx={{ fontSize: 16 }} />
+      </IconButton>
+    </Box>
+    <Box sx={{ p: 2, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "14px 12px" }}>{children}</Box>
+    <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, px: 2, py: 1.25, borderTop: "1px solid #e8eaee" }}>{actions}</Box>
+  </Dialog>
+);
+
 const Vendor = () => {
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
@@ -48,7 +141,14 @@ const Vendor = () => {
   const [uploadedFileData, setUploadedFileData] = useState(null);
   const [ActiveStatus, setActiveStatus] = useState(false);
   const [PlantCode, setPlantCode] = useState([]);
-  const [PlantTable, setPlantTable] = useState([]);
+  // Only the plants this user may use (own plant + User Master > Data Access) - the same list and rule as Material - Vendor
+  // Mapping and the Manufacturing BOM
+  const [plants, setPlants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  // Plant: the dropdown holds the selection (starts on the user's own login plant), the Search button applies it
+  const [plantSelect, setPlantSelect] = useState("All");
+  const [fPlant, setFPlant] = useState("All"); // applied plant
+  const plantDefaulted = useRef(false);
   const Username = localStorage.getItem('UserName');
   const UserID = localStorage.getItem('UserID');
   // const [newRecord] = useState([]);
@@ -58,34 +158,50 @@ const Vendor = () => {
   const [VendorID, setVendorID] = useState("");
   const [VendorName, setVendorName] = useState("");
   const [VendorAddress, setVendorAddress] = useState("");
+  const [KanbanMail, setKanbanMail] = useState("No"); // "Yes" / "No"
+  const [MailID, setMailID] = useState(""); // vendor e-mail ("" = none); several can be separated with ; or ,
+  const [BuyerID, setBuyerID] = useState(""); // Mst_User.Employee_ID (gen_id); "" = no buyer
+  const [BuyerTable, setBuyerTable] = useState([]);
   const columns = [
-    { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
-    { field: "Vendor_Code", headerName: "Vendor Code ", flex: 1 },
-    { field: "Vendor_Name", headerName: "Vendor Name ", flex: 1 },
-    { field: "Vendor_Address", headerName: "Vendor Address", flex: 2 },
-
+    { field: "Plant_Code", headerName: "Plant", flex: 0.6, minWidth: 70 },
+    { field: "Vendor_Code", headerName: "Vendor Code", flex: 0.9, minWidth: 95 },
+    { field: "Vendor_Name", headerName: "Vendor Name", flex: 1.4, minWidth: 140 },
+    { field: "Vendor_Address", headerName: "Vendor Address", flex: 1.6, minWidth: 150 },
     {
-      field: "ActiveStatus",
-      headerName: "Active Status",
-      flex: 1,
+      field: "kanban_mail",
+      headerName: "Kanban Mail",
+      flex: 0.8,
+      minWidth: 90,
+      valueGetter: (value, row) => (row?.kanban_mail ? "Yes" : "No"),
+    },
+    { field: "mail_id", headerName: "Mail ID", flex: 1.4, minWidth: 140 },
+    {
+      field: "buyer_id",
+      headerName: "Buyer",
+      flex: 1.2,
+      minWidth: 120,
+      valueGetter: (value, row) =>
+        row?.buyer_id ? (row.buyer_name ? `${row.buyer_id} - ${row.buyer_name}` : row.buyer_id) : "",
+    },
+    {
+      field: "Active_Status",
+      headerName: "Status",
+      flex: 0.7,
+      minWidth: 80,
+      valueFormatter: (value) => (value ? "Active" : "Inactive"),
       renderCell: (params) => {
-        const isActive = params.row.Active_Status; // Assuming Active_Status is a boolean
+        const isActive = !!params.row.Active_Status;
         return (
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isActive} // Use the boolean value directly
-                color="default" // Neutral color for default theme
-                sx={{
-                  "& .MuiSwitch-track": {
-                    backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                  },
-                  "& .MuiSwitch-thumb": {
-                    backgroundColor: isActive ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                  },
-                }}
-              />
-            }
+          <Chip
+            size="small"
+            label={isActive ? "Active" : "Inactive"}
+            sx={{
+              height: 20,
+              fontSize: 10.5,
+              fontWeight: 700,
+              backgroundColor: isActive ? "#eafaf1" : "#fdeeee",
+              color: isActive ? "#1b7a43" : "#b42323",
+            }}
           />
         );
       },
@@ -102,6 +218,7 @@ const Vendor = () => {
   );
 
   const getData = async () => {
+    setLoading(true);
     try {
       const response = await getdetails();
       console.log(response); // Check the structure of response
@@ -113,6 +230,8 @@ const Vendor = () => {
       setData([]); // Handle error by setting empty data
       setOriginalRows([]); // handle error case
       setRows([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -121,22 +240,55 @@ const Vendor = () => {
     console.log('username', Username)
     console.log('UserID', UserID)
   }, []);
-  const get_Plant = async () => {
+  useEffect(() => {
+    getMyPlants()
+      .then((res) => setPlants(Array.isArray(res) ? res : []))
+      .catch((error) => console.error("Failed to load Plant list.", error));
+  }, []);
+
+  // The user's own login plant (Is_Default, the first one in the list) is selected and applied once, as soon as the
+  // plant list is loaded; after that the user can switch to any other plant (or All) and press Search.
+  useEffect(() => {
+    if (plantDefaulted.current || plants.length === 0) return;
+    plantDefaulted.current = true;
+    const own = plants.find((p) => Number(p.Is_Default) === 1) || plants[0];
+    const label = myPlantLabel(own);
+    setPlantSelect(label);
+    setFPlant(label);
+  }, [plants]);
+
+  // Search: apply the selected plant and reload the list
+  const handleSearch = () => {
+    setFPlant(plantSelect);
+    getData();
+  };
+
+  // Buyer list: the active users of the vendor's plant (own plant + Data Access) - params = { plantId } or { plantCode }
+  const get_Buyers = async (params) => {
+    setBuyerTable([]);
+    if (!params) return;
     try {
-      const response = await getPlants();
-      setPlantTable(response.data);
+      const response = await getBuyers(params);
+      setBuyerTable(response.data || []);
     } catch (error) {
-      console.error("Error updating user:", error);
+      console.error("Error loading buyers:", error);
     }
   };
 
   // ✅ Handle Add Modal
   const handleOpenAddModal = (item) => {
-    get_Plant();
-    setPlantCode("");
+    // start on the plant being viewed (or the user's own plant when All is shown); it can be changed in the dialog
+    const start = (plantFilterCode !== null && plants.find((p) => String(p.Plant_Code) === plantFilterCode))
+      || plants.find((p) => Number(p.Is_Default) === 1)
+      || null;
+    setPlantCode(start ? start.Plant_ID : "");
+    get_Buyers(start ? { plantId: start.Plant_ID } : null);
     setVendorCode("");
     setVendorName("");
     setVendorAddress("");
+    setKanbanMail("No");
+    setMailID("");
+    setBuyerID("");
     setActiveStatus(true);
     setOpenAddModal(true);
   };
@@ -154,6 +306,40 @@ const Vendor = () => {
     setIsUploading(false);
   };
 
+  // Template built here (not a fixed file) so the Plant_Code column is a dropdown of the plants THIS user may use, and
+  // Kanban_Mail is a Yes / No dropdown
+  const downloadTemplate = async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "VENDOR_MASTER";
+    workbook.created = new Date();
+    const worksheet = workbook.addWorksheet("Sheet1");
+    worksheet.addRow(["Plant_Code", "Vendor_Code", "Vendor_Name", "Vendor_Address", "Kanban_Mail", "Buyer_ID", "Mail_ID", "Active_Status"]);
+    worksheet.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true };
+      cell.alignment = { horizontal: "center" };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFADD8E6" } };
+    });
+    worksheet.columns = [{ width: 14 }, { width: 16 }, { width: 30 }, { width: 30 }, { width: 14 }, { width: 12 }, { width: 32 }, { width: 14 }];
+    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+    worksheet.getCell("E1").note = "Optional: Yes or No. Blank = No for a new vendor, unchanged for an existing one.";
+    worksheet.getCell("F1").note = "Optional: employee ID of an active user (the buyer). Blank = unchanged.";
+    worksheet.getCell("G1").note = "Optional: e-mail address (several can be separated with ;). Blank = unchanged.";
+    worksheet.getCell("H1").note = "Active or Inactive.";
+
+    const plantCodes = (plants || []).map((p) => `${p.Plant_Code}`); // only the plants this user may use
+    if (plantCodes.length) {
+      worksheet.dataValidations.add("A2:A1000", { type: "list", allowBlank: false, formulae: [`"${plantCodes.join(",")}"`] });
+    }
+    worksheet.dataValidations.add("E2:E1000", { type: "list", allowBlank: true, formulae: ['"Yes,No"'] });
+    worksheet.dataValidations.add("H2:H1000", { type: "list", allowBlank: false, formulae: ['"Active,Inactive"'] });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(
+      new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+      "VendorMaster_Template.xlsx"
+    );
+  };
+
   const handleFileUpload = (event) => {
     setUploadedFile(event.target.files[0]);
   };
@@ -164,6 +350,12 @@ const Vendor = () => {
       return;
     } else {
       try {
+        // Only plants this user may use (own + Data Access): check the Plant_Code column of the file before uploading
+        const { blocked, plants: myPlants } = await findPlantsNotAllowed(uploadedFile, "Plant_Code");
+        if (blocked.length > 0) {
+          alert(plantsNotAllowedMessage(blocked, myPlants));
+          return;
+        }
         const formData = new FormData();
         console.log("file", uploadedFile);
         formData.append("User_Add", uploadedFile);
@@ -202,6 +394,9 @@ const Vendor = () => {
       "Vendor_Name",
       "Vendor_Address",
       "ActiveStatus",
+      "Kanban_Mail",
+      "Buyer_ID",
+      "Mail_ID",
       "Status",
     ];
     const UpdatedColumns = [
@@ -210,6 +405,9 @@ const Vendor = () => {
       "Vendor_Name",
       "Vendor_Address",
       "ActiveStatus",
+      "Kanban_Mail",
+      "Buyer_ID",
+      "Mail_ID",
       "Status",
     ];
     const ErrorColumns = [
@@ -219,9 +417,17 @@ const Vendor = () => {
       "Vendor_Address",
 
       "ActiveStatus",
+      "Kanban_Mail",
+      "Buyer_ID",
+      "Mail_ID",
       "PlantCode_Validation",
+      "Kanban_Validation",
+      "Buyer_Validation",
+      "Mail_Validation",
 
     ];
+    // Kanban_Mail comes back as 1 / 0 (new / updated rows) or as typed in the file (error rows)
+    const kanbanText = (value) => (value === true || value === 1 ? "Yes" : value === false || value === 0 ? "No" : value ?? "");
 
     const filteredNewData = newRecord.map((item) => ({
       Plant_Code: item.Plant_Code,
@@ -229,6 +435,9 @@ const Vendor = () => {
       Vendor_Name: item.Vendor_Name,
       Vendor_Address: item.Vendor_Address,
       ActiveStatus: item.Active_Status,
+      Kanban_Mail: kanbanText(item.Kanban_Mail),
+      Buyer_ID: item.Buyer_ID ?? "",
+      Mail_ID: item.Mail_ID ?? "",
       Status: item.Status,
     }));
 
@@ -238,6 +447,9 @@ const Vendor = () => {
       Vendor_Name: item.Vendor_Name,
       Vendor_Address: item.Vendor_Address,
       ActiveStatus: item.Active_Status,
+      Kanban_Mail: kanbanText(item.Kanban_Mail),
+      Buyer_ID: item.Buyer_ID ?? "",
+      Mail_ID: item.Mail_ID ?? "",
       Status: item.Status,
     }));
 
@@ -247,7 +459,13 @@ const Vendor = () => {
       Vendor_Name: item.Vendor_Name,
       Vendor_Address: item.Vendor_Address,
       ActiveStatus: item.Active_Status,
+      Kanban_Mail: item.Kanban_Mail ?? "",
+      Buyer_ID: item.Buyer_ID ?? "",
+      Mail_ID: item.Mail_ID ?? "",
       PlantCode_Validation: item.Plant_Val,
+      Kanban_Validation: item.Kanban_Val,
+      Buyer_Validation: item.Buyer_Val,
+      Mail_Validation: item.Mail_Val,
 
     }));
 
@@ -269,6 +487,9 @@ const Vendor = () => {
     const styleValidationColumns = (worksheet, columns, dataLength) => {
       const validationCols = [
         "PlantCode_Validation",
+        "Kanban_Validation",
+        "Buyer_Validation",
+        "Mail_Validation",
 
       ];
 
@@ -331,34 +552,79 @@ const Vendor = () => {
     setVendorCode(params.row.Vendor_Code);
     setPlantCode(params.row.Plant_Code);
     setVendorName(params.row.Vendor_Name);
+    setBuyerTable([]);
     setVendorAddress(params.row.Vendor_Address);
+    setKanbanMail(params.row.kanban_mail ? "Yes" : "No");
+    setMailID(params.row.mail_id || "");
+    setBuyerID(params.row.buyer_id || "");
+    get_Buyers({ plantCode: params.row.Plant_Code });
     setActiveStatus(params.row.Active_Status);
     setOpenEditModal(true); // Open the modal
     // get_Plant();
   };
 
-  // ✅ Search Functionality
-  const handleSearch = () => {
+  // Search box + filters, applied live to the loaded vendors (same as User Master)
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [fKanban, setFKanban] = useState("All");
+  const [fBuyer, setFBuyer] = useState("All");
+  const [fStatus, setFStatus] = useState("All");
+  const buyerText = (row) => (row.buyer_id ? (row.buyer_name ? `${row.buyer_id} - ${row.buyer_name}` : String(row.buyer_id)) : "");
+
+  // Same rule as the Manufacturing BOM: only the vendors of the plants this user may use (until the plant list is loaded -
+  // or if it cannot be loaded - nothing is shown, never other plants' rows)
+  const scopedData = useMemo(() => {
+    const allowed = new Set(plants.map((p) => String(p.Plant_Code)));
+    return (originalRows || []).filter((row) => allowed.has(String(row.Plant_Code)));
+  }, [originalRows, plants]);
+  // The Plant filter shows "1150 - RML P4 (RML)" (same label as the Manufacturing BOM) and filters by the plant code
+  const plantFilterCode = fPlant === "All" ? null : String(plants.find((p) => myPlantLabel(p) === fPlant)?.Plant_Code ?? "");
+
+  const visibleRows = useMemo(() => {
     const text = searchText.trim().toLowerCase();
+    return scopedData.filter((row) => {
+      if (plantFilterCode !== null && String(row.Plant_Code) !== plantFilterCode) return false;
+      if (fKanban !== "All" && (fKanban === "Yes") !== !!row.kanban_mail) return false;
+      if (fBuyer !== "All" && buyerText(row) !== fBuyer) return false;
+      if (fStatus !== "All" && (fStatus === "Active") !== !!row.Active_Status) return false;
+      if (!text) return true;
+      return ["Plant_Code", "Vendor_Code", "Vendor_Name", "Vendor_Address", "buyer_id", "buyer_name", "mail_id"].some((key) => {
+        const value = row[key];
+        return value && String(value).toLowerCase().includes(text);
+      });
+    });
+  }, [scopedData, searchText, plantFilterCode, fKanban, fBuyer, fStatus]);
 
-    if (!text) {
-      setRows(originalRows);
-    } else {
-      const filteredRows = originalRows.filter((row) =>
-        [
-          "Plant_Code",
-          "Vendor_Code",
-          "Vendor_Name",
-          "Vendor_Address",
+  const uniq = (list) => [...new Set(list.filter((v) => v !== null && v !== undefined && v !== "").map(String))].sort();
+  // the Plant filter sits in front of the search box (always visible); the badge / "Clear filters" are for the panel filters
+  const activeFilterCount = [fKanban, fBuyer, fStatus].filter((v) => v !== "All").length;
+  const clearFilters = () => { setFKanban("All"); setFBuyer("All"); setFStatus("All"); };
 
-        ].some((key) => {
-          const value = row[key];
-          return value && String(value).toLowerCase().includes(text);
-        })
-      );
-      setRows(filteredRows);
-    }
-  };
+  // dropdown option lists of the dialogs
+  const plantOptions = plants.map((p) => ({ value: p.Plant_ID, label: myPlantLabel(p) }));
+  const plantFilterOptions = plants.map(myPlantLabel);
+  const yesNoOptions = [{ value: "Yes", label: "Yes" }, { value: "No", label: "No" }];
+  // Buyer picker (searchable: the buyers of a plant can be many). A saved buyer that is not in the plant's list any more is
+  // still shown, so the saved value is not lost.
+  const buyerPickerOptions = [
+    ...(BuyerID && !BuyerTable.some((u) => String(u.Employee_ID) === String(BuyerID)) ? [{ id: String(BuyerID), label: String(BuyerID) }] : []),
+    ...BuyerTable.map((u) => ({ id: String(u.Employee_ID), label: `${u.Employee_ID} - ${u.User_Name}` })),
+  ];
+  const buyerPicker = (disabled) => (
+    <Autocomplete
+      size="small"
+      sx={DIALOG_FIELD_SX}
+      ListboxProps={{ style: { fontSize: 12 } }}
+      filterOptions={optionFilter}
+      disabled={disabled}
+      options={buyerPickerOptions}
+      value={buyerPickerOptions.find((o) => o.id === String(BuyerID)) || null}
+      onChange={(e, newVal) => setBuyerID(newVal ? newVal.id : "")}
+      getOptionLabel={(o) => (o ? o.label : "")}
+      isOptionEqualToValue={(o, v) => o.id === v.id}
+      noOptionsText="No buyers found for this plant"
+      renderInput={(params) => <TextField {...params} label="Buyer" placeholder={disabled ? "Select a plant first" : "Search by ID or name"} />}
+    />
+  );
 
   // ✅ Handle Add Material
   const handleAdd = async () => {
@@ -378,6 +644,9 @@ const Vendor = () => {
         Vendor_Code: VendorCode,
         Vendor_Name: VendorName,
         Vendor_Address: VendorAddress,
+        Kanban_Mail: KanbanMail === "Yes",
+        Mail_ID: MailID.trim(),
+        Buyer_ID: BuyerID || null,
         Active_Status: ActiveStatus,
       };
       const response = await getAdd(data);
@@ -409,6 +678,9 @@ const Vendor = () => {
         Vendor_Code: VendorCode,
         Vendor_Name: VendorName,
         Vendor_Address: VendorAddress,
+        Kanban_Mail: KanbanMail === "Yes",
+        Mail_ID: MailID.trim(),
+        Buyer_ID: BuyerID || null,
         Active_Status: ActiveStatus,
       };
 
@@ -448,6 +720,10 @@ const Vendor = () => {
       "Vendor_Code",
       "Vendor_Name",
       "Vendor_Address",
+      "KanbanMail",
+      "Mail_ID",
+      "Buyer_ID",
+      "Buyer_Name",
 
       "ActiveStatus",
     ];
@@ -457,6 +733,10 @@ const Vendor = () => {
       Vendor_Code: item.Vendor_Code,
       Vendor_Name: item.Vendor_Name,
       Vendor_Address: item.Vendor_Address,
+      KanbanMail: item.kanban_mail ? "Yes" : "No",
+      Mail_ID: item.mail_id || "",
+      Buyer_ID: item.buyer_id || "",
+      Buyer_Name: item.buyer_name || "",
       ActiveStatus: item.Active_Status ? "Active" : "Inactive"
     }));
 
@@ -468,6 +748,9 @@ const Vendor = () => {
       { wch: 20 },
       { wch: 30 },
       { wch: 30 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 28 },
       { wch: 20 },
     ];
     // Style header row
@@ -496,524 +779,238 @@ const Vendor = () => {
   return (
     <div
       style={{
-        padding: 20,
+        padding: "20px 20px",
         backgroundColor: "#F5F5F5",
         marginTop: "50px",
         display: "flex",
         flexDirection: "column",
-        height: "calc(100vh - 90px)", // or a specific height if necessary
+        height: "calc(100vh - 50px)",
       }}
     >
-      {/* Header Section */}
+      <Typography sx={{ fontSize: 17, fontWeight: 700, color: "#1a2233", letterSpacing: 0.1, lineHeight: 1.3, mb: 1.5 }}>
+        Vendor Master
+      </Typography>
+
+      {/* Search, filters and actions */}
       <div
         style={{
-          marginBottom: 20,
+          backgroundColor: "#fff",
+          borderRadius: 8,
+          border: "1px solid #e8eaee",
+          boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
+          padding: "7px 10px",
+          marginBottom: 6,
           display: "flex",
-          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 8,
           alignItems: "center",
         }}
       >
-        {/* <h2
-          style={{
-            margin: 0,
-            color: "#2e59d9",
-            textDecoration: "underline",
-            textDecorationColor: "#88c57a",
-            textDecorationThickness: "3px",
-            marginBottom: -7,
-          }}
+        <FilterSelect label="Plant" value={plantSelect} options={plantFilterOptions} onChange={setPlantSelect} minWidth={190} />
+        <Button
+          onClick={handleSearch}
+          disabled={loading}
+          variant="contained"
+          disableElevation
+          startIcon={loading ? <CircularProgress size={12} color="inherit" /> : <SearchIcon sx={{ fontSize: 16 }} />}
+          sx={primaryButtonSx}
         >
-          Vendor Master
-        </h2> */}
+          {loading ? "Loading..." : "Search"}
+        </Button>
+        <TextField
+          size="small"
+          placeholder="Search plant, vendor, address, buyer, mail"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          InputProps={{ startAdornment: <SearchIcon sx={{ fontSize: 16, color: "#8a93a3", mr: 0.5 }} /> }}
+          sx={compactFieldSx(300)}
+        />
+        <FilterToggleButton open={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)} activeCount={activeFilterCount} />
 
-        <SectionHeading>
-          Vendor Master
-        </SectionHeading>
-      </div>
+        <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: "#6b7280", whiteSpace: "nowrap" }}>
+          {visibleRows.length === scopedData.length ? `${scopedData.length} vendors` : `${visibleRows.length} of ${scopedData.length} vendors`}
+        </span>
+        <Button
+          onClick={handleOpenUploadModal}
+          variant="outlined"
+          disableElevation
+          startIcon={<CloudUploadIcon sx={{ fontSize: 16 }} />}
+          sx={outlineButtonSx}
+        >
+          Upload
+        </Button>
+        <Button
+          onClick={handleDownloadExcel}
+          variant="contained"
+          disableElevation
+          startIcon={<FaFileExcel size={13} />}
+          sx={successButtonSx}
+        >
+          Excel
+        </Button>
+        <Button
+          onClick={handleOpenAddModal}
+          variant="contained"
+          disableElevation
+          startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+          sx={primaryButtonSx}
+        >
+          Add Vendor
+        </Button>
 
-      {/* Search and Icons */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 10,
-        }}
-      >
-        {/* Search Box */}
-        <div style={{ display: "flex", gap: "10px" }}>
-          <TextField
-            size="small"
-            variant="outlined"
-            placeholder="Type here..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onKeyUp={handleSearch}
-            sx={{
-              width: "400px",
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  border: "2px solid grey", // No border by default
-                },
-                "&:hover fieldset": {
-                  border: "2px solid grey", // Optional: border on hover
-                },
-                "&.Mui-focused fieldset": {
-                  border: "2px solid grey", // Grey border on focus
-                },
-              },
-            }}
-          />
-          <Button
-            onClick={handleSearch}
-            style={{
-              borderRadius: "25px",
-              border: "2px solid grey",
-              color: "grey",
-              fontWeight: "bold",
-            }}
-          >
-            <SearchIcon style={{ marginRight: "5px" }} />
-            Search
-          </Button>
-        </div>
-
-        {/* Icons */}
-        <div style={{ display: "flex", gap: "10px" }}>
-          {/* Upload Button */}
-          <IconButton
-            onClick={handleOpenUploadModal}
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#FF6699",
-              color: "white",
-              width: "40px",
-              height: "40px",
-            }}
-          >
-            <CloudUploadIcon />
-          </IconButton>
-
-          {/* Download Button */}
-          <IconButton
-            onClick={handleDownloadExcel}
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#339900",
-              color: "white",
-              width: "40px",
-              height: "40px",
-            }}
-          >
-            <FaFileExcel size={18} />
-          </IconButton>
-
-          {/* Add Button */}
-          <IconButton
-            onClick={handleOpenAddModal}
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#0066FF",
-              color: "white",
-              width: "40px",
-              height: "40px",
-            }}
-          >
-            <AddIcon />
-          </IconButton>
-        </div>
+        <FilterPanel open={filtersOpen} activeCount={activeFilterCount} onClear={clearFilters}>
+          <FilterSelect label="Kanban Mail" value={fKanban} options={["Yes", "No"]} onChange={setFKanban} minWidth={130} isSearchable={false} />
+          <FilterSelect label="Buyer" value={fBuyer} options={uniq(scopedData.map(buyerText))} onChange={setFBuyer} minWidth={190} />
+          <FilterSelect label="Status" value={fStatus} options={["Active", "Inactive"]} onChange={setFStatus} minWidth={120} isSearchable={false} />
+        </FilterPanel>
       </div>
 
       {/* DataGrid */}
       <div
         style={{
-          flexGrow: 1, // Ensures it grows to fill the remaining space
+          flexGrow: 1,
           backgroundColor: "#fff",
           borderRadius: 8,
-          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-          height: "calc(5 * 48px)",
+          border: "1px solid #e8eaee",
+          boxShadow: "0 1px 3px rgba(16,24,40,0.05)",
+          minHeight: 0,
+          overflow: "hidden",
         }}
       >
         <DataGrid
-          rows={rows}
+          rows={visibleRows}
+          loading={loading}
           columns={columns}
-          pageSize={5} // Set the number of rows per page to 8
-          rowsPerPageOptions={[5]}
-          getRowId={(row) => row.Vendor_ID} // Specify a custom id field
+          getRowId={(row) => row.Vendor_ID}
           onRowClick={handleRowClick}
-          disableSelectionOnClick
+          disableRowSelectionOnClick
+          columnHeaderHeight={36}
+          rowHeight={38}
+          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+          pageSizeOptions={[25, 50, 100]}
           slots={{ toolbar: CustomToolbar }}
-          sx={{
-            // Header Style
-            "& .MuiDataGrid-columnHeader": {
-              backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
-              color: "black",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-columnHeaderTitle": {
-              fontSize: "16px",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-row": {
-              backgroundColor: "#f5f5f5", // Default row background
-              "&:hover": {
-                backgroundColor: "#f5f5f5",
-              },
-            },
-            // ✅ Remove Selected Row Background
-            "& .MuiDataGrid-row.Mui-selected": {
-              backgroundColor: "inherit", // No background on selection
-            },
-
-            "& .MuiDataGrid-cell": {
-              color: "#333",
-              fontSize: "14px",
-            },
-          }}
+          localeText={{ noRowsLabel: "No vendors found." }}
+          sx={compactGridSx}
         />
       </div>
 
-      <Modal open={openAddModal} onClose={() => setOpenAddModal(false)}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            width: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            gap: "15px",
+      {/* Add Vendor */}
+      <FormDialog
+        open={openAddModal}
+        title="Add Vendor"
+        onClose={() => setOpenAddModal(false)}
+        actions={
+          <>
+            <Button variant="outlined" onClick={() => handleCloseAddModal(false)} sx={outlineButtonSx}>Cancel</Button>
+            <Button variant="contained" disableElevation onClick={handleAdd} sx={{ ...primaryButtonSx, minWidth: 70 }}>Add</Button>
+          </>
+        }
+      >
+        <SelectField
+          label="Plant Code"
+          value={PlantCode}
+          onChange={(e) => {
+            setPlantCode(e.target.value);
+            setBuyerID(""); // the buyers belong to the plant
+            get_Buyers({ plantId: e.target.value });
           }}
-        >
-          <h3
-            style={{
-              gridColumn: "span 2",
-              textAlign: "center",
-              color: "#2e59d9",
-              textDecoration: "underline",
-              textDecorationColor: "#88c57a",
-              textDecorationThickness: "3px",
-            }}
-          >
-            Add Vendors
-          </h3>
-          <FormControl fullWidth>
-            <InputLabel>Plant Code</InputLabel>
-            <Select
-              label="Plant Code"
-              name="PlantCode"
-              value={PlantCode}
-              onChange={(e) => setPlantCode(e.target.value)}
-              required
-            >
-              {PlantTable.map((item, index) => (
-                <MenuItem key={index} value={item.Plant_Id}>
-                  {item.Plant_Code}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          options={plantOptions}
+        />
+        <TextInput
+          label="Vendor Code"
+          value={VendorCode}
+          onChange={(e) => {
+            // digits only (unchanged rule)
+            const value = e.target.value;
+            if (/^\d*$/.test(value)) setVendorCode(value);
+          }}
+          inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
+        />
+        <TextInput label="Vendor Name" value={VendorName} onChange={(e) => setVendorName(e.target.value)} />
+        <TextInput label="Vendor Address" value={VendorAddress} onChange={(e) => setVendorAddress(e.target.value)} />
+        <SelectField label="Kanban Mail" value={KanbanMail} onChange={(e) => setKanbanMail(e.target.value)} options={yesNoOptions} />
+        <TextInput
+          label="Mail ID"
+          value={MailID}
+          onChange={(e) => setMailID(e.target.value)}
+          placeholder="name@company.com (several: ;)"
+          inputProps={{ maxLength: 200 }}
+        />
+        <Box sx={{ gridColumn: "span 2" }}>{buyerPicker(!PlantCode)}</Box>
+        <Box sx={{ gridColumn: "span 2" }}>
+          <ActiveSwitch checked={!!ActiveStatus} onChange={(e) => setActiveStatus(e.target.checked)} />
+        </Box>
+      </FormDialog>
 
-          <TextField
-            label="VendorCode"
-            name="VendorCode"
-            value={VendorCode}
-            type="text"
-            onChange={(e) => {
-              const value = e.target.value;
-              // Remove any non-digit character
-              if (/^\d*$/.test(value)) {
-                setVendorCode(value);
-              }
-            }}
-            inputProps={{
-              inputMode: 'numeric', pattern: '[0-9]*',
-              // maxLength: 4,
+      {/* Edit Vendor */}
+      <FormDialog
+        open={openEditModal}
+        title="Edit Vendor"
+        onClose={() => setOpenEditModal(false)}
+        actions={
+          <>
+            <Button variant="outlined" onClick={handleCloseEditModal} sx={outlineButtonSx}>Cancel</Button>
+            <Button variant="contained" disableElevation onClick={handleUpdate} sx={{ ...primaryButtonSx, minWidth: 70 }}>Update</Button>
+          </>
+        }
+      >
+        <TextInput label="Plant Code" value={PlantCode} readOnly />
+        <TextInput label="Vendor Code" value={VendorCode} readOnly />
+        <TextInput label="Vendor Name" value={VendorName} onChange={(e) => setVendorName(e.target.value)} />
+        <TextInput label="Vendor Address" value={VendorAddress} onChange={(e) => setVendorAddress(e.target.value)} />
+        <SelectField label="Kanban Mail" value={KanbanMail} onChange={(e) => setKanbanMail(e.target.value)} options={yesNoOptions} />
+        <TextInput
+          label="Mail ID"
+          value={MailID}
+          onChange={(e) => setMailID(e.target.value)}
+          placeholder="name@company.com (several: ;)"
+          inputProps={{ maxLength: 200 }}
+        />
+        <Box sx={{ gridColumn: "span 2" }}>{buyerPicker(false)}</Box>
+        <Box sx={{ gridColumn: "span 2" }}>
+          <ActiveSwitch checked={!!ActiveStatus} onChange={(e) => setActiveStatus(e.target.checked)} />
+        </Box>
+      </FormDialog>
 
-            }}
-            required
-          />
-
-
-          <TextField
-            label="VendorName"
-            name="VendorName"
-            value={VendorName}
-            onChange={(e) => setVendorName(e.target.value)}
-            required
-          />
-          <TextField
-            label="VendorAddress"
-            name="VendorAddress"
-            value={VendorAddress}
-            onChange={(e) => setVendorAddress(e.target.value)}
-            required
-          />
-
-          <FormControlLabel
-            control={
-              <Switch
-                checked={ActiveStatus}
-                onChange={(e) => setActiveStatus(e.target.checked)}
-                color="success" // Always use 'success' to keep the thumb green when active
-                sx={{
-                  "& .MuiSwitch-track": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                    backgroundImage: "none !important", // Disable background image
-                  },
-                  "& .MuiSwitch-thumb": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                    borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                  },
-                }}
-              />
-            }
-            label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-            labelPlacement="end"
-            style={{
-              color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-              fontWeight: "bold",
-            }}
-          />
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            <Button
-              variant="contained"
-              color="error"
-              onClick={() => handleCloseAddModal(false)}
-            >
-              Cancel
+      {/* Upload */}
+      <FormDialog
+        open={openUploadModal}
+        title="Vendor Master Excel Upload"
+        onClose={handleCloseUploadModal}
+        actions={
+          <>
+            <Button variant="outlined" onClick={handleCloseUploadModal} sx={outlineButtonSx}>Close</Button>
+            <Button variant="contained" disableElevation onClick={handleUploadData} disabled={isUploading} sx={{ ...primaryButtonSx, minWidth: 70 }}>
+              {isUploading ? "Uploading..." : "Upload"}
             </Button>
-            <Button
-              style={{ width: "90px" }}
-              variant="contained"
-              color="primary"
-              onClick={handleAdd}
-            >
-              Add
+          </>
+        }
+      >
+        <Box sx={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: 1.25 }}>
+          <Box>
+            <Button variant="outlined" onClick={downloadTemplate} startIcon={<FaDownload size={12} />} sx={outlineButtonSx}>
+              Download Template
             </Button>
           </Box>
-        </Box>
-      </Modal>
-
-      {/* ✅ Edit Modal */}
-      <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            width: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            gap: "15px",
-          }}
-        >
-          <h3
-            style={{
-              gridColumn: "span 2",
-              textAlign: "center",
-              color: "#2e59d9",
-              textDecoration: "underline",
-              textDecorationColor: "#88c57a",
-              textDecorationThickness: "3px",
-            }}
-          >
-            Edit Vendor
-          </h3>
-          <TextField
-            label="Plant Code"
-            name="Plant_Code"
-            value={PlantCode}
-            onChange={(e) => setPlantCode(e.target.value)}
-            InputProps={{
-              readOnly: true,  // This makes the TextField read-only
-            }}
-          />
-
-          <TextField
-            label="VendorCode"
-            name="VendorCode"
-            value={VendorCode}
-            onChange={(e) => setVendorCode(e.target.value)}
-            InputProps={{
-              readOnly: true,  // This makes the TextField read-only
-            }}
-          />
-          <TextField
-            label="VendorName"
-            name="VendorName"
-            value={VendorName}
-            onChange={(e) => setVendorName(e.target.value)}
-            required
-          />
-          <TextField
-            label="VendorAddress"
-            name="VendorAddress"
-            value={VendorAddress}
-            onChange={(e) => setVendorAddress(e.target.value)}
-            required
-          />
-
-          <FormControlLabel
-            control={
-              <Switch
-                checked={ActiveStatus}
-                onChange={(e) => setActiveStatus(e.target.checked)}
-                color="success" // Always use 'success' to keep the thumb green when active
-                sx={{
-                  "& .MuiSwitch-track": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Green when active, Red when inactive
-                    backgroundImage: "none !important", // Disable background image
-                  },
-                  "& .MuiSwitch-thumb": {
-                    backgroundColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // White thumb in both active and inactive states
-                    borderColor: ActiveStatus ? "#2e7d32" : "#d32f2f", // Match thumb border with track color
-                  },
-                }}
-              />
-            }
-            label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-            labelPlacement="end"
-            style={{
-              color: ActiveStatus ? "#2e7d32" : "#d32f2f", // Change text color based on status
-              fontWeight: "bold",
-            }}
-          />
-
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleCloseEditModal}
-            >
-              Cancel
-            </Button>
-            <Button variant="contained" color="primary" onClick={handleUpdate}>
-              Update
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
-      {/* upload modal */}
-
-      <Modal open={openUploadModal} onClose={handleCloseUploadModal}>
-        <Box
-          sx={{
-            width: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            textAlign: "center",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "22px",
-              textAlign: "center",
-              marginBottom: "20px",
-              color: "#2e59d9",
-              textDecoration: "underline",
-              textDecorationColor: "#88c57a",
-              textDecorationThickness: "3px",
-            }}
-          >
-            Vendor Master  Excel File Upload
-          </h3>
-
-          <Button
-            variant="contained"
-            style={{
-              marginBottom: "10px",
-              backgroundColor: deepPurple[500],
-              color: "white",
-            }}
-          >
-            <a
-              style={{ textDecoration: "none", color: "white" }}
-              href={`${api}/Master/Template/VendorMaster.xlsx`}
-            >
-              {" "}
-              <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
-            </a>{" "}
-          </Button>
           <input
             type="file"
             accept=".xlsx, .xls"
             onChange={handleFileUpload}
             style={{
-              padding: "8px",
-              backgroundColor: "white", // ✅ Blue background
-              color: "black",
-              border: "1px solid black",
-              borderRadius: "5px",
+              fontSize: 11,
+              padding: "6px 8px",
+              backgroundColor: "#fafbfc",
+              border: "1px dashed #dde1e7",
+              borderRadius: 6,
               cursor: "pointer",
-              width: "240px",
-              marginTop: "10px",
             }}
           />
-
-
-
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            {/* ✅ Close Button */}
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleCloseUploadModal}
-              style={{ marginTop: "10px", width: "25%" }}
-            >
-              Close
-            </Button>
-            {/* ✅ Upload Button */}
-            <Button
-              variant="contained"
-              onClick={handleUploadData}
-              disabled={isUploading}
-              style={{
-                marginTop: "10px",
-                width: "25%",
-                color: "white",
-                backgroundColor: "blue",
-              }}
-            >
-              Upload
-            </Button>
-          </Box>
+          <span style={{ fontSize: 11, lineHeight: 1.5, color: "#6b7280" }}>
+            Columns: Plant_Code, Vendor_Code, Vendor_Name, Vendor_Address, the optional Kanban_Mail (Yes / No), Buyer_ID and Mail_ID, and Active_Status (Active / Inactive).
+            A vendor that already exists is updated; a new one is added. A blank optional cell keeps the saved value.
+          </span>
         </Box>
-      </Modal>
+      </FormDialog>
     </div>
   );
 };

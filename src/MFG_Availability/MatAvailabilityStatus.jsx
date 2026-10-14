@@ -1018,6 +1018,7 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [plantStockAsOf, setPlantStockAsOf] = useState(null);
+  const [excelLoading, setExcelLoading] = useState(false);
 
   useEffect(() => {
     const loadFilters = async () => {
@@ -1147,6 +1148,107 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
     return FIXED_COLS_TOTAL_WIDTH + opCount * IH_OP_COL_WIDTH + IH_SET_OF_PARTS_WIDTH;
   }, [partNameGroups]);
 
+  // Excel of the Production-IH report as it is on screen (same rows as the search box shows, same columns:
+  // fixed columns, each Part Name group with its operations, Set of Parts, a TOTAL row) + a child-part detail sheet.
+  const handleDownloadExcel = () => {
+    if (excelLoading) return;
+    if (filteredRows.length === 0) {
+      toast.warning("No data available to export.");
+      return;
+    }
+    setExcelLoading(true);
+    try {
+      const fixedCols = ["SI", "Plant", "Line", "FG Part No", "FG Part Description", "Monthly Plan", "MTD Plan", "MTD Actual", "Gap"];
+      // the label goes in row 1: a merged cell only shows its top-left cell
+      const row1 = [...fixedCols];
+      const row2 = fixedCols.map(() => "");
+      partNameGroups.forEach((group) => {
+        row1.push(group.part_name_label, ...Array(Math.max(group.ops.length - 1, 0)).fill(""));
+        group.ops.forEach((op) => row2.push(op.opt_name));
+      });
+      row1.push("Set of Parts");
+      row2.push("");
+
+      const aoa = [row1, row2];
+      filteredRows.forEach((r, i) => {
+        const line = [i + 1, r.plant, r.line_name || "", r.fg_part_no, r.fg_desc, r.monthly_plan, r.mtd_plan, r.mtd_actual, r.gap];
+        partNameGroups.forEach((group) => group.ops.forEach((op) => {
+          const v = r[`op_${op.col_key}_ih`];
+          line.push(v === undefined || v === null ? "" : v);
+        }));
+        line.push(r.set_of_parts === undefined || r.set_of_parts === null ? "" : r.set_of_parts);
+        aoa.push(line);
+      });
+      const sum = (key) => filteredRows.reduce((t, r) => t + (Number(r[key]) || 0), 0);
+      const opCount = partNameGroups.reduce((n, g) => n + g.ops.length, 0);
+      aoa.push(["", "", "", "TOTAL", `${filteredRows.length} FG`, sum("monthly_plan"), sum("mtd_plan"), sum("mtd_actual"), sum("gap"), ...Array(opCount + 1).fill("")]);
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      const lastCol = row1.length - 1;
+      ws["!merges"] = fixedCols.map((_, c) => ({ s: { r: 0, c }, e: { r: 1, c } }));
+      let c0 = fixedCols.length;
+      partNameGroups.forEach((group) => {
+        if (group.ops.length > 1) ws["!merges"].push({ s: { r: 0, c: c0 }, e: { r: 0, c: c0 + group.ops.length - 1 } });
+        c0 += group.ops.length;
+      });
+      ws["!merges"].push({ s: { r: 0, c: lastCol }, e: { r: 1, c: lastCol } });
+      ws["!cols"] = [{ wch: 5 }, { wch: 8 }, { wch: 14 }, { wch: 16 }, { wch: 30 }, { wch: 13 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, ...Array(opCount).fill({ wch: 13 }), { wch: 12 }];
+      ws["!freeze"] = { xSplit: 5, ySplit: 2 };
+      const headStyle = { font: { bold: true }, fill: { fgColor: { rgb: "DCE6F1" } }, alignment: { horizontal: "center", vertical: "center", wrapText: true } };
+      for (let r = 0; r <= 1; r++) for (let c = 0; c <= lastCol; c++) {
+        const cell = ws[XLSX.utils.encode_cell({ r, c })];
+        if (cell) cell.s = headStyle;
+      }
+      const totalRow = aoa.length - 1;
+      for (let c = 0; c <= lastCol; c++) {
+        const cell = ws[XLSX.utils.encode_cell({ r: totalRow, c })];
+        if (cell) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: "E6EDFA" } } };
+      }
+
+      const detail = [];
+      filteredRows.forEach((r) => {
+        (r.all_children || []).forEach((child) => {
+          detail.push({
+            Plant: r.plant,
+            Line: r.line_name || "",
+            "FG Part No": r.fg_part_no,
+            "FG Description": r.fg_desc,
+            "Child Part": child.child_part_no,
+            "Child Description": child.child_desc,
+            "Part Name": child.part_name_label,
+            Operation: child.opt_name,
+            "IH (Plant) Qty": child.plant_qty,
+          });
+        });
+      });
+      const detailSheet = XLSX.utils.json_to_sheet(detail);
+      if (detail.length > 0) {
+        Object.keys(detail[0]).forEach((_, c) => {
+          const cell = detailSheet[XLSX.utils.encode_cell({ r: 0, c })];
+          if (cell) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: "FFF4CC" } }, alignment: { horizontal: "center" } };
+        });
+        detailSheet["!cols"] = [{ wch: 8 }, { wch: 14 }, { wch: 16 }, { wch: 30 }, { wch: 18 }, { wch: 30 }, { wch: 14 }, { wch: 16 }, { wch: 14 }];
+      }
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Production-IH");
+      XLSX.utils.book_append_sheet(wb, detailSheet, "Child Part Detail");
+      const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `Production_IH_${plant}_${month}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(link.href);
+      toast.success("Excel downloaded successfully.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to generate Excel file.");
+    } finally {
+      setExcelLoading(false);
+    }
+  };
+
   return (
     <>
       <div
@@ -1219,6 +1321,16 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
             sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc" } }}
           >
             {loading ? "Loading..." : "Search"}
+          </Button>
+          <Button
+            onClick={handleDownloadExcel}
+            disabled={excelLoading || loading}
+            variant="contained"
+            disableElevation
+            startIcon={excelLoading ? <CircularProgress size={12} color="inherit" /> : <FaFileExcel size={13} />}
+            sx={{ ...compactButtonSx, backgroundColor: "#1B7A43", "&:hover": { backgroundColor: "#166238" } }}
+          >
+            {excelLoading ? "Exporting..." : "Export Excel"}
           </Button>
         </div>
       </div>

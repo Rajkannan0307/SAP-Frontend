@@ -36,6 +36,26 @@ import LineSelect from '../components/LineSelect';
 import SectionHeading from "../components/Header";
 import { MaterialGroupEnumTypes } from "../common/enumValues";
 
+// safety_stock / max_stock: mandatory only for material type ROH; when given they must be numbers,
+// never negative, and max >= safety (the API and the database procedures enforce the same rules).
+const getStockError = (materialType, safetyStock, maxStock) => {
+  const safetyTxt = String(safetyStock ?? "").trim();
+  const maxTxt = String(maxStock ?? "").trim();
+  if (String(materialType || "").trim().toUpperCase() === "ROH" && (safetyTxt === "" || maxTxt === "")) {
+    return "Safety Stock and Max Stock are mandatory for material type ROH.";
+  }
+  const isNumber = (t) => /^-?\d+(\.\d+)?$/.test(t);
+  if ((safetyTxt !== "" && !isNumber(safetyTxt)) || (maxTxt !== "" && !isNumber(maxTxt))) {
+    return "Safety Stock and Max Stock must be numbers.";
+  }
+  if ((safetyTxt !== "" && Number(safetyTxt) < 0) || (maxTxt !== "" && Number(maxTxt) < 0)) {
+    return "Safety Stock and Max Stock cannot be negative.";
+  }
+  if (safetyTxt !== "" && maxTxt !== "" && Number(maxTxt) < Number(safetyTxt)) {
+    return "Max Stock cannot be less than Safety Stock.";
+  }
+  return "";
+};
 
 const Material = () => {
   const [searchText, setSearchText] = useState("");
@@ -65,6 +85,8 @@ const Material = () => {
   const [MaterialID, setMaterialID] = useState("");
   const [Description, setDescription] = useState("");
   const [Rate, setRate] = useState("");
+  const [SafetyStock, setSafetyStock] = useState("");
+  const [MaxStock, setMaxStock] = useState("");
   const [ActiveStatus, setActiveStatus] = useState(false);
   const [PlantTable, setPlantTable] = useState([]);
   const [MaterialTable, setMaterialTable] = useState([])
@@ -84,6 +106,8 @@ const Material = () => {
     { field: "Line_Name", headerName: "Line", flex: 1 },
 
     { field: "Rate", headerName: "Rate", flex: 1 },
+    { field: "safety_stock", headerName: "Safety Stock", flex: 1 },
+    { field: "max_stock", headerName: "Max Stock", flex: 1 },
     {
       field: "ActiveStatus",
       headerName: "Active Status",
@@ -207,6 +231,8 @@ const Material = () => {
     setLineID("");
 
     setRate("");
+    setSafetyStock("");
+    setMaxStock("");
     setActiveStatus(true);
     setOpenAddModal(true);
     get_Plant();
@@ -236,7 +262,7 @@ const Material = () => {
     workbook.creator = 'MATERIAL_MASTER';
     workbook.created = new Date();
 
-    const headers = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Active_Status', 'Line_Name'];
+    const headers = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Active_Status', 'Line_Name', 'Safety_Stock', 'Max_Stock'];
     const worksheet = workbook.addWorksheet('MATERIAL');
     worksheet.addRow(headers);
     worksheet.getRow(1).eachCell((cell) => {
@@ -252,8 +278,22 @@ const Material = () => {
       { width: 12 }, // Rate
       { width: 14 }, // Active_Status
       { width: 22 }, // Line_Name (optional)
+      { width: 14 }, // Safety_Stock (mandatory for ROH)
+      { width: 14 }, // Max_Stock (mandatory for ROH)
     ];
     worksheet.views = [{ state: 'frozen', ySplit: 1 }];
+    // Safety_Stock / Max_Stock: mandatory for material type ROH, optional for the others; 0 or more
+    worksheet.getCell('H1').note = 'Mandatory for material type ROH. Number, 0 or more.';
+    worksheet.getCell('I1').note = 'Mandatory for material type ROH. Number, 0 or more. Not less than Safety_Stock.';
+    worksheet.dataValidations.add('H2:I1000', {
+      type: 'decimal',
+      operator: 'greaterThanOrEqual',
+      formulae: [0],
+      allowBlank: true,
+      showErrorMessage: true,
+      errorTitle: 'Invalid value',
+      error: 'Enter a number, 0 or more.',
+    });
 
     const plantCodes = (PlantTable || []).map((p) => `${p.Plant_Code}`);
     const materialTypes = (MaterialTable || []).map((m) => m.Mat_Type || m.Material_Type).filter(Boolean);
@@ -350,9 +390,9 @@ const Material = () => {
   const downloadExcel = (newRecord, updateRecord, errRecord) => {
     const wb = XLSX.utils.book_new();
 
-    const newRecordsColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'ActiveStatus', 'Status'];
-    const UpdatedColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'ActiveStatus', 'Status'];
-    const ErrorColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation'];
+    const newRecordsColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'ActiveStatus', 'Status'];
+    const UpdatedColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'ActiveStatus', 'Status'];
+    const ErrorColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation'];
 
     const filteredNewData = newRecord.map(item => ({
       Plant_Code: item.Plant_Code,
@@ -361,6 +401,8 @@ const Material = () => {
       Material_Code: item.Material_Code,
       Description: item.Description,
       Rate: item.Rate,
+      Safety_Stock: item.safety_stock,
+      Max_Stock: item.max_stock,
       ActiveStatus: item.Active_Status,
       Status: item.Status,
     }));
@@ -372,6 +414,8 @@ const Material = () => {
       Material_Code: item.Material_Code,
       Description: item.Description,
       Rate: item.Rate,
+      Safety_Stock: item.safety_stock,
+      Max_Stock: item.max_stock,
       ActiveStatus: item.Active_Status,
       Status: item.Status,
     }));
@@ -384,9 +428,12 @@ const Material = () => {
 
       Description: item.Description,
       Rate: item.Rate,
+      Safety_Stock: item.Safety_Stock,
+      Max_Stock: item.Max_Stock,
       ActiveStatus: item.Active_Status,
       PlantCode_Validation: item.Plant_Val,
       Material_Type_Validation: item.Material_Val,
+      Stock_Validation: item.Stock_Val,
     }));
 
     // ðŸ”¹ Helper to style header cells
@@ -405,7 +452,7 @@ const Material = () => {
 
     // ðŸ”´ Style red text for validation columns only
     const styleValidationColumns = (worksheet, columns, dataLength) => {
-      const validationCols = ['PlantCode_Validation', 'Material_Type_Validation'];
+      const validationCols = ['PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation'];
 
       for (let row = 1; row <= dataLength; row++) {
         validationCols.forEach(colName => {
@@ -469,6 +516,8 @@ const Material = () => {
 
     setDescription(params.row.Description);
     setRate(params.row.Rate);
+    setSafetyStock(params.row.safety_stock ?? "");
+    setMaxStock(params.row.max_stock ?? "");
     setActiveStatus(params.row.Active_Status);
     setLineID(params.row.Line_ID || "");
     setOpenEditModal(true);  // Open the modal
@@ -506,6 +555,11 @@ const Material = () => {
       alert("Please fill in all required fields");
       return;  // Exit the function if validation fails
     }
+    const stockError = getStockError(MaterialType, SafetyStock, MaxStock);
+    if (stockError) {
+      alert(stockError);
+      return;
+    }
 
     try {
       const data = {
@@ -516,6 +570,8 @@ const Material = () => {
         Material_Code: MaterialCode,
         Description: Description,
         Rate: Rate,
+        Safety_Stock: String(SafetyStock).trim() === "" ? null : SafetyStock,
+        Max_Stock: String(MaxStock).trim() === "" ? null : MaxStock,
         Active_Status: ActiveStatus,
         Line_ID: LineID || null,
       }
@@ -539,6 +595,11 @@ const Material = () => {
     }
   };
   const handleUpdate = async () => {
+    const stockError = getStockError(MaterialType, SafetyStock, MaxStock);
+    if (stockError) {
+      alert(stockError);
+      return;
+    }
     try {
       const data = {
         UserID: UserID,
@@ -547,6 +608,8 @@ const Material = () => {
         Description: Description,
         Material_Type: MaterialType,
         Rate: Rate,
+        Safety_Stock: String(SafetyStock).trim() === "" ? null : SafetyStock,
+        Max_Stock: String(MaxStock).trim() === "" ? null : MaxStock,
         Active_Status: ActiveStatus,
         Line_ID: LineID || null,
         // UserID: userID,  // Ensure the UserID is also included
@@ -583,7 +646,7 @@ const Material = () => {
       return;
     }
 
-    const DataColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'ActiveStatus'];
+    const DataColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'ActiveStatus'];
 
     const filteredData = data.map(item => ({
       Plant_Code: item.Plant_Code,
@@ -593,6 +656,8 @@ const Material = () => {
 
       Description: item.Description,
       Rate: item.Rate,
+      Safety_Stock: item.safety_stock,
+      Max_Stock: item.max_stock,
       ActiveStatus: item.Active_Status ? "Active" : "Inactive"
     }));
 
@@ -604,6 +669,8 @@ const Material = () => {
 
       { wch: 30 },
       { wch: 20 },
+      { wch: 16 },
+      { wch: 16 },
       { wch: 20 },
     ];
     // Style header row
@@ -879,6 +946,25 @@ const Material = () => {
             inputProps={{ min: 0 }}
             required
           />
+          {/* mandatory only for material type ROH */}
+          <TextField size="small"
+            label="Safety Stock"
+            name="SafetyStock"
+            type="number"
+            value={SafetyStock}
+            onChange={(e) => setSafetyStock(e.target.value)}
+            inputProps={{ min: 0, step: "any" }}
+            required={String(MaterialType).toUpperCase() === "ROH"}
+          />
+          <TextField size="small"
+            label="Max Stock"
+            name="MaxStock"
+            type="number"
+            value={MaxStock}
+            onChange={(e) => setMaxStock(e.target.value)}
+            inputProps={{ min: 0, step: "any" }}
+            required={String(MaterialType).toUpperCase() === "ROH"}
+          />
 
 
 
@@ -1017,6 +1103,25 @@ const Material = () => {
             onChange={(e) => setRate(e.target.value)}
             inputProps={{ min: 0 }}
             required
+          />
+          {/* mandatory only for material type ROH */}
+          <TextField size="small"
+            label="Safety Stock"
+            name="SafetyStock"
+            type="number"
+            value={SafetyStock}
+            onChange={(e) => setSafetyStock(e.target.value)}
+            inputProps={{ min: 0, step: "any" }}
+            required={String(MaterialType).toUpperCase() === "ROH"}
+          />
+          <TextField size="small"
+            label="Max Stock"
+            name="MaxStock"
+            type="number"
+            value={MaxStock}
+            onChange={(e) => setMaxStock(e.target.value)}
+            inputProps={{ min: 0, step: "any" }}
+            required={String(MaterialType).toUpperCase() === "ROH"}
           />
 
           <FormControlLabel

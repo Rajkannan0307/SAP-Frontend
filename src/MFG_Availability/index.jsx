@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { TextField, Button, IconButton, MenuItem, CircularProgress } from "@mui/material";
 import {
   DataGrid,
@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import SectionHeading from "../components/Header";
 import { compactFieldSx, compactButtonSx } from "../components/MfgListScreen";
 import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
+import { AuthContext } from "../Authentication/AuthContext";
 import { GetMfgBomListApi, GetMfgBomExportApi } from "../controller/MfgBomApiService";
 import AddEditMfgBomDialog from "./AddEditMfgBom";
 import MfgBomBulkUpload from "./BulkUploadMfgBom";
@@ -43,8 +44,10 @@ const MFG_BOM = () => {
   // Plant filter - narrows the list already loaded below; "ALL" = every plant
   // (exactly the list the screen always showed).
   const [plants, setPlants] = useState([]);
-  const [plantFilter, setPlantFilter] = useState("ALL"); // dropdown selection
-  const [appliedPlant, setAppliedPlant] = useState("ALL"); // applied on Submit
+  const { user } = useContext(AuthContext);
+  // the logged-in user's own plant is selected first; the user can switch to another plant or ALL
+  const [plantFilter, setPlantFilter] = useState(user?.PlantCode || "ALL"); // dropdown selection
+  const [appliedPlant, setAppliedPlant] = useState(user?.PlantCode || "ALL"); // applied on Submit
   const [loading, setLoading] = useState(false);
 
   const columns = [

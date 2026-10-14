@@ -10,6 +10,7 @@ import {
   gridVisibleColumnDefinitionsSelector, gridFilteredSortedRowEntriesSelector, gridDimensionsSelector,
 } from "@mui/x-data-grid";
 import SaveIcon from "@mui/icons-material/Save";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
@@ -22,6 +23,7 @@ import InfoIcon from "@mui/icons-material/Info";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import { format, startOfISOWeek, endOfISOWeek, getISOWeek, addDays } from "date-fns";
 import { toast } from "react-toastify";
+import { downloadStatusExcel } from "./statusExcel";
 import { AuthContext } from "../Authentication/AuthContext";
 import { getMfgPlanEditAccess } from "../Authentication/ActionAccessType";
 import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
@@ -33,6 +35,62 @@ import {
   GetMfgProductionDailyPlanHistorySummaryApi,
   GetMfgProductionDailyPlanDayDetailApi,
 } from "../controller/MfgProductionDailyPlanApiService";
+
+// Prod Status grid toolbar: the standard buttons + Download Excel of the rows the grid shows (filters, search and sort applied)
+const STATUS_EXCEL_COLUMNS = [
+  { header: "SI", width: 6 },
+  { header: "Line", width: 14 },
+  { header: "Part No", width: 18 },
+  { header: "Description", width: 34 },
+  { header: "Monthly Plan", width: 13, total: true },
+  { header: "MTD Plan", width: 11, total: true },
+  { header: "MTD Actual", width: 12, total: true },
+  { header: "Gap", width: 10, total: true, gap: true },
+  { header: "C.W Plan", width: 11, total: true },
+  { header: "C.W Actual", width: 12, total: true },
+  { header: "CW Gap", width: 10, total: true, gap: true },
+  { header: "YD Plan", width: 11, total: true },
+  { header: "YD Actual", width: 12, total: true },
+  { header: "YD Gap", width: 10, total: true, gap: true },
+];
+const ProdStatusToolbar = ({ fileSuffix }) => {
+  const apiRef = useGridApiContext();
+  const handleExcel = () => {
+    const models = gridFilteredSortedRowEntriesSelector(apiRef).map((e) => e.model);
+    if (models.length === 0) {
+      toast.warning("No data available to export.");
+      return;
+    }
+    try {
+      const rows = models.map((r, i) => [
+        i + 1, r.Line_Name || "", r.fg_part_no, r.fg_part_desc,
+        r.monthly_plan || 0, r.mtd_plan || 0, r.mtd_actual || 0, r.month_gap || 0,
+        r.cw_plan_calc || 0, r.cw_actual || 0, r.cw_gap || 0, r.yd_plan || 0, r.yd_actual || 0, r.yd_gap || 0,
+      ]);
+      downloadStatusExcel({
+        sheetName: "Prod Status",
+        fileName: `MFG_Prod_Status_${fileSuffix}.xlsx`,
+        columns: STATUS_EXCEL_COLUMNS,
+        rows,
+        totalLabel: `TOTAL (${rows.length} FG)`,
+      });
+      toast.success("Excel downloaded successfully.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to generate Excel file.");
+    }
+  };
+  return (
+    <GridToolbarContainer>
+      <GridToolbarColumnsButton />
+      <GridToolbarFilterButton />
+      <GridToolbarExport />
+      <Button size="small" onClick={handleExcel} startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 15 }} />}>
+        Download Excel
+      </Button>
+    </GridToolbarContainer>
+  );
+};
 
 const CustomToolbar = () => (
   <GridToolbarContainer>
@@ -1748,7 +1806,8 @@ const PlanHistoryBody = ({ searchText = "" }) => {
           loading={loading}
           columnHeaderHeight={36}
           rowHeight={38}
-          slots={{ toolbar: CustomToolbar, footer: StatusTotalsFooter }}
+          slots={{ toolbar: ProdStatusToolbar, footer: StatusTotalsFooter }}
+          slotProps={{ toolbar: { fileSuffix: `${plant}_${year}-${String(month).padStart(2, "0")}` } }}
           localeText={{ noRowsLabel: "No plan history found for the selected filters." }}
           sx={{
             height: "100%",
