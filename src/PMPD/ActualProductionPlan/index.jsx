@@ -21,6 +21,7 @@ import ValidationResponseGrid from '../../components/ValidationResponseTable'
 import DateRangeDownloadDialog from '../../components/DateRangeDownloadDialog'
 import FilterSelect from '../../components/FilterSelect'
 import { FilterPanel, FilterToggleButton } from '../../components/FilterPanel'
+import UniqueGroupingInfo from '../../components/UniqueGroupingInfo'
 import { getdetails as getLines } from '../../controller/LineMasterapiservice'
 
 // Month/Year filter helpers - the month converts to the Start/End date range
@@ -516,6 +517,15 @@ const PMPD_ActualProductionPlan = () => {
           >
             Excel Download
           </Button>
+          <UniqueGroupingInfo
+            sections={[{ fields: ["Plant", "Storage Location", "Production Date", "Part Number", "Production Order", "Material Document", "Time of Entry", "Reservation Item No"] }]}
+            intro="One record per combination of:"
+            notes={[
+              <><b>Upload:</b> only <b>adds</b> new records. A row whose combination already exists is skipped, and existing records are never changed. Duplicates inside the file keep the highest quantity.</>,
+              "One upload can hold one plant and one month only.",
+              "Fetch (MB51) also only inserts new records.",
+            ]}
+          />
         </div>
 
         <FilterPanel

@@ -609,7 +609,7 @@ const Sidebar = ({ setSidebarOpen }) => {
               code: "MfgComponentDailyPlan",
             },
             {
-              name: "RM Coverage",
+              name: "Child Part Coverage",
               path: "/home/RmCoverage",
               icon: (
                 <PrecisionManufacturingIcon

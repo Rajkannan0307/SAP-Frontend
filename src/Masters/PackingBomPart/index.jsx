@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
     TextField,
     Button,
@@ -6,13 +6,11 @@ import {
     MenuItem,
     FormControlLabel,
     Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
     Switch,
     Box,
+    Chip,
+    CircularProgress,
     Typography,
-    Modal
 } from "@mui/material";
 import {
     DataGrid,
@@ -26,20 +24,52 @@ import AddIcon from "@mui/icons-material/Add";
 import { decryptSessionData } from "../../controller/StorageUtils";
 import { GetMstMachineUpdate_image } from "../../controller/TestLabService";
 import EditIcon from "@mui/icons-material/Edit";
+import CloseIcon from "@mui/icons-material/Close";
+import CloudUploadMuiIcon from "@mui/icons-material/CloudUpload";
 import { useFormik } from "formik";
 import * as Yup from "yup"
 import { api } from "../../controller/constants";
-import SectionHeading from "../../components/Header";
 import { FaDownload, FaUpload } from 'react-icons/fa6'
 import { AddMstPackingPartBULK, AddOrEditPackingPart, GetPackingPartApi } from "../../controller/ContributionalChartApiService";
-import { getPlantdetails } from "../../controller/CommonApiService";
-import { CloudUploadIcon } from 'lucide-react'
-import { deepPurple } from "@mui/material/colors";
+import { getMyPlants, myPlantLabel } from "../../controller/CommonApiService";
+import { findPlantsNotAllowed, plantsNotAllowedMessage } from "../../common/plantFileCheck";
+import FilterSelect from "../../components/FilterSelect";
+import UniqueGroupingInfo from "../../components/UniqueGroupingInfo";
+import { FilterToggleButton, FilterPanel } from "../../components/FilterPanel";
+import {
+    compactFieldSx,
+    compactMenuProps,
+    compactGridSx,
+    primaryButtonSx,
+    outlineButtonSx,
+} from "../../components/compactUi";
 import ExcelJS from 'exceljs'
-import { getMaterialType } from "../../controller/Masterapiservice";
+import { saveAs } from 'file-saver'
+import { getMaterialType, getProductSegments } from "../../controller/Masterapiservice";
 import { getdetails as getLines } from "../../controller/LineMasterapiservice";
 import LineSelect from "../../components/LineSelect";
 import { MaterialGroupEnumTypes } from "../../common/enumValues";
+
+const DIALOG_FIELD_SX = compactFieldSx("100%", 12);
+
+// Shell of the Add / Edit / Upload dialogs (same as the Vendor Master / User Master)
+const FormDialog = ({ open, title, onClose, children, actions, width = 460 }) => (
+    <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth={false}
+        PaperProps={{ sx: { width, maxWidth: "94vw", borderRadius: "10px" } }}
+    >
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 2, py: 1, borderBottom: "1px solid #e8eaee", backgroundColor: "#f3f7ff" }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 700, color: "#1a2233" }}>{title}</Typography>
+            <IconButton size="small" onClick={onClose}>
+                <CloseIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+        </Box>
+        <Box sx={{ p: 2, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "14px 12px", maxHeight: "72vh", overflowY: "auto" }}>{children}</Box>
+        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, px: 2, py: 1.25, borderTop: "1px solid #e8eaee" }}>{actions}</Box>
+    </Dialog>
+);
 
 const CC_PackingBomPart = () => {
     const [searchText, setSearchText] = useState("");
@@ -55,6 +85,21 @@ const CC_PackingBomPart = () => {
     const [refreshData, setRefreshData] = useState(false)
 
     const [openUploadModal, setOpenUploadModal] = useState(false);
+
+    // Only the plants this user may use (own plant + User Master > Data Access) - the same list and rule as Vendor Master,
+    // Material Master (Direct), Material - Vendor Mapping and the Manufacturing BOM
+    const [plants, setPlants] = useState([])
+    const [loading, setLoading] = useState(true)
+    // Plant: the dropdown holds the selection (starts on the user's own login plant), the Search button applies it
+    const [plantSelect, setPlantSelect] = useState("All")
+    const [fPlant, setFPlant] = useState("All") // applied plant
+    const plantDefaulted = useRef(false)
+    // filters (the search box works on the same rows)
+    const [filtersOpen, setFiltersOpen] = useState(false)
+    const [fType, setFType] = useState("All")
+    const [fLine, setFLine] = useState("All")
+    const [fSegment, setFSegment] = useState("All")
+    const [fStatus, setFStatus] = useState("All")
 
     const handleEdit = (data) => {
         console.log(data, "data")
@@ -85,43 +130,45 @@ const CC_PackingBomPart = () => {
 
 
     const columns = [
-        { field: "Material_ID", headerName: "SI No", width: 80 },
-        { field: "Plant_Code", headerName: "Plant", flex: 1 },
-        { field: "Material_Code", headerName: "Part No", flex: 1 },
-        { field: "Description", headerName: "Description", flex: 1 },
-        { field: "uom", headerName: "UOM", flex: 1 },
-        { field: "Material_Type", headerName: "Material Type", flex: 1 },
-        { field: "Line_Name", headerName: "Line", flex: 1 },
+        { field: "Material_ID", headerName: "SI No", width: 70 },
+        { field: "Plant_Code", headerName: "Plant", flex: 0.6, minWidth: 70 },
+        { field: "Material_Code", headerName: "Part No", flex: 1, minWidth: 110 },
+        { field: "Description", headerName: "Description", flex: 1.6, minWidth: 150 },
+        { field: "uom", headerName: "UOM", flex: 0.5, minWidth: 60 },
+        { field: "Material_Type", headerName: "Material Type", flex: 0.8, minWidth: 90 },
+        { field: "Line_Name", headerName: "Line", flex: 0.9, minWidth: 90 },
+        { field: "Segment_Name", headerName: "Segment", flex: 0.8, minWidth: 90 },
         {
-            field: "Active_Status", headerName: "Active Status", flex: 1,
+            field: "Active_Status", headerName: "Status", flex: 0.7, minWidth: 80,
+            valueFormatter: (value) => (value === true || value === "1" ? "Active" : "Inactive"),
             renderCell: (params) => {
                 const isActive = params.value === true || params.value === "1";
                 return (
-                    <span
-                        style={{
-                            padding: "3px 10px",
-                            borderRadius: "12px",
-                            fontSize: "12px",
-                            fontWeight: "bold",
-                            color: "white",
-                            backgroundColor: isActive ? "#2e7d32" : "#d32f2f"
+                    <Chip
+                        size="small"
+                        label={isActive ? "Active" : "Inactive"}
+                        sx={{
+                            height: 20,
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            backgroundColor: isActive ? "#eafaf1" : "#fdeeee",
+                            color: isActive ? "#1b7a43" : "#b42323",
                         }}
-                    >
-                        {isActive ? "Active" : "Inactive"}
-                    </span>
+                    />
                 );
-
             },
         },
         {
-            field: "action", headerName: "Action", width: 160,
+            field: "action", headerName: "Action", width: 80, sortable: false, filterable: false, disableColumnMenu: true,
+            align: "center", headerAlign: "center",
             renderCell: (params) => (
                 <IconButton
                     color="primary"
+                    size="small"
                     onClick={() => handleEdit(params.row)}
                     title="Edit"
                 >
-                    <EditIcon />
+                    <EditIcon sx={{ fontSize: 18 }} />
                 </IconButton>
             ),
         },
@@ -162,19 +209,62 @@ const CC_PackingBomPart = () => {
         setOpenAddModal(true);
     };
 
-    // ✅ Search Functionality
+    // The user's own login plant (Is_Default, the first one in the list) is selected and applied once, as soon as the
+    // plant list is loaded; after that the user can switch to any other plant (or All) and press Search.
+    useEffect(() => {
+        getMyPlants()
+            .then((res) => setPlants(Array.isArray(res) ? res : []))
+            .catch((error) => console.error("Failed to load Plant list.", error))
+    }, [])
+
+    useEffect(() => {
+        if (plantDefaulted.current || plants.length === 0) return
+        plantDefaulted.current = true
+        const own = plants.find((p) => Number(p.Is_Default) === 1) || plants[0]
+        const label = myPlantLabel(own)
+        setPlantSelect(label)
+        setFPlant(label)
+    }, [plants])
+
+    // Search: apply the selected plant and reload the list
     const handleSearch = () => {
-        const text = searchText.trim().toLowerCase();
-
-        const filteredRows = originalRows.filter((row) =>
-            ["Material_Type", "uom", "Description", "Material_Code", "Plant_Code"].some((key) => {
-                const value = row[key];
-                return value?.toString().toLowerCase().includes(text);
-            })
-        );
-
-        setRows(text ? filteredRows : originalRows);
+        setFPlant(plantSelect)
+        setRefreshData((prev) => !prev)
     };
+
+    // Same rule as the Manufacturing BOM: only the materials of the plants this user may use (until the plant list is
+    // loaded - or if it cannot be loaded - nothing is shown, never other plants' rows)
+    const scopedData = useMemo(() => {
+        const allowed = new Set(plants.map((p) => String(p.Plant_Code)))
+        return (originalRows || []).filter((row) => allowed.has(String(row.Plant_Code)))
+    }, [originalRows, plants])
+    // The Plant filter shows "1150 - RML P4 (RML)" (same label as the Manufacturing BOM) and filters by the plant code
+    const plantFilterCode = fPlant === "All" ? null : String(plants.find((p) => myPlantLabel(p) === fPlant)?.Plant_Code ?? "")
+
+    // Search box + panel filters, applied live to the loaded materials
+    const visibleRows = useMemo(() => {
+        const text = searchText.trim().toLowerCase()
+        return scopedData.filter((row) => {
+            if (plantFilterCode !== null && String(row.Plant_Code) !== plantFilterCode) return false
+            if (fType !== "All" && row.Material_Type !== fType) return false
+            if (fLine !== "All" && row.Line_Name !== fLine) return false
+            if (fSegment !== "All" && row.Segment_Name !== fSegment) return false
+            if (fStatus !== "All" && (fStatus === "Active") !== (row.Active_Status === true || row.Active_Status === "1")) return false
+            if (!text) return true
+            return ["Material_Type", "uom", "Description", "Material_Code", "Plant_Code", "Segment_Name", "Line_Name"].some((key) => {
+                const value = row[key]
+                return value?.toString().toLowerCase().includes(text)
+            })
+        })
+    }, [scopedData, searchText, plantFilterCode, fType, fLine, fSegment, fStatus])
+    const uniq = (key) => [...new Set(scopedData.map((r) => r[key]).filter((v) => v !== null && v !== undefined && v !== "").map(String))].sort()
+    // the Plant filter sits in front of the search box (always visible); the badge / "Clear filters" are for the panel filters
+    const activeFilterCount = [fType, fLine, fSegment, fStatus].filter((v) => v !== "All").length
+    const clearFilters = () => { setFType("All"); setFLine("All"); setFSegment("All"); setFStatus("All") }
+    // the Add dialog starts on the plant being viewed (or the user's own plant when All is shown)
+    const defaultPlant = (plantFilterCode !== null && plants.find((p) => String(p.Plant_Code) === plantFilterCode))
+        || plants.find((p) => Number(p.Is_Default) === 1)
+        || null
 
 
     // excel download
@@ -245,10 +335,19 @@ const CC_PackingBomPart = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const response = await GetPackingPartApi()
-            console.log("GetPackingPartApi - ", response)
-            setOriginalRows(response || [])
-            setRows(response || [])
+            setLoading(true)
+            try {
+                const response = await GetPackingPartApi()
+                console.log("GetPackingPartApi - ", response)
+                setOriginalRows(response || [])
+                setRows(response || [])
+            } catch (error) {
+                console.error(error)
+                setOriginalRows([])
+                setRows([])
+            } finally {
+                setLoading(false)
+            }
         }
         fetchData()
     }, [refreshData])
@@ -257,153 +356,123 @@ const CC_PackingBomPart = () => {
     return (
         <div
             style={{
-                padding: 20,
+                padding: "20px 20px",
                 backgroundColor: "#F5F5F5",
                 marginTop: "50px",
                 display: "flex",
                 flexDirection: "column",
-                height: "calc(100vh - 90px)",// or a specific height if necessary
+                height: "calc(100vh - 50px)",
             }}
         >
-            {/* Header Section */}
+            <Typography sx={{ fontSize: 17, fontWeight: 700, color: "#1a2233", letterSpacing: 0.1, lineHeight: 1.3, mb: 1.5 }}>
+                Indirect Material Master
+            </Typography>
+
+            {/* Search, filters and actions */}
             <div
                 style={{
-                    marginBottom: 20,
+                    backgroundColor: "#fff",
+                    borderRadius: 8,
+                    border: "1px solid #e8eaee",
+                    boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
+                    padding: "7px 10px",
+                    marginBottom: 6,
                     display: "flex",
-                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: 8,
                     alignItems: "center",
                 }}
             >
-                <SectionHeading>
-                    Indirect Material Master
-                </SectionHeading>
-            </div>
+                <FilterSelect label="Plant" value={plantSelect} options={plants.map(myPlantLabel)} onChange={setPlantSelect} minWidth={190} />
+                <Button
+                    onClick={handleSearch}
+                    disabled={loading}
+                    variant="contained"
+                    disableElevation
+                    startIcon={loading ? <CircularProgress size={12} color="inherit" /> : <SearchIcon sx={{ fontSize: 16 }} />}
+                    sx={primaryButtonSx}
+                >
+                    {loading ? "Loading..." : "Search"}
+                </Button>
+                <TextField
+                    size="small"
+                    placeholder="Search plant, part no, description, line, segment"
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    InputProps={{ startAdornment: <SearchIcon sx={{ fontSize: 16, color: "#8a93a3", mr: 0.5 }} /> }}
+                    sx={compactFieldSx(300)}
+                />
+                <FilterToggleButton open={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)} activeCount={activeFilterCount} />
 
-            {/* Search and Icons */}
-            <div
-                style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: 10,
-                }}
-            >
-                {/* Search Box */}
-                <div style={{ display: "flex", gap: "10px" }}>
-                    <TextField
-                        size="small"
-                        variant="outlined"
-                        placeholder="Type here..."
-                        value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
-                        onKeyUp={handleSearch}
-                        sx={{
-                            width: "400px",
-                            "& .MuiOutlinedInput-root": {
-                                "& fieldset": {
-                                    border: "2px solid grey", // No border by default
-                                },
-                                "&:hover fieldset": {
-                                    border: "2px solid grey", // Optional: border on hover
-                                },
-                                "&.Mui-focused fieldset": {
-                                    border: "2px solid grey", // Grey border on focus
-                                },
-                            },
-                        }}
-                    />
-                    <Button
-                        onClick={handleSearch}
-                        style={{
-                            borderRadius: "25px",
-                            border: "2px solid grey",
-                            color: "grey",
-                            fontWeight: "bold",
-                        }}
-                    >
-                        <SearchIcon style={{ marginRight: "5px" }} />
-                        Search
-                    </Button>
-                </div>
+                <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: "#6b7280", whiteSpace: "nowrap" }}>
+                    {visibleRows.length === scopedData.length ? `${scopedData.length} materials` : `${visibleRows.length} of ${scopedData.length} materials`}
+                </span>
+                <ExcelUploadModal open={openUploadModal}
+                    onClose={() => {
+                        setOpenUploadModal(false)
+                    }}
+                    onOpen={() => {
+                        setOpenUploadModal(true)
+                    }}
+                    templateUrl={""}
+                    setRefreshData={setRefreshData}
+                />
+                <Button
+                    onClick={handleOpenAddModal}
+                    variant="contained"
+                    disableElevation
+                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                    sx={primaryButtonSx}
+                >
+                    Add Material
+                </Button>
+                <UniqueGroupingInfo
+                    sections={[{ fields: ["Plant", "Part No (Material Code)"] }]}
+                    intro="One material per combination of:"
+                    notes={[
+                        <><b>Add:</b> the same Plant + Part No (Material Code) that already exists is rejected.</>,
+                        <><b>Bulk upload:</b> the same combination is <b>updated</b>, any other is <b>added</b>. A blank Line / Segment cell keeps the saved value.</>,
+                    ]}
+                />
 
-                {/* Icons */}
-                <div style={{ display: "flex", gap: "10px" }}>
-                    <ExcelUploadModal open={openUploadModal}
-                        onClose={() => {
-                            setOpenUploadModal(false)
-                        }}
-                        onOpen={() => {
-                            setOpenUploadModal(true)
-                        }}
-                        templateUrl={""}
-                        setRefreshData={setRefreshData}
-                    />
-
-                    <IconButton
-                        onClick={handleOpenAddModal}
-                        style={{
-                            borderRadius: "50%",
-                            backgroundColor: "#0066FF",
-                            color: "white",
-                            width: "40px",
-                            height: "40px",
-                        }}
-                    >
-                        <AddIcon />
-                    </IconButton>
-                </div>
+                <FilterPanel open={filtersOpen} activeCount={activeFilterCount} onClear={clearFilters}>
+                    <FilterSelect label="Material Type" value={fType} options={uniq("Material_Type")} onChange={setFType} minWidth={150} />
+                    <FilterSelect label="Line" value={fLine} options={uniq("Line_Name")} onChange={setFLine} minWidth={170} />
+                    <FilterSelect label="Segment" value={fSegment} options={uniq("Segment_Name")} onChange={setFSegment} minWidth={150} />
+                    <FilterSelect label="Status" value={fStatus} options={["Active", "Inactive"]} onChange={setFStatus} minWidth={120} isSearchable={false} />
+                </FilterPanel>
             </div>
 
             {/* DataGrid */}
             <div
                 style={{
-                    flexGrow: 1, // Ensures it grows to fill the remaining space
+                    flexGrow: 1,
                     backgroundColor: "#fff",
                     borderRadius: 8,
-                    boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-                    height: "calc(5 * 48px)",
+                    border: "1px solid #e8eaee",
+                    boxShadow: "0 1px 3px rgba(16,24,40,0.05)",
+                    minHeight: 0,
+                    overflow: "hidden",
                 }}
             >
                 <DataGrid
-                    rows={rows}
+                    rows={visibleRows}
                     columns={columns}
-                    pageSize={5} // Set the number of rows per page to 8
-                    rowsPerPageOptions={[5]}
-                    getRowId={(row) => row.Material_ID} // Specify a custom id field
-                    disableSelectionOnClick
+                    loading={loading}
+                    getRowId={(row) => row.Material_ID}
+                    disableRowSelectionOnClick
+                    columnHeaderHeight={36}
+                    rowHeight={38}
+                    initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+                    pageSizeOptions={[25, 50, 100]}
                     slots={{ toolbar: CustomToolbar }}
-                    sx={{
-                        // Header Style
-                        "& .MuiDataGrid-columnHeader": {
-                            backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
-                            color: "black",
-                            fontWeight: "bold",
-                        },
-                        "& .MuiDataGrid-columnHeaderTitle": {
-                            fontSize: "16px",
-                            fontWeight: "bold",
-                        },
-                        "& .MuiDataGrid-row": {
-                            backgroundColor: "#f5f5f5", // Default row background
-                            "&:hover": {
-                                backgroundColor: "#f5f5f5",
-                            },
-                        },
-                        // ✅ Remove Selected Row Background
-                        "& .MuiDataGrid-row.Mui-selected": {
-                            backgroundColor: "inherit", // No background on selection
-                        },
-
-                        "& .MuiDataGrid-cell": {
-                            color: "#333",
-                            fontSize: "14px",
-                        },
-                    }}
+                    localeText={{ noRowsLabel: "No materials found." }}
+                    sx={compactGridSx}
                 />
             </div>
 
 
-            <AddDialog open={openAddModal} setOpenAddModal={setOpenAddModal} setRefreshData={setRefreshData} />
+            <AddDialog open={openAddModal} setOpenAddModal={setOpenAddModal} setRefreshData={setRefreshData} defaultPlantId={defaultPlant ? defaultPlant.Plant_ID : ""} />
             <AddDialog open={openEditModal} setOpenAddModal={setOpenEditModal} setRefreshData={setRefreshData} editData={editData} />
 
         </div>
@@ -411,11 +480,12 @@ const CC_PackingBomPart = () => {
 };
 
 
-const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
+const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData, defaultPlantId = "" }) => {
     const [submitLoading, setSubmitLoading] = useState(false)
     const [plants, setPlants] = useState([])
     const [materialType, setMaterialType] = useState([])
     const [lines, setLines] = useState([])
+    const [segments, setSegments] = useState([])
 
     const handleClose = () => {
         setOpenAddModal(false)
@@ -436,13 +506,15 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
     // ✅ Formik Setup
     const formik = useFormik({
         initialValues: {
-            Plant_ID: editData?.Plant_ID || "",
+            Plant_ID: editData?.Plant_ID || defaultPlantId || "",
             Material_Code: editData?.Material_Code || "",
             Description: editData?.Description || "",
             uom: editData?.uom || "",
             Material_Type: editData?.Material_Type || "",
             Active_Status: editData?.Active_Status ?? true,
             Line_ID: editData?.Line_ID || "",
+            // optional product segment (Mst_Product_Segment); "" = none
+            Prod_Seg_ID: editData?.prod_seg_id || "",
         },
         validationSchema,
         enableReinitialize: true,
@@ -482,9 +554,10 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const response2 = await getPlantdetails()
+            // only the plants this user may use (own + Data Access)
+            const response2 = await getMyPlants()
             console.log(response2, "Plants")
-            setPlants(response2)
+            setPlants(Array.isArray(response2) ? response2 : [])
 
             const response3 = await getMaterialType(MaterialGroupEnumTypes.indirect)
             console.log(response3.data, 'Material Type')
@@ -492,6 +565,9 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
 
             const response4 = await getLines()
             setLines((response4 || []).filter((l) => l.Active_Status))
+
+            const response5 = await getProductSegments()
+            setSegments(response5.data || [])
         }
         if (open) fetchData()
 
@@ -505,188 +581,161 @@ const AddDialog = ({ open, setOpenAddModal, setRefreshData, editData }) => {
         ? lines.filter((l) => String(l.Plant_ID) === String(formik.values.Plant_ID))
         : [];
 
+    // Segment dropdown: the active segments (+ the material's own segment when it is no longer an active one)
+    const segmentOptions = [
+        ...(editData?.prod_seg_id && !segments.some((x) => String(x.prod_seg_id) === String(editData.prod_seg_id))
+            ? [{ prod_seg_id: editData.prod_seg_id, seg_name: editData.Segment_Name || String(editData.prod_seg_id) }]
+            : []),
+        ...segments,
+    ]
+
     return (
-        <Dialog
+        <FormDialog
             open={open}
             onClose={handleClose}
-            aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
+            title={`${editData ? "Edit" : "Add"} Packing Part`}
+            actions={
+                <>
+                    <Button variant="outlined" onClick={handleClose} sx={outlineButtonSx}>Cancel</Button>
+                    <Button variant="contained" disableElevation onClick={formik.handleSubmit} sx={{ ...primaryButtonSx, minWidth: 70 }}>
+                        {submitLoading ? "Loading..." : editData ? "Update" : "Add"}
+                    </Button>
+                </>
+            }
         >
-            <DialogTitle id="alert-dialog-title">
-                {`${editData ? "Edit" : "Add"} Packing Part`}
-            </DialogTitle>
-            {/* {JSON.stringify(editData)} */}
-            <DialogContent sx={{ pb: 0 }}>
-                <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    // display: "flex",
-                    width: "100%",
-                    gap: "15px"
-                }}>
+            <TextField
+                select
+                size="small"
+                label="Plant"
+                name="Plant_ID"
+                value={formik.values.Plant_ID}
+                onChange={(e) => {
+                    formik.handleChange(e);
+                    formik.setFieldValue('Line_ID', ''); // previous plant's line no longer valid
+                }}
+                onBlur={formik.handleBlur}
+                error={formik.touched.Plant_ID && Boolean(formik.errors.Plant_ID)}
+                helperText={formik.touched.Plant_ID && formik.errors.Plant_ID}
+                disabled={Boolean(editData)} // Plant is locked during Edit - existing value stays unchanged
+                sx={DIALOG_FIELD_SX}
+                SelectProps={{ MenuProps: compactMenuProps(12) }}
+            >
+                {plants.map((p) => (
+                    <MenuItem sx={{ fontSize: 12 }} key={p.Plant_ID} value={p.Plant_ID}>
+                        {myPlantLabel(p)}
+                    </MenuItem>
+                ))}
+            </TextField>
 
-                    <TextField
-                        select
-                        size="small"
-                        label="Plant"
-                        name="Plant_ID"
-                        value={formik.values.Plant_ID}
-                        onChange={(e) => {
-                            formik.handleChange(e);
-                            formik.setFieldValue('Line_ID', ''); // previous plant's line no longer valid
-                        }}
-                        onBlur={formik.handleBlur}
-                        error={formik.touched.Plant_ID && Boolean(formik.errors.Plant_ID)}
-                        helperText={formik.touched.Plant_ID && formik.errors.Plant_ID}
-                        disabled={Boolean(editData)} // Plant is locked during Edit — existing value stays unchanged
-                        InputLabelProps={{ sx: { fontSize: 12 } }}
-                        InputProps={{ sx: { fontSize: 13 } }}
-                        sx={{
-                            // ...CommonMuiStyles.textFieldSmallSx2,
-                            minWidth: 200,
-                            mt: 1
-                        }}
-                    >
-                        {plants.map((p) => (
-                            <MenuItem sx={{ fontSize: "small" }} key={p.Plant_ID} value={p.Plant_ID}>
-                                {`${p.Plant_Code} - ${p.Plant_Name}`}
-                            </MenuItem>
-                        ))}
-                    </TextField>
+            <TextField
+                id="Material_Code"
+                name="Material_Code"
+                label="Part No"
+                size="small"
+                value={formik.values.Material_Code}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.Material_Code && Boolean(formik.errors.Material_Code)}
+                helperText={formik.touched.Material_Code && formik.errors.Material_Code}
+                sx={DIALOG_FIELD_SX}
+            />
 
+            <TextField
+                id="Description"
+                name="Description"
+                label="Description"
+                size="small"
+                value={formik.values.Description}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.Description && Boolean(formik.errors.Description)}
+                helperText={formik.touched.Description && formik.errors.Description}
+                sx={DIALOG_FIELD_SX}
+            />
 
-                    <TextField
-                        id="Material_Code"
-                        name="Material_Code"
-                        label="Part No"
-                        size="small"
-                        fullWidth
-                        value={formik.values.Material_Code}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        error={formik.touched.Material_Code && Boolean(formik.errors.Material_Code)}
-                        helperText={formik.touched.Material_Code && formik.errors.Material_Code}
-                        InputLabelProps={{ sx: { fontSize: 12 } }}
-                        InputProps={{ sx: { fontSize: 13 } }}
-                        sx={{
-                            // ...CommonMuiStyles.textFieldSmallSx2,
-                            minWidth: 200,
-                            mt: 1
-                        }}
-                    />
+            <TextField
+                id="uom"
+                name="uom"
+                label="UOM ( Unit Of Measurement )"
+                size="small"
+                value={formik.values.uom}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.uom && Boolean(formik.errors.uom)}
+                helperText={formik.touched.uom && formik.errors.uom}
+                sx={DIALOG_FIELD_SX}
+            />
 
-                    <TextField
-                        id="Description"
-                        name="Description"
-                        label="Description"
-                        size="small"
-                        fullWidth
-                        value={formik.values.Description}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        error={formik.touched.Description && Boolean(formik.errors.Description)}
-                        helperText={formik.touched.Description && formik.errors.Description}
-                        InputLabelProps={{ sx: { fontSize: 12 } }}
-                        InputProps={{ sx: { fontSize: 13 } }}
-                        sx={{
-                            // ...CommonMuiStyles.textFieldSmallSx2,
-                            minWidth: 200,
-                            mt: 1
-                        }}
-                    />
+            <TextField
+                select
+                id="Material_Type"
+                name="Material_Type"
+                label="Material Type"
+                size="small"
+                value={formik.values.Material_Type}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.Material_Type && Boolean(formik.errors.Material_Type)}
+                helperText={formik.touched.Material_Type && formik.errors.Material_Type}
+                sx={DIALOG_FIELD_SX}
+                SelectProps={{ MenuProps: compactMenuProps(12) }}
+            >
+                {materialType.map((p) => (
+                    <MenuItem sx={{ fontSize: 12 }} key={p.Mat_Type} value={p.Mat_Type}>
+                        {`${p.Mat_Type}`}
+                    </MenuItem>
+                ))}
+            </TextField>
 
-                    <TextField
-                        id="uom"
-                        name="uom"
-                        label="UOM ( Unit Of Measurement )"
-                        size="small"
-                        fullWidth
-                        value={formik.values.uom}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        error={formik.touched.uom && Boolean(formik.errors.uom)}
-                        helperText={formik.touched.uom && formik.errors.uom}
-                        InputLabelProps={{ sx: { fontSize: 12 } }}
-                        InputProps={{ sx: { fontSize: 13 } }}
-                        sx={{
-                            minWidth: 200,
-                            mt: 1
-                        }}
-                    />
+            <LineSelect
+                value={formik.values.Line_ID}
+                options={lineOptions}
+                onChange={(id) => formik.setFieldValue("Line_ID", id)}
+                disabled={!formik.values.Plant_ID}
+                size="compact"
+            />
 
-                    <TextField
-                        select
-                        id="Material_Type"
-                        name="Material_Type"
-                        label="Material Type"
-                        size="small"
-                        fullWidth
-                        value={formik.values.Material_Type}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        error={formik.touched.Material_Type && Boolean(formik.errors.Material_Type)}
-                        helperText={formik.touched.Material_Type && formik.errors.mat_id}
-                        InputLabelProps={{ sx: { fontSize: 12 } }}
-                        InputProps={{ sx: { fontSize: 13 } }}
-                        sx={{
-                            minWidth: 200,
-                            mt: 1
-                        }}
-                    >
-                        {materialType.map((p) => (
-                            <MenuItem sx={{ fontSize: "small" }} key={p.Mat_Type} value={p.Mat_Type}>
-                                {/* {`${p.Mat_Id} - ${p.Mat_Type}`} */}
-                                {`${p.Mat_Type}`}
-                            </MenuItem>
-                        ))}
-                    </TextField>
+            <TextField
+                select
+                id="Prod_Seg_ID"
+                name="Prod_Seg_ID"
+                label="Segment"
+                size="small"
+                value={formik.values.Prod_Seg_ID}
+                onChange={formik.handleChange}
+                sx={DIALOG_FIELD_SX}
+                SelectProps={{ MenuProps: compactMenuProps(12) }}
+            >
+                <MenuItem sx={{ fontSize: 12 }} value=""><em>None</em></MenuItem>
+                {segmentOptions.map((x) => (
+                    <MenuItem sx={{ fontSize: 12 }} key={x.prod_seg_id} value={x.prod_seg_id}>
+                        {x.seg_name}
+                    </MenuItem>
+                ))}
+            </TextField>
 
-                    <LineSelect
-                        value={formik.values.Line_ID}
-                        options={lineOptions}
-                        onChange={(id) => formik.setFieldValue("Line_ID", id)}
-                        disabled={!formik.values.Plant_ID}
-                        size="small"
-                        style={{ marginTop: 8 }}
-                    />
-                </div>
-
+            <Box sx={{ gridColumn: "span 2" }}>
                 <FormControlLabel
+                    sx={{ m: 0, "& .MuiFormControlLabel-label": { fontSize: 12, fontWeight: 700, color: formik.values.Active_Status ? "#2e7d32" : "#d32f2f" } }}
                     control={
                         <Switch
+                            size="small"
                             checked={formik.values.Active_Status}
                             onChange={(e) => formik.setFieldValue("Active_Status", e.target.checked)}
                             color="success"
+                            sx={{
+                                "& .MuiSwitch-track": { backgroundColor: formik.values.Active_Status ? "#2e7d32" : "#d32f2f", opacity: 0.55 },
+                                "& .MuiSwitch-thumb": { backgroundColor: formik.values.Active_Status ? "#2e7d32" : "#d32f2f" },
+                            }}
                         />
                     }
                     label={formik.values.Active_Status ? "Active" : "Inactive"}
-                    sx={{
-                        fontWeight: "bold",
-                        mt: 2,
-                        color: formik.values.Active_Status ? "#2e7d32" : "#d32f2f"
-                    }}
                 />
-
                 {formik.touched.Active_Status && formik.errors.Active_Status && (
                     <div style={{ color: "red", fontSize: 12 }}>{formik.errors.Active_Status}</div>
                 )}
-
-            </DialogContent>
-            <DialogActions sx={{ p: 0, pb: 2, pr: 3 }}>
-                <Button
-                    variant="contained"
-                    color="error"
-                    size="small"
-                    onClick={handleClose}>Cancel</Button>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    size="small"
-                    onClick={formik.handleSubmit} autoFocus>
-                    {submitLoading ? "Loading..." : editData ? "Update" : "Add"}
-                </Button>
-            </DialogActions>
-        </Dialog>
+            </Box>
+        </FormDialog>
     )
 }
 
@@ -703,11 +752,14 @@ const ExcelUploadModal = ({
     const [loadingTemplate, setLoadingTemplate] = useState(false)
     const [uploadResponse, setUploadResponse] = useState(null)
     const [lines, setLines] = useState([])
+    const [segments, setSegments] = useState([])
 
     useEffect(() => {
         const fetchLines = async () => {
             const response = await getLines()
             setLines((response || []).filter((l) => l.Active_Status))
+            const segmentResponse = await getProductSegments()
+            setSegments(segmentResponse.data || [])
         }
         if (open) fetchLines()
     }, [open])
@@ -733,7 +785,8 @@ const ExcelUploadModal = ({
             'description',
             'uom',
             'material_type',
-            'line_name'
+            'line_name',
+            'segment'
         ];
 
         // 1️⃣ Create workbook
@@ -768,10 +821,18 @@ const ExcelUploadModal = ({
             { width: 12 }, // uom
             { width: 18 }, // material_type
             { width: 20 }, // line_name (optional)
+            { width: 16 }, // segment (optional)
         ];
 
         // 6️⃣ Freeze header row
         worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+        // segment (optional): the name of an active segment of the Segment Master - dropdown; blank = no segment
+        worksheet.getCell("G1").note = "Optional: the segment name from the dropdown. Blank = no segment (an existing material keeps its segment).";
+        const segmentNames = (segments || []).map((x) => x.seg_name).filter(Boolean);
+        if (segmentNames.length) {
+            worksheet.dataValidations.add("G2:G1000", { type: "list", allowBlank: true, formulae: [`"${segmentNames.join(",")}"`] });
+        }
 
         // line_name has no dropdown (list is large and keeps growing) —
         // instead a second VISIBLE sheet lists every Plant + Line so the
@@ -812,6 +873,13 @@ const ExcelUploadModal = ({
         if (isUploading) return
         setIsUploading(true)
         try {
+            // Only plants this user may use (own + Data Access): check the plant column of the file before uploading
+            const { blocked, plants: myPlants } = await findPlantsNotAllowed(uploadedFile, "plant")
+            if (blocked.length > 0) {
+                alert(plantsNotAllowedMessage(blocked, myPlants))
+                setIsUploading(false)
+                return
+            }
             const formData = new FormData()
             const userId = localStorage.getItem('EmpId')
             formData.append("userId", userId)
@@ -842,135 +910,64 @@ const ExcelUploadModal = ({
 
     return (
         <>
-            <IconButton
-                component="span"
+            <Button
                 onClick={() => {
                     if (onOpen) onOpen()
                 }}
-                style={{
-                    borderRadius: "50%",
-                    backgroundColor: "#FF6699",
-                    color: "white",
-                    width: "40px",
-                    height: "40px",
-                }}
+                variant="outlined"
+                disableElevation
+                startIcon={<CloudUploadMuiIcon sx={{ fontSize: 16 }} />}
+                sx={outlineButtonSx}
             >
-                <CloudUploadIcon />
-            </IconButton>
+                Upload
+            </Button>
 
-            <Modal open={open} onClose={() => { }}>
-                <Box
-                    sx={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "50%",
-                        transform: "translate(-50%, -50%)",
-                        textAlign: "center",
-                        width: uploadResponse ? "50%" : "30%",
-                        bgcolor: "background.paper",
-                        borderRadius: 2,
-                        boxShadow: 24,
-                        p: 4,
-
-                        maxHeight: "80vh",
-                        overflowY: "auto",
-
-                        outline: "none"
-                    }}
-                >
-                    {/* Title */}
-                    <Typography
-                        variant="h6"
-                        sx={{
-                            mb: 2,
-                            color: "#2e59d9",
-                            textDecoration: "underline",
-                            textDecorationColor: "#88c57a",
-                            textDecorationThickness: "3px",
-                        }}
-                    >
-                        Upload Excel File
-                    </Typography>
-
-                    {/* Download Template */}
-                    <Button
-                        variant="contained"
-                        sx={{
-                            mb: 2,
-                            bgcolor: deepPurple[500],
-                            "&:hover": { bgcolor: deepPurple[700] },
-                        }}
-                        onClick={downloadProductionPlanTemplate}
-                    // onClick={createStyledDropdownExcel}
-                    >
-                        <FaDownload /> &nbsp; {loadingTemplate ? "Loading..." : "Download Template"}
-                    </Button>
-
-                    {/* Hidden File Input */}
+            <FormDialog
+                open={open}
+                onClose={handleClose}
+                title="Indirect Material Master Excel Upload"
+                width={uploadResponse ? 760 : 460}
+                actions={
+                    <>
+                        <Button variant="outlined" onClick={handleClose} sx={outlineButtonSx}>Close</Button>
+                        <Button variant="contained" disableElevation onClick={handleUploadData} disabled={isUploading} sx={{ ...primaryButtonSx, minWidth: 70 }}>
+                            {isUploading ? "Uploading..." : "Upload"}
+                        </Button>
+                    </>
+                }
+            >
+                <Box sx={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: 1.25 }}>
+                    <Box>
+                        <Button
+                            variant="outlined"
+                            onClick={downloadProductionPlanTemplate}
+                            startIcon={<FaDownload size={12} />}
+                            sx={outlineButtonSx}
+                        >
+                            {loadingTemplate ? "Loading..." : "Download Template"}
+                        </Button>
+                    </Box>
                     <input
                         type="file"
                         accept=".xlsx,.xls"
-                        id="excel-upload"
-                        hidden
                         onChange={handleFileChange}
-                    />
-
-                    {/* Custom File Upload UI */}
-                    <label htmlFor="excel-upload">
-                        <Box
-                            sx={{
-                                border: "2px dashed #1976d2",
-                                borderRadius: "8px",
-                                p: 2,
-                                cursor: "pointer",
-                                mb: 1,
-                                "&:hover": {
-                                    backgroundColor: "#f4f6fb",
-                                },
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                gap: 1
-                            }}
-                        >
-                            <FaUpload />
-                            <Typography variant="body2" >
-                                {uploadedFile?.name || "Click to choose Excel file"}
-                            </Typography>
-                        </Box>
-                    </label>
-
-                    <Box
-                        sx={{
-                            display: "flex",
-                            justifyContent: "center",
-                            gap: 2,
-                            my: 3,
+                        style={{
+                            fontSize: 11,
+                            padding: "6px 8px",
+                            backgroundColor: "#fafbfc",
+                            border: "1px dashed #dde1e7",
+                            borderRadius: 6,
+                            cursor: "pointer",
                         }}
-                    >
-                        <Button
-                            variant="contained"
-                            color="error"
-                            onClick={handleClose}
-                            sx={{ width: "30%" }}
-                        >
-                            Close
-                        </Button>
-
-                        <Button
-                            variant="contained"
-                            onClick={handleUploadData}
-                            disabled={isUploading}
-                            sx={{ width: "30%" }}
-                        >
-                            {isUploading ? "Uploading..." : "Upload"}
-                        </Button>
-                    </Box>
-
+                    />
+                    <span style={{ fontSize: 11, lineHeight: 1.5, color: "#6b7280" }}>
+                        Columns: plant, part_no, description, uom, material_type and the optional line_name and segment.
+                        A part that already exists is updated; a new one is added. A blank line_name / segment keeps the saved value.
+                    </span>
                     {/* Upload Status */}
                     {uploadResponse && <ValidationResult response={uploadResponse} />}
                 </Box>
-            </Modal>
+            </FormDialog>
         </>
     );
 };

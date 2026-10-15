@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import SectionHeading from '../../components/Header'
 import { Box, Button, IconButton, MenuItem, Modal, TextField, Typography } from '@mui/material'
-import InfoTip from '../../components/InfoTip'
+import UniqueGroupingInfo from '../../components/UniqueGroupingInfo'
 import { CloudUploadIcon, EditIcon, SearchIcon } from 'lucide-react'
 import { PiUploadDuotone } from 'react-icons/pi'
 import { FaDownload, FaUpload } from 'react-icons/fa6'
@@ -536,29 +536,14 @@ const PMPD_ProductionPlan = () => {
 
 
 const UniqueKeyInfo = () => (
-    <InfoTip label="Unique grouping info" placement="bottom-start">
-        <b style={{ color: "#1a2233", fontSize: 12 }}>Unique grouping</b>
-        <div>
-            <b>AOP</b>
-            <ul style={{ margin: "2px 0 0", paddingLeft: 18 }}>
-                <li>Plant</li>
-                <li>Customer Name</li>
-                <li>Part Number</li>
-                <li>Plan Type (AOP)</li>
-                <li>Plan Date</li>
-            </ul>
-        </div>
-        <div>
-            <b>MP</b>
-            <ul style={{ margin: "2px 0 0", paddingLeft: 18 }}>
-                <li>Plant</li>
-                <li>Part Number</li>
-                <li>Plan Type (MP)</li>
-                <li>Plan Date</li>
-            </ul>
-        </div>
-        <span>Same combination already exists: the plan is <b>updated</b>. Otherwise a new row is <b>added</b>.</span>
-    </InfoTip>
+    <UniqueGroupingInfo
+        intro=""
+        sections={[
+            { title: "AOP", fields: ["Plant", "Customer Name", "Part Number", "Plan Type (AOP)", "Plan Date"] },
+            { title: "MP", fields: ["Plant", "Part Number", "Plan Type (MP)", "Plan Date"] },
+        ]}
+        notes={[<>Same combination already exists: the plan is <b>updated</b>. Otherwise a new row is <b>added</b>.</>]}
+    />
 )
 
 const ExcelUploadModal = ({

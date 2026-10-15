@@ -21,6 +21,12 @@ export const GetMfgComponentDailyPlanHistorySummaryApi = async (params) => {
   return response.data;
 };
 
+// Valuation Types of the Component Plan child parts (Valuation Type filter of the Prod Status tab)
+export const GetMfgComponentValuationTypesApi = async () => {
+  const response = await axios.get(`${api}/MfgComponentDailyPlan/getValuationTypes`);
+  return response.data;
+};
+
 export const GetMfgComponentDailyPlanDayDetailApi = async (params) => {
   const response = await axios.get(`${api}/MfgComponentDailyPlan/getDayDetail`, { params });
   return response.data;

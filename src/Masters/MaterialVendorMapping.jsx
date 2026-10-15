@@ -40,6 +40,7 @@ import {
 import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import { findPlantsNotAllowed, plantsNotAllowedMessage } from "../common/plantFileCheck";
 import FilterSelect from "../components/FilterSelect";
+import UniqueGroupingInfo from "../components/UniqueGroupingInfo";
 import { FilterToggleButton, FilterPanel } from "../components/FilterPanel";
 import {
   compactFieldSx,
@@ -678,6 +679,14 @@ const MaterialVendorMapping = () => {
         >
           Add Mapping
         </Button>
+        <UniqueGroupingInfo
+          sections={[{ fields: ["Plant", "Material Code", "Vendor Code"] }]}
+          intro="One mapping per combination of:"
+          notes={[
+            <><b>Add:</b> a Material already mapped to the Vendor is rejected (if that mapping is Inactive, switch it to Active in the list).</>,
+            <><b>Bulk upload:</b> the same combination is <b>updated</b>, any other is <b>added</b>. A mapping is never deleted - switch it Active / Inactive.</>,
+          ]}
+        />
 
         <FilterPanel open={filtersOpen} activeCount={activeFilterCount} onClear={clearFilters}>
           <FilterSelect label="Vendor" value={fVendor} options={uniq("Vendor_Name")} onChange={setFVendor} minWidth={220} />

@@ -41,6 +41,7 @@ import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import { findPlantsNotAllowed, plantsNotAllowedMessage } from "../common/plantFileCheck";
 import { VendorMaster } from "../controller/VendorMasterapiservice";
 import FilterSelect from "../components/FilterSelect";
+import UniqueGroupingInfo from "../components/UniqueGroupingInfo";
 import { FilterToggleButton, FilterPanel } from "../components/FilterPanel";
 import {
   compactFieldSx,
@@ -857,6 +858,14 @@ const Vendor = () => {
         >
           Add Vendor
         </Button>
+        <UniqueGroupingInfo
+          sections={[{ fields: ["Plant", "Vendor Code"] }]}
+          intro="One vendor per combination of:"
+          notes={[
+            <><b>Add:</b> the same Plant + Vendor Code that already exists is rejected.</>,
+            <><b>Bulk upload:</b> the same combination is <b>updated</b>, any other is <b>added</b>. A blank Kanban_Mail / Buyer_ID / Mail_ID cell keeps the saved value (a new vendor starts with Kanban Mail No).</>,
+          ]}
+        />
 
         <FilterPanel open={filtersOpen} activeCount={activeFilterCount} onClear={clearFilters}>
           <FilterSelect label="Kanban Mail" value={fKanban} options={["Yes", "No"]} onChange={setFKanban} minWidth={130} isSearchable={false} />

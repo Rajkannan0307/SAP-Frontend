@@ -21,6 +21,7 @@ import { AuthContext } from "../Authentication/AuthContext";
 import { GetMfgBomListApi, GetMfgBomExportApi } from "../controller/MfgBomApiService";
 import AddEditMfgBomDialog from "./AddEditMfgBom";
 import MfgBomBulkUpload from "./BulkUploadMfgBom";
+import UniqueGroupingInfo from "../components/UniqueGroupingInfo";
 import ViewMfgBomChildDialog from "./ViewMfgBomChild";
 
 const CustomToolbar = () => (
@@ -320,6 +321,15 @@ const MFG_BOM = () => {
           >
             <AddIcon />
           </IconButton>
+          <UniqueGroupingInfo
+            sections={[{ fields: ["Plant", "FG Part", "Part No (child part)"] }]}
+            intro="One BOM line per combination of:"
+            notes={[
+              <><b>Add / Edit:</b> a combination that already exists is rejected.</>,
+              <><b>Bulk upload:</b> the same combination is <b>updated</b>, any other is <b>added</b>. If any row is invalid nothing is saved.</>,
+              "On update: a blank Vendor_Code clears the vendor (INHOUSE lines), and a blank or missing Is_Assembly_Part sets the line to No.",
+            ]}
+          />
         </div>
       </div>
 

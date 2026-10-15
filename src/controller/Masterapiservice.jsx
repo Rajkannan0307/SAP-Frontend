@@ -32,6 +32,11 @@ export const getMaterialType = async (matGroup) => {
   const response = await axios.get(`${api}/Master/Get_Material_Type`, { params: { matGroup } });
   return response;
 };
+// active product segments (Mst_Product_Segment) for the Segment dropdowns of the Material Master screens
+export const getProductSegments = async () => {
+  const response = await axios.get(`${api}/Master/Get_Segments`);
+  return response;
+};
 export const getSupvCode = async (PlantCode) => {
 
   const response = await axios.get(`${api}/Master/Get_SupvCode?PlantCode=${PlantCode}`);

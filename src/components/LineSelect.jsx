@@ -13,7 +13,7 @@ import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 //   options   [{ Line_ID, Line_Name }, ...]
 //   onChange  (lineId | "") => void
 //   disabled  e.g. until a Plant is chosen
-//   size      "small14" (37.1px, 14px text - dialog fields), "small" (35.7px, 13px text - like size="small" TextFields with 13px input) or
+//   size      "compact" (30px, 12px text - the compact dialogs of the master screens), "small14" (37.1px, 14px text - dialog fields), "small" (35.7px, 13px text - like size="small" TextFields with 13px input) or
 //             "medium" (56px, 16px text - like the default MUI TextField)
 //   style     extra style for the outer wrapper (e.g. a top margin)
 const SIZES = {
@@ -21,6 +21,7 @@ const SIZES = {
   smallBase: { height: 40, font: 16, labelTop: -8, labelFont: 12 }, // size="small" TextField with the default 16px text = 40px high
   small14: { height: 37.125, font: 14, labelTop: -8, labelFont: 10.5 }, // size="small" TextField with 14px text (dialog fields) = 37.125px high
   medium: { height: 56, font: 16, labelTop: -9, labelFont: 12 },
+  compact: { height: 30, font: 12, labelTop: -7, labelFont: 10.5 }, // the compact dialog fields of the master screens (30px high, 12px text)
 };
 const BLUE = "#1976d2";
 

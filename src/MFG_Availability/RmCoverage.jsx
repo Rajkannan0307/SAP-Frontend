@@ -12,7 +12,7 @@ import FilterSelect from "../components/FilterSelect";
 import { compactFieldSx, primaryButtonSx } from "../components/compactUi";
 import { DAY_CELLS, STATUS_META, COVERAGE_GREEN, COVERAGE_EMPTY, coverageFills, coverageFillPercent, fmtNum } from "./rmCoverageUtils";
 
-// RM Coverage (PPC & MRPC): raw-material coverage of the child parts (ROH / HALB) used in subcontract.
+// Child Part Coverage (PPC & MRPC; code name RmCoverage): raw-material coverage of the child parts: ROH used with any valuation type, HALB used with any valuation type except INHOUSE.
 //   Plan = SUM of (FG monthly MP plan x BOM qty) of every FG that uses the child part;  Demand per Day = Plan / 26
 //   Coverage Days = Current Stock (latest MB52 snapshot) / Demand per Day
 //   Status: R = stock below the Safety Stock, G = coverage > 3 days and stock above the Safety Stock, Y = anything else
@@ -21,7 +21,7 @@ import { DAY_CELLS, STATUS_META, COVERAGE_GREEN, COVERAGE_EMPTY, coverageFills, 
 const HEAD_H = 24; // height of the first header row (the second one sticks right below it)
 // Column widths are percentages of the table, so the table always fits the screen (no horizontal scroll, only the
 // rows scroll vertically). The Part Number / Description column takes whatever is left.
-const COL_W = { si: "3%", plan: "6%", perDay: "6.5%", safety: "6%", max: "5.5%", lot: "5.5%", stock: "6.5%", status: "4.5%", days: "5%", cell: "2.9%" };
+const COL_W = { si: "3%", plan: "6.5%", perDay: "6.5%", safety: "6.5%", max: "6%", stock: "6.5%", status: "4.5%", days: "5%", cell: "2.9%" };
 const TABLE_STYLE = { width: "100%", tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 };
 
 const headBase = {
@@ -86,6 +86,8 @@ const RmCoverage = () => {
   const [plantSelect, setPlantSelect] = useState("All");
   const [vendorFilter, setVendorFilter] = useState("All");
   const [buyerFilter, setBuyerFilter] = useState("All");
+  const [lineFilter, setLineFilter] = useState("All");
+  const [valuationFilter, setValuationFilter] = useState("All");
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState({ month: "", stock_as_of: null });
@@ -127,10 +129,12 @@ const RmCoverage = () => {
       setMeta({ month: data?.month || "", stock_as_of: data?.stock_as_of || null });
       setVendorFilter("All");
       setBuyerFilter("All");
+      setLineFilter("All");
+      setValuationFilter("All");
       setLoaded(true);
     } catch (error) {
       console.error(error);
-      toast.error(error?.response?.data?.message || "Failed to load the RM Coverage.");
+      toast.error(error?.response?.data?.message || "Failed to load the Child Part Coverage.");
       setRows([]);
     } finally {
       setLoading(false);
@@ -150,6 +154,8 @@ const RmCoverage = () => {
   }, [plants]);
 
   const vendorOptions = useMemo(() => uniqSorted(rows.flatMap((r) => r.vendors.map(vendorLabel))), [rows]);
+  const lineOptions = useMemo(() => uniqSorted(rows.map((r) => r.line_name).filter(Boolean)), [rows]);
+  const valuationOptions = useMemo(() => uniqSorted(rows.flatMap((r) => r.valuation_types || [])), [rows]);
   const buyerOptions = useMemo(() => uniqSorted(rows.flatMap((r) => r.vendors.filter((v) => v.buyer_id).map(buyerLabel))), [rows]);
 
   const visibleRows = useMemo(() => {
@@ -157,12 +163,14 @@ const RmCoverage = () => {
     return rows.filter((r) => {
       if (vendorFilter !== "All" && !r.vendors.some((v) => vendorLabel(v) === vendorFilter)) return false;
       if (buyerFilter !== "All" && !r.vendors.some((v) => v.buyer_id && buyerLabel(v) === buyerFilter)) return false;
+      if (lineFilter !== "All" && r.line_name !== lineFilter) return false;
+      if (valuationFilter !== "All" && !(r.valuation_types || []).includes(valuationFilter)) return false;
       if (!text) return true;
       return String(r.child_part_no).toLowerCase().includes(text) || String(r.child_part_desc || "").toLowerCase().includes(text);
     });
-  }, [rows, vendorFilter, buyerFilter, searchText]);
+  }, [rows, vendorFilter, buyerFilter, lineFilter, valuationFilter, searchText]);
 
-  // Excel of the table as shown (Vendor / Buyer / search applied): the numbers, the status and the 10 coverage cells
+  // Excel of the table as shown (Vendor / Buyer / Line / Valuation Type / search applied): the numbers, the status and the 10 coverage cells
   // (100% = a whole day covered, a part = part of a day; cells coloured like the status on screen).
   const handleExportExcel = () => {
     if (visibleRows.length === 0) {
@@ -176,31 +184,33 @@ const RmCoverage = () => {
         { header: "Part Number", width: 18 },
         { header: "Description", width: 34 },
         { header: "Material Type", width: 10 },
+        { header: "Line", width: 14 },
+        { header: "Valuation Type", width: 18 },
         { header: "Vendor", width: 30 },
         { header: "Buyer", width: 20 },
         { header: "Plan", width: 11, total: true },
         { header: "Demand / Day", width: 12, total: true },
         { header: "Safety Stock", width: 11 },
         { header: "Max Stock", width: 11 },
-        { header: "Lot Size", width: 10 },
         { header: "Current Stock", width: 13, total: true },
         { header: "Status", width: 12 },
         { header: "Coverage Days", width: 13 },
         ...Array.from({ length: DAY_CELLS }, (_, i) => ({ header: String(i + 1), width: 6 })),
       ];
-      const DAY_FROM = 15;
+      const STATUS_COL = 14;
+      const DAY_FROM = 16;
       const blank = (v) => (v === null || v === undefined ? "" : v);
       const rows = visibleRows.map((r, i) => [
-        i + 1, r.plant, r.child_part_no, r.child_part_desc || "", r.material_type || "",
+        i + 1, r.plant, r.child_part_no, r.child_part_desc || "", r.material_type || "", r.line_name || "", (r.valuation_types || []).join(", "),
         r.vendor_code ? `${r.vendor_code} ${r.vendor_name || ""}${r.vendors.length > 1 ? ` (+${r.vendors.length - 1} more)` : ""}` : "",
         r.buyer_name || "",
-        r.plan_qty || 0, Math.round(r.demand_per_day || 0), blank(r.safety_stock), blank(r.max_stock), blank(r.lot_size), r.current_stock || 0,
+        r.plan_qty || 0, Math.round(r.demand_per_day || 0), blank(r.safety_stock), blank(r.max_stock), r.current_stock || 0,
         (STATUS_META[r.status] || {}).name || "", blank(r.coverage_days),
         ...coverageFills(r.coverage_days),
       ]);
       downloadStatusExcel({
-        sheetName: "RM Coverage",
-        fileName: `RM_Coverage_${plantSelect === "All" ? "All" : plantSelect.split(" ")[0]}_${meta.month || month}.xlsx`,
+        sheetName: "Child Part Coverage",
+        fileName: `Child_Part_Coverage_${plantSelect === "All" ? "All" : plantSelect.split(" ")[0]}_${meta.month || month}.xlsx`,
         columns,
         groups: [{ label: "Coverage (each block = 1 day)", from: DAY_FROM, to: DAY_FROM + DAY_CELLS - 1 }],
         rows,
@@ -247,7 +257,7 @@ const RmCoverage = () => {
           totalLabel: "TOTAL",
         }],
         cellStyle: (value, rowIdx, c) => {
-          if (c === 13) {
+          if (c === STATUS_COL) {
             const st = STATUS_META[rows[rowIdx] && visibleRows[rowIdx].status];
             return st ? { s: { font: { bold: true, color: { rgb: st.text === "#fff" ? "FFFFFF" : "1A2233" } }, fill: { fgColor: { rgb: st.color.slice(1).toUpperCase() } }, alignment: { horizontal: "center" } } } : null;
           }
@@ -270,8 +280,8 @@ const RmCoverage = () => {
     }
   };
 
-  const activeFilterCount = (vendorFilter !== "All" ? 1 : 0) + (buyerFilter !== "All" ? 1 : 0);
-  const clearFilters = () => { setVendorFilter("All"); setBuyerFilter("All"); };
+  const activeFilterCount = [vendorFilter, buyerFilter, lineFilter, valuationFilter].filter((v) => v !== "All").length;
+  const clearFilters = () => { setVendorFilter("All"); setBuyerFilter("All"); setLineFilter("All"); setValuationFilter("All"); };
 
   // keep the header the same width as the body: leave room for the body scrollbar (0 when there is none)
   useLayoutEffect(() => {
@@ -300,7 +310,7 @@ const RmCoverage = () => {
       }}
     >
       <Typography sx={{ fontSize: 17, fontWeight: 700, color: "#1a2233", letterSpacing: 0.1, lineHeight: 1.3, mb: loaded ? 0.25 : 1.5 }}>
-        RM Coverage
+        Child Part Coverage
       </Typography>
       {loaded && (
         <Typography sx={{ fontSize: 11, color: "#8a93a3", lineHeight: 1.4, mb: 1.5 }}>
@@ -394,6 +404,8 @@ const RmCoverage = () => {
         >
           <FilterSelect label="Vendor" value={vendorFilter} options={vendorOptions} onChange={setVendorFilter} minWidth={220} />
           <FilterSelect label="Buyer" value={buyerFilter} options={buyerOptions} onChange={setBuyerFilter} minWidth={170} />
+          <FilterSelect label="Line" value={lineFilter} options={lineOptions} onChange={setLineFilter} minWidth={170} />
+          <FilterSelect label="Valuation Type" value={valuationFilter} options={valuationOptions} onChange={setValuationFilter} minWidth={170} />
         </FilterPanel>
       </div>
 
@@ -413,7 +425,6 @@ const RmCoverage = () => {
             <col style={{ width: COL_W.perDay }} />
             <col style={{ width: COL_W.safety }} />
             <col style={{ width: COL_W.max }} />
-            <col style={{ width: COL_W.lot }} />
             <col style={{ width: COL_W.stock }} />
             <col style={{ width: COL_W.status }} />
             <col style={{ width: COL_W.days }} />
@@ -422,12 +433,11 @@ const RmCoverage = () => {
           <thead>
             <tr>
               <Head rowSpan={2} tip="Serial number of the row in the list" style={{ ...headBase, top: 0 }}>SI</Head>
-              <Head rowSpan={2} tip="Child part (BOM component) of the FG parts, ROH / HALB used in subcontract" style={{ ...headBase, top: 0, textAlign: "left" }}>Part Number / Description</Head>
+              <Head rowSpan={2} tip="Child part (BOM component) of the FG parts, ROH used with any valuation type, HALB used with any valuation type except INHOUSE" style={{ ...headBase, top: 0, textAlign: "left" }}>Part Number / Description</Head>
               <Head rowSpan={2} tip="Plan = sum of (FG monthly MP plan x BOM qty) of every FG that uses this child part, current month" style={{ ...headBase, top: 0 }}>Plan</Head>
               <Head rowSpan={2} tip="Demand per Day = Plan / 26" style={{ ...headBase, top: 0 }}>Demand / Day</Head>
               <Head rowSpan={2} tip="Safety Stock from the Material Master" style={{ ...headBase, top: 0 }}>Safety Stock</Head>
               <Head rowSpan={2} tip="Maximum Stock from the Material Master" style={{ ...headBase, top: 0 }}>Max Stock</Head>
-              <Head rowSpan={2} tip="Lot Size from the Material - Vendor Mapping (the vendor with the highest SOB)" style={{ ...headBase, top: 0 }}>Lot Size</Head>
               <Head rowSpan={2} tip="Current Stock = unrestricted stock of the latest MB52 (Plant Stock) snapshot" style={{ ...headBase, top: 0 }}>Current Stock</Head>
               <Head rowSpan={2} tip="R = stock below Safety Stock | G = coverage over 3 days and stock above Safety Stock | Y = any other case" style={{ ...headBase, top: 0 }}>Status</Head>
               <Head colSpan={DAY_CELLS + 1} tip="Coverage Days = Current Stock / Demand per Day. Each block = 1 day of stock, in the colour of the status (R red, Y yellow, G green)" style={{ ...headBase, top: 0, height: HEAD_H, borderLeft: "1px solid #b9c8ec" }}>Coverage Days</Head>
@@ -454,7 +464,6 @@ const RmCoverage = () => {
             <col style={{ width: COL_W.perDay }} />
             <col style={{ width: COL_W.safety }} />
             <col style={{ width: COL_W.max }} />
-            <col style={{ width: COL_W.lot }} />
             <col style={{ width: COL_W.stock }} />
             <col style={{ width: COL_W.status }} />
             <col style={{ width: COL_W.days }} />
@@ -463,14 +472,14 @@ const RmCoverage = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={10 + DAY_CELLS} style={{ textAlign: "center", padding: "28px 0" }}>
+                <td colSpan={9 + DAY_CELLS} style={{ textAlign: "center", padding: "28px 0" }}>
                   <CircularProgress size={20} />
                 </td>
               </tr>
             ) : visibleRows.length === 0 ? (
               <tr>
-                <td colSpan={10 + DAY_CELLS} style={{ textAlign: "center", padding: "28px 0", color: "#9aa3b2", fontSize: 12 }}>
-                  {loaded ? "No child parts used in subcontract found for the selected filters." : "Select a plant and press Search."}
+                <td colSpan={9 + DAY_CELLS} style={{ textAlign: "center", padding: "28px 0", color: "#9aa3b2", fontSize: 12 }}>
+                  {loaded ? "No child parts found for the selected filters." : "Select a plant and press Search."}
                 </td>
               </tr>
             ) : (
@@ -486,12 +495,13 @@ const RmCoverage = () => {
                     <td style={{ ...cellBase, textAlign: "center" }}>{idx + 1}</td>
                     <td style={{ ...cellBase, whiteSpace: "normal" }} title={`${row.child_part_no} - ${row.child_part_desc || ""}\nFGs using it: ${row.fg_count}${vendorTip ? `\n${vendorTip}` : ""}`}>
                       <div style={{ lineHeight: 1.3, overflow: "hidden" }}>
-                        <div style={{ color: "#0052cc", fontWeight: 700, fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {multiPlant && <span style={{ color: "#6b7280", fontWeight: 600, marginRight: 6 }}>{row.plant}</span>}
-                          {row.child_part_no}
-                          <span style={{ color: "#8a93a3", fontWeight: 400, fontSize: 9.5, marginLeft: 6 }}>{row.material_type}</span>
+                        {/* part number, type and description on ONE line (the description takes the free width and is cut with "..." only when it really does not fit) */}
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 6, whiteSpace: "nowrap", overflow: "hidden" }}>
+                          {multiPlant && <span style={{ color: "#6b7280", fontWeight: 600, fontSize: 11, flex: "none" }}>{row.plant}</span>}
+                          <span style={{ color: "#0052cc", fontWeight: 700, fontSize: 11, flex: "none" }}>{row.child_part_no}</span>
+                          <span style={{ color: "#8a93a3", fontWeight: 400, fontSize: 9.5, flex: "none" }}>{row.material_type}</span>
+                          <span style={{ color: "#6b7280", fontSize: 10, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{row.child_part_desc}</span>
                         </div>
-                        <div style={{ color: "#6b7280", fontSize: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.child_part_desc}</div>
                         {vendorLine && (
                           <div style={{ color: "#9ca3af", fontSize: 9.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{vendorLine}</div>
                         )}
@@ -501,7 +511,6 @@ const RmCoverage = () => {
                     <td style={num} title={`Exact: ${fmtNum(row.demand_per_day)} per day`}>{fmtNum(row.demand_per_day, 0)}</td>
                     <td style={{ ...num, color: row.safety_stock === null ? "#b6bac3" : "#333" }}>{fmtNum(row.safety_stock)}</td>
                     <td style={{ ...num, color: row.max_stock === null ? "#b6bac3" : "#333" }}>{fmtNum(row.max_stock)}</td>
-                    <td style={{ ...num, color: row.lot_size === null ? "#b6bac3" : "#333" }}>{fmtNum(row.lot_size, 3)}</td>
                     <td style={{ ...num, fontWeight: 700 }}>{fmtNum(row.current_stock)}</td>
                     <td style={{ ...cellBase, textAlign: "center" }}><StatusChip status={row.status} /></td>
                     <td

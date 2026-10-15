@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import * as XLSX from "xlsx-js-style";
 import { AuthContext } from "../Authentication/AuthContext";
 import { getdetails as getLines } from "../controller/LineMasterapiservice";
+import { getProductSegments } from "../controller/Masterapiservice";
 import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import {
   GetMatAvailabilityFiltersApi,
@@ -371,6 +372,9 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
   const [month, setMonth] = useState(currentMonth());
   const [lines, setLines] = useState([]);
   const [lineId, setLineId] = useState("");
+  // Segment of the FG part (Mst_Product_Segment, active segments), filtered by the API like the Line
+  const [segments, setSegments] = useState([]);
+  const [segmentId, setSegmentId] = useState("");
 
   const [reportRows, setReportRows] = useState([]);
   const [operationColumns, setOperationColumns] = useState([]);
@@ -401,6 +405,12 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
         console.error(error);
         toast.error("Failed to load Line filter options.");
       });
+    getProductSegments()
+      .then((res) => setSegments(res.data || []))
+      .catch((error) => {
+        console.error(error);
+        toast.error("Failed to load Segment filter options.");
+      });
   }, []);
 
   // Line narrows to the selected Plant, same reasoning as Daily Production
@@ -414,6 +424,7 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
     plant: plant || undefined,
     partNameId: partNameId || undefined,
     lineId: lineId || undefined,
+    segmentId: segmentId || undefined,
     month,
   });
 
@@ -780,6 +791,18 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
 
         <Autocomplete
           size="small"
+          options={segments}
+          value={segments.find((x) => String(x.prod_seg_id) === String(segmentId)) || null}
+          onChange={(e, newVal) => setSegmentId(newVal ? newVal.prod_seg_id : "")}
+          getOptionLabel={(x) => (x ? x.seg_name : "")}
+          isOptionEqualToValue={(o, v) => o.prod_seg_id === v.prod_seg_id}
+          sx={compactFieldSx(150)}
+          ListboxProps={{ style: { fontSize: 11.5 } }}
+          renderInput={(params) => <TextField {...params} label="Segment" placeholder="All Segments" />}
+        />
+
+        <Autocomplete
+          size="small"
           options={filterOptions.partNames}
           value={filterOptions.partNames.find((p) => String(p.Prod_ID) === String(partNameId)) || null}
           onChange={(e, newVal) => setPartNameId(newVal ? newVal.Prod_ID : "")}
@@ -1012,6 +1035,9 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
   const [month, setMonth] = useState(currentMonth());
   const [lines, setLines] = useState([]);
   const [lineId, setLineId] = useState("");
+  // Segment of the FG part (Mst_Product_Segment, active segments), filtered by the API like the Line
+  const [segments, setSegments] = useState([]);
+  const [segmentId, setSegmentId] = useState("");
 
   const [reportRows, setReportRows] = useState([]);
   const [operationColumns, setOperationColumns] = useState([]);
@@ -1037,6 +1063,12 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
         console.error(error);
         toast.error("Failed to load Line filter options.");
       });
+    getProductSegments()
+      .then((res) => setSegments(res.data || []))
+      .catch((error) => {
+        console.error(error);
+        toast.error("Failed to load Segment filter options.");
+      });
   }, []);
 
   // Line narrows to the selected Plant, same reasoning as Daily Production
@@ -1050,6 +1082,7 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
     plant: plant || undefined,
     partNameId: partNameId || undefined,
     lineId: lineId || undefined,
+    segmentId: segmentId || undefined,
     month,
     assemblyOnly: true,
   });
@@ -1276,6 +1309,18 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
           sx={compactFieldSx(215)}
           ListboxProps={{ style: { fontSize: 11.5 } }}
           renderInput={(params) => <TextField {...params} label="Plant" placeholder="Select Plant" required error={!plant} />}
+        />
+
+        <Autocomplete
+          size="small"
+          options={segments}
+          value={segments.find((x) => String(x.prod_seg_id) === String(segmentId)) || null}
+          onChange={(e, newVal) => setSegmentId(newVal ? newVal.prod_seg_id : "")}
+          getOptionLabel={(x) => (x ? x.seg_name : "")}
+          isOptionEqualToValue={(o, v) => o.prod_seg_id === v.prod_seg_id}
+          sx={compactFieldSx(150)}
+          ListboxProps={{ style: { fontSize: 11.5 } }}
+          renderInput={(params) => <TextField {...params} label="Segment" placeholder="All Segments" />}
         />
 
         <Autocomplete

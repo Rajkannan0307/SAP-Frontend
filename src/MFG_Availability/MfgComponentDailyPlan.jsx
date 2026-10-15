@@ -28,7 +28,10 @@ import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import { getdetails as getModules } from "../controller/ModuleMasterapiservice";
 import { getdetails as getLines } from "../controller/LineMasterapiservice";
 import { getdetails as getOperations } from "../controller/OperationMasterapiservice";
+import FilterSelect from "../components/FilterSelect";
+import { FilterToggleButton, FilterPanel } from "../components/FilterPanel";
 import {
+  GetMfgComponentValuationTypesApi,
   GetMfgComponentDailyPlanGridApi,
   SaveMfgComponentDailyPlanApi,
   GetMfgComponentDailyPlanHistorySummaryApi,
@@ -1378,9 +1381,9 @@ const STATUS_NUM_COLS = [
   // 541 = movement type 541 (material issued to subcontractor) from the
   // Subcontract Daily Plan, matched on Plant + this Child Part's material code.
   { label: "MTD Actual", tip: "541 MTD Actual — month-to-date quantity of movement types 541 and 542 (net) for this Child Part, from the Subcontract Daily Plan", key: "sub541_mtd_actual", kind: "actual", sub: true },
-  { label: "MTD Gap", tip: "541 MTD Gap — 541 MTD Actual minus the plan entered for the month on the Component Daily Plan tab (sum of the daily plan entries)", key: "sub541_month_gap", kind: "gap", sub: true },
+  { label: "MTD Gap", tip: "541 MTD Gap — MTD Actual minus 541 MTD Actual", key: "sub541_month_gap", kind: "gap", sub: true },
   { label: "YA", tip: "541 YA — yesterday's quantity of movement types 541 and 542 (net) for this Child Part, from the Subcontract Daily Plan", key: "sub541_yd_actual", kind: "actual", sub: true },
-  { label: "YG", tip: "541 YG — 541 YA minus YD Plan (yesterday's plan entered for this Child Part)", key: "sub541_yd_gap", kind: "gap", sub: true },
+  { label: "YG", tip: "541 YG — YD Actual minus 541 YA", key: "sub541_yd_gap", kind: "gap", sub: true },
 ];
 // First column of each section (MTD / YD / 541 Monthly / 541 Daily)
 // gets a divider line.
@@ -1492,12 +1495,42 @@ const PartGroupRows = ({ group, accent, open, onToggle }) => {
                     })}
                   </TableRow>
                 ))}
+                <StatusTotalRow rows={group.rows} sticky={false} label={`${group.name} TOTAL`} />
               </TableBody>
             </Table>
           </Collapse>
         </TableCell>
       </TableRow>
     </>
+  );
+};
+
+// TOTAL of every column over the parts shown (after the search / Valuation Type filter), pinned to the bottom of the table.
+// Gap columns are the sum of the row gaps.
+const StatusTotalRow = ({ rows, sticky = true, label = "TOTAL" }) => {
+  const total = (key) => rows.reduce((sum, r) => sum + (Number(r[key]) || 0), 0);
+  const cell = {
+    ...(sticky ? { position: "sticky", bottom: 0, zIndex: 3 } : {}), backgroundColor: "#eaf0fc", borderTop: "2px solid #b8c7ec", borderBottom: "1px solid #d0dcf5",
+    height: 32, padding: "0 10px", fontSize: 11.5, fontWeight: 700, color: "#1a2233", whiteSpace: "nowrap",
+  };
+  return (
+    <TableRow>
+      <TableCell colSpan={3} sx={{ ...cell, letterSpacing: 0.3 }}>
+        {label} <Box component="span" sx={{ fontWeight: 400, color: "#6b7280", fontSize: 10 }}>({rows.length} {rows.length === 1 ? "part" : "parts"})</Box>
+      </TableCell>
+      {STATUS_NUM_COLS.map((c) => {
+        const n = total(c.key);
+        return (
+          <TableCell
+            key={c.key}
+            align="right"
+            sx={{ ...cell, ...NUM_FONT, color: c.kind === "gap" ? gapColor(n) : "#1a2233", borderLeft: SECTION_START.has(c.key) ? "1px solid #b8c7ec" : "none" }}
+          >
+            {c.kind === "gap" ? gapFmt(n) : numberFmt(n)}
+          </TableCell>
+        );
+      })}
+    </TableRow>
   );
 };
 
@@ -1590,6 +1623,10 @@ const PlanHistoryBody = ({ searchText = "" }) => {
   const [lineId, setLineId] = useState("");
   const [operations, setOperations] = useState([]);
   const [optId, setOptId] = useState("");
+  // Valuation Type (MFG BOM valuation of the child part): in the Filters panel, applied with Search like the other filters
+  const [valuationOptions, setValuationOptions] = useState([]);
+  const [valuationName, setValuationName] = useState("All");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   // Monthly report filter — Month/Year only, no manual date entry. Defaults
   // to the current month/year; converted to a Start/End date range only at
   // fetch time, since the backend endpoint still expects fromDate/toDate.
@@ -1620,6 +1657,9 @@ const PlanHistoryBody = ({ searchText = "" }) => {
       }
     };
     loadMasters();
+    GetMfgComponentValuationTypesApi()
+      .then((res) => setValuationOptions(Array.isArray(res) ? res : []))
+      .catch((error) => console.error("Failed to load the Valuation Types.", error));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1665,6 +1705,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
         moduleId: moduleId || undefined,
         lineId: lineId || undefined,
         optId: optId || undefined,
+        valuationId: valuationName !== "All" ? (valuationOptions.find((v) => v.Valuation_Name === valuationName)?.Valuation_ID || undefined) : undefined,
       });
       setHistoryRows(data || []);
       setLoaded(true);
@@ -1694,10 +1735,10 @@ const PlanHistoryBody = ({ searchText = "" }) => {
         cw_gap: (r.cw_actual || 0) - (r.cw_plan || 0),
         yd_gap: (r.yd_actual || 0) - (r.yd_plan || 0),
         day_gap: (r.day_actual || 0) - (r.day_plan || 0),
-        // 541 gaps: 541 MTD Actual - MTD Plan (entries), and 541 YA - YD Plan (yesterday).
-        sub541_month_gap: (r.sub541_mtd_actual || 0) - (r.month_plan || 0),
+        // 541 gaps: MTD Actual - 541 MTD Actual, and YD Actual - 541 YA.
+        sub541_month_gap: (r.mtd_actual_fg || 0) - (r.sub541_mtd_actual || 0),
         // 541 - Daily group shows YESTERDAY: 541 YA minus the plan entered for yesterday (YD Plan)
-        sub541_yd_gap: (r.sub541_yd_actual || 0) - (r.yd_plan || 0),
+        sub541_yd_gap: (r.yd_actual || 0) - (r.sub541_yd_actual || 0),
       })),
     [historyRows]
   );
@@ -1917,6 +1958,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
         )}
 
         <div style={{ display: "flex", gap: 8, marginLeft: "auto", flexShrink: 0 }}>
+          <FilterToggleButton open={filtersOpen} onClick={() => setFiltersOpen((o) => !o)} activeCount={valuationName !== "All" ? 1 : 0} />
           <Button
             onClick={fetchHistory}
             disabled={loading}
@@ -1928,6 +1970,10 @@ const PlanHistoryBody = ({ searchText = "" }) => {
             {loading ? "Loading..." : "Search"}
           </Button>
         </div>
+
+        <FilterPanel open={filtersOpen} activeCount={valuationName !== "All" ? 1 : 0} onClear={() => setValuationName("All")}>
+          <FilterSelect label="Valuation Type" value={valuationName} options={valuationOptions.map((v) => v.Valuation_Name)} onChange={setValuationName} minWidth={190} />
+        </FilterPanel>
       </div>
 
       <div

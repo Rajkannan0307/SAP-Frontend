@@ -1,13 +1,16 @@
-﻿import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   TextField,
   Button,
-  Modal,
+  Dialog,
   Box,
+  Chip,
+  CircularProgress,
   FormControlLabel,
   IconButton,
-  Select,
+  MenuItem,
   Switch,
+  Typography,
 } from "@mui/material";
 import {
   DataGrid,
@@ -24,16 +27,27 @@ import * as XLSX from 'xlsx-js-style';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
-import { MenuItem, InputLabel, FormControl } from '@mui/material';
+import CloseIcon from "@mui/icons-material/Close";
 
 import { MaterialMaster } from "../controller/Masterapiservice";
 import { FaDownload } from "react-icons/fa";
-import { deepPurple } from '@mui/material/colors';
 import { api } from "../controller/constants";
-import { getdetails, getAdd, getPlants, getUpdates, getMaterialType, } from '../controller/Masterapiservice';
+import { getdetails, getAdd, getPlants, getUpdates, getMaterialType, getProductSegments } from '../controller/Masterapiservice';
 import { getdetails as getLines } from '../controller/LineMasterapiservice';
 import LineSelect from '../components/LineSelect';
-import SectionHeading from "../components/Header";
+import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
+import { findPlantsNotAllowed, plantsNotAllowedMessage } from "../common/plantFileCheck";
+import FilterSelect from "../components/FilterSelect";
+import UniqueGroupingInfo from "../components/UniqueGroupingInfo";
+import { FilterToggleButton, FilterPanel } from "../components/FilterPanel";
+import {
+  compactFieldSx,
+  compactMenuProps,
+  compactGridSx,
+  primaryButtonSx,
+  successButtonSx,
+  outlineButtonSx,
+} from "../components/compactUi";
 import { MaterialGroupEnumTypes } from "../common/enumValues";
 
 // safety_stock / max_stock: mandatory only for material type ROH; when given they must be numbers,
@@ -56,6 +70,80 @@ const getStockError = (materialType, safetyStock, maxStock) => {
   }
   return "";
 };
+
+const DIALOG_FIELD_SX = compactFieldSx("100%", 12);
+
+// Compact select used by the Add / Edit dialogs
+const SelectField = ({ label, value, onChange, options, required = false }) => (
+  <TextField
+    select
+    size="small"
+    label={label}
+    value={value}
+    onChange={onChange}
+    required={required}
+    sx={DIALOG_FIELD_SX}
+    SelectProps={{ MenuProps: compactMenuProps(12) }}
+  >
+    {options.map((o) => (
+      <MenuItem key={o.value} value={o.value} sx={{ fontSize: 12 }}>
+        {o.label}
+      </MenuItem>
+    ))}
+  </TextField>
+);
+
+const TextInput = ({ label, value, onChange, readOnly = false, type, inputProps, required = false }) => (
+  <TextField
+    size="small"
+    label={label}
+    value={value}
+    onChange={onChange}
+    type={type}
+    required={required}
+    sx={DIALOG_FIELD_SX}
+    InputProps={{ readOnly }}
+    inputProps={inputProps}
+  />
+);
+
+const ActiveSwitch = ({ checked, onChange }) => (
+  <FormControlLabel
+    sx={{ m: 0, "& .MuiFormControlLabel-label": { fontSize: 12, fontWeight: 700, color: checked ? "#2e7d32" : "#d32f2f" } }}
+    control={
+      <Switch
+        size="small"
+        checked={checked}
+        onChange={onChange}
+        color="success"
+        sx={{
+          "& .MuiSwitch-track": { backgroundColor: checked ? "#2e7d32" : "#d32f2f", opacity: 0.55 },
+          "& .MuiSwitch-thumb": { backgroundColor: checked ? "#2e7d32" : "#d32f2f" },
+        }}
+      />
+    }
+    label={checked ? "Active" : "Inactive"}
+  />
+);
+
+// Shell of the Add / Edit / Upload dialogs
+const FormDialog = ({ open, title, onClose, children, actions }) => (
+  <Dialog
+    open={open}
+    onClose={onClose}
+    maxWidth={false}
+    PaperProps={{ sx: { width: 460, maxWidth: "94vw", borderRadius: "10px" } }}
+  >
+    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 2, py: 1, borderBottom: "1px solid #e8eaee", backgroundColor: "#f3f7ff" }}>
+      <Typography sx={{ fontSize: 14, fontWeight: 700, color: "#1a2233" }}>{title}</Typography>
+      <IconButton size="small" onClick={onClose}>
+        <CloseIcon sx={{ fontSize: 16 }} />
+      </IconButton>
+    </Box>
+    <Box sx={{ p: 2, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "14px 12px" }}>{children}</Box>
+    <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, px: 2, py: 1.25, borderTop: "1px solid #e8eaee" }}>{actions}</Box>
+  </Dialog>
+);
 
 const Material = () => {
   const [searchText, setSearchText] = useState("");
@@ -88,57 +176,64 @@ const Material = () => {
   const [SafetyStock, setSafetyStock] = useState("");
   const [MaxStock, setMaxStock] = useState("");
   const [ActiveStatus, setActiveStatus] = useState(false);
-  const [PlantTable, setPlantTable] = useState([]);
+  // Only the plants this user may use (own plant + User Master > Data Access) - the same list and rule as Vendor Master,
+  // Material - Vendor Mapping and the Manufacturing BOM. PlantTable = the same plants for the Add dialog (Plant_Id = Plant_ID).
+  const [plants, setPlants] = useState([]);
+  const PlantTable = useMemo(() => plants.map((p) => ({ Plant_Id: p.Plant_ID, Plant_Code: p.Plant_Code })), [plants]);
+  const [loading, setLoading] = useState(true);
+  // Plant: the dropdown holds the selection (starts on the user's own login plant), the Search button applies it
+  const [plantSelect, setPlantSelect] = useState("All");
+  const [fPlant, setFPlant] = useState("All"); // applied plant
+  const plantDefaulted = useRef(false);
   const [MaterialTable, setMaterialTable] = useState([])
   const [LineTable, setLineTable] = useState([]);
   const [LineID, setLineID] = useState("");
+  // Segment (Mst_Product_Segment): optional. SegmentExtra = the segment the material has now when it is no longer an
+  // active one (still shown in the Edit dropdown so the saved value is not lost)
+  const [SegmentTable, setSegmentTable] = useState([]);
+  const [SegmentID, setSegmentID] = useState("");
+  const [SegmentExtra, setSegmentExtra] = useState(null);
 
   // const [userID, setUserID] = useState("");
 
 
 
   const columns = [
-    { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
-    { field: "Material_Type", headerName: "Material Type", flex: 1 },
-
-    { field: "Material_Code", headerName: "Material Code", flex: 1 },
-    { field: "Description", headerName: "Description", flex: 2 },
-    { field: "Line_Name", headerName: "Line", flex: 1 },
-
-    { field: "Rate", headerName: "Rate", flex: 1 },
-    { field: "safety_stock", headerName: "Safety Stock", flex: 1 },
-    { field: "max_stock", headerName: "Max Stock", flex: 1 },
+    { field: "Plant_Code", headerName: "Plant", flex: 0.6, minWidth: 70 },
+    { field: "Material_Type", headerName: "Material Type", flex: 0.8, minWidth: 90 },
+    { field: "Material_Code", headerName: "Material Code", flex: 1, minWidth: 110 },
+    { field: "Description", headerName: "Description", flex: 1.8, minWidth: 160 },
+    { field: "Line_Name", headerName: "Line", flex: 0.9, minWidth: 90 },
+    { field: "Segment_Name", headerName: "Segment", flex: 0.8, minWidth: 90 },
+    { field: "Rate", headerName: "Rate", flex: 0.6, minWidth: 70 },
+    { field: "safety_stock", headerName: "Safety Stock", flex: 0.8, minWidth: 90 },
+    { field: "max_stock", headerName: "Max Stock", flex: 0.7, minWidth: 80 },
     {
-      field: "ActiveStatus",
-      headerName: "Active Status",
-      flex: 1,
+      field: "Active_Status",
+      headerName: "Status",
+      flex: 0.7,
+      minWidth: 80,
+      valueFormatter: (value) => (value ? "Active" : "Inactive"),
       renderCell: (params) => {
-        const isActive = params.row.Active_Status;  // Assuming Active_Status is a boolean
+        const isActive = !!params.row.Active_Status;
         return (
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isActive} // Use the boolean value directly
-                color="default"  // Neutral color for default theme
-                sx={{
-                  '& .MuiSwitch-track': {
-                    backgroundColor: isActive ? '#2e7d32' : '#d32f2f', // Green when active, Red when inactive
-                  },
-                  '& .MuiSwitch-thumb': {
-                    backgroundColor: isActive ? '#2e7d32' : '#d32f2f', // Green when active, Red when inactive
-                  },
-                }}
-              />
-            }
+          <Chip
+            size="small"
+            label={isActive ? "Active" : "Inactive"}
+            sx={{
+              height: 20,
+              fontSize: 10.5,
+              fontWeight: 700,
+              backgroundColor: isActive ? "#eafaf1" : "#fdeeee",
+              color: isActive ? "#1b7a43" : "#b42323",
+            }}
           />
         );
       },
     },
-
-
-
   ];
   const getData = async () => {
+    setLoading(true);
     try {
       const response = await getdetails();
       console.log(response);  // Check the structure of response
@@ -150,6 +245,8 @@ const Material = () => {
       setData([]);  // Handle error by setting empty data
       setOriginalRows([]); // handle error case
       setRows([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -157,6 +254,65 @@ const Material = () => {
     getData();
 
   }, []);
+
+  useEffect(() => {
+    getMyPlants()
+      .then((res) => setPlants(Array.isArray(res) ? res : []))
+      .catch((error) => console.error("Failed to load Plant list.", error));
+  }, []);
+
+  // The user's own login plant (Is_Default, the first one in the list) is selected and applied once, as soon as the
+  // plant list is loaded; after that the user can switch to any other plant (or All) and press Search.
+  useEffect(() => {
+    if (plantDefaulted.current || plants.length === 0) return;
+    plantDefaulted.current = true;
+    const own = plants.find((p) => Number(p.Is_Default) === 1) || plants[0];
+    const label = myPlantLabel(own);
+    setPlantSelect(label);
+    setFPlant(label);
+  }, [plants]);
+
+  // Search: apply the selected plant and reload the list
+  const handleSearch = () => {
+    setFPlant(plantSelect);
+    getData();
+  };
+
+  // Same rule as the Manufacturing BOM: only the materials of the plants this user may use (until the plant list is
+  // loaded - or if it cannot be loaded - nothing is shown, never other plants' rows)
+  const scopedData = useMemo(() => {
+    const allowed = new Set(plants.map((p) => String(p.Plant_Code)));
+    return (originalRows || []).filter((row) => allowed.has(String(row.Plant_Code)));
+  }, [originalRows, plants]);
+  // The Plant filter shows "1150 - RML P4 (RML)" (same label as the Manufacturing BOM) and filters by the plant code
+  const plantFilterCode = fPlant === "All" ? null : String(plants.find((p) => myPlantLabel(p) === fPlant)?.Plant_Code ?? "");
+
+  // Search box + panel filters, applied live to the loaded materials
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [fType, setFType] = useState("All");
+  const [fLine, setFLine] = useState("All");
+  const [fSegment, setFSegment] = useState("All");
+  const [fStatus, setFStatus] = useState("All");
+  const visibleRows = useMemo(() => {
+    const text = searchText.trim().toLowerCase();
+    return scopedData.filter((row) => {
+      if (plantFilterCode !== null && String(row.Plant_Code) !== plantFilterCode) return false;
+      if (fType !== "All" && row.Material_Type !== fType) return false;
+      if (fLine !== "All" && row.Line_Name !== fLine) return false;
+      if (fSegment !== "All" && row.Segment_Name !== fSegment) return false;
+      if (fStatus !== "All" && (fStatus === "Active") !== !!row.Active_Status) return false;
+      if (!text) return true;
+      return ["Plant_Code", "Material_Type", "Material_Code", "Description", "Rate", "Segment_Name", "Line_Name"].some((key) => {
+        const value = row[key];
+        return value !== null && value !== undefined && String(value).toLowerCase().includes(text);
+      });
+    });
+  }, [scopedData, searchText, plantFilterCode, fType, fLine, fSegment, fStatus]);
+  const uniq = (key) => [...new Set(scopedData.map((r) => r[key]).filter((v) => v !== null && v !== undefined && v !== "").map(String))].sort();
+  // the Plant filter sits in front of the search box (always visible); the badge / "Clear filters" are for the panel filters
+  const activeFilterCount = [fType, fLine, fSegment, fStatus].filter((v) => v !== "All").length;
+  const clearFilters = () => { setFType("All"); setFLine("All"); setFSegment("All"); setFStatus("All"); };
+
 
 
   // useEffect(() => {
@@ -168,21 +324,21 @@ const Material = () => {
   // }, [PlantCode]);
 
 
-  const get_Plant = async () => {
-    try {
-      const response = await getPlants();
-      setPlantTable(response.data);
-    } catch (error) {
-      console.error("Error updating user:", error);
-    }
-  };
-
   const get_Material_Type = async () => {
     try {
       const response = await getMaterialType(MaterialGroupEnumTypes.direct);
       setMaterialTable(response.data);
     } catch (error) {
       console.error("Error updating user:", error);
+    }
+  };
+
+  const get_Segment = async () => {
+    try {
+      const response = await getProductSegments();
+      setSegmentTable(response.data || []);
+    } catch (error) {
+      console.error("Error loading Segment list:", error);
     }
   };
 
@@ -213,6 +369,20 @@ const Material = () => {
 
 
 
+  // Segment dropdown (Add and Edit): None + the active segments (+ the material's own segment when it is inactive)
+  const segmentOptions = [
+    ...(SegmentExtra && !SegmentTable.some((x) => String(x.prod_seg_id) === String(SegmentExtra.prod_seg_id)) ? [SegmentExtra] : []),
+    ...SegmentTable,
+  ];
+  const segmentField = (
+    <SelectField
+      label="Segment"
+      value={SegmentID}
+      onChange={(e) => setSegmentID(e.target.value)}
+      options={[{ value: "", label: "None" }, ...segmentOptions.map((x) => ({ value: x.prod_seg_id, label: x.seg_name }))]}
+    />
+  );
+
   // âœ… Custom Toolbar
   const CustomToolbar = () => (
     <GridToolbarContainer>
@@ -224,20 +394,26 @@ const Material = () => {
 
   // âœ… Handle Add Modal
   const handleOpenAddModal = (item) => {
-    setPlantCode("");
+    // start on the plant being viewed (or the user's own plant when All is shown); it can be changed in the dialog
+    const startPlant = (plantFilterCode !== null && plants.find((p) => String(p.Plant_Code) === plantFilterCode))
+      || plants.find((p) => Number(p.Is_Default) === 1)
+      || null;
+    setPlantCode(startPlant ? startPlant.Plant_ID : "");
     setMaterialCode("");
     setDescription("");
     setMaterialType("");
     setLineID("");
+    setSegmentID("");
+    setSegmentExtra(null);
 
     setRate("");
     setSafetyStock("");
     setMaxStock("");
     setActiveStatus(true);
     setOpenAddModal(true);
-    get_Plant();
     get_Material_Type();
     get_Line();
+    get_Segment();
 
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
@@ -246,9 +422,9 @@ const Material = () => {
   // âœ… Handle Upload Modal
   const handleOpenUploadModal = () => {
     setOpenUploadModal(true);
-    get_Plant();
     get_Material_Type();
     get_Line();
+    get_Segment();
   };
 
   // Dynamic template (replaces the old static MaterialMaster.xlsx) so the
@@ -262,7 +438,7 @@ const Material = () => {
     workbook.creator = 'MATERIAL_MASTER';
     workbook.created = new Date();
 
-    const headers = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Active_Status', 'Line_Name', 'Safety_Stock', 'Max_Stock'];
+    const headers = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Active_Status', 'Line_Name', 'Safety_Stock', 'Max_Stock', 'Segment'];
     const worksheet = workbook.addWorksheet('MATERIAL');
     worksheet.addRow(headers);
     worksheet.getRow(1).eachCell((cell) => {
@@ -280,11 +456,18 @@ const Material = () => {
       { width: 22 }, // Line_Name (optional)
       { width: 14 }, // Safety_Stock (mandatory for ROH)
       { width: 14 }, // Max_Stock (mandatory for ROH)
+      { width: 14 }, // Segment (optional)
     ];
     worksheet.views = [{ state: 'frozen', ySplit: 1 }];
     // Safety_Stock / Max_Stock: mandatory for material type ROH, optional for the others; 0 or more
     worksheet.getCell('H1').note = 'Mandatory for material type ROH. Number, 0 or more.';
     worksheet.getCell('I1').note = 'Mandatory for material type ROH. Number, 0 or more. Not less than Safety_Stock.';
+    // Segment (optional): the name of an active segment of the Segment Master - dropdown; blank = no segment
+    worksheet.getCell('J1').note = 'Optional: the segment name from the dropdown. Blank = no segment (an existing material keeps its segment).';
+    const segmentNames = (SegmentTable || []).map((x) => x.seg_name).filter(Boolean);
+    if (segmentNames.length) {
+      worksheet.dataValidations.add('J2:J1000', { type: 'list', allowBlank: true, formulae: [`"${segmentNames.join(',')}"`] });
+    }
     worksheet.dataValidations.add('H2:I1000', {
       type: 'decimal',
       operator: 'greaterThanOrEqual',
@@ -363,13 +546,23 @@ const Material = () => {
 
     else {
       try {
+        // Only plants this user may use (own + Data Access): check the Plant_Code column of the file before uploading
+        const { blocked, plants: myPlants } = await findPlantsNotAllowed(uploadedFile, "Plant_Code");
+        if (blocked.length > 0) {
+          alert(plantsNotAllowedMessage(blocked, myPlants));
+          return;
+        }
         const formData = new FormData();
         console.log('file', uploadedFile)
         formData.append("User_Add", uploadedFile);
         formData.append("UserID", UserID);
         const response = await MaterialMaster(formData)
         console.log('response', response.data)
-        alert(response.data.message)
+        // rows rejected because of an unknown Segment are named in the message (the full list is in the downloaded log)
+        const badSegments = [...new Set((response.data.ErrorRecords || []).filter((r) => String(r.Segment_Val || '').startsWith('Invalid')).map((r) => String(r.Segment || '').trim()))];
+        alert(badSegments.length
+          ? `${response.data.message}\n\nRows rejected - Segment not found in Segment Master: ${badSegments.map((x) => "'" + x + "'").join(', ')}. See the Error Records sheet of the log file.`
+          : response.data.message)
         // console.log('response', response.data)
         if (response.data.NewRecord.length > 0 || response.data.UpdatedData.length > 0 || response.data.ErrorRecords.length > 0) {
           downloadExcel(response.data.NewRecord, response.data.UpdatedData, response.data.ErrorRecords);
@@ -390,9 +583,9 @@ const Material = () => {
   const downloadExcel = (newRecord, updateRecord, errRecord) => {
     const wb = XLSX.utils.book_new();
 
-    const newRecordsColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'ActiveStatus', 'Status'];
-    const UpdatedColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'ActiveStatus', 'Status'];
-    const ErrorColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation'];
+    const newRecordsColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'ActiveStatus', 'Status'];
+    const UpdatedColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'ActiveStatus', 'Status'];
+    const ErrorColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation', 'Segment_Validation'];
 
     const filteredNewData = newRecord.map(item => ({
       Plant_Code: item.Plant_Code,
@@ -403,6 +596,7 @@ const Material = () => {
       Rate: item.Rate,
       Safety_Stock: item.safety_stock,
       Max_Stock: item.max_stock,
+      Segment: item.Segment,
       ActiveStatus: item.Active_Status,
       Status: item.Status,
     }));
@@ -416,6 +610,7 @@ const Material = () => {
       Rate: item.Rate,
       Safety_Stock: item.safety_stock,
       Max_Stock: item.max_stock,
+      Segment: item.Segment,
       ActiveStatus: item.Active_Status,
       Status: item.Status,
     }));
@@ -430,10 +625,12 @@ const Material = () => {
       Rate: item.Rate,
       Safety_Stock: item.Safety_Stock,
       Max_Stock: item.Max_Stock,
+      Segment: item.Segment,
       ActiveStatus: item.Active_Status,
       PlantCode_Validation: item.Plant_Val,
       Material_Type_Validation: item.Material_Val,
       Stock_Validation: item.Stock_Val,
+      Segment_Validation: item.Segment_Val,
     }));
 
     // ðŸ”¹ Helper to style header cells
@@ -452,7 +649,7 @@ const Material = () => {
 
     // ðŸ”´ Style red text for validation columns only
     const styleValidationColumns = (worksheet, columns, dataLength) => {
-      const validationCols = ['PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation'];
+      const validationCols = ['PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation', 'Segment_Validation'];
 
       for (let row = 1; row <= dataLength; row++) {
         validationCols.forEach(colName => {
@@ -520,30 +717,15 @@ const Material = () => {
     setMaxStock(params.row.max_stock ?? "");
     setActiveStatus(params.row.Active_Status);
     setLineID(params.row.Line_ID || "");
+    setSegmentID(params.row.prod_seg_id || "");
+    setSegmentExtra(params.row.prod_seg_id ? { prod_seg_id: params.row.prod_seg_id, seg_name: params.row.Segment_Name || String(params.row.prod_seg_id) } : null);
+    get_Segment();
     setOpenEditModal(true);  // Open the modal
     setMaterialID(params.row.Material_ID);
     // setUserID(params.User_ID);
     get_Material_Type(); // populate the Material Type dropdown options for editing
     get_Line();
   };
-
-  // âœ… Search Functionality
-  const handleSearch = () => {
-    const text = searchText.trim().toLowerCase();
-
-    if (!text) {
-      setRows(originalRows);
-    } else {
-      const filteredRows = originalRows.filter((row) =>
-        ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate '].some((key) => {
-          const value = row[key];
-          return value && String(value).toLowerCase().includes(text);
-        })
-      );
-      setRows(filteredRows);
-    }
-  };
-
 
   // âœ… Handle Add Material
   const handleAdd = async () => {
@@ -574,6 +756,7 @@ const Material = () => {
         Max_Stock: String(MaxStock).trim() === "" ? null : MaxStock,
         Active_Status: ActiveStatus,
         Line_ID: LineID || null,
+        Prod_Seg_ID: SegmentID || null,
       }
       const response = await getAdd(data);
       if (response.data.success) {
@@ -612,6 +795,7 @@ const Material = () => {
         Max_Stock: String(MaxStock).trim() === "" ? null : MaxStock,
         Active_Status: ActiveStatus,
         Line_ID: LineID || null,
+        Prod_Seg_ID: SegmentID || null,
         // UserID: userID,  // Ensure the UserID is also included
       };
 
@@ -646,7 +830,7 @@ const Material = () => {
       return;
     }
 
-    const DataColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'ActiveStatus'];
+    const DataColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'ActiveStatus'];
 
     const filteredData = data.map(item => ({
       Plant_Code: item.Plant_Code,
@@ -658,6 +842,7 @@ const Material = () => {
       Rate: item.Rate,
       Safety_Stock: item.safety_stock,
       Max_Stock: item.max_stock,
+      Segment: item.Segment_Name || "",
       ActiveStatus: item.Active_Status ? "Active" : "Inactive"
     }));
 
@@ -669,6 +854,7 @@ const Material = () => {
 
       { wch: 30 },
       { wch: 20 },
+      { wch: 16 },
       { wch: 16 },
       { wch: 16 },
       { wch: 20 },
@@ -696,566 +882,243 @@ const Material = () => {
     XLSX.writeFile(workbook, "Material_Data.xlsx");
   };
 
+  const plantOptions = PlantTable.map((p) => ({ value: p.Plant_Id, label: p.Plant_Code }));
+  const typeOptions = MaterialTable.map((item) => ({ value: item.Mat_Type, label: item.Mat_Type }));
+  const plantFilterOptions = plants.map(myPlantLabel);
+
   return (
     <div
       style={{
-        padding: 20,
+        padding: "20px 20px",
         backgroundColor: "#F5F5F5",
         marginTop: "50px",
         display: "flex",
         flexDirection: "column",
-        height: "calc(100vh - 90px)",// or a specific height if necessary
+        height: "calc(100vh - 50px)",
       }}
     >
-      {/* Header Section */}
+      <Typography sx={{ fontSize: 17, fontWeight: 700, color: "#1a2233", letterSpacing: 0.1, lineHeight: 1.3, mb: 1.5 }}>
+        Material Master - Direct
+      </Typography>
+
+      {/* Search, filters and actions */}
       <div
         style={{
-          marginBottom: 20,
+          backgroundColor: "#fff",
+          borderRadius: 8,
+          border: "1px solid #e8eaee",
+          boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
+          padding: "7px 10px",
+          marginBottom: 6,
           display: "flex",
-          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 8,
           alignItems: "center",
         }}
       >
-        {/* <h2
-          style={{
-            margin: 0,
-            color: "#2e59d9",
-            textDecoration: "underline",
-            textDecorationColor: "#88c57a",
-            textDecorationThickness: "3px",
-            marginBottom: -7
-          }}
+        <FilterSelect label="Plant" value={plantSelect} options={plantFilterOptions} onChange={setPlantSelect} minWidth={190} />
+        <Button
+          onClick={handleSearch}
+          disabled={loading}
+          variant="contained"
+          disableElevation
+          startIcon={loading ? <CircularProgress size={12} color="inherit" /> : <SearchIcon sx={{ fontSize: 16 }} />}
+          sx={primaryButtonSx}
         >
-          Material Master
-        </h2> */}
-        <SectionHeading>
-          Material Master
-        </SectionHeading>
-      </div>
+          {loading ? "Loading..." : "Search"}
+        </Button>
+        <TextField
+          size="small"
+          placeholder="Search plant, material, description, line, segment"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          InputProps={{ startAdornment: <SearchIcon sx={{ fontSize: 16, color: "#8a93a3", mr: 0.5 }} /> }}
+          sx={compactFieldSx(300)}
+        />
+        <FilterToggleButton open={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)} activeCount={activeFilterCount} />
 
-      {/* Search and Icons */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 10,
-        }}
-      >
-        {/* Search Box */}
-        <div style={{ display: "flex", gap: "10px" }}>
-          <TextField
-            size="small"
-            variant="outlined"
-            placeholder="Type here..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onKeyUp={handleSearch}
-            sx={{
-              width: '400px',
-              '& .MuiOutlinedInput-root': {
-                '& fieldset': {
-                  border: '2px solid grey', // No border by default
-                },
-                '&:hover fieldset': {
-                  border: '2px solid grey', // Optional: border on hover
-                },
-                '&.Mui-focused fieldset': {
-                  border: '2px solid grey', // Grey border on focus
-                },
-              },
-            }}
-          />
-          <Button
-            onClick={handleSearch}
-            style={{
-              borderRadius: "25px",
-              border: "2px solid grey",
-              color: "grey",
-              fontWeight: "bold",
-            }}
-          >
-            <SearchIcon style={{ marginRight: "5px" }} />
-            Search
-          </Button>
-        </div>
+        <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: "#6b7280", whiteSpace: "nowrap" }}>
+          {visibleRows.length === scopedData.length ? `${scopedData.length} materials` : `${visibleRows.length} of ${scopedData.length} materials`}
+        </span>
+        <Button
+          onClick={handleOpenUploadModal}
+          variant="outlined"
+          disableElevation
+          startIcon={<CloudUploadIcon sx={{ fontSize: 16 }} />}
+          sx={outlineButtonSx}
+        >
+          Upload
+        </Button>
+        <Button
+          onClick={handleDownloadExcel}
+          variant="contained"
+          disableElevation
+          startIcon={<FaFileExcel size={13} />}
+          sx={successButtonSx}
+        >
+          Excel
+        </Button>
+        <Button
+          onClick={handleOpenAddModal}
+          variant="contained"
+          disableElevation
+          startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+          sx={primaryButtonSx}
+        >
+          Add Material
+        </Button>
+        <UniqueGroupingInfo
+          sections={[{ fields: ["Plant", "Material Code"] }]}
+          intro="One material per combination of:"
+          notes={[
+            <><b>Add:</b> the same Plant + Material Code that already exists is rejected.</>,
+            <><b>Bulk upload:</b> the same combination is <b>updated</b>, any other is <b>added</b>. A blank Line / Segment cell keeps the saved value.</>,
+            "The Material Type of an existing material is not changed by an upload.",
+          ]}
+        />
 
-        {/* Icons */}
-        <div style={{ display: "flex", gap: "10px" }}>
-          {/* Upload Button */}
-          <IconButton onClick={handleOpenUploadModal}
-
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#FF6699",
-              color: "white",
-              width: "40px",
-              height: "40px",
-            }}
-          >
-            <CloudUploadIcon />
-          </IconButton>
-
-          {/* Download Button */}
-          <IconButton
-            onClick={handleDownloadExcel}
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#339900",
-              color: "white",
-              width: "40px",
-              height: "40px",
-            }}
-          >
-            <FaFileExcel size={18} />
-          </IconButton>
-
-          {/* Add Button */}
-          <IconButton
-            onClick={handleOpenAddModal}
-            style={{
-              borderRadius: "50%",
-              backgroundColor: "#0066FF",
-              color: "white",
-              width: "40px",
-              height: "40px",
-            }}
-          >
-            <AddIcon />
-          </IconButton>
-        </div>
+        <FilterPanel open={filtersOpen} activeCount={activeFilterCount} onClear={clearFilters}>
+          <FilterSelect label="Material Type" value={fType} options={uniq("Material_Type")} onChange={setFType} minWidth={150} />
+          <FilterSelect label="Line" value={fLine} options={uniq("Line_Name")} onChange={setFLine} minWidth={170} />
+          <FilterSelect label="Segment" value={fSegment} options={uniq("Segment_Name")} onChange={setFSegment} minWidth={150} />
+          <FilterSelect label="Status" value={fStatus} options={["Active", "Inactive"]} onChange={setFStatus} minWidth={120} isSearchable={false} />
+        </FilterPanel>
       </div>
 
       {/* DataGrid */}
       <div
         style={{
-          flexGrow: 1,  // Ensures it grows to fill the remaining space
+          flexGrow: 1,
           backgroundColor: "#fff",
           borderRadius: 8,
-          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-          height: "calc(5 * 48px)"
+          border: "1px solid #e8eaee",
+          boxShadow: "0 1px 3px rgba(16,24,40,0.05)",
+          minHeight: 0,
+          overflow: "hidden",
         }}
       >
         <DataGrid
-          rows={rows}
+          rows={visibleRows}
           columns={columns}
-          pageSize={5}  // Set the number of rows per page to 8
-          rowsPerPageOptions={[5]}
-          getRowId={(row) => row.Material_ID}  // Specify a custom id field
+          loading={loading}
+          getRowId={(row) => row.Material_ID}
           onRowClick={handleRowClick}
-          disableSelectionOnClick
+          disableRowSelectionOnClick
+          columnHeaderHeight={36}
+          rowHeight={38}
+          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+          pageSizeOptions={[25, 50, 100]}
           slots={{ toolbar: CustomToolbar }}
-          sx={{
-            // Header Style
-            "& .MuiDataGrid-columnHeader": {
-              backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
-              color: "black",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-columnHeaderTitle": {
-              fontSize: "16px",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-row": {
-              backgroundColor: "#f5f5f5", // Default row background
-              "&:hover": {
-                backgroundColor: "#f5f5f5",
-              },
-            },
-            // âœ… Remove Selected Row Background
-            "& .MuiDataGrid-row.Mui-selected": {
-              backgroundColor: "inherit", // No background on selection
-            },
-
-            "& .MuiDataGrid-cell": {
-              color: "#333",
-              fontSize: "14px",
-            },
-          }}
-
+          localeText={{ noRowsLabel: "No materials found." }}
+          sx={compactGridSx}
         />
       </div>
 
-      <Modal open={openAddModal} onClose={() => setOpenAddModal(false)}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            width: 560,
-            maxWidth: "92vw",
-            // one font size for every input and label in this dialog
-            "& .MuiInputBase-root": { fontSize: 14 },
-            "& .MuiInputLabel-root": { fontSize: 14 },
-            "& .MuiMenuItem-root": { fontSize: 14 },
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            gap: "15px",
+      {/* Add Material */}
+      <FormDialog
+        open={openAddModal}
+        title="Add Material"
+        onClose={() => setOpenAddModal(false)}
+        actions={
+          <>
+            <Button variant="outlined" onClick={() => handleCloseAddModal(false)} sx={outlineButtonSx}>Cancel</Button>
+            <Button variant="contained" disableElevation onClick={handleAdd} sx={{ ...primaryButtonSx, minWidth: 70 }}>Add</Button>
+          </>
+        }
+      >
+        <SelectField
+          label="Plant Code"
+          value={PlantCode}
+          onChange={(e) => {
+            setPlantCode(e.target.value);
+            setLineID(""); // previous plant's line no longer valid
           }}
-        >
-          <h3 style={{ gridColumn: "span 2", textAlign: "center", color: "#2e59d9", textDecoration: "underline", textDecorationColor: "#88c57a", textDecorationThickness: "3px" }}>
-            Add Material
-          </h3>
-          <FormControl fullWidth size="small">
-            <InputLabel>Plant Code</InputLabel>
-            <Select
-              label="Plant Code"
-              name="PlantCode"
-              value={PlantCode}
-              onChange={(e) => {
-                setPlantCode(e.target.value);
-                setLineID(""); // previous plant's line no longer valid
-              }}
-              required
-            >
-              {PlantTable.map((item, index) => (
-                <MenuItem key={index} value={item.Plant_Id}>{item.Plant_Code}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl fullWidth size="small">
-            <InputLabel>Material Type</InputLabel>
-            <Select label="Material Type" name="MaterialType" value={MaterialType} onChange={(e) => setMaterialType(e.target.value)} required>
-              {MaterialTable.map((item) => (
-                <MenuItem key={item.Mat_Id} value={item.Mat_Type}>{item.Mat_Type}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <LineSelect value={LineID} options={lineOptions} onChange={setLineID} disabled={!PlantCode} size="small14" />
-
-          <TextField size="small"
-            label="Material Code"
-            name="MaterialCode"
-            value={MaterialCode}
-            onChange={(e) => setMaterialCode(e.target.value)} required />
-          <TextField size="small"
-            label="Description"
-            name="Description" value={Description}
-            onChange={(e) => setDescription(e.target.value)} required />
-          <TextField size="small"
-            label="Rate"
-            name="Rate"
-            type="number"
-            value={Rate}
-            onChange={(e) => setRate(e.target.value)}
-            inputProps={{ min: 0 }}
-            required
-          />
-          {/* mandatory only for material type ROH */}
-          <TextField size="small"
-            label="Safety Stock"
-            name="SafetyStock"
-            type="number"
-            value={SafetyStock}
-            onChange={(e) => setSafetyStock(e.target.value)}
-            inputProps={{ min: 0, step: "any" }}
-            required={String(MaterialType).toUpperCase() === "ROH"}
-          />
-          <TextField size="small"
-            label="Max Stock"
-            name="MaxStock"
-            type="number"
-            value={MaxStock}
-            onChange={(e) => setMaxStock(e.target.value)}
-            inputProps={{ min: 0, step: "any" }}
-            required={String(MaterialType).toUpperCase() === "ROH"}
-          />
-
-
-
-          <FormControlLabel
-            control={
-              <Switch
-                checked={ActiveStatus}
-                onChange={(e) => setActiveStatus(e.target.checked)}
-
-
-                color="success" // Always use 'success' to keep the thumb green when active
-                sx={{
-                  '& .MuiSwitch-track': {
-                    backgroundColor: ActiveStatus ? '#2e7d32' : '#d32f2f', // Green when active, Red when inactive
-                    backgroundImage: "none !important", // Disable background image
-                  },
-                  '& .MuiSwitch-thumb': {
-                    backgroundColor: ActiveStatus ? '#2e7d32' : '#d32f2f', // White thumb in both active and inactive states
-                    borderColor: ActiveStatus ? '#2e7d32' : '#d32f2f', // Match thumb border with track color
-                  },
-
-                }}
-              />
-            }
-            label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-            labelPlacement="end"
-            style={{
-              color: ActiveStatus ? '#2e7d32' : '#d32f2f', // Change text color based on status
-              fontWeight: 'bold',
-            }}
-          />
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            <Button
-              variant="contained"
-              color="error"
-              onClick={() => handleCloseAddModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button style={{ width: "90px" }} variant="contained" color="primary" onClick={handleAdd}
-            >
-              Add
-            </Button>
-
-          </Box>
+          options={plantOptions}
+          required
+        />
+        <SelectField label="Material Type" value={MaterialType} onChange={(e) => setMaterialType(e.target.value)} options={typeOptions} required />
+        <LineSelect value={LineID} options={lineOptions} onChange={setLineID} disabled={!PlantCode} size="compact" />
+        {segmentField}
+        <TextInput label="Material Code" value={MaterialCode} onChange={(e) => setMaterialCode(e.target.value)} required />
+        <TextInput label="Description" value={Description} onChange={(e) => setDescription(e.target.value)} required />
+        <TextInput label="Rate" type="number" value={Rate} onChange={(e) => setRate(e.target.value)} inputProps={{ min: 0 }} required />
+        {/* Safety / Max Stock: mandatory only for material type ROH */}
+        <TextInput label="Safety Stock" type="number" value={SafetyStock} onChange={(e) => setSafetyStock(e.target.value)} inputProps={{ min: 0, step: "any" }} required={String(MaterialType).toUpperCase() === "ROH"} />
+        <TextInput label="Max Stock" type="number" value={MaxStock} onChange={(e) => setMaxStock(e.target.value)} inputProps={{ min: 0, step: "any" }} required={String(MaterialType).toUpperCase() === "ROH"} />
+        <Box sx={{ gridColumn: "span 2" }}>
+          <ActiveSwitch checked={!!ActiveStatus} onChange={(e) => setActiveStatus(e.target.checked)} />
         </Box>
-      </Modal>
+      </FormDialog>
 
-      {/* âœ… Edit Modal */}
-      <Modal open={openEditModal} onClose={() => setOpenEditModal(false)}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            width: 560,
-            maxWidth: "92vw",
-            // one font size for every input and label in this dialog
-            "& .MuiInputBase-root": { fontSize: 14 },
-            "& .MuiInputLabel-root": { fontSize: 14 },
-            "& .MuiMenuItem-root": { fontSize: 14 },
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            gap: "15px",
-          }}
-        >
-          <h3 style={{ gridColumn: "span 2", textAlign: "center", color: "#2e59d9", textDecoration: "underline", textDecorationColor: "#88c57a", textDecorationThickness: "3px" }}>
-            Edit Material
-          </h3>
-
-          <TextField size="small"
-            label="Plant Code"
-            name="Plant_Code"
-            value={PlantCode}
-            onChange={(e) => setPlantCode(e.target.value)}
-            InputProps={{
-              readOnly: true,  // This makes the TextField read-only
-            }}
-          />
-
-
-
-          <FormControl fullWidth size="small">
-            <InputLabel>Material Type</InputLabel>
-            <Select
-              label="Material Type"
-              name="Material_Type"
-              value={MaterialType}
-              onChange={(e) => setMaterialType(e.target.value)}
-              required
-            >
-              {MaterialTable.map((item) => (
-                <MenuItem key={item.Mat_Id} value={item.Mat_Type}>{item.Mat_Type}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* Filtered by Plant_Code (see editLineOptions above) â€” Plant
-              itself is read-only in this form, so this always resolves to
-              the row's own plant's lines only. */}
-          <LineSelect value={LineID} options={editLineOptions} onChange={setLineID} disabled={!PlantCode} size="small14" />
-
-          <TextField size="small"
-            label="Material Code"
-            name="Material_Code"
-            value={MaterialCode}
-            onChange={(e) => setMaterialCode(e.target.value)}
-            InputProps={{
-              readOnly: true,  // This makes the TextField read-only
-            }}
-          />
-          <TextField size="small"
-            label="Description"
-            name="Description"
-            value={Description}
-            onChange={(e) => setDescription(e.target.value)}
-
-          />
-
-          <TextField size="small"
-            label="Rate"
-            name="Rate"
-            type="number"
-            value={Rate}
-            onChange={(e) => setRate(e.target.value)}
-            inputProps={{ min: 0 }}
-            required
-          />
-          {/* mandatory only for material type ROH */}
-          <TextField size="small"
-            label="Safety Stock"
-            name="SafetyStock"
-            type="number"
-            value={SafetyStock}
-            onChange={(e) => setSafetyStock(e.target.value)}
-            inputProps={{ min: 0, step: "any" }}
-            required={String(MaterialType).toUpperCase() === "ROH"}
-          />
-          <TextField size="small"
-            label="Max Stock"
-            name="MaxStock"
-            type="number"
-            value={MaxStock}
-            onChange={(e) => setMaxStock(e.target.value)}
-            inputProps={{ min: 0, step: "any" }}
-            required={String(MaterialType).toUpperCase() === "ROH"}
-          />
-
-          <FormControlLabel
-            control={
-              <Switch
-                checked={ActiveStatus}
-                onChange={(e) => setActiveStatus(e.target.checked)}
-
-                color="success" // Always use 'success' to keep the thumb green when active
-                sx={{
-                  '& .MuiSwitch-track': {
-                    backgroundColor: ActiveStatus ? '#2e7d32' : '#d32f2f', // Green when active, Red when inactive
-                    backgroundImage: "none !important", // Disable background image
-                  },
-                  '& .MuiSwitch-thumb': {
-                    backgroundColor: ActiveStatus ? '#2e7d32' : '#d32f2f', // White thumb in both active and inactive states
-                    borderColor: ActiveStatus ? '#2e7d32' : '#d32f2f', // Match thumb border with track color
-                  },
-
-                }}
-              />
-            }
-            label={ActiveStatus ? "Active" : "Inactive"} // Text next to the switch
-            labelPlacement="end"
-            style={{
-              color: ActiveStatus ? '#2e7d32' : '#d32f2f', // Change text color based on status
-              fontWeight: 'bold',
-            }}
-          />
-
-
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleCloseEditModal}
-            >
-              Cancel
-            </Button>
-            <Button variant="contained" color="primary" onClick={handleUpdate}>
-              Update
-            </Button>
-
-          </Box>
+      {/* Edit Material */}
+      <FormDialog
+        open={openEditModal}
+        title="Edit Material"
+        onClose={() => setOpenEditModal(false)}
+        actions={
+          <>
+            <Button variant="outlined" onClick={handleCloseEditModal} sx={outlineButtonSx}>Cancel</Button>
+            <Button variant="contained" disableElevation onClick={handleUpdate} sx={{ ...primaryButtonSx, minWidth: 70 }}>Update</Button>
+          </>
+        }
+      >
+        <TextInput label="Plant Code" value={PlantCode} readOnly />
+        <SelectField label="Material Type" value={MaterialType} onChange={(e) => setMaterialType(e.target.value)} options={typeOptions} required />
+        {/* Filtered by Plant_Code (see editLineOptions above) - Plant itself is read-only in this form, so this always
+            resolves to the row's own plant's lines only. */}
+        <LineSelect value={LineID} options={editLineOptions} onChange={setLineID} disabled={!PlantCode} size="compact" />
+        {segmentField}
+        <TextInput label="Material Code" value={MaterialCode} readOnly />
+        <TextInput label="Description" value={Description} onChange={(e) => setDescription(e.target.value)} />
+        <TextInput label="Rate" type="number" value={Rate} onChange={(e) => setRate(e.target.value)} inputProps={{ min: 0 }} required />
+        {/* Safety / Max Stock: mandatory only for material type ROH */}
+        <TextInput label="Safety Stock" type="number" value={SafetyStock} onChange={(e) => setSafetyStock(e.target.value)} inputProps={{ min: 0, step: "any" }} required={String(MaterialType).toUpperCase() === "ROH"} />
+        <TextInput label="Max Stock" type="number" value={MaxStock} onChange={(e) => setMaxStock(e.target.value)} inputProps={{ min: 0, step: "any" }} required={String(MaterialType).toUpperCase() === "ROH"} />
+        <Box sx={{ gridColumn: "span 2" }}>
+          <ActiveSwitch checked={!!ActiveStatus} onChange={(e) => setActiveStatus(e.target.checked)} />
         </Box>
-      </Modal>
-      {/* upload modal */}
+      </FormDialog>
 
-      <Modal open={openUploadModal} onClose={handleCloseUploadModal}>
-        <Box
-          sx={{
-            width: 400,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            margin: "auto",
-            marginTop: "10%",
-            textAlign: "center",
-          }}
-        >
-          <h3 style={{ fontSize: "22px", textAlign: "center", marginBottom: "20px", color: "#2e59d9", textDecoration: "underline", textDecorationColor: "#88c57a", textDecorationThickness: "3px" }}>
-            Material Master Excel File Upload
-          </h3>
-
-          <Button
-            variant="contained"
-            onClick={downloadMaterialTemplate}
-            style={{ marginBottom: '10px', backgroundColor: deepPurple[500], color: 'white' }}
-          >
-            <FaDownload className="icon" /> &nbsp;&nbsp;Download Template
-          </Button>
+      {/* Upload */}
+      <FormDialog
+        open={openUploadModal}
+        title="Material Master Excel Upload"
+        onClose={handleCloseUploadModal}
+        actions={
+          <>
+            <Button variant="outlined" onClick={handleCloseUploadModal} sx={outlineButtonSx}>Close</Button>
+            <Button variant="contained" disableElevation onClick={handleUploadData} disabled={isUploading} sx={{ ...primaryButtonSx, minWidth: 70 }}>
+              {isUploading ? "Uploading..." : "Upload"}
+            </Button>
+          </>
+        }
+      >
+        <Box sx={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: 1.25 }}>
+          <Box>
+            <Button variant="outlined" onClick={downloadMaterialTemplate} startIcon={<FaDownload size={12} />} sx={outlineButtonSx}>
+              Download Template
+            </Button>
+          </Box>
           <input
             type="file"
             accept=".xlsx, .xls"
             onChange={handleFileUpload}
             style={{
-              padding: "8px",
-              backgroundColor: "white", // âœ… Blue background
-              color: "black",
-              border: "1px solid black",
-              borderRadius: "5px",
+              fontSize: 11,
+              padding: "6px 8px",
+              backgroundColor: "#fafbfc",
+              border: "1px dashed #dde1e7",
+              borderRadius: 6,
               cursor: "pointer",
-              width: "240px",
-              marginTop: "10px",
-
             }}
           />
-
-
-
-
-
-
-
-          <Box
-            sx={{
-              gridColumn: "span 2",
-              display: "flex",
-              justifyContent: "center",
-              gap: "10px",
-              marginTop: "15px",
-            }}
-          >
-            {/* âœ… Close Button */}
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleCloseUploadModal}
-              style={{ marginTop: "10px", width: "25%" }}
-            >
-              Close
-            </Button>
-            {/* âœ… Upload Button */}
-            <Button
-              variant="contained"
-
-              onClick={handleUploadData}
-              disabled={isUploading}
-              style={{ marginTop: "10px", width: "25%", color: "white", backgroundColor: "blue" }}
-            >
-              Upload
-            </Button>
-          </Box>
+          <span style={{ fontSize: 11, lineHeight: 1.5, color: "#6b7280" }}>
+            Required columns: Plant_Code, Material_Type, Material_Code, Description, Rate, Active_Status (Active / Inactive) and Line_Name
+            (may be blank). Optional: Safety_Stock and Max_Stock (mandatory for ROH) and Segment. A material that already exists is updated;
+            a new one is added. Rows with errors are skipped and listed in the log file.
+          </span>
         </Box>
-      </Modal>
+      </FormDialog>
     </div>
   );
 };
