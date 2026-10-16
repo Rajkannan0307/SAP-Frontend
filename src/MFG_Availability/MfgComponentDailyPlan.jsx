@@ -29,9 +29,12 @@ import { getdetails as getModules } from "../controller/ModuleMasterapiservice";
 import { getdetails as getLines } from "../controller/LineMasterapiservice";
 import { getdetails as getOperations } from "../controller/OperationMasterapiservice";
 import FilterSelect from "../components/FilterSelect";
+import InfoTip from "../components/InfoTip";
+import WorkingDaysTip from "../components/WorkingDaysTip";
 import { FilterToggleButton, FilterPanel } from "../components/FilterPanel";
 import {
   GetMfgComponentValuationTypesApi,
+  GetMfgComponentPlanBreakupApi,
   GetMfgComponentDailyPlanGridApi,
   SaveMfgComponentDailyPlanApi,
   GetMfgComponentDailyPlanHistorySummaryApi,
@@ -1361,6 +1364,12 @@ const GAP_POS = "#1b7a43";
 const GAP_NEG = "#b42323";
 const GAP_ZERO = "#8a93a3";
 const gapColor = (v) => (v > 0 ? GAP_POS : v < 0 ? GAP_NEG : GAP_ZERO);
+// 541 gap columns: a positive gap is fine (nothing short), so it is shown as a green 0 and the real value (+400) is in the hover.
+// Negative gaps keep their value in red. Other gap columns are unchanged.
+const gapShow = (col, n) => {
+  if (col.sub && col.kind === "gap" && n > 0) return { text: "0", color: GAP_POS, title: gapFmt(n) };
+  return { text: col.kind === "gap" ? gapFmt(n) : numberFmt(n), color: null, title: undefined };
+};
 
 const STATUS_HEAD_BG = "#d0dcf5";
 const STATUS_HEAD_LINE = "#b9c8ea";
@@ -1372,18 +1381,18 @@ const STATUS_COL_PCT = { line: 6, part: 7, child: 19, num: 68 / 11 };
 
 const STATUS_NUM_COLS = [
   { label: "Monthly Plan", tip: "Monthly Plan — sum of the monthly plan (plan type MP) of every FG part that uses this Child Part", key: "monthly_plan", kind: "plan" },
-  { label: "MTD Plan", tip: "MTD Plan = (Monthly Plan / 26) x NWD. NWD = working days of the month up to yesterday (Sundays excluded)", key: "mtd_plan", kind: "plan" },
-  { label: "MTD Actual", tip: "MTD Actual — for every FG part that uses this Child Part: FG production from the 1st of the month (Production Actual, movement types 101, 102, 261 and 262) x the BOM Qty of that FG's line; the FGs are then added together", key: "mtd_actual_fg", kind: "actual" },
+  { label: "MTD Plan", tip: "MTD Plan = (Monthly Plan / working days of the month) x working days up to yesterday. Weekends and DHRM holidays are not working days", key: "mtd_plan", kind: "plan" },
+  { label: "MTD Actual", tip: "MTD Actual — the production of this Child Part from the 1st of the month (Production Actual, movement types 101 and 102)", key: "mtd_actual_fg", kind: "actual" },
   { label: "MTD Gap", tip: "MTD Gap — MTD Actual minus MTD Plan (positive = ahead, negative = behind)", key: "month_gap", kind: "gap" },
   { label: "YD Plan", tip: "YD Plan — yesterday's plan: the daily plan entered for this Child Part for yesterday, all shifts added together (Component Daily Plan tab)", key: "yd_plan", kind: "plan" },
-  { label: "YD Actual", tip: "YD Actual — yesterday's production of this Child Part (Production Actual, movement types 101, 102, 261 and 262)", key: "yd_actual", kind: "actual" },
+  { label: "YD Actual", tip: "YD Actual — yesterday's production of this Child Part (Production Actual, movement types 101 and 102)", key: "yd_actual", kind: "actual" },
   { label: "YD Gap", tip: "YD Gap — YD Actual minus YD Plan (positive = ahead, negative = behind)", key: "yd_gap", kind: "gap" },
   // 541 = movement type 541 (material issued to subcontractor) from the
   // Subcontract Daily Plan, matched on Plant + this Child Part's material code.
   { label: "MTD Actual", tip: "541 MTD Actual — month-to-date quantity of movement types 541 and 542 (net) for this Child Part, from the Subcontract Daily Plan", key: "sub541_mtd_actual", kind: "actual", sub: true },
-  { label: "MTD Gap", tip: "541 MTD Gap — MTD Actual minus 541 MTD Actual", key: "sub541_month_gap", kind: "gap", sub: true },
+  { label: "MTD Gap", tip: "541 MTD Gap — 541 MTD Actual minus MTD Actual", key: "sub541_month_gap", kind: "gap", sub: true },
   { label: "YA", tip: "541 YA — yesterday's quantity of movement types 541 and 542 (net) for this Child Part, from the Subcontract Daily Plan", key: "sub541_yd_actual", kind: "actual", sub: true },
-  { label: "YG", tip: "541 YG — YD Actual minus 541 YA", key: "sub541_yd_gap", kind: "gap", sub: true },
+  { label: "YG", tip: "541 YG — 541 YA minus YD Actual", key: "sub541_yd_gap", kind: "gap", sub: true },
 ];
 // First column of each section (MTD / YD / 541 Monthly / 541 Daily)
 // gets a divider line.
@@ -1392,18 +1401,11 @@ const TOTAL_STATUS_COLS = 3 + STATUS_NUM_COLS.length;
 const SUB541_HEAD_BG = "#e6dff0";
 
 const STATUS_GROUP_HEADS = [
-  { t: "MTD", tip: "Month to Date", span: 4 },
-  { t: "YD", tip: "Yesterday", span: 3 },
+  { t: "Prod MTD", tip: "Month to Date", span: 4 },
+  { t: "Prod YD", tip: "Yesterday", span: 3 },
   { t: "541 - MTD", tip: "Movement types 541 and 542 (issued to subcontractor, net), month to date — from the Subcontract Daily Plan", span: 2, sub: true },
   { t: "541 - Yesterday", tip: "Movement types 541 and 542 (issued to subcontractor, net), yesterday — from the Subcontract Daily Plan", span: 2, sub: true },
 ];
-
-const headTipProps = {
-  arrow: true,
-  placement: "top",
-  enterDelay: 250,
-  slotProps: { tooltip: { sx: { fontSize: 11, maxWidth: 260 } } },
-};
 
 const StatusColGroup = () => (
   <colgroup>
@@ -1418,6 +1420,9 @@ const bodyCellSx = {
   height: 28, padding: "0 8px", fontSize: 11, borderBottom: "1px solid #eef0f3",
   overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
 };
+
+// hover of the greyed 541 cells of a Fully Machined part
+const NO_541_TIP = "Not applicable for Fully Machined parts";
 
 const PartGroupRows = ({ group, accent, open, onToggle }) => {
   return (
@@ -1478,18 +1483,21 @@ const PartGroupRows = ({ group, accent, open, onToggle }) => {
                     </TableCell>
                     {STATUS_NUM_COLS.map((c) => {
                       const n = Number(r[c.key]) || 0;
-                      const color = c.kind === "plan" ? PLAN_TEXT_COLOR : c.kind === "gap" ? gapColor(n) : ACTUAL_TEXT_COLOR;
+                      const notApplicable = Boolean(r.no_541 && c.sub);
+                      const shown = notApplicable ? { text: "0", color: "#b6bac3", title: NO_541_TIP } : gapShow(c, n);
+                      const color = shown.color || (c.kind === "plan" ? PLAN_TEXT_COLOR : c.kind === "gap" ? gapColor(n) : ACTUAL_TEXT_COLOR);
                       return (
                         <TableCell
                           key={c.key}
                           align="right"
+                          title={shown.title}
                           sx={{
                             ...bodyCellSx, ...NUM_FONT, padding: "0 10px", fontSize: 11.5,
-                            fontWeight: c.kind === "gap" ? 700 : 600, color,
+                            fontWeight: notApplicable ? 400 : c.kind === "gap" ? 700 : 600, color,
                             borderLeft: SECTION_START.has(c.key) ? "1px solid #dfe3ea" : "none",
                           }}
                         >
-                          {c.kind === "gap" ? gapFmt(n) : numberFmt(n)}
+                          {shown.text}
                         </TableCell>
                       );
                     })}
@@ -1520,19 +1528,126 @@ const StatusTotalRow = ({ rows, sticky = true, label = "TOTAL" }) => {
       </TableCell>
       {STATUS_NUM_COLS.map((c) => {
         const n = total(c.key);
+        const shown = gapShow(c, n);
         return (
           <TableCell
             key={c.key}
             align="right"
-            sx={{ ...cell, ...NUM_FONT, color: c.kind === "gap" ? gapColor(n) : "#1a2233", borderLeft: SECTION_START.has(c.key) ? "1px solid #b8c7ec" : "none" }}
+            title={shown.title}
+            sx={{ ...cell, ...NUM_FONT, color: shown.color || (c.kind === "gap" ? gapColor(n) : "#1a2233"), borderLeft: SECTION_START.has(c.key) ? "1px solid #b8c7ec" : "none" }}
           >
-            {c.kind === "gap" ? gapFmt(n) : numberFmt(n)}
+            {shown.text}
           </TableCell>
         );
       })}
     </TableRow>
   );
 };
+
+// Break-up sheets of the Prod Status Excel: the posting rows behind every number of the main sheet, one sheet per figure,
+// with a subtotal per Child Part that ties back to the main sheet.
+const buildBreakupSheets = (shown, data, { year, month }) => {
+  const yesterday = data.yesterday;
+  const monthName = `${year}-${String(month).padStart(2, "0")}`;
+  const num = (v) => Number(v) || 0;
+  const sub = (arr) => { arr.sub = true; return arr; }; // subtotal rows get a bold / shaded style
+  const cellStyle = (v, i, c, row) => (row && row.sub ? { s: { font: { bold: true }, fill: { fgColor: { rgb: "EAF0FC" } } } } : null);
+  const byPart = (list) => {
+    const m = new Map();
+    (list || []).forEach((r) => { if (!m.has(r.child_part_no)) m.set(r.child_part_no, []); m.get(r.child_part_no).push(r); });
+    return m;
+  };
+  // rows of every shown Child Part (detail rows, then its subtotal rows) + an ALL PARTS line
+  const build = (list, detail, subtotals, grandLabel, lastCol) => {
+    const m = byPart(list);
+    const out = [];
+    const grand = {};
+    shown.forEach((r) => {
+      const mine = m.get(r.child_part_no) || [];
+      mine.forEach((x) => out.push(detail(r, x)));
+      subtotals(r, mine).forEach(([label, value, key]) => {
+        out.push(sub([r.child_part_no, r.child_part_desc, ...label, value]));
+        grand[key] = (grand[key] || 0) + value;
+      });
+    });
+    Object.keys(grand).forEach((key) => out.push(sub(["ALL PARTS", `${shown.length} parts`, ...grandLabel(key), grand[key]])));
+    return out;
+  };
+  const head = (h, w) => ({ header: h, width: w });
+  const qtyCol = (h) => ({ header: h, width: 14, format: "#,##0" });
+
+  const actualCols = [head("Child Part", 18), head("Description", 34), head("Posting Date", 16), head("Movement Type", 15), qtyCol("Qty")];
+  // YD sheet shows only yesterday's rows
+  const ydRows = build(
+    (data.actuals || []).filter((x) => x.prod_date === yesterday),
+    (r, x) => [r.child_part_no, r.child_part_desc, x.prod_date, x.moment_type, num(x.prod_qty)],
+    (r, mine) => [[["Subtotal = YD Actual", ""], mine.reduce((t, x) => t + num(x.prod_qty), 0), "t"]],
+    () => ["Total", ""],
+  );
+  const mtdRows = build(
+    data.actuals,
+    (r, x) => [r.child_part_no, r.child_part_desc, x.prod_date, x.moment_type, num(x.prod_qty)],
+    (r, mine) => [[["Subtotal = MTD Actual", ""], mine.reduce((t, x) => t + num(x.prod_qty), 0), "t"]],
+    () => ["Total", ""],
+  );
+
+  const planRows = build(
+    data.plan,
+    (r, x) => [r.child_part_no, r.child_part_desc, x.fg_code, x.fg_desc || "", x.effective_date, num(x.plan_qty)],
+    (r, mine) => [
+      [["Monthly Plan (sum of the FG plans)", "", ""], mine.reduce((t, x) => t + num(x.plan_qty), 0), "m"],
+      [[`MTD Plan = Monthly Plan / ${r.working_days.monthDays} working days x ${r.nwd} working days up to yesterday`, "", ""], num(r.mtd_plan), "p"],
+    ],
+    (key) => [key === "m" ? "Total Monthly Plan" : "Total MTD Plan", "", ""],
+  );
+  const s541Rows = build(
+    data.sub541,
+    (r, x) => [r.child_part_no, r.child_part_desc, x.posting_date, x.movement_type, num(x.quantity), -num(x.quantity)],
+    (r, mine) => [
+      [["Subtotal = 541 MTD Actual", "", ""], mine.reduce((t, x) => t - num(x.quantity), 0), "m"],
+      [[`Subtotal = 541 YA (yesterday ${yesterday})`, "", ""], mine.filter((x) => x.posting_date === yesterday).reduce((t, x) => t - num(x.quantity), 0), "y"],
+    ],
+    (key) => [key === "m" ? "Total 541 MTD Actual" : "Total 541 YA", "", ""],
+  );
+
+  // working-day split for the guide, e.g. "25 = 31 days - 4 weekend days - 2 holidays"; legacy = DHRM could not be read
+  const wd = shown.length ? shown[0].working_days : null;
+  const wdText = (d, n) => (d
+    ? `${n} = ${d.total_days} days - ${d.weekend_days} weekend days - ${d.holiday_days} holidays (weekends and DHRM holidays are not working days).`
+    : `${n} (the DHRM holidays could not be read, so the old rule is used: 26 days a month, Sundays only).`);
+  const guide = [
+    ["Sheet", "What it shows"],
+    ["Component Prod Status", `The Prod Status table as shown on the screen for ${monthName} (search and filters applied), with a TOTAL row.`],
+    ["Monthly Plan", "Sum of the Monthly Plan (plan type MP) of every FG part that uses the Child Part (MFG BOM) for the month. Rows: sheet 'Plan Breakup'."],
+    ["Working days of the month", wdText(wd && wd.month, wd && wd.monthDays)],
+    ["Working days up to yesterday", wdText(wd && wd.elapsed, wd && wd.elapsedDays) + " A past month counts the whole month; a future month counts 0."],
+    ["MTD Plan", `(Monthly Plan / ${wd ? wd.monthDays : "working days of the month"}) x ${wd ? wd.elapsedDays : "working days up to yesterday"}, rounded to a whole number. Shown at the end of each Child Part in 'Plan Breakup'.`],
+    ["MTD Actual", "Production of the Child Part itself from the 1st of the month (Production Actual, movement types 101 and 102). Rows: sheet 'MTD Actual Breakup'."],
+    ["MTD Gap", "MTD Actual - MTD Plan (positive = ahead, negative = behind)."],
+    ["YD Plan", "Yesterday's plan entered for the Child Part on the Component Daily Plan tab (all shifts added)."],
+    ["YD Actual", `Production of the Child Part itself yesterday (${yesterday}), movement types 101 and 102. Rows: sheet 'YD Actual Breakup'.`],
+    ["YD Gap", "YD Actual - YD Plan."],
+    ["541 MTD Actual", "Net quantity of movement types 541 and 542 for the Child Part this month, from the Subcontract Daily Plan (541 is stored negative, so it is multiplied by -1). Rows: sheet '541 Breakup'."],
+    ["541 MTD Gap", "541 MTD Actual - MTD Actual."],
+    ["541 YA", "Net 541 / 542 quantity of yesterday. Rows: sheet '541 Breakup'."],
+    ["541 YG", "541 YA - YD Actual."],
+    ["Break-up sheets", "Each Child Part lists the rows it is built from, followed by a shaded Subtotal row that equals the figure on the main sheet. The last lines (ALL PARTS) add up all parts shown."],
+  ];
+
+  return [
+    { sheetName: "How to read", columns: [head("Item", 26), head("Explanation", 120)], rows: guide.slice(1).map((r) => r), noTotal: true },
+    { sheetName: "MTD Actual Breakup", columns: actualCols, rows: mtdRows, noTotal: true, cellStyle },
+    { sheetName: "YD Actual Breakup", columns: actualCols, rows: ydRows, noTotal: true, cellStyle },
+    { sheetName: "Plan Breakup", columns: [head("Child Part", 18), head("Description", 34), head("FG Part", 18), head("FG Description", 34), head("Effective Date", 16), qtyCol("Plan Qty")], rows: planRows, noTotal: true, cellStyle },
+    { sheetName: "541 Breakup", columns: [head("Child Part", 18), head("Description", 34), head("Posting Date", 16), head("Movement Type", 15), qtyCol("Qty (as stored)"), qtyCol("Net Qty (x -1)")], rows: s541Rows, noTotal: true, cellStyle },
+  ];
+};
+
+// Child Part / Description header hover: which parts are on this list
+const CHILD_PART_LISTED_POINTS = [
+  "MFG BOM parts with valuation INHOUSE or BOTH-IH/OS",
+  "Parts that already have a saved plan",
+];
 
 const PartStatusTable = ({ groups, collapsed, onToggle, loading, loaded }) => {
   const headCell = {
@@ -1550,9 +1665,11 @@ const PartStatusTable = ({ groups, collapsed, onToggle, loading, loaded }) => {
             ["Child Part / Description", "Child Part number and its description"],
           ].map(([h, tip]) => (
             <TableCell key={h} rowSpan={2} sx={{ ...headCell, verticalAlign: "bottom", pb: 0.9 }}>
-              <Tooltip title={tip} {...headTipProps}>
-                <span style={{ cursor: "help" }}>{h}</span>
-              </Tooltip>
+              {h === "Child Part / Description" ? (
+                <InfoTip trigger={h} labelStyle={{ cursor: "help" }} title="Parts listed" points={CHILD_PART_LISTED_POINTS} />
+              ) : (
+                <InfoTip trigger={h} text={tip} labelStyle={{ cursor: "help" }} />
+              )}
             </TableCell>
           ))}
           {STATUS_GROUP_HEADS.map((g) => (
@@ -1562,9 +1679,7 @@ const PartStatusTable = ({ groups, collapsed, onToggle, loading, loaded }) => {
               align="center"
               sx={{ ...headCell, top: 0, height: 24, fontSize: 10, letterSpacing: 0.6, borderLeft: `1px solid ${STATUS_HEAD_LINE}`, ...(g.sub ? { backgroundColor: SUB541_HEAD_BG } : {}) }}
             >
-              <Tooltip title={g.tip} {...headTipProps}>
-                <span style={{ cursor: "help", textTransform: "uppercase" }}>{g.t}</span>
-              </Tooltip>
+              <InfoTip trigger={g.t} text={g.tip} labelStyle={{ cursor: "help", textTransform: "uppercase" }} />
             </TableCell>
           ))}
         </TableRow>
@@ -1575,9 +1690,11 @@ const PartStatusTable = ({ groups, collapsed, onToggle, loading, loaded }) => {
               align="right"
               sx={{ ...headCell, top: 24, height: 26, borderLeft: SECTION_START.has(c.key) ? `1px solid ${STATUS_HEAD_LINE}` : "none", ...(c.sub ? { backgroundColor: SUB541_HEAD_BG } : {}) }}
             >
-              <Tooltip title={c.tip} {...headTipProps}>
-                <span style={{ cursor: "help" }}>{c.label}</span>
-              </Tooltip>
+              {c.key === "mtd_plan" ? (
+                <WorkingDaysTip kind="mtd" wd={groups.length ? groups[0].rows[0]?.working_days : null} labelStyle={{ cursor: "help" }}>{c.label}</WorkingDaysTip>
+              ) : (
+                <InfoTip trigger={c.label} text={c.tip} labelStyle={{ cursor: "help" }} />
+              )}
             </TableCell>
           ))}
         </TableRow>
@@ -1735,10 +1852,12 @@ const PlanHistoryBody = ({ searchText = "" }) => {
         cw_gap: (r.cw_actual || 0) - (r.cw_plan || 0),
         yd_gap: (r.yd_actual || 0) - (r.yd_plan || 0),
         day_gap: (r.day_actual || 0) - (r.day_plan || 0),
-        // 541 gaps: MTD Actual - 541 MTD Actual, and YD Actual - 541 YA.
-        sub541_month_gap: (r.mtd_actual_fg || 0) - (r.sub541_mtd_actual || 0),
+        // 541 gaps: 541 MTD Actual - MTD Actual, and 541 YA - YD Actual.
+        sub541_month_gap: (r.sub541_mtd_actual || 0) - (r.mtd_actual_fg || 0),
         // 541 - Daily group shows YESTERDAY: 541 YA minus the plan entered for yesterday (YD Plan)
-        sub541_yd_gap: (r.yd_actual || 0) - (r.sub541_yd_actual || 0),
+        sub541_yd_gap: (r.sub541_yd_actual || 0) - (r.yd_actual || 0),
+        // Fully Machined parts: the 541 columns do not apply, so all four are 0 (also in the totals and the Excel)
+        ...(r.no_541 ? { sub541_mtd_actual: 0, sub541_month_gap: 0, sub541_yd_actual: 0, sub541_yd_gap: 0 } : {}),
       })),
     [historyRows]
   );
@@ -1755,7 +1874,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
 
 
   // Group by Part Name — built from the returned data (never hardcoded),
-  // groups A-Z, rows by Line then Child Part.
+  // groups A-Z, rows inside a group by Monthly Plan (highest first), then Line, then Child Part.
   const groups = useMemo(() => {
     const map = new Map();
     filteredRows.forEach((r) => {
@@ -1768,6 +1887,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
       .map(([name, rows]) => {
         const sorted = [...rows].sort(
           (x, y) =>
+            (Number(y.monthly_plan) || 0) - (Number(x.monthly_plan) || 0) ||
             String(x.Line_Name || "").localeCompare(String(y.Line_Name || "")) ||
             String(x.child_part_no).localeCompare(String(y.child_part_no))
         );
@@ -1790,7 +1910,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
   const collapseAll = () => setCollapsed(new Set(groups.map((g) => g.name)));
 
   // Excel of the Prod Status table as shown (search applied, grouped by Part Name): MTD / YD columns and the 541 group, with a TOTAL row.
-  const exportExcel = () => {
+  const exportExcel = async () => {
     if (!filteredRows.length) {
       toast.warning("No data available to export.");
       return;
@@ -1821,6 +1941,15 @@ const PlanHistoryBody = ({ searchText = "" }) => {
         r.yd_plan || 0, r.yd_actual || 0, r.yd_gap || 0,
         r.sub541_mtd_actual || 0, r.sub541_month_gap || 0, r.sub541_yd_actual || 0, r.sub541_yd_gap || 0,
       ])));
+      // Break-up sheets: the posting rows behind every number, so the user can see how it is built
+      const shown = groups.flatMap((g) => g.rows);
+      let breakup = null;
+      try {
+        breakup = await GetMfgComponentPlanBreakupApi({ plant, fromDate: monthStartStr(year, month), toDate: monthEndStr(year, month), childParts: shown.map((r) => r.child_part).join(",") });
+      } catch (error) {
+        console.error(error);
+        toast.warning("The break-up sheets could not be loaded, only the main sheet is downloaded.");
+      }
       downloadStatusExcel({
         sheetName: "Component Prod Status",
         fileName: `Component_Prod_Status_${plant}_${year}-${String(month).padStart(2, "0")}.xlsx`,
@@ -1828,6 +1957,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
         groups: [{ label: "541", from: 12, to: 15 }],
         rows,
         totalLabel: `TOTAL (${rows.length} parts)`,
+        extraSheets: breakup ? buildBreakupSheets(shown, breakup, { year, month }) : [],
       });
       toast.success("Excel downloaded successfully.");
     } catch (error) {

@@ -27,6 +27,12 @@ export const GetMfgComponentValuationTypesApi = async () => {
   return response.data;
 };
 
+// Rows behind the Prod Status numbers (for the break-up sheets of the Excel download)
+export const GetMfgComponentPlanBreakupApi = async (params) => {
+  const response = await axios.get(`${api}/MfgComponentDailyPlan/getPlanBreakup`, { params });
+  return response.data;
+};
+
 export const GetMfgComponentDailyPlanDayDetailApi = async (params) => {
   const response = await axios.get(`${api}/MfgComponentDailyPlan/getDayDetail`, { params });
   return response.data;

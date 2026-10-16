@@ -24,6 +24,8 @@ import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import { format, startOfISOWeek, endOfISOWeek, getISOWeek, addDays } from "date-fns";
 import { toast } from "react-toastify";
 import { downloadStatusExcel } from "./statusExcel";
+import InfoTip from "../components/InfoTip";
+import WorkingDaysTip from "../components/WorkingDaysTip";
 import { AuthContext } from "../Authentication/AuthContext";
 import { getMfgPlanEditAccess } from "../Authentication/ActionAccessType";
 import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
@@ -1591,6 +1593,14 @@ const PlanHistoryBody = ({ searchText = "" }) => {
   const curMonthCell = (render) => (p) => (p.row.cw_na ? <span style={NA_STYLE} title="Applies to the current month only">0</span> : render(p));
   const CUR_NOTE = " Applies to the current month only (0 for other months).";
 
+  // MTD Plan / C.W Plan hovers: the real working-day counts of the loaded month, straight from the DHRM holiday data
+  const wdInfo = historyRows.length ? historyRows[0].working_days : null;
+  const HEAD_LABEL = { fontSize: "10.5px", fontWeight: 700, color: "#000" }; // renderHeader does not get the grid's header title style
+  // every column with a description shows it in the shared hover card (the grid's own header tooltip is plain text only)
+  const withInfoTipHeader = (c) => (c.description && !c.renderHeader
+    ? { ...c, description: undefined, renderHeader: () => <InfoTip trigger={c.headerName} text={c.description} labelStyle={HEAD_LABEL} /> }
+    : c);
+
   // Every column uses `flex` (never `width`) so MUI DataGrid distributes
   // 100% of the container's width across them proportionally — this is
   // what guarantees no horizontal scroll ever appears, and that the table
@@ -1627,7 +1637,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
     },
     {
       field: "mtd_plan", headerName: "MTD Plan", flex: 0.9, minWidth: 75, align: "right", headerAlign: "center",
-      description: "MTD Plan = (Monthly Plan / 26) x NWD. NWD = working days of the month up to yesterday (Sundays excluded)",
+      renderHeader: () => <WorkingDaysTip kind="mtd" wd={wdInfo} labelStyle={HEAD_LABEL}>MTD Plan</WorkingDaysTip>,
       renderCell: (p) => numberFmt(p.value),
     },
     {
@@ -1642,7 +1652,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
     },
     {
       field: "cw_plan_calc", headerName: "C.W Plan", flex: 0.8, minWidth: 68, align: "right", headerAlign: "center",
-      description: "C.W Plan = (Monthly Plan / 26) x working days elapsed this week (Monday = 1 ... Saturday = 6, today counts; Sunday = 6)." + CUR_NOTE,
+      renderHeader: () => <WorkingDaysTip kind="cw" wd={wdInfo} labelStyle={HEAD_LABEL} extraNote={CUR_NOTE.trim()}>C.W Plan</WorkingDaysTip>,
       renderCell: curMonthCell((p) => numberFmt(p.value)),
     },
     {
@@ -1670,7 +1680,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
       description: "YD Gap = YD Actual - YD Plan (positive = ahead, negative = behind)." + CUR_NOTE,
       renderCell: curMonthCell((p) => <span style={gapCellSx(p.value)}>{gapFmt(p.value)}</span>),
     },
-  ], []);
+  ].map(withInfoTipHeader), [wdInfo]);
 
   return (
     <>
@@ -1799,6 +1809,8 @@ const PlanHistoryBody = ({ searchText = "" }) => {
         <DataGrid
           rows={filteredRows}
           columns={columns}
+          // Opens sorted by Monthly Plan, highest first (the user can still click any header to re-sort)
+          initialState={{ sorting: { sortModel: [{ field: "monthly_plan", sort: "desc" }] } }}
           pageSize={25}
           rowsPerPageOptions={[25, 50, 100]}
           disableSelectionOnClick

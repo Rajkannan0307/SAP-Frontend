@@ -7,13 +7,14 @@ import { downloadStatusExcel } from "./statusExcel";
 import { GetRmCoverageApi } from "../controller/RmCoverageApiService";
 import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import InfoTip from "../components/InfoTip";
+import { workingDaysSplit, WORKING_DAYS_RULE } from "../components/WorkingDaysTip";
 import { FilterPanel, FilterToggleButton } from "../components/FilterPanel";
 import FilterSelect from "../components/FilterSelect";
 import { compactFieldSx, primaryButtonSx } from "../components/compactUi";
 import { DAY_CELLS, STATUS_META, COVERAGE_GREEN, COVERAGE_EMPTY, coverageFills, coverageFillPercent, fmtNum } from "./rmCoverageUtils";
 
 // Child Part Coverage (PPC & MRPC; code name RmCoverage): raw-material coverage of the child parts: ROH used with any valuation type, HALB used with any valuation type except INHOUSE.
-//   Plan = SUM of (FG monthly MP plan x BOM qty) of every FG that uses the child part;  Demand per Day = Plan / 26
+//   Plan = SUM of (FG monthly MP plan x BOM qty) of every FG that uses the child part;  Demand per Day = Plan / working days of the month (weekends and DHRM holidays removed)
 //   Coverage Days = Current Stock (latest MB52 snapshot) / Demand per Day
 //   Status: R = stock below the Safety Stock, G = coverage > 3 days and stock above the Safety Stock, Y = anything else
 // The numbers are calculated by the backend (MFG_BOM/RmCoverage.router.js); this screen shows them.
@@ -45,13 +46,28 @@ const vendorLabel = (v) => `${v.vendor_code} - ${v.vendor_name}`;
 const buyerLabel = (v) => `${v.buyer_id} - ${v.buyer_name}`;
 
 // header cell with a short explanation on hover (same idea as the other MFG screens)
-const Head = ({ tip, children, ...props }) => (
+const Head = ({ tip, tipProps, children, ...props }) => (
   <th {...props}>
-    <Tooltip title={tip} arrow placement="top" enterDelay={250}>
-      <span style={{ display: "block" }}>{children}</span>
-    </Tooltip>
+    <InfoTip trigger={children} {...(tipProps || { text: tip })} />
   </th>
 );
+
+// Demand / Day hover: the formula and the working days of the plan month per plant (straight from the DHRM holiday data)
+const demandPerDayTip = (workingDays) => {
+  const plants = Object.keys(workingDays || {});
+  if (plants.length === 0) return { title: "Demand per Day = Plan ÷ working days of the month", note: WORKING_DAYS_RULE };
+  const one = plants.length === 1 ? workingDays[plants[0]] : null;
+  return {
+    title: one ? `Demand per Day = Plan ÷ ${one.monthDays}` : "Demand per Day = Plan ÷ working days of the plant's month",
+    points: plants.map((p) => {
+      const wd = workingDays[p];
+      return wd.source === "dhrm" && wd.month
+        ? { label: `Plant ${p}: working days in the month`, value: wd.monthDays, detail: workingDaysSplit(wd.month) }
+        : { label: `Plant ${p}: old rule in use`, value: `${wd.monthDays} days`, detail: "the DHRM holidays could not be read" };
+    }),
+    note: WORKING_DAYS_RULE,
+  };
+};
 
 const monthLabel = (month) => {
   const [y, m] = String(month || "").split("-").map(Number);
@@ -90,7 +106,7 @@ const RmCoverage = () => {
   const [valuationFilter, setValuationFilter] = useState("All");
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
-  const [meta, setMeta] = useState({ month: "", stock_as_of: null });
+  const [meta, setMeta] = useState({ month: "", stock_as_of: null, working_days: null });
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [month, setMonth] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; }); // yyyy-MM
@@ -126,7 +142,7 @@ const RmCoverage = () => {
     try {
       const data = await GetRmCoverageApi({ plants: codes.join(","), month: monthValue });
       setRows(data?.rows || []);
-      setMeta({ month: data?.month || "", stock_as_of: data?.stock_as_of || null });
+      setMeta({ month: data?.month || "", stock_as_of: data?.stock_as_of || null, working_days: data?.working_days || null });
       setVendorFilter("All");
       setBuyerFilter("All");
       setLineFilter("All");
@@ -314,7 +330,7 @@ const RmCoverage = () => {
       </Typography>
       {loaded && (
         <Typography sx={{ fontSize: 11, color: "#8a93a3", lineHeight: 1.4, mb: 1.5 }}>
-          Plan: {monthLabel(meta.month)} (MP) / 26 days{meta.stock_as_of ? ` | MB52 stock as of ${stockAsOfLabel(meta.stock_as_of)}` : " | no MB52 stock found"}
+          Plan: {monthLabel(meta.month)} (MP) / working days of the month{meta.stock_as_of ? ` | MB52 stock as of ${stockAsOfLabel(meta.stock_as_of)}` : " | no MB52 stock found"}
         </Typography>
       )}
 
@@ -435,7 +451,7 @@ const RmCoverage = () => {
               <Head rowSpan={2} tip="Serial number of the row in the list" style={{ ...headBase, top: 0 }}>SI</Head>
               <Head rowSpan={2} tip="Child part (BOM component) of the FG parts, ROH used with any valuation type, HALB used with any valuation type except INHOUSE" style={{ ...headBase, top: 0, textAlign: "left" }}>Part Number / Description</Head>
               <Head rowSpan={2} tip="Plan = sum of (FG monthly MP plan x BOM qty) of every FG that uses this child part, current month" style={{ ...headBase, top: 0 }}>Plan</Head>
-              <Head rowSpan={2} tip="Demand per Day = Plan / 26" style={{ ...headBase, top: 0 }}>Demand / Day</Head>
+              <Head rowSpan={2} tipProps={demandPerDayTip(meta.working_days)} style={{ ...headBase, top: 0 }}>Demand / Day</Head>
               <Head rowSpan={2} tip="Safety Stock from the Material Master" style={{ ...headBase, top: 0 }}>Safety Stock</Head>
               <Head rowSpan={2} tip="Maximum Stock from the Material Master" style={{ ...headBase, top: 0 }}>Max Stock</Head>
               <Head rowSpan={2} tip="Current Stock = unrestricted stock of the latest MB52 (Plant Stock) snapshot" style={{ ...headBase, top: 0 }}>Current Stock</Head>

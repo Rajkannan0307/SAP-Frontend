@@ -68,6 +68,12 @@ export const GetMatAvailabilityReportApi = async (params) => {
   return response.data;
 };
 
+// Plan rows and production rows behind Monthly Plan / MTD Plan / MTD Actual of the listed FG parts (Excel break-up sheets)
+export const GetProdStatusBreakupApi = async (params) => {
+  const response = await axios.get(`${api}/MFG_BOM/getProdStatusBreakup`, { params });
+  return response.data;
+};
+
 export const GetPlantStockSnapshotApi = async (month) => {
   const response = await axios.get(`${api}/MFG_BOM/getPlantStockSnapshot`, { params: { month } });
   return response.data;

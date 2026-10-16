@@ -9,8 +9,9 @@ import * as XLSX from "xlsx-js-style";
 //   rows    : array of arrays, one value per column
 //   totalLabel : text for the first cell of the TOTAL row, e.g. "TOTAL (12 FG)"
 //   cellStyle  : optional (value, rowIndex, colIndex, row) => ({ s?: style, z?: numberFormat }) | null, for extra colouring of body cells
-//   extraSheets: optional more sheets, each { sheetName, columns, groups?, rows, totalLabel?, cellStyle? }
-const buildSheet = ({ columns, groups = [], rows, totalLabel = "TOTAL", cellStyle }) => {
+//   noTotal    : true = no automatic TOTAL row (the sheet carries its own subtotal rows)
+//   extraSheets: optional more sheets, each { sheetName, columns, groups?, rows, totalLabel?, noTotal?, cellStyle? }
+const buildSheet = ({ columns, groups = [], rows, totalLabel = "TOTAL", noTotal = false, cellStyle }) => {
   const hasGroups = groups.length > 0;
   const inGroup = (c) => groups.some((g) => c >= g.from && c <= g.to);
   const aoa = [];
@@ -24,16 +25,19 @@ const buildSheet = ({ columns, groups = [], rows, totalLabel = "TOTAL", cellStyl
   }
   aoa.push(columns.map((c) => c.header));
   rows.forEach((r) => aoa.push(r));
-  aoa.push(columns.map((c, i) => {
-    if (i === 0) return totalLabel;
-    if (!c.total) return "";
-    return rows.reduce((sum, r) => sum + (Number(r[i]) || 0), 0);
-  }));
+  if (!noTotal) {
+    aoa.push(columns.map((c, i) => {
+      if (i === 0) return totalLabel;
+      if (!c.total) return "";
+      return rows.reduce((sum, r) => sum + (Number(r[i]) || 0), 0);
+    }));
+  }
 
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   const headerRowIdx = hasGroups ? 1 : 0;
   const lastCol = columns.length - 1;
-  const totalIdx = aoa.length - 1;
+  const lastRowIdx = aoa.length - 1;
+  const totalIdx = noTotal ? -1 : lastRowIdx;
   ws["!cols"] = columns.map((c) => ({ wch: c.width || 12 }));
   ws["!merges"] = [];
   if (hasGroups) {
@@ -51,7 +55,7 @@ const buildSheet = ({ columns, groups = [], rows, totalLabel = "TOTAL", cellStyl
   }
   const GREEN = "1B7A43";
   const RED = "B42323";
-  for (let r = headerRowIdx + 1; r <= totalIdx; r++) {
+  for (let r = headerRowIdx + 1; r <= lastRowIdx; r++) {
     columns.forEach((col, c) => {
       const addr = XLSX.utils.encode_cell({ r, c });
       if (!ws[addr]) ws[addr] = { t: "s", v: "" };
@@ -60,7 +64,7 @@ const buildSheet = ({ columns, groups = [], rows, totalLabel = "TOTAL", cellStyl
       if (typeof cell.v === "number") cell.z = col.format || "#,##0";
       if (col.gap && typeof cell.v === "number" && cell.v !== 0) style.font = { bold: true, color: { rgb: cell.v > 0 ? GREEN : RED } };
       let extra = null;
-      if (cellStyle && r < totalIdx) extra = cellStyle(cell.v, r - headerRowIdx - 1, c, rows[r - headerRowIdx - 1]);
+      if (cellStyle && r !== totalIdx) extra = cellStyle(cell.v, r - headerRowIdx - 1, c, rows[r - headerRowIdx - 1]);
       if (extra && extra.z) cell.z = extra.z;
       if (extra && extra.s) Object.assign(style, extra.s);
       if (r === totalIdx) {
