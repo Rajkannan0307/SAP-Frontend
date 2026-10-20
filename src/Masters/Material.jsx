@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
+  Autocomplete,
   TextField,
   Button,
   Dialog,
@@ -34,6 +35,7 @@ import { FaDownload } from "react-icons/fa";
 import { api } from "../controller/constants";
 import { getdetails, getAdd, getPlants, getUpdates, getMaterialType, getProductSegments } from '../controller/Masterapiservice';
 import { getdetails as getLines } from '../controller/LineMasterapiservice';
+import { getdetails as getVendors } from '../controller/VendorMasterapiservice';
 import LineSelect from '../components/LineSelect';
 import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import { findPlantsNotAllowed, plantsNotAllowedMessage } from "../common/plantFileCheck";
@@ -68,6 +70,21 @@ const getStockError = (materialType, safetyStock, maxStock) => {
   if (safetyTxt !== "" && maxTxt !== "" && Number(maxTxt) < Number(safetyTxt)) {
     return "Max Stock cannot be less than Safety Stock.";
   }
+  return "";
+};
+
+// Procurement Type (mandatory): only these four codes are allowed (the API and the database procedures enforce the same list)
+const PROCUREMENT_TYPES = [
+  { value: "E", label: "E \u2013 Inhouse" },
+  { value: "F", label: "F \u2013 Domestic" },
+  { value: "F30", label: "F30 \u2013 Subcontract" },
+  { value: "E50", label: "E50 \u2013 Phatam" },
+];
+const procurementLabel = (code) => PROCUREMENT_TYPES.find((p) => p.value === code)?.label || code || "";
+const getProcurementError = (procType) => {
+  const txt = String(procType ?? "").trim().toUpperCase();
+  if (txt === "") return "Procurement Type is mandatory.";
+  if (!PROCUREMENT_TYPES.some((p) => p.value === txt)) return "Procurement Type must be E, F, F30 or E50.";
   return "";
 };
 
@@ -193,6 +210,10 @@ const Material = () => {
   const [SegmentTable, setSegmentTable] = useState([]);
   const [SegmentID, setSegmentID] = useState("");
   const [SegmentExtra, setSegmentExtra] = useState(null);
+  // Vendor (Mst_Vendor, optional) and Procurement Type (mandatory): VendorTable = the vendors of the plants this user may use
+  const [VendorTable, setVendorTable] = useState([]);
+  const [VendorID, setVendorID] = useState("");
+  const [ProcType, setProcType] = useState("");
 
   // const [userID, setUserID] = useState("");
 
@@ -205,6 +226,14 @@ const Material = () => {
     { field: "Description", headerName: "Description", flex: 1.8, minWidth: 160 },
     { field: "Line_Name", headerName: "Line", flex: 0.9, minWidth: 90 },
     { field: "Segment_Name", headerName: "Segment", flex: 0.8, minWidth: 90 },
+    {
+      field: "Vendor_Code",
+      headerName: "Vendor",
+      flex: 1.6,
+      minWidth: 180,
+      valueGetter: (value, row) => (row.Vendor_Code ? `${row.Vendor_Code} – ${row.Vendor_Name || ""}` : ""),
+    },
+    { field: "Procurement_Type", headerName: "Procurement Type", flex: 1, minWidth: 130, valueFormatter: (value) => procurementLabel(value) },
     { field: "Rate", headerName: "Rate", flex: 0.6, minWidth: 70 },
     { field: "safety_stock", headerName: "Safety Stock", flex: 0.8, minWidth: 90 },
     { field: "max_stock", headerName: "Max Stock", flex: 0.7, minWidth: 80 },
@@ -302,8 +331,8 @@ const Material = () => {
       if (fSegment !== "All" && row.Segment_Name !== fSegment) return false;
       if (fStatus !== "All" && (fStatus === "Active") !== !!row.Active_Status) return false;
       if (!text) return true;
-      return ["Plant_Code", "Material_Type", "Material_Code", "Description", "Rate", "Segment_Name", "Line_Name"].some((key) => {
-        const value = row[key];
+      return ["Plant_Code", "Material_Type", "Material_Code", "Description", "Rate", "Segment_Name", "Line_Name", "Vendor_Code", "Vendor_Name", "Procurement_Type"].some((key) => {
+        const value = key === "Procurement_Type" ? procurementLabel(row[key]) : row[key];
         return value !== null && value !== undefined && String(value).toLowerCase().includes(text);
       });
     });
@@ -342,6 +371,15 @@ const Material = () => {
     }
   };
 
+  const get_Vendor = async () => {
+    try {
+      const response = await getVendors();
+      setVendorTable(Array.isArray(response) ? response : []);
+    } catch (error) {
+      console.error("Error loading Vendor list:", error);
+    }
+  };
+
   const get_Line = async () => {
     try {
       const response = await getLines();
@@ -374,6 +412,28 @@ const Material = () => {
     ...(SegmentExtra && !SegmentTable.some((x) => String(x.prod_seg_id) === String(SegmentExtra.prod_seg_id)) ? [SegmentExtra] : []),
     ...SegmentTable,
   ];
+  // Vendor dropdown (Add and Edit): the active vendors of the material's plant (+ the vendor it has now). Optional; on Edit
+  // an empty vendor leaves the stored one as it is. The Add form holds Plant_ID, the Edit form holds Plant_Code.
+  const formPlantCode = openAddModal ? plants.find((p) => String(p.Plant_ID) === String(PlantCode))?.Plant_Code : PlantCode;
+  const vendorOptions = formPlantCode
+    ? VendorTable.filter((v) => String(v.Plant_Code) === String(formPlantCode) && (v.Active_Status || String(v.Vendor_ID) === String(VendorID)))
+    : [];
+  const vendorField = (
+    <Autocomplete
+      size="small"
+      options={vendorOptions}
+      value={vendorOptions.find((v) => String(v.Vendor_ID) === String(VendorID)) || null}
+      onChange={(_, v) => setVendorID(v ? v.Vendor_ID : "")}
+      getOptionLabel={(v) => `${v.Vendor_Code} \u2013 ${v.Vendor_Name}`}
+      isOptionEqualToValue={(o, v) => o.Vendor_ID === v.Vendor_ID}
+      disabled={!formPlantCode}
+      ListboxProps={{ sx: { fontSize: 12 } }}
+      renderInput={(params) => <TextField {...params} label="Vendor Code" sx={DIALOG_FIELD_SX} />}
+    />
+  );
+  const procurementField = (
+    <SelectField label="Procurement Type" value={ProcType} onChange={(e) => setProcType(e.target.value)} options={PROCUREMENT_TYPES} required />
+  );
   const segmentField = (
     <SelectField
       label="Segment"
@@ -405,6 +465,8 @@ const Material = () => {
     setLineID("");
     setSegmentID("");
     setSegmentExtra(null);
+    setVendorID("");
+    setProcType("");
 
     setRate("");
     setSafetyStock("");
@@ -414,6 +476,7 @@ const Material = () => {
     get_Material_Type();
     get_Line();
     get_Segment();
+    get_Vendor();
 
   };
   const handleCloseAddModal = () => setOpenAddModal(false);
@@ -425,6 +488,7 @@ const Material = () => {
     get_Material_Type();
     get_Line();
     get_Segment();
+    get_Vendor();
   };
 
   // Dynamic template (replaces the old static MaterialMaster.xlsx) so the
@@ -438,7 +502,7 @@ const Material = () => {
     workbook.creator = 'MATERIAL_MASTER';
     workbook.created = new Date();
 
-    const headers = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Active_Status', 'Line_Name', 'Safety_Stock', 'Max_Stock', 'Segment'];
+    const headers = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Active_Status', 'Line_Name', 'Safety_Stock', 'Max_Stock', 'Segment', 'Vendor_Code', 'Procurement_Type'];
     const worksheet = workbook.addWorksheet('MATERIAL');
     worksheet.addRow(headers);
     worksheet.getRow(1).eachCell((cell) => {
@@ -457,6 +521,8 @@ const Material = () => {
       { width: 14 }, // Safety_Stock (mandatory for ROH)
       { width: 14 }, // Max_Stock (mandatory for ROH)
       { width: 14 }, // Segment (optional)
+      { width: 14, style: { numFmt: '@' } }, // Vendor_Code (optional, text so codes keep their leading zeros)
+      { width: 18 }, // Procurement_Type (mandatory)
     ];
     worksheet.views = [{ state: 'frozen', ySplit: 1 }];
     // Safety_Stock / Max_Stock: mandatory for material type ROH, optional for the others; 0 or more
@@ -468,6 +534,18 @@ const Material = () => {
     if (segmentNames.length) {
       worksheet.dataValidations.add('J2:J1000', { type: 'list', allowBlank: true, formulae: [`"${segmentNames.join(',')}"`] });
     }
+    // Vendor_Code (optional): a code of the Vendor Master sheet; blank = no vendor (an existing material keeps its vendor)
+    worksheet.getCell('K1').note = 'Optional: the vendor code from the Vendor Master sheet (it must belong to the Plant_Code). Blank = no vendor (an existing material keeps its vendor).';
+    // Procurement_Type (mandatory): dropdown with the four allowed codes only
+    worksheet.getCell('L1').note = 'Mandatory. E = Inhouse, F = Domestic, F30 = Subcontract, E50 = Phatam.';
+    worksheet.dataValidations.add('L2:L1000', {
+      type: 'list',
+      allowBlank: false,
+      showErrorMessage: true,
+      errorTitle: 'Invalid Procurement Type',
+      error: 'Choose E, F, F30 or E50.',
+      formulae: [`"${PROCUREMENT_TYPES.map((p) => p.value).join(',')}"`],
+    });
     worksheet.dataValidations.add('H2:I1000', {
       type: 'decimal',
       operator: 'greaterThanOrEqual',
@@ -519,6 +597,31 @@ const Material = () => {
       });
     }
 
+    // Vendor Master sheet: the active vendor codes of the plants this user may use, to look up the Vendor_Code
+    let vendorList = VendorTable;
+    if (!vendorList.length) {
+      try {
+        const res = await getVendors();
+        vendorList = Array.isArray(res) ? res : [];
+      } catch (error) {
+        console.error('Error loading Vendor list:', error);
+      }
+    }
+    const allowedPlants = new Set(plantCodes);
+    const vendorRows = vendorList.filter((v) => v.Active_Status && allowedPlants.has(String(v.Plant_Code)));
+    const vendorSheet = workbook.addWorksheet('Vendor Master');
+    vendorSheet.addRow(['Plant_Code', 'Vendor_Code', 'Vendor_Name']);
+    vendorSheet.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true };
+      cell.alignment = { horizontal: 'center' };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFADD8E6' } };
+    });
+    vendorSheet.columns = [{ width: 14 }, { width: 16, style: { numFmt: '@' } }, { width: 45 }];
+    vendorSheet.views = [{ state: 'frozen', ySplit: 1 }];
+    vendorRows.forEach((v) => {
+      vendorSheet.addRow([String(v.Plant_Code), String(v.Vendor_Code), v.Vendor_Name]);
+    });
+
     const buffer = await workbook.xlsx.writeBuffer();
     saveAs(
       new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
@@ -560,9 +663,14 @@ const Material = () => {
         console.log('response', response.data)
         // rows rejected because of an unknown Segment are named in the message (the full list is in the downloaded log)
         const badSegments = [...new Set((response.data.ErrorRecords || []).filter((r) => String(r.Segment_Val || '').startsWith('Invalid')).map((r) => String(r.Segment || '').trim()))];
+        // rows rejected because of Procurement Type / Vendor Code are listed row-wise (Excel row numbers)
+        const ruleErrors = (response.data.ErrorRecords || []).flatMap((r) => [r.Proc_Val, r.Vendor_Val].filter((v) => String(v || '').startsWith('Invalid')).map((v) => `Row ${r.Row_No}: ${String(v).replace(/^Invalid: /, '')}`));
+        const ruleText = ruleErrors.length
+          ? '\n\n' + ruleErrors.slice(0, 10).join('\n') + (ruleErrors.length > 10 ? `\n... and ${ruleErrors.length - 10} more (see the Error Records sheet of the log file).` : '')
+          : '';
         alert(badSegments.length
-          ? `${response.data.message}\n\nRows rejected - Segment not found in Segment Master: ${badSegments.map((x) => "'" + x + "'").join(', ')}. See the Error Records sheet of the log file.`
-          : response.data.message)
+          ? `${response.data.message}\n\nRows rejected - Segment not found in Segment Master: ${badSegments.map((x) => "'" + x + "'").join(', ')}. See the Error Records sheet of the log file.${ruleText}`
+          : response.data.message + ruleText)
         // console.log('response', response.data)
         if (response.data.NewRecord.length > 0 || response.data.UpdatedData.length > 0 || response.data.ErrorRecords.length > 0) {
           downloadExcel(response.data.NewRecord, response.data.UpdatedData, response.data.ErrorRecords);
@@ -583,9 +691,9 @@ const Material = () => {
   const downloadExcel = (newRecord, updateRecord, errRecord) => {
     const wb = XLSX.utils.book_new();
 
-    const newRecordsColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'ActiveStatus', 'Status'];
-    const UpdatedColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'ActiveStatus', 'Status'];
-    const ErrorColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation', 'Segment_Validation'];
+    const newRecordsColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Vendor_Code', 'Procurement_Type', 'ActiveStatus', 'Status'];
+    const UpdatedColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Vendor_Code', 'Procurement_Type', 'ActiveStatus', 'Status'];
+    const ErrorColumns = ['Excel_Row', 'Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Vendor_Code', 'Procurement_Type', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation', 'Segment_Validation', 'Procurement_Type_Validation', 'Vendor_Code_Validation'];
 
     const filteredNewData = newRecord.map(item => ({
       Plant_Code: item.Plant_Code,
@@ -597,6 +705,8 @@ const Material = () => {
       Safety_Stock: item.safety_stock,
       Max_Stock: item.max_stock,
       Segment: item.Segment,
+      Vendor_Code: item.Vendor_Code,
+      Procurement_Type: item.Procurement_Type,
       ActiveStatus: item.Active_Status,
       Status: item.Status,
     }));
@@ -611,11 +721,14 @@ const Material = () => {
       Safety_Stock: item.safety_stock,
       Max_Stock: item.max_stock,
       Segment: item.Segment,
+      Vendor_Code: item.Vendor_Code,
+      Procurement_Type: item.Procurement_Type,
       ActiveStatus: item.Active_Status,
       Status: item.Status,
     }));
 
     const filteredError = errRecord.map(item => ({
+      Excel_Row: item.Row_No,
       Plant_Code: item.Plant_Code,
       Material_Type: item.Material_Type,
 
@@ -626,11 +739,15 @@ const Material = () => {
       Safety_Stock: item.Safety_Stock,
       Max_Stock: item.Max_Stock,
       Segment: item.Segment,
+      Vendor_Code: item.Vendor_Code,
+      Procurement_Type: item.Procurement_Type,
       ActiveStatus: item.Active_Status,
       PlantCode_Validation: item.Plant_Val,
       Material_Type_Validation: item.Material_Val,
       Stock_Validation: item.Stock_Val,
       Segment_Validation: item.Segment_Val,
+      Procurement_Type_Validation: item.Proc_Val,
+      Vendor_Code_Validation: item.Vendor_Val,
     }));
 
     // ðŸ”¹ Helper to style header cells
@@ -649,7 +766,7 @@ const Material = () => {
 
     // ðŸ”´ Style red text for validation columns only
     const styleValidationColumns = (worksheet, columns, dataLength) => {
-      const validationCols = ['PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation', 'Segment_Validation'];
+      const validationCols = ['PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation', 'Segment_Validation', 'Procurement_Type_Validation', 'Vendor_Code_Validation'];
 
       for (let row = 1; row <= dataLength; row++) {
         validationCols.forEach(colName => {
@@ -719,7 +836,10 @@ const Material = () => {
     setLineID(params.row.Line_ID || "");
     setSegmentID(params.row.prod_seg_id || "");
     setSegmentExtra(params.row.prod_seg_id ? { prod_seg_id: params.row.prod_seg_id, seg_name: params.row.Segment_Name || String(params.row.prod_seg_id) } : null);
+    setVendorID(params.row.Vendor_ID || "");
+    setProcType(params.row.Procurement_Type || "");
     get_Segment();
+    get_Vendor();
     setOpenEditModal(true);  // Open the modal
     setMaterialID(params.row.Material_ID);
     // setUserID(params.User_ID);
@@ -742,6 +862,11 @@ const Material = () => {
       alert(stockError);
       return;
     }
+    const procError = getProcurementError(ProcType);
+    if (procError) {
+      alert(procError);
+      return;
+    }
 
     try {
       const data = {
@@ -757,6 +882,8 @@ const Material = () => {
         Active_Status: ActiveStatus,
         Line_ID: LineID || null,
         Prod_Seg_ID: SegmentID || null,
+        Vendor_ID: VendorID || null,
+        Procurement_Type: ProcType,
       }
       const response = await getAdd(data);
       if (response.data.success) {
@@ -783,6 +910,11 @@ const Material = () => {
       alert(stockError);
       return;
     }
+    const procError = getProcurementError(ProcType);
+    if (procError) {
+      alert(procError);
+      return;
+    }
     try {
       const data = {
         UserID: UserID,
@@ -796,6 +928,8 @@ const Material = () => {
         Active_Status: ActiveStatus,
         Line_ID: LineID || null,
         Prod_Seg_ID: SegmentID || null,
+        Vendor_ID: VendorID || null, // empty = the stored vendor is left as it is
+        Procurement_Type: ProcType,
         // UserID: userID,  // Ensure the UserID is also included
       };
 
@@ -830,7 +964,7 @@ const Material = () => {
       return;
     }
 
-    const DataColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'ActiveStatus'];
+    const DataColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Vendor', 'Procurement_Type', 'ActiveStatus'];
 
     const filteredData = data.map(item => ({
       Plant_Code: item.Plant_Code,
@@ -843,6 +977,8 @@ const Material = () => {
       Safety_Stock: item.safety_stock,
       Max_Stock: item.max_stock,
       Segment: item.Segment_Name || "",
+      Vendor: item.Vendor_Code ? `${item.Vendor_Code} –${item.Vendor_Name || ""}` : "",
+      Procurement_Type: procurementLabel(item.Procurement_Type),
       ActiveStatus: item.Active_Status ? "Active" : "Inactive"
     }));
 
@@ -1032,6 +1168,7 @@ const Material = () => {
           onChange={(e) => {
             setPlantCode(e.target.value);
             setLineID(""); // previous plant's line no longer valid
+            setVendorID(""); // ... and its vendor
           }}
           options={plantOptions}
           required
@@ -1039,6 +1176,8 @@ const Material = () => {
         <SelectField label="Material Type" value={MaterialType} onChange={(e) => setMaterialType(e.target.value)} options={typeOptions} required />
         <LineSelect value={LineID} options={lineOptions} onChange={setLineID} disabled={!PlantCode} size="compact" />
         {segmentField}
+        {procurementField}
+        {vendorField}
         <TextInput label="Material Code" value={MaterialCode} onChange={(e) => setMaterialCode(e.target.value)} required />
         <TextInput label="Description" value={Description} onChange={(e) => setDescription(e.target.value)} required />
         <TextInput label="Rate" type="number" value={Rate} onChange={(e) => setRate(e.target.value)} inputProps={{ min: 0 }} required />
@@ -1068,6 +1207,8 @@ const Material = () => {
             resolves to the row's own plant's lines only. */}
         <LineSelect value={LineID} options={editLineOptions} onChange={setLineID} disabled={!PlantCode} size="compact" />
         {segmentField}
+        {procurementField}
+        {vendorField}
         <TextInput label="Material Code" value={MaterialCode} readOnly />
         <TextInput label="Description" value={Description} onChange={(e) => setDescription(e.target.value)} />
         <TextInput label="Rate" type="number" value={Rate} onChange={(e) => setRate(e.target.value)} inputProps={{ min: 0 }} required />
@@ -1114,7 +1255,7 @@ const Material = () => {
           />
           <span style={{ fontSize: 11, lineHeight: 1.5, color: "#6b7280" }}>
             Required columns: Plant_Code, Material_Type, Material_Code, Description, Rate, Active_Status (Active / Inactive) and Line_Name
-            (may be blank). Optional: Safety_Stock and Max_Stock (mandatory for ROH) and Segment. A material that already exists is updated;
+            (may be blank). Procurement_Type is mandatory (E, F, F30 or E50 - pick it from the dropdown). Optional: Vendor_Code (must be in the Vendor Master sheet of the template; blank keeps the stored vendor), Safety_Stock and Max_Stock (mandatory for ROH) and Segment. A material that already exists is updated;
             a new one is added. Rows with errors are skipped and listed in the log file.
           </span>
         </Box>

@@ -90,6 +90,9 @@ const getCurrentFinYear = () => {
     return finYearsList.includes(label) ? label : ""
 }
 const currentFinYear = getCurrentFinYear()
+// The screen opens on the CURRENT month of the current financial year (not the whole year); "All Months" is still in the Month list.
+// Without a matching financial year in the list there is no month to preselect.
+const currentMonth = currentFinYear ? new Date().getMonth() + 1 : ""
 
 // Downloads the rows the grid is showing right now (after the filters and sorting), with the visible columns, as Excel.
 const ExcelExportButton = () => {
@@ -217,7 +220,7 @@ const PMPD_ProductionPlan = () => {
         initialValues: {
             plant: currentUserPlantCode,
             fin_year: currentFinYear,
-            month: "",
+            month: currentMonth,
             type: "SUBMIT"
         },
         validationSchema: validationschema,
@@ -263,7 +266,7 @@ const PMPD_ProductionPlan = () => {
         fetchData()
     }, [])
 
-    // Initial load: current financial year, all months
+    // Initial load: current financial year, current month
     useEffect(() => {
         if (formik.values.plant && formik.values.fin_year) formik.submitForm()
     }, [])

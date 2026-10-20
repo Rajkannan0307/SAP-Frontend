@@ -1,4 +1,5 @@
-import React, { useContext, useEffect, useMemo, useState, useCallback } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   TextField, Button, CircularProgress, Typography, Autocomplete, MenuItem, Select, Tooltip,
   Chip, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, Box, Collapse, IconButton,
@@ -29,11 +30,14 @@ import { getdetails as getModules } from "../controller/ModuleMasterapiservice";
 import { getdetails as getLines } from "../controller/LineMasterapiservice";
 import { getdetails as getOperations } from "../controller/OperationMasterapiservice";
 import FilterSelect from "../components/FilterSelect";
+import { getProductSegments } from "../controller/Masterapiservice";
 import InfoTip from "../components/InfoTip";
+import { monthlyPlanTipProps } from "../components/monthlyPlanTip";
 import WorkingDaysTip from "../components/WorkingDaysTip";
 import { FilterToggleButton, FilterPanel } from "../components/FilterPanel";
 import {
   GetMfgComponentValuationTypesApi,
+  GetMfgComponentLinesApi,
   GetMfgComponentPlanBreakupApi,
   GetMfgComponentDailyPlanGridApi,
   SaveMfgComponentDailyPlanApi,
@@ -257,6 +261,69 @@ const isWithinInfoWindow = (planDate, today) => planDate === today;
 
 const EMPTY_ROW_VALUES = {};
 
+// ---- Daily / Shift-wise view of the Plan Entry grid ----
+// Shift-wise = one Plan input per shift (as always). Daily = ONE input per day showing A + B + C. Daily is only a view: the saved
+// per-shift rows are never touched by switching; a day edited in Daily view is written on Save as: the new total in the FIRST shift
+// and 0 in the other shifts that already hold a value (days that were not edited are never sent).
+const VIEW_MODE_KEY = "mfgCompPlanViewMode";
+const DAILY_LANE = [{ shift_name: "TOTAL" }]; // one pseudo shift, so the stock coverage runs day by day on the day totals
+const DAY_EDIT_MARK = "__DAY"; // third part of a dirty key that belongs to a Daily-view edit
+const cellKeyDay = (childPart, periodKey) => `${childPart}|${periodKey}|${DAY_EDIT_MARK}`;
+
+// A + B + C of one day from the shift values; null when no shift has a value
+const shiftTotal = (rowValues, periodKey, shifts) => {
+  let any = false;
+  let total = 0;
+  shifts.forEach((sh) => {
+    const v = rowValues[`${periodKey}|${sh.shift_name}`];
+    if (v !== "" && v !== null && v !== undefined) { any = true; total += Number(v) || 0; }
+  });
+  return any ? total : null;
+};
+// what the Daily input shows: the value being typed for that day, else the shift total
+const dailyDisplay = (rowDaily, rowValues, periodKey, shifts) => {
+  if (rowDaily[periodKey] !== undefined) return rowDaily[periodKey];
+  const t = shiftTotal(rowValues, periodKey, shifts);
+  return t === null ? "" : String(t);
+};
+
+// Sliding Daily | Shift-wise switch (same pill look as the page tabs): one indicator glides under the active label
+const ViewToggle = ({ value, onChange, disabled }) => {
+  const options = [
+    { key: "daily", label: "Daily", tip: "One Plan box per day (A + B + C added)" },
+    { key: "shift", label: "Shift-wise", tip: "A Plan box per shift" },
+  ];
+  const idx = value === "daily" ? 0 : 1;
+  return (
+    <div role="group" aria-label="Plan view" style={{ position: "relative", display: "inline-grid", gridTemplateColumns: "1fr 1fr", padding: 3, backgroundColor: "#eef0f3", borderRadius: 999, opacity: disabled ? 0.6 : 1 }}>
+      <span
+        aria-hidden
+        style={{
+          position: "absolute", top: 3, bottom: 3, left: 3, width: "calc(50% - 3px)", borderRadius: 999, backgroundColor: "#fff",
+          boxShadow: "0 1px 3px rgba(16,24,40,0.18)", transform: `translateX(${idx * 100}%)`, transition: "transform .24s cubic-bezier(.4,0,.2,1)", pointerEvents: "none",
+        }}
+      />
+      {options.map((o) => (
+        <button
+          key={o.key}
+          type="button"
+          title={o.tip}
+          disabled={disabled}
+          aria-pressed={value === o.key}
+          onClick={() => onChange(o.key)}
+          style={{
+            position: "relative", zIndex: 1, border: "none", background: "transparent", cursor: disabled ? "default" : "pointer", padding: "4px 12px", minWidth: 78,
+            fontSize: 11, fontWeight: value === o.key ? 700 : 500, color: value === o.key ? "#0052cc" : "#5b6472", transition: "color .2s ease", whiteSpace: "nowrap",
+          }}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+
 const SectionHeader = ({ icon, title }) => (
   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
     {icon}
@@ -464,6 +531,7 @@ const DayInfoPopover = ({ plant, row, period, dayPeriods, shifts, rowValues, sto
 // lag when typing a 4-digit number.
 const PlanRow = React.memo(function PlanRow({
   row, idx, periods, shifts, rowValues, today, currentWeekStart, onCellChange, onShiftCellChange, plant, canEdit, viewingPast,
+  viewMode, rowDaily, onDailyCellChange,
 }) {
   // Shift-wise Plant Stock Availability — sequential consumption across this
   // row's whole week of DAY cells (see computeStockCoverage above), recomputed
@@ -474,6 +542,13 @@ const PlanRow = React.memo(function PlanRow({
     () => computeStockCoverage(dayPeriods, shifts, rowValues, row.prev_stage_stock),
     [dayPeriods, shifts, rowValues, row.prev_stage_stock]
   );
+  // Daily view: the same sequential stock consumption, run day by day on the day totals (one pseudo shift per day)
+  const dailyCoverage = useMemo(() => {
+    if (viewMode !== "daily") return null;
+    const lane = {};
+    dayPeriods.forEach((p) => { lane[`${p.key}|${DAILY_LANE[0].shift_name}`] = dailyDisplay(rowDaily, rowValues, p.key, shifts); });
+    return computeStockCoverage(dayPeriods, DAILY_LANE, lane, row.prev_stage_stock);
+  }, [viewMode, dayPeriods, rowDaily, rowValues, shifts, row.prev_stage_stock]);
   return (
     <tr style={{ backgroundColor: idx % 2 === 0 ? "#fff" : "#fafbfc" }}>
       <td
@@ -508,6 +583,58 @@ const PlanRow = React.memo(function PlanRow({
           ? "Locked — past weeks are view only"
           : "View only — you do not have permission to edit the plan";
 
+        if (p.period_type === "DAY" && viewMode === "daily") {
+          const dailyVal = dailyDisplay(rowDaily, rowValues, p.key, shifts);
+          const coverage = dailyCoverage?.get(`${p.key}|${DAILY_LANE[0].shift_name}`);
+          const stockColorKey = getStockCoverageColorKey(coverage?.coveragePct, dailyVal);
+          const actualTotal = shifts.reduce((tot, sh) => tot + (row.cells[p.key]?.actual_shift?.[sh.shift_name] || 0), 0);
+          const colors = CELL_COLORS[getPlanActualColorKey(actualTotal, dailyVal)];
+          const names = shifts.map((sh) => sh.shift_name).join(" + ");
+          return (
+            <td key={p.key} style={{ padding: "4px 4px", borderBottom: "1px solid #eef0f3", verticalAlign: "top", position: "relative" }}>
+              {isWithinInfoWindow(p.plan_date, today) && (
+                <DayInfoPopover plant={plant} row={row} period={p} dayPeriods={dayPeriods} shifts={shifts} rowValues={rowValues} stockCoverage={stockCoverage} />
+              )}
+              <div className="mfg-plan-in">
+                <div
+                  style={{
+                    boxSizing: "border-box",
+                    border: `1.5px solid ${editable ? STOCK_BORDER_COLORS[stockColorKey] : "#c7cbd1"}`,
+                    borderStyle: editable ? "solid" : "dashed",
+                    borderBottom: "none",
+                    borderRadius: "6px 6px 0 0",
+                    backgroundColor: editable ? STOCK_BG_COLORS[stockColorKey] : "#f1f2f5",
+                  }}
+                >
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={dailyVal}
+                    disabled={inputDisabled}
+                    onChange={(e) => onDailyCellChange(row.child_part, p.key, e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    placeholder="0"
+                    title={inputDisabled ? lockedTitle : `Day total (${names})`}
+                    style={{
+                      width: "100%", boxSizing: "border-box", fontSize: 11, fontWeight: 700, padding: "4px 3px", textAlign: "center",
+                      border: "none", outline: "none", backgroundColor: "transparent", color: PLAN_TEXT_COLOR,
+                      cursor: inputDisabled ? (editable ? "default" : "not-allowed") : "text",
+                    }}
+                  />
+                </div>
+                <div
+                  title={`Day total Actual (${names})`}
+                  style={{
+                    boxSizing: "border-box", border: `1.5px solid ${colors.border}`, borderRadius: "0 0 6px 6px", backgroundColor: colors.bg,
+                    color: ACTUAL_TEXT_COLOR, fontSize: 9, fontWeight: 700, textAlign: "center", padding: "2px 0", cursor: "pointer",
+                  }}
+                >
+                  {numberFmt(actualTotal)}
+                </div>
+              </div>
+            </td>
+          );
+        }
         // DAY columns: ONE Plan box + ONE Actual box (same outer shape/
         // border as before), each internally split into one field per this
         // plant's own shifts — no cascade, no combined day total.
@@ -717,7 +844,8 @@ const PlanRow = React.memo(function PlanRow({
    bucket), each column showing a small Plan(editable)/Actual(read-only)
    split, colored green/red at the 90% Actual-vs-Plan threshold.
    ============================================================ */
-const PlanEntryBody = ({ searchText = "" }) => {
+// toggleSlot = the empty gap in the page header (between the title and the search box): the Daily | Shift-wise switch is drawn there
+const PlanEntryBody = ({ searchText = "", toggleSlot = null }) => {
   const { user } = useContext(AuthContext);
   const plant = user?.PlantCode || "";
   // Only roles listed in MFG_PLAN_EDIT_ROLE_IDS may type and Save.
@@ -740,7 +868,18 @@ const PlanEntryBody = ({ searchText = "" }) => {
   // row's own sub-object — every other row's reference is untouched, which
   // is what lets the memoized PlanRow below skip re-rendering on keystroke.
   const [values, setValues] = useState({});
-  const [dirtyKeys, setDirtyKeys] = useState(new Set()); // flat "childPart|periodKey[|shiftName]" strings
+  const [dirtyKeys, setDirtyKeys] = useState(new Set()); // flat "childPart|periodKey[|shiftName]" strings (shiftName = "__DAY" for a Daily-view edit)
+  // Daily view: the day totals the user typed, kept apart from `values` (the saved shift values), so switching views never touches shift data.
+  const [dailyEdits, setDailyEdits] = useState({});
+  const [viewMode, setViewMode] = useState(() => {
+    // Daily is the default; the last choice the user made on this browser is remembered
+    try { return window.localStorage.getItem(VIEW_MODE_KEY) === "shift" ? "shift" : "daily"; } catch (e) { return "daily"; }
+  });
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
+  const shiftsRef = useRef(shifts);
+  shiftsRef.current = shifts;
+  const effectiveMode = shifts.length > 0 ? viewMode : "shift";
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -836,6 +975,7 @@ const PlanEntryBody = ({ searchText = "" }) => {
       });
       setValues(initialValues);
       setDirtyKeys(new Set());
+      setDailyEdits({});
       setLoaded(true);
     } catch (error) {
       console.error(error);
@@ -845,6 +985,7 @@ const PlanEntryBody = ({ searchText = "" }) => {
       setRows([]);
       setValues({});
       setDirtyKeys(new Set());
+      setDailyEdits({});
     } finally {
       setLoading(false);
     }
@@ -931,6 +1072,57 @@ const PlanEntryBody = ({ searchText = "" }) => {
     setDirtyKeys((prev) => new Set(prev).add(cellKeyShift(childPart, periodKey, shiftName)));
   }, []);
 
+  // Daily-view input: a day total. Typing the total the day already has is no change; any other value is kept in dailyEdits only.
+  const handleDailyCellChange = useCallback((childPart, periodKey, rawValue) => {
+    const value = capDigits(rawValue, 5);
+    const original = shiftTotal(valuesRef.current[childPart] || {}, periodKey, shiftsRef.current);
+    const unchanged = value === (original === null ? "" : String(original));
+    setDailyEdits((prev) => {
+      const edits = { ...(prev[childPart] || {}) };
+      if (unchanged) delete edits[periodKey]; else edits[periodKey] = value;
+      return { ...prev, [childPart]: edits };
+    });
+    setDirtyKeys((prev) => {
+      const next = new Set(prev);
+      if (unchanged) next.delete(cellKeyDay(childPart, periodKey)); else next.add(cellKeyDay(childPart, periodKey));
+      return next;
+    });
+  }, []);
+
+  // A Daily-view edit -> per-shift cells for the existing save: the total goes to the FIRST shift; every other shift that already
+  // holds a value is set to 0. A shift with no saved value and nothing to write is skipped (no empty rows are created).
+  const dailyToShiftCells = (childPartStr, period) => {
+    const raw = dailyEdits[childPartStr]?.[period.key];
+    const total = raw === "" || raw === undefined || raw === null ? 0 : Number(raw);
+    const saved = values[childPartStr] || {};
+    const out = [];
+    shifts.forEach(({ shift_name: shiftName }, i) => {
+      const old = saved[`${period.key}|${shiftName}`];
+      const hasSaved = old !== "" && old !== null && old !== undefined;
+      const qty = i === 0 ? total : 0;
+      if (!hasSaved && qty === 0) return;
+      out.push({
+        child_part: Number(childPartStr),
+        period_type: period.period_type,
+        plan_date: period.plan_date,
+        week_number: period.week_number,
+        week_end_date: period.week_end_date,
+        user_input_qty: qty,
+        shift_name: shiftName,
+      });
+    });
+    return out;
+  };
+
+  // Daily | Shift-wise switch. Only the VIEW changes. With unsaved changes the user decides first (like changing the week).
+  const changeViewMode = (next) => {
+    if (next === viewMode) return;
+    if (dirtyKeys.size > 0 && !window.confirm("You have unsaved changes. Discard them and switch the view?")) return;
+    setViewMode(next);
+    try { window.localStorage.setItem(VIEW_MODE_KEY, next); } catch (e) { /* the choice just is not remembered */ }
+    if (dirtyKeys.size > 0) fetchGrid(); // reloads the saved values and clears the discarded edits
+  };
+
   const handleSubmit = async () => {
     if (!canEdit || viewingPast) {
       toast.error(viewingPast ? "Past weeks are view only." : "You do not have permission to save the plan.");
@@ -952,6 +1144,10 @@ const PlanEntryBody = ({ searchText = "" }) => {
         const [childPartStr, periodKey, shiftName] = parts;
         const period = periodMap.get(periodKey);
         if (!period) return;
+        if (shiftName === DAY_EDIT_MARK) {
+          cells.push(...dailyToShiftCells(childPartStr, period));
+          return;
+        }
         const subKey = shiftName ? `${periodKey}|${shiftName}` : periodKey;
         const raw = values[childPartStr]?.[subKey];
         if (raw === "" || raw === null || raw === undefined) return; // skip cleared/empty cells
@@ -1167,6 +1363,7 @@ const PlanEntryBody = ({ searchText = "" }) => {
         )}
 
         <div style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: "auto", flexShrink: 0 }}>
+          {shifts.length > 0 && toggleSlot && createPortal(<ViewToggle value={effectiveMode} onChange={changeViewMode} disabled={loading || saving} />, toggleSlot)}
           {dirtyKeys.size > 0 && (
             <span style={{ fontSize: 11, fontWeight: 600, color: "#b45309", whiteSpace: "nowrap" }}>
               {dirtyKeys.size} unsaved change{dirtyKeys.size === 1 ? "" : "s"}
@@ -1215,6 +1412,9 @@ const PlanEntryBody = ({ searchText = "" }) => {
           and a subtle hover tint instead, for a lighter, modern look. */}
       <style>{`
         .mfg-plan-tbl tbody tr:hover td { background-color: #f2f6fd; }
+        @keyframes mfgPlanIn { from { opacity: 0; transform: translateY(3px) scale(.985); } to { opacity: 1; transform: none; } }
+        .mfg-plan-in { animation: mfgPlanIn .22s ease-out both; }
+        @media (prefers-reduced-motion: reduce) { .mfg-plan-in { animation: none; } }
       `}</style>
       <div
         style={{
@@ -1278,8 +1478,15 @@ const PlanEntryBody = ({ searchText = "" }) => {
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.2, whiteSpace: "nowrap", color: "#000000" }}>{p.label}</div>
                   <div style={{ fontSize: 9, fontWeight: 500, color: "#000000", marginTop: 1, whiteSpace: "nowrap" }}>{p.sub_label}</div>
                   {p.period_type === "DAY" && shifts.length > 0 && (
-                    <div style={{ display: "flex", marginTop: 3 }}>
-                      {shifts.map((s, i) => (
+                    <div key={effectiveMode} className="mfg-plan-in" style={{ display: "flex", marginTop: 3 }}>
+                      {effectiveMode === "daily" ? (
+                        <div
+                          style={{ flex: 1, minWidth: 0, fontSize: 9, fontWeight: 700, color: "#3355aa", padding: "2px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                          title={`Day total: ${shifts.map((x) => x.shift_name).join(" + ")}`}
+                        >
+                          Total
+                        </div>
+                      ) : shifts.map((s, i) => (
                         <div
                           key={s.shift_name}
                           style={{
@@ -1335,6 +1542,9 @@ const PlanEntryBody = ({ searchText = "" }) => {
                 plant={plant}
                 canEdit={canEdit}
                 viewingPast={viewingPast}
+                viewMode={effectiveMode}
+                rowDaily={dailyEdits[row.child_part] || EMPTY_ROW_VALUES}
+                onDailyCellChange={handleDailyCellChange}
               />
             ))}
           </tbody>
@@ -1376,11 +1586,12 @@ const STATUS_HEAD_LINE = "#b9c8ea";
 const NUM_FONT = { fontVariantNumeric: "tabular-nums" };
 
 // Column widths (%) — shared by the main header table and every nested group
-// table so all of them line up. 6 + 7 + 19 + 11 * (68 / 11) = 100.
-const STATUS_COL_PCT = { line: 6, part: 7, child: 19, num: 68 / 11 };
+// table so all of them line up. 32 + 11 * (68 / 11) = 100. The Line and the Part Name are the group bands above the part rows, so
+// the rows do not repeat them.
+const STATUS_COL_PCT = { child: 32, num: 68 / 11 };
 
 const STATUS_NUM_COLS = [
-  { label: "Monthly Plan", tip: "Monthly Plan — sum of the monthly plan (plan type MP) of every FG part that uses this Child Part", key: "monthly_plan", kind: "plan" },
+  { label: "M.Plan", tip: "Monthly Plan = sum of (Plan Qty x Ends) of the Monthly Plan rows (plan type MP) of every FG part that uses this Child Part", key: "monthly_plan", kind: "plan" },
   { label: "MTD Plan", tip: "MTD Plan = (Monthly Plan / working days of the month) x working days up to yesterday. Weekends and DHRM holidays are not working days", key: "mtd_plan", kind: "plan" },
   { label: "MTD Actual", tip: "MTD Actual — the production of this Child Part from the 1st of the month (Production Actual, movement types 101 and 102)", key: "mtd_actual_fg", kind: "actual" },
   { label: "MTD Gap", tip: "MTD Gap — MTD Actual minus MTD Plan (positive = ahead, negative = behind)", key: "month_gap", kind: "gap" },
@@ -1397,7 +1608,7 @@ const STATUS_NUM_COLS = [
 // First column of each section (MTD / YD / 541 Monthly / 541 Daily)
 // gets a divider line.
 const SECTION_START = new Set(["monthly_plan", "yd_plan", "sub541_mtd_actual", "sub541_yd_actual"]);
-const TOTAL_STATUS_COLS = 3 + STATUS_NUM_COLS.length;
+const TOTAL_STATUS_COLS = 1 + STATUS_NUM_COLS.length;
 const SUB541_HEAD_BG = "#e6dff0";
 
 const STATUS_GROUP_HEADS = [
@@ -1409,8 +1620,6 @@ const STATUS_GROUP_HEADS = [
 
 const StatusColGroup = () => (
   <colgroup>
-    <col style={{ width: `${STATUS_COL_PCT.line}%` }} />
-    <col style={{ width: `${STATUS_COL_PCT.part}%` }} />
     <col style={{ width: `${STATUS_COL_PCT.child}%` }} />
     {STATUS_NUM_COLS.map((c) => <col key={c.key} style={{ width: `${STATUS_COL_PCT.num}%` }} />)}
   </colgroup>
@@ -1424,60 +1633,63 @@ const bodyCellSx = {
 // hover of the greyed 541 cells of a Fully Machined part
 const NO_541_TIP = "Not applicable for Fully Machined parts";
 
-const PartGroupRows = ({ group, accent, open, onToggle }) => {
+// One Line under a Part Name: its own header row (chevron, Line, part count and the Line's totals in the same columns, so a closed Line
+// still shows its numbers) and, under it, ONE Collapse with the part rows of that Line in a nested table that shares the column widths.
+const LineSubGroup = ({ line, groupName, accent, open, onToggle }) => {
+  const total = (key) => line.rows.reduce((sum, r) => sum + (Number(r[key]) || 0), 0);
+  const head = { backgroundColor: "#f7f9fd", borderBottom: "1px solid #e3e9f5", height: 30, padding: "0 10px", fontSize: 11.5, fontWeight: 600, color: "#1a2233", whiteSpace: "nowrap" };
+  const key = `${groupName}|${line.name}`;
   return (
     <>
       <TableRow
         hover
-        onClick={onToggle}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
+        onClick={() => onToggle(key)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(key); } }}
         tabIndex={0}
         role="button"
         aria-expanded={open}
-        sx={{
-          cursor: "pointer",
-          "&:hover > td": { filter: "brightness(0.97)" },
-          "&:focus-visible": { outline: "2px solid #0066FF", outlineOffset: -2 },
-        }}
+        sx={{ cursor: "pointer", "&:hover > td": { filter: "brightness(0.97)" }, "&:focus-visible": { outline: "2px solid #0066FF", outlineOffset: -2 } }}
       >
-        <TableCell
-          colSpan={TOTAL_STATUS_COLS}
-          sx={{
-            p: 0, backgroundColor: accent.tint,
-            borderTop: "1px solid #dfe3ea", borderBottom: "1px solid #dfe3ea",
-            borderLeft: `3px solid ${accent.bar}`,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, height: 34, pl: 1.25, pr: 0.5 }}>
-            <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "#1a2233", letterSpacing: 0.1 }}>{group.name}</Typography>
-            <Typography sx={{ fontSize: 10.5, color: "#6b7280" }}>
-              {group.rows.length} {group.rows.length === 1 ? "part" : "parts"}
-            </Typography>
-            <Tooltip title={open ? "Collapse" : "Expand"} arrow placement="left" enterDelay={400}>
-              <IconButton size="small" tabIndex={-1} aria-label={open ? `Collapse ${group.name}` : `Expand ${group.name}`} sx={{ p: 0.25, ml: "auto" }}>
-                <KeyboardArrowDownIcon
-                  sx={{
-                    fontSize: 20, color: "#5b6472",
-                    transition: "transform .25s ease",
-                    transform: open ? "rotate(180deg)" : "rotate(0deg)",
-                  }}
-                />
-              </IconButton>
-            </Tooltip>
+        <TableCell colSpan={1} sx={{ ...head, p: 0 }} title={`Line: ${line.name}
+Part Name: ${groupName}`}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, pl: 2.5, pr: 0.5 }}>
+            <KeyboardArrowDownIcon sx={{ fontSize: 17, color: "#7a8496", transition: "transform .2s ease", transform: open ? "rotate(180deg)" : "rotate(0deg)" }} />
+            <Typography component="span" sx={{ fontSize: 11.5, fontWeight: 600, color: "#1a2233" }}>{line.name}</Typography>
+            <Typography component="span" sx={{ fontSize: 10, color: "#6b7280" }}>{line.rows.length} {line.rows.length === 1 ? "part" : "parts"}</Typography>
           </Box>
         </TableCell>
+        {STATUS_NUM_COLS.map((c) => {
+          const n = total(c.key);
+          const shown = gapShow(c, n);
+          return (
+            <TableCell
+              key={c.key}
+              align="right"
+              title={shown.title}
+              sx={{ ...head, ...NUM_FONT, color: shown.color || (c.kind === "gap" ? gapColor(n) : "#1a2233"), borderLeft: SECTION_START.has(c.key) ? "1px solid #e3e9f5" : "none" }}
+            >
+              {shown.text}
+            </TableCell>
+          );
+        })}
       </TableRow>
       <TableRow>
         <TableCell colSpan={TOTAL_STATUS_COLS} sx={{ p: 0, border: "none" }}>
-          <Collapse in={open} timeout={220} unmountOnExit>
-            <Table size="small" sx={{ tableLayout: "fixed", width: "100%", borderLeft: `3px solid ${accent.bar}` }}>
+          <Collapse in={open} timeout={200} unmountOnExit>
+            <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
               <StatusColGroup />
               <TableBody>
-                {group.rows.map((r) => (
+                {line.rows.map((r) => (
                   <TableRow key={r.child_part} hover sx={{ "& td": { backgroundColor: "#fff" }, "&:hover td": { backgroundColor: "#f2f6fd" } }}>
-                    <TableCell sx={{ ...bodyCellSx, color: "#4b5565" }} title={r.Line_Name || ""}>{r.Line_Name || "–"}</TableCell>
-                    <TableCell sx={{ ...bodyCellSx, color: "#6b7280" }} title={group.name}>{group.name}</TableCell>
-                    <TableCell sx={bodyCellSx} title={`${r.child_part_no} — ${r.child_part_desc}`}>
+                    <TableCell
+                      sx={bodyCellSx}
+                      title={[
+                        `${r.child_part_no} — ${r.child_part_desc}`,
+                        `Part Name: ${groupName}`,
+                        `Line: ${r.line_group || "–"}`,
+                        ...(r.line_names && r.line_names.length > 1 ? [`Used on: ${r.line_names.join(", ")}`] : []),
+                      ].join("\n")}
+                    >
                       <Box component="span" sx={{ color: "#0052cc", fontWeight: 700, mr: 1 }}>{r.child_part_no}</Box>
                       <Box component="span" sx={{ color: "#6b7280", fontSize: 10 }}>{r.child_part_desc}</Box>
                     </TableCell>
@@ -1503,7 +1715,6 @@ const PartGroupRows = ({ group, accent, open, onToggle }) => {
                     })}
                   </TableRow>
                 ))}
-                <StatusTotalRow rows={group.rows} sticky={false} label={`${group.name} TOTAL`} />
               </TableBody>
             </Table>
           </Collapse>
@@ -1513,34 +1724,68 @@ const PartGroupRows = ({ group, accent, open, onToggle }) => {
   );
 };
 
-// TOTAL of every column over the parts shown (after the search / Valuation Type filter), pinned to the bottom of the table.
-// Gap columns are the sum of the row gaps.
-const StatusTotalRow = ({ rows, sticky = true, label = "TOTAL" }) => {
-  const total = (key) => rows.reduce((sum, r) => sum + (Number(r[key]) || 0), 0);
-  const cell = {
-    ...(sticky ? { position: "sticky", bottom: 0, zIndex: 3 } : {}), backgroundColor: "#eaf0fc", borderTop: "2px solid #b8c7ec", borderBottom: "1px solid #d0dcf5",
-    height: 32, padding: "0 10px", fontSize: 11.5, fontWeight: 700, color: "#1a2233", whiteSpace: "nowrap",
-  };
+// Part Name -> Line -> part rows: the Part Name row (with its totals in the number columns, like a Line row), then one LineSubGroup per Line.
+// `collapsed` holds the keys of the closed levels: "<Part Name>" and "<Part Name>|<Line>".
+const PartGroupRows = ({ group, accent, collapsed, onToggle }) => {
+  const open = !collapsed.has(group.name);
+  const total = (key) => group.rows.reduce((sum, r) => sum + (Number(r[key]) || 0), 0);
+  const band = { backgroundColor: accent.tint, borderTop: "1px solid #dfe3ea", borderBottom: "1px solid #dfe3ea", height: 34 };
   return (
-    <TableRow>
-      <TableCell colSpan={3} sx={{ ...cell, letterSpacing: 0.3 }}>
-        {label} <Box component="span" sx={{ fontWeight: 400, color: "#6b7280", fontSize: 10 }}>({rows.length} {rows.length === 1 ? "part" : "parts"})</Box>
-      </TableCell>
-      {STATUS_NUM_COLS.map((c) => {
-        const n = total(c.key);
-        const shown = gapShow(c, n);
-        return (
-          <TableCell
-            key={c.key}
-            align="right"
-            title={shown.title}
-            sx={{ ...cell, ...NUM_FONT, color: shown.color || (c.kind === "gap" ? gapColor(n) : "#1a2233"), borderLeft: SECTION_START.has(c.key) ? "1px solid #b8c7ec" : "none" }}
-          >
-            {shown.text}
-          </TableCell>
-        );
-      })}
-    </TableRow>
+    <>
+      <TableRow
+        hover
+        onClick={() => onToggle(group.name)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(group.name); } }}
+        tabIndex={0}
+        role="button"
+        aria-expanded={open}
+        sx={{
+          cursor: "pointer",
+          "&:hover > td": { filter: "brightness(0.97)" },
+          "&:focus-visible": { outline: "2px solid #0066FF", outlineOffset: -2 },
+        }}
+      >
+        <TableCell colSpan={1} sx={{ ...band, p: 0, borderLeft: `3px solid ${accent.bar}` }} title={`Part Name: ${group.name}`}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, pl: 0.75, pr: 0.5 }}>
+            <KeyboardArrowDownIcon
+              sx={{ fontSize: 20, color: "#5b6472", transition: "transform .2s ease", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+            />
+            <Typography component="span" sx={{ fontSize: 12.5, fontWeight: 700, color: "#1a2233", letterSpacing: 0.1 }}>{group.name}</Typography>
+            <Typography component="span" sx={{ fontSize: 10.5, color: "#6b7280" }}>
+              {group.lines.length} {group.lines.length === 1 ? "line" : "lines"} · {group.rows.length} {group.rows.length === 1 ? "part" : "parts"}
+            </Typography>
+          </Box>
+        </TableCell>
+        {STATUS_NUM_COLS.map((c) => {
+          const n = total(c.key);
+          const shown = gapShow(c, n);
+          return (
+            <TableCell
+              key={c.key}
+              align="right"
+              title={shown.title}
+              sx={{ ...band, ...NUM_FONT, padding: "0 10px", fontSize: 11.5, fontWeight: 700, color: shown.color || (c.kind === "gap" ? gapColor(n) : "#1a2233"), borderLeft: SECTION_START.has(c.key) ? "1px solid #dfe3ea" : "none" }}
+            >
+              {shown.text}
+            </TableCell>
+          );
+        })}
+      </TableRow>
+      <TableRow>
+        <TableCell colSpan={TOTAL_STATUS_COLS} sx={{ p: 0, border: "none" }}>
+          <Collapse in={open} timeout={220} unmountOnExit>
+            <Table size="small" sx={{ tableLayout: "fixed", width: "100%", borderLeft: `3px solid ${accent.bar}` }}>
+              <StatusColGroup />
+              <TableBody>
+                {group.lines.map((line) => (
+                  <LineSubGroup key={line.name} line={line} groupName={group.name} accent={accent} open={!collapsed.has(`${group.name}|${line.name}`)} onToggle={onToggle} />
+                ))}
+              </TableBody>
+            </Table>
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </>
   );
 };
 
@@ -1593,12 +1838,12 @@ const buildBreakupSheets = (shown, data, { year, month }) => {
 
   const planRows = build(
     data.plan,
-    (r, x) => [r.child_part_no, r.child_part_desc, x.fg_code, x.fg_desc || "", x.effective_date, num(x.plan_qty)],
+    (r, x) => [r.child_part_no, r.child_part_desc, x.fg_code, x.fg_desc || "", x.effective_date, num(x.plan_qty), num(x.ends), num(x.plan_qty) * num(x.ends)],
     (r, mine) => [
-      [["Monthly Plan (sum of the FG plans)", "", ""], mine.reduce((t, x) => t + num(x.plan_qty), 0), "m"],
-      [[`MTD Plan = Monthly Plan / ${r.working_days.monthDays} working days x ${r.nwd} working days up to yesterday`, "", ""], num(r.mtd_plan), "p"],
+      [["Monthly Plan (sum of the FG plans, Plan Qty x Ends)", "", "", "", ""], mine.reduce((t, x) => t + num(x.plan_qty) * num(x.ends), 0), "m"],
+      [[`MTD Plan = Monthly Plan / ${r.working_days.monthDays} working days x ${r.nwd} working days up to yesterday`, "", "", "", ""], num(r.mtd_plan), "p"],
     ],
-    (key) => [key === "m" ? "Total Monthly Plan" : "Total MTD Plan", "", ""],
+    (key) => [key === "m" ? "Total Monthly Plan" : "Total MTD Plan", "", "", "", ""],
   );
   const s541Rows = build(
     data.sub541,
@@ -1618,7 +1863,7 @@ const buildBreakupSheets = (shown, data, { year, month }) => {
   const guide = [
     ["Sheet", "What it shows"],
     ["Component Prod Status", `The Prod Status table as shown on the screen for ${monthName} (search and filters applied), with a TOTAL row.`],
-    ["Monthly Plan", "Sum of the Monthly Plan (plan type MP) of every FG part that uses the Child Part (MFG BOM) for the month. Rows: sheet 'Plan Breakup'."],
+    ["Monthly Plan", "Sum of (Plan Qty x Ends): each Monthly Plan row (plan type MP) of every FG part that uses the Child Part (MFG BOM) in the month is multiplied by its own Ends, then all those rows are added together; a missing Ends counts as 1. Rows: sheet 'Plan Breakup'."],
     ["Working days of the month", wdText(wd && wd.month, wd && wd.monthDays)],
     ["Working days up to yesterday", wdText(wd && wd.elapsed, wd && wd.elapsedDays) + " A past month counts the whole month; a future month counts 0."],
     ["MTD Plan", `(Monthly Plan / ${wd ? wd.monthDays : "working days of the month"}) x ${wd ? wd.elapsedDays : "working days up to yesterday"}, rounded to a whole number. Shown at the end of each Child Part in 'Plan Breakup'.`],
@@ -1638,14 +1883,14 @@ const buildBreakupSheets = (shown, data, { year, month }) => {
     { sheetName: "How to read", columns: [head("Item", 26), head("Explanation", 120)], rows: guide.slice(1).map((r) => r), noTotal: true },
     { sheetName: "MTD Actual Breakup", columns: actualCols, rows: mtdRows, noTotal: true, cellStyle },
     { sheetName: "YD Actual Breakup", columns: actualCols, rows: ydRows, noTotal: true, cellStyle },
-    { sheetName: "Plan Breakup", columns: [head("Child Part", 18), head("Description", 34), head("FG Part", 18), head("FG Description", 34), head("Effective Date", 16), qtyCol("Plan Qty")], rows: planRows, noTotal: true, cellStyle },
+    { sheetName: "Plan Breakup", columns: [head("Child Part", 18), head("Description", 34), head("FG Part", 18), head("FG Description", 34), head("Effective Date", 16), qtyCol("Plan Qty"), head("Ends", 8), qtyCol("Plan Qty x Ends")], rows: planRows, noTotal: true, cellStyle },
     { sheetName: "541 Breakup", columns: [head("Child Part", 18), head("Description", 34), head("Posting Date", 16), head("Movement Type", 15), qtyCol("Qty (as stored)"), qtyCol("Net Qty (x -1)")], rows: s541Rows, noTotal: true, cellStyle },
   ];
 };
 
 // Child Part / Description header hover: which parts are on this list
 const CHILD_PART_LISTED_POINTS = [
-  "MFG BOM parts with valuation INHOUSE or BOTH-IH/OS",
+  "MFG BOM parts whose Material Master Procurement Type is E (Inhouse) or E50 (Phatam)",
   "Parts that already have a saved plan",
 ];
 
@@ -1660,8 +1905,6 @@ const PartStatusTable = ({ groups, collapsed, onToggle, loading, loaded }) => {
       <TableHead>
         <TableRow sx={{ height: 24 }}>
           {[
-            ["Line", "Production line of the Child Part (from the Material Master)"],
-            ["Part Name", "Part Name group from the MFG BOM that this Child Part belongs to"],
             ["Child Part / Description", "Child Part number and its description"],
           ].map(([h, tip]) => (
             <TableCell key={h} rowSpan={2} sx={{ ...headCell, verticalAlign: "bottom", pb: 0.9 }}>
@@ -1690,7 +1933,9 @@ const PartStatusTable = ({ groups, collapsed, onToggle, loading, loaded }) => {
               align="right"
               sx={{ ...headCell, top: 24, height: 26, borderLeft: SECTION_START.has(c.key) ? `1px solid ${STATUS_HEAD_LINE}` : "none", ...(c.sub ? { backgroundColor: SUB541_HEAD_BG } : {}) }}
             >
-              {c.key === "mtd_plan" ? (
+              {c.key === "monthly_plan" ? (
+                <InfoTip trigger={c.label} {...monthlyPlanTipProps("Monthly Plan row (plan type MP) of every FG part that uses this Child Part, in the month,")} labelStyle={{ cursor: "help" }} />
+              ) : c.key === "mtd_plan" ? (
                 <WorkingDaysTip kind="mtd" wd={groups.length ? groups[0].rows[0]?.working_days : null} labelStyle={{ cursor: "help" }}>{c.label}</WorkingDaysTip>
               ) : (
                 <InfoTip trigger={c.label} text={c.tip} labelStyle={{ cursor: "help" }} />
@@ -1712,8 +1957,8 @@ const PartStatusTable = ({ groups, collapsed, onToggle, loading, loaded }) => {
               key={g.name}
               group={g}
               accent={GROUP_ACCENTS[gi % GROUP_ACCENTS.length]}
-              open={!collapsed.has(g.name)}
-              onToggle={() => onToggle(g.name)}
+              collapsed={collapsed}
+              onToggle={onToggle}
             />
           ))
         )}
@@ -1732,11 +1977,12 @@ const PlanHistoryBody = ({ searchText = "" }) => {
   const { user } = useContext(AuthContext);
 
   const [plants, setPlants] = useState([]);
-  const [modules, setModules] = useState([]);
-  const [lines, setLines] = useState([]);
+  const [segments, setSegments] = useState([]);
+  const [lineOptions, setLineOptions] = useState([]);
 
   const [plant, setPlant] = useState(user?.PlantCode || "");
-  const [moduleId, setModuleId] = useState("");
+  // Segment and Line of a Child Part = those of the FG parts that use it (MFG BOM); the Line list follows the Plant and the Segment
+  const [segmentId, setSegmentId] = useState("");
   const [lineId, setLineId] = useState("");
   const [operations, setOperations] = useState([]);
   const [optId, setOptId] = useState("");
@@ -1755,49 +2001,36 @@ const PlanHistoryBody = ({ searchText = "" }) => {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
+  // The filter lists load independently, so the Plant list (which starts the first load of the table) never waits for the others.
   useEffect(() => {
-    const loadMasters = async () => {
-      try {
-        const [plantRes, moduleRes, lineRes, optRes] = await Promise.all([
-          getMyPlants(), // Prod Status Plant dropdown: only the plants this user may use (own + Data Access)
-          getModules(),
-          getLines(),
-          getOperations(),
-        ]);
-        setPlants(Array.isArray(plantRes) ? plantRes : []);
-        setModules((moduleRes || []).filter((m) => m.Active_Status));
-        setLines((lineRes || []).filter((l) => l.Active_Status));
-        setOperations((optRes || []).filter((o) => Number(o.status) === 1).sort((a, b) => Number(a.opt_no) - Number(b.opt_no)));
-      } catch (error) {
-        console.error(error);
-        toast.error("Failed to load Plant/Module/Line filter options.");
-      }
-    };
-    loadMasters();
+    getMyPlants() // Prod Status Plant dropdown: only the plants this user may use (own + Data Access)
+      .then((res) => setPlants(Array.isArray(res) ? res : []))
+      .catch((error) => { console.error(error); toast.error("Failed to load the Plant filter options."); });
+    getOperations()
+      .then((res) => setOperations((res || []).filter((o) => Number(o.status) === 1).sort((a, b) => Number(a.opt_no) - Number(b.opt_no))))
+      .catch((error) => console.error("Failed to load the Operations.", error));
+    getProductSegments()
+      // Segment dropdown: same order as the Product Segment screen (by segment id)
+      .then((res) => setSegments([...(res?.data || [])].sort((a, b) => Number(a.prod_seg_id) - Number(b.prod_seg_id))))
+      .catch((error) => { console.error(error); toast.error("Failed to load Segment filter options."); });
     GetMfgComponentValuationTypesApi()
       .then((res) => setValuationOptions(Array.isArray(res) ? res : []))
       .catch((error) => console.error("Failed to load the Valuation Types.", error));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Same Plant narrowing as the Plan Entry tab, for the same reason (Module
-  // names repeat across plants). Empty until a Plant is picked.
-  const moduleOptions = useMemo(
-    () => (plant ? modules.filter((m) => String(m.Plant_Code) === String(plant)) : []),
-    [modules, plant]
-  );
-
-  // Same Plant + Module narrowing as the Plan Entry tab, for the same reason
-  // (Line names repeat across plants). Empty until BOTH are picked.
-  const lineOptions = useMemo(
-    () =>
-      plant && moduleId
-        ? lines.filter(
-          (l) => String(l.Plant_Code) === String(plant) && String(l.Module_ID) === String(moduleId)
-        )
-        : [],
-    [lines, plant, moduleId]
-  );
+  // Line dropdown: the lines of the FG parts that use the listed Child Parts, narrowed to the chosen Segment (reloaded when the Plant or
+  // the Segment changes).
+  useEffect(() => {
+    if (!plant) { setLineOptions([]); return undefined; }
+    let cancelled = false;
+    GetMfgComponentLinesApi({ plant, segmentId: segmentId || undefined })
+      .then((rows) => { if (!cancelled) setLineOptions(Array.isArray(rows) ? rows : []); })
+      .catch((error) => {
+        console.error(error);
+        if (!cancelled) { setLineOptions([]); toast.error("Failed to load Line filter options."); }
+      });
+    return () => { cancelled = true; };
+  }, [plant, segmentId]);
 
   const fetchHistory = async () => {
     if (!plant) {
@@ -1819,7 +2052,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
         plant,
         fromDate: monthStartStr(year, month),
         toDate: monthEndStr(year, month),
-        moduleId: moduleId || undefined,
+        segmentId: segmentId || undefined,
         lineId: lineId || undefined,
         optId: optId || undefined,
         valuationId: valuationName !== "All" ? (valuationOptions.find((v) => v.Valuation_Name === valuationName)?.Valuation_ID || undefined) : undefined,
@@ -1873,41 +2106,53 @@ const PlanHistoryBody = ({ searchText = "" }) => {
   }, [flatRows, searchText]);
 
 
-  // Group by Part Name — built from the returned data (never hardcoded),
-  // groups A-Z, rows inside a group by Monthly Plan (highest first), then Line, then Child Part.
+  // Group Part Name -> Line -> part rows — built from the returned data (never hardcoded). Part Names A-Z; Lines by their total Monthly Plan
+  // (highest first, "No Line" last); parts inside a Line by Monthly Plan (highest first), then Child Part. `rows` = every part of the Part
+  // Name in the order shown (Lines, then parts), used for the Part Name total and the Excel.
   const groups = useMemo(() => {
-    const map = new Map();
+    const byPart = new Map();
     filteredRows.forEach((r) => {
       const name = r.part_name_desc || "Unassigned";
-      if (!map.has(name)) map.set(name, []);
-      map.get(name).push(r);
+      if (!byPart.has(name)) byPart.set(name, []);
+      byPart.get(name).push(r);
     });
-    return Array.from(map.entries())
+    const byPlan = (x, y) => (Number(y.monthly_plan) || 0) - (Number(x.monthly_plan) || 0) || String(x.child_part_no).localeCompare(String(y.child_part_no));
+    return Array.from(byPart.entries())
       .sort((x, y) => x[0].localeCompare(y[0]))
       .map(([name, rows]) => {
-        const sorted = [...rows].sort(
-          (x, y) =>
-            (Number(y.monthly_plan) || 0) - (Number(x.monthly_plan) || 0) ||
-            String(x.Line_Name || "").localeCompare(String(y.Line_Name || "")) ||
-            String(x.child_part_no).localeCompare(String(y.child_part_no))
-        );
-        return { name, rows: sorted };
+        const byLine = new Map();
+        rows.forEach((r) => {
+          const lineName = r.line_group || "No Line";
+          if (!byLine.has(lineName)) byLine.set(lineName, []);
+          byLine.get(lineName).push(r);
+        });
+        const lines = Array.from(byLine.entries())
+          .map(([lineName, lineRows]) => ({ name: lineName, rows: [...lineRows].sort(byPlan), plan: lineRows.reduce((t, r) => t + (Number(r.monthly_plan) || 0), 0) }))
+          .sort((x, y) => (x.name === "No Line") - (y.name === "No Line") || y.plan - x.plan || x.name.localeCompare(y.name));
+        return { name, lines, rows: lines.flatMap((l) => l.rows) };
       });
   }, [filteredRows]);
 
-  // Expanded/collapsed state is kept per Part Name (a Set of the COLLAPSED
-  // names, so every group — including ones that appear later — defaults to
-  // expanded) and survives refetches, filters and search.
+  // Expanded/collapsed state: a Set of the CLOSED levels ("<Part Name>" and "<Part Name>|<Line>"), so every level — including ones that appear
+  // later — starts open, and it survives refetches, filters and search.
   const [collapsed, setCollapsed] = useState(() => new Set());
-  const toggleGroup = useCallback((name) => {
+  const toggleGroup = useCallback((key) => {
     setCollapsed((prev) => {
       const next = new Set(prev);
-      if (next.has(name)) next.delete(name); else next.add(name);
+      if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
   }, []);
   const expandAll = () => setCollapsed(new Set());
-  const collapseAll = () => setCollapsed(new Set(groups.map((g) => g.name)));
+  const collapseAll = () => setCollapsed(new Set(groups.flatMap((g) => [g.name, ...g.lines.map((l) => `${g.name}|${l.name}`)])));
+  // Everything starts collapsed: once, as soon as the first data arrives (after that the user's own open / closed choices stay)
+  const collapsedOnLoad = useRef(false);
+  useEffect(() => {
+    if (collapsedOnLoad.current || groups.length === 0) return;
+    collapsedOnLoad.current = true;
+    collapseAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups]);
 
   // Excel of the Prod Status table as shown (search applied, grouped by Part Name): MTD / YD columns and the 541 group, with a TOTAL row.
   const exportExcel = async () => {
@@ -1936,7 +2181,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
       ];
       const rows = [];
       groups.forEach((g) => g.rows.forEach((r) => rows.push([
-        rows.length + 1, r.Line_Name || "", g.name, r.child_part_no, r.child_part_desc,
+        rows.length + 1, r.line_group || "", g.name, r.child_part_no, r.child_part_desc,
         r.monthly_plan || 0, r.mtd_plan || 0, r.mtd_actual_fg || 0, r.month_gap || 0,
         r.yd_plan || 0, r.yd_actual || 0, r.yd_gap || 0,
         r.sub541_mtd_actual || 0, r.sub541_month_gap || 0, r.sub541_yd_actual || 0, r.sub541_yd_gap || 0,
@@ -1986,7 +2231,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
           size="small"
           options={plants}
           value={plants.find((p) => String(p.Plant_Code) === String(plant)) || null}
-          onChange={(e, newVal) => { setPlant(newVal ? newVal.Plant_Code : ""); setModuleId(""); setLineId(""); }}
+          onChange={(e, newVal) => { setPlant(newVal ? newVal.Plant_Code : ""); setSegmentId(""); setLineId(""); }}
           getOptionLabel={(p) => (p ? myPlantLabel(p) : "")}
           isOptionEqualToValue={(o, v) => o.Plant_ID === v.Plant_ID}
           sx={compactFieldSx(190)}
@@ -1996,20 +2241,19 @@ const PlanHistoryBody = ({ searchText = "" }) => {
 
         <Autocomplete
           size="small"
-          disabled={!plant}
-          options={moduleOptions}
-          value={moduleOptions.find((m) => String(m.Module_ID) === String(moduleId)) || null}
-          onChange={(e, newVal) => { setModuleId(newVal ? newVal.Module_ID : ""); setLineId(""); }}
-          getOptionLabel={(m) => (m ? m.Module_Name : "")}
-          isOptionEqualToValue={(o, v) => o.Module_ID === v.Module_ID}
-          sx={compactFieldSx(190)}
+          options={segments}
+          value={segments.find((x) => String(x.prod_seg_id) === String(segmentId)) || null}
+          onChange={(e, newVal) => { setSegmentId(newVal ? newVal.prod_seg_id : ""); setLineId(""); }}
+          getOptionLabel={(x) => (x ? x.seg_name : "")}
+          isOptionEqualToValue={(o, v) => o.prod_seg_id === v.prod_seg_id}
+          sx={compactFieldSx(150)}
           ListboxProps={{ style: { fontSize: 11.5 } }}
-          renderInput={(params) => <TextField {...params} label="Module" placeholder={plant ? undefined : "Select Plant first"} />}
+          renderInput={(params) => <TextField {...params} label="Segment" placeholder="All Segments" />}
         />
 
         <Autocomplete
           size="small"
-          disabled={!moduleId}
+          disabled={!plant}
           options={lineOptions}
           value={lineOptions.find((l) => String(l.Line_ID) === String(lineId)) || null}
           onChange={(e, newVal) => setLineId(newVal ? newVal.Line_ID : "")}
@@ -2017,7 +2261,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
           isOptionEqualToValue={(o, v) => o.Line_ID === v.Line_ID}
           sx={compactFieldSx(190)}
           ListboxProps={{ style: { fontSize: 11.5 } }}
-          renderInput={(params) => <TextField {...params} label="Line" placeholder={moduleId ? undefined : "Select Module first"} />}
+          renderInput={(params) => <TextField {...params} label="Line" placeholder={plant ? "All Lines" : "Select Plant first"} />}
         />
 
         <Autocomplete
@@ -2115,7 +2359,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, px: 1.25, py: 0.5, borderBottom: "1px solid #eef0f3", minHeight: 30 }}>
           <Typography sx={{ fontSize: 11, color: "#6b7280" }}>
-            {groups.length} {groups.length === 1 ? "group" : "groups"} · {filteredRows.length} {filteredRows.length === 1 ? "part" : "parts"}
+            {groups.length} {groups.length === 1 ? "group" : "groups"} · {groups.reduce((n, g) => n + g.lines.length, 0)} lines · {filteredRows.length} {filteredRows.length === 1 ? "part" : "parts"}
           </Typography>
           <Box sx={{ ml: "auto", display: "flex", gap: 0.5 }}>
             <Button size="small" onClick={expandAll} disabled={!groups.length} startIcon={<UnfoldMoreIcon sx={{ fontSize: 15 }} />} sx={{ ...compactButtonSx, height: 24, color: "#374151" }}>
@@ -2222,6 +2466,8 @@ const MfgComponentDailyPlan = () => {
   // list), each tab doing its own client-side filtering on its own
   // already-fetched rows by Part No. / Description.
   const [searchText, setSearchText] = useState("");
+  // the gap in the middle of the header: the Plan Entry tab puts its Daily | Shift-wise switch here (a portal)
+  const [toggleSlot, setToggleSlot] = useState(null);
 
   return (
     <div
@@ -2248,6 +2494,8 @@ const MfgComponentDailyPlan = () => {
           MFG Daily Component Plan
         </Typography>
 
+        <div ref={setToggleSlot} data-view-toggle-slot style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 30 }} />
+
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <TextField
             size="small"
@@ -2264,7 +2512,7 @@ const MfgComponentDailyPlan = () => {
       </div>
 
       <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-        {tab === 0 ? <PlanHistoryBody searchText={searchText} /> : <PlanEntryBody searchText={searchText} />}
+        {tab === 0 ? <PlanHistoryBody searchText={searchText} /> : <PlanEntryBody searchText={searchText} toggleSlot={toggleSlot} />}
       </div>
     </div>
   );

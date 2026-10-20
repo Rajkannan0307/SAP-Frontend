@@ -33,6 +33,12 @@ export const GetMfgComponentPlanBreakupApi = async (params) => {
   return response.data;
 };
 
+// Lines for the Prod Status Line filter: the lines of the FG parts that use the listed Child Parts, narrowed to the Segment when one is chosen
+export const GetMfgComponentLinesApi = async (params) => {
+  const response = await axios.get(`${api}/MfgComponentDailyPlan/getFilterLines`, { params });
+  return response.data;
+};
+
 export const GetMfgComponentDailyPlanDayDetailApi = async (params) => {
   const response = await axios.get(`${api}/MfgComponentDailyPlan/getDayDetail`, { params });
   return response.data;

@@ -23,7 +23,7 @@ const WorkingDaysTip = ({ kind = "mtd", wd, children, labelStyle, extraNote }) =
 
   if (!wd || (kind === "cw" && !wd.week)) {
     return tip({
-      title: `${name} = (Monthly Plan ÷ working days of the month) × working days ${kind === "cw" ? "of this week so far" : "up to yesterday"}`,
+      title: `${name} = (Monthly Plan ÷ working days of the month) × working days ${kind === "cw" ? "of this week up to yesterday" : "up to yesterday"}`,
       note: noteOf(WORKING_DAYS_RULE),
     });
   }
@@ -37,7 +37,10 @@ const WorkingDaysTip = ({ kind = "mtd", wd, children, labelStyle, extraNote }) =
 
   const points = [{ label: "Working days in the month:", value: wd.month.working_days, detail: workingDaysSplit(wd.month) }];
   if (kind === "cw") {
-    points.push({ label: `This week so far (${shortDate(wd.week.from)} – ${shortDate(wd.week.to)}):`, value: wd.week.days, detail: workingDaysSplit(wd.week.detail) });
+    // the week range runs from Monday up to YESTERDAY; on a Monday it is empty
+    points.push(wd.week.from > wd.week.to
+      ? { label: "This week up to yesterday:", value: 0, detail: "the week starts today" }
+      : { label: `This week up to yesterday (${shortDate(wd.week.from)} – ${shortDate(wd.week.to)}):`, value: wd.week.days, detail: workingDaysSplit(wd.week.detail) });
   } else {
     points.push({
       label: "Working days up to yesterday:",

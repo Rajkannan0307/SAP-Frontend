@@ -12,6 +12,7 @@ import { getdetails as getLines } from "../controller/LineMasterapiservice";
 import { getProductSegments } from "../controller/Masterapiservice";
 import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import InfoTip from "../components/InfoTip";
+import { monthlyPlanTipProps } from "../components/monthlyPlanTip";
 import WorkingDaysTip from "../components/WorkingDaysTip";
 import {
   GetMatAvailabilityFiltersApi,
@@ -221,7 +222,7 @@ const FIXED_COLS = [
   { field: "plant", label: "Line", width: 90, left: 40, tip: "Production line of the FG part (from the Material Master)" },
   // FG part number with its description underneath (one column, like Prod Status's "Part No / Description")
   { field: "fg_part_no", label: "Part No / Description", width: 160, left: 110, tip: "FG part number and its description" },
-  { field: "monthly_plan", label: "Monthly Plan", width: 100, left: 270, align: "right", tip: "Monthly Plan = sum of plan_qty (plan type MP) from the production plan for the selected month" },
+  { field: "monthly_plan", label: "M.Plan", width: 100, left: 270, align: "right", tip: "Monthly Plan = sum of plan_qty x ends (plan type MP) from the production plan for the selected month" },
   { field: "mtd_plan", label: "MTD Plan", width: 100, left: 370, align: "right", tip: "MTD Plan = (Monthly Plan / working days of the month) x working days up to yesterday. Weekends and DHRM holidays are not working days (Sunday only; Saturday and Sunday for plant 1000)" },
   { field: "mtd_actual", label: "MTD Act", width: 100, left: 470, align: "right", tip: "MTD Actual = production quantity of the selected month (movement types 101, 102, 261 and 262)" },
   { field: "gap", label: "Gap", width: 100, left: 570, align: "right", tip: "Gap = MTD Actual - MTD Plan (positive = ahead, negative = behind)" },
@@ -248,17 +249,17 @@ const buildProdStatusBreakupSheets = (rows, data, month) => {
   };
   const planBy = byPart(data.plan);
   const actualBy = byPart(data.actual);
-  const planAoa = [["FG Part No", "FG Description", "Effective Date", "Plan Type", "Plan Qty"]];
+  const planAoa = [["FG Part No", "FG Description", "Effective Date", "Plan Type", "Plan Qty", "Ends", "Plan Qty x Ends"]];
   const actualAoa = [["FG Part No", "FG Description", "Production Date", "Movement Type", "Qty"]];
   const planSub = new Set();
   const actualSub = new Set();
   let totMonthly = 0, totMtdPlan = 0, totActual = 0, totGap = 0;
   rows.forEach((r) => {
     const planRows = planBy.get(keyOf(r.fg_part_no)) || [];
-    planRows.forEach((x) => planAoa.push([r.fg_part_no, r.fg_desc || "", x.effective_date, "MP", num(x.plan_qty)]));
-    const monthly = planRows.reduce((t, x) => t + num(x.plan_qty), 0);
-    planSub.add(planAoa.length); planAoa.push([r.fg_part_no, r.fg_desc || "", "Monthly Plan (sum of the plan rows)", "", monthly]);
-    planSub.add(planAoa.length); planAoa.push([r.fg_part_no, r.fg_desc || "", `MTD Plan = Monthly Plan / ${data.planDays} working days x ${data.nwd} working days up to yesterday`, "", num(r.mtd_plan)]);
+    planRows.forEach((x) => planAoa.push([r.fg_part_no, r.fg_desc || "", x.effective_date, "MP", num(x.plan_qty), num(x.ends), num(x.plan_qty) * num(x.ends)]));
+    const monthly = planRows.reduce((t, x) => t + num(x.plan_qty) * num(x.ends), 0);
+    planSub.add(planAoa.length); planAoa.push([r.fg_part_no, r.fg_desc || "", "Monthly Plan (sum of Plan Qty x Ends)", "", "", "", monthly]);
+    planSub.add(planAoa.length); planAoa.push([r.fg_part_no, r.fg_desc || "", `MTD Plan = Monthly Plan / ${data.planDays} working days x ${data.nwd} working days up to yesterday`, "", "", "", num(r.mtd_plan)]);
     totMonthly += monthly; totMtdPlan += num(r.mtd_plan);
 
     const actRows = actualBy.get(keyOf(r.fg_part_no)) || [];
@@ -269,8 +270,8 @@ const buildProdStatusBreakupSheets = (rows, data, month) => {
     actualSub.add(actualAoa.length); actualAoa.push([r.fg_part_no, r.fg_desc || "", "Gap = MTD Actual - MTD Plan", "", actual - num(r.mtd_plan)]);
     totActual += actual; totGap += actual - num(r.mtd_plan);
   });
-  planSub.add(planAoa.length); planAoa.push(["ALL FG", `${rows.length} FG`, "Total Monthly Plan", "", totMonthly]);
-  planSub.add(planAoa.length); planAoa.push(["ALL FG", "", "Total MTD Plan", "", totMtdPlan]);
+  planSub.add(planAoa.length); planAoa.push(["ALL FG", `${rows.length} FG`, "Total Monthly Plan", "", "", "", totMonthly]);
+  planSub.add(planAoa.length); planAoa.push(["ALL FG", "", "Total MTD Plan", "", "", "", totMtdPlan]);
   actualSub.add(actualAoa.length); actualAoa.push(["ALL FG", `${rows.length} FG`, "Total MTD Actual", "", totActual]);
   actualSub.add(actualAoa.length); actualAoa.push(["ALL FG", "", "Total MTD Plan", "", totMtdPlan]);
   actualSub.add(actualAoa.length); actualAoa.push(["ALL FG", "", "Total Gap", "", totGap]);
@@ -297,7 +298,7 @@ const buildProdStatusBreakupSheets = (rows, data, month) => {
   const guide = [
     ["Item", "How it is calculated"],
     ["Month", `${month}`],
-    ["Monthly Plan", "Sum of the Monthly Plan rows (plan type MP, Trn_Production_Plan) of the FG part inside the month. Rows: sheet 'Plan Breakup'."],
+    ["Monthly Plan", "Sum of (Plan Qty x Ends): each Monthly Plan row (plan type MP, Trn_Production_Plan) of the FG part inside the month is multiplied by its own Ends, then all those rows are added together; a missing Ends counts as 1. Rows: sheet 'Plan Breakup'."],
     ["Working days of the month", wdText(data.workingDays && data.workingDays.month, data.planDays)],
     ["Working days up to yesterday", wdText(data.workingDays && data.workingDays.elapsed, data.nwd) + " A past month counts the whole month; a future month counts 0."],
     ["MTD Plan", `(Monthly Plan / ${data.planDays}) x ${data.nwd}, rounded to a whole number. Shown at the end of each FG in 'Plan Breakup'.`],
@@ -310,7 +311,7 @@ const buildProdStatusBreakupSheets = (rows, data, month) => {
   [0, 1].forEach((c) => { const cell = guideWs[XLSX.utils.encode_cell({ r: 0, c })]; if (cell) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: "DCE6F1" } } }; });
   return [
     ["How to read", guideWs],
-    ["Plan Breakup", sheet(planAoa, planSub, [18, 34, 40, 11, 13])],
+    ["Plan Breakup", sheet(planAoa, planSub, [18, 34, 40, 11, 12, 8, 16])],
     ["Actual Breakup", sheet(actualAoa, actualSub, [18, 34, 40, 15, 13])],
   ];
 };
@@ -699,7 +700,7 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
       // in row 3 instead (as before) rendered as blank headers.
       const fixedCols = ["Plant", "FG_Part_No", "FG Part Description", "Monthly Plan", "MTD Plan", "MTD Actual", "Gap"];
       const showGrandTotal = partNameGroups.length > 1;
-      const headerRow1 = [...fixedCols.map(() => "")];
+      const headerRow1 = [...fixedCols]; // the fixed-column labels sit in the first header row (merged down over the three header rows)
       const headerRow2 = [...fixedCols.map(() => "")];
       const headerRow3 = [...fixedCols.map(() => "")];
       // Each Part Name's own column span: its Part Name label (row 0, first
@@ -1002,7 +1003,7 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
             <tr>
               {FIXED_COLS.map((col) => (
                 <th key={col.field} rowSpan={3} className={matFixedHeadClass(col)} style={matFixedHeadStyle(col)}>
-                  {col.field === "mtd_plan" ? <WorkingDaysTip kind="mtd" wd={workingDays && workingDays[plant]}>{col.label}</WorkingDaysTip> : col.field === "fg_part_no" ? <InfoTip trigger={col.label} title="FG parts listed" points={fgPartTipPoints(listedPartNames, false)} /> : <HeadTip tip={col.tip}>{col.label}</HeadTip>}
+                  {col.field === "mtd_plan" ? <WorkingDaysTip kind="mtd" wd={workingDays && workingDays[plant]}>{col.label}</WorkingDaysTip> : col.field === "monthly_plan" ? <InfoTip trigger={col.label} {...monthlyPlanTipProps()} /> : col.field === "fg_part_no" ? <InfoTip trigger={col.label} title="FG parts listed" points={fgPartTipPoints(listedPartNames, false)} /> : <HeadTip tip={col.tip}>{col.label}</HeadTip>}
                 </th>
               ))}
               {partNameGroups.map((group) => (
@@ -1508,7 +1509,7 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
             <tr>
               {FIXED_COLS.map((col) => (
                 <th key={col.field} rowSpan={2} className={matFixedHeadClass(col)} style={matFixedHeadStyle(col)}>
-                  {col.field === "mtd_plan" ? <WorkingDaysTip kind="mtd" wd={workingDays && workingDays[plant]}>{col.label}</WorkingDaysTip> : col.field === "fg_part_no" ? <InfoTip trigger={col.label} title="FG parts listed" points={fgPartTipPoints(listedPartNames, true)} /> : <HeadTip tip={col.tip}>{col.label}</HeadTip>}
+                  {col.field === "mtd_plan" ? <WorkingDaysTip kind="mtd" wd={workingDays && workingDays[plant]}>{col.label}</WorkingDaysTip> : col.field === "monthly_plan" ? <InfoTip trigger={col.label} {...monthlyPlanTipProps()} /> : col.field === "fg_part_no" ? <InfoTip trigger={col.label} title="FG parts listed" points={fgPartTipPoints(listedPartNames, true)} /> : <HeadTip tip={col.tip}>{col.label}</HeadTip>}
                 </th>
               ))}
               {partNameGroups.map((group) => (

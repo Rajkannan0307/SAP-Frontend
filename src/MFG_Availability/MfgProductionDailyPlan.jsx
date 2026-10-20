@@ -1,14 +1,13 @@
-import React, { useContext, useEffect, useMemo, useState, useCallback } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   TextField, Button, CircularProgress, Typography, Autocomplete, MenuItem, Select, Tooltip,
-  Chip, Table, TableHead, TableBody, TableRow, TableCell, IconButton,
+  Chip, Table, TableHead, TableBody, TableFooter, TableRow, TableCell, TableContainer, Box, IconButton, Collapse,
 } from "@mui/material";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import {
-  DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarFilterButton, GridToolbarExport,
-  GridFooter, useGridApiContext, useGridSelector,
-  gridVisibleColumnDefinitionsSelector, gridFilteredSortedRowEntriesSelector, gridDimensionsSelector,
-} from "@mui/x-data-grid";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
+import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
 import SaveIcon from "@mui/icons-material/Save";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -25,7 +24,8 @@ import { format, startOfISOWeek, endOfISOWeek, getISOWeek, addDays } from "date-
 import { toast } from "react-toastify";
 import { downloadStatusExcel } from "./statusExcel";
 import InfoTip from "../components/InfoTip";
-import WorkingDaysTip from "../components/WorkingDaysTip";
+import { monthlyPlanTipProps } from "../components/monthlyPlanTip";
+import WorkingDaysTip, { workingDaysSplit } from "../components/WorkingDaysTip";
 import { AuthContext } from "../Authentication/AuthContext";
 import { getMfgPlanEditAccess } from "../Authentication/ActionAccessType";
 import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
@@ -36,11 +36,15 @@ import {
   SaveMfgProductionDailyPlanApi,
   GetMfgProductionDailyPlanHistorySummaryApi,
   GetMfgProductionDailyPlanDayDetailApi,
+  GetMfgProductionLinesApi,
+  GetMfgProductionPlanBreakupApi,
 } from "../controller/MfgProductionDailyPlanApiService";
+import { getProductSegments } from "../controller/Masterapiservice";
 
-// Prod Status grid toolbar: the standard buttons + Download Excel of the rows the grid shows (filters, search and sort applied)
+// Prod Status Excel columns (the list in its on-screen order, search applied)
 const STATUS_EXCEL_COLUMNS = [
   { header: "SI", width: 6 },
+  { header: "Plant", width: 8 },
   { header: "Line", width: 14 },
   { header: "Part No", width: 18 },
   { header: "Description", width: 34 },
@@ -55,120 +59,6 @@ const STATUS_EXCEL_COLUMNS = [
   { header: "YD Actual", width: 12, total: true },
   { header: "YD Gap", width: 10, total: true, gap: true },
 ];
-const ProdStatusToolbar = ({ fileSuffix }) => {
-  const apiRef = useGridApiContext();
-  const handleExcel = () => {
-    const models = gridFilteredSortedRowEntriesSelector(apiRef).map((e) => e.model);
-    if (models.length === 0) {
-      toast.warning("No data available to export.");
-      return;
-    }
-    try {
-      const rows = models.map((r, i) => [
-        i + 1, r.Line_Name || "", r.fg_part_no, r.fg_part_desc,
-        r.monthly_plan || 0, r.mtd_plan || 0, r.mtd_actual || 0, r.month_gap || 0,
-        r.cw_plan_calc || 0, r.cw_actual || 0, r.cw_gap || 0, r.yd_plan || 0, r.yd_actual || 0, r.yd_gap || 0,
-      ]);
-      downloadStatusExcel({
-        sheetName: "Prod Status",
-        fileName: `MFG_Prod_Status_${fileSuffix}.xlsx`,
-        columns: STATUS_EXCEL_COLUMNS,
-        rows,
-        totalLabel: `TOTAL (${rows.length} FG)`,
-      });
-      toast.success("Excel downloaded successfully.");
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to generate Excel file.");
-    }
-  };
-  return (
-    <GridToolbarContainer>
-      <GridToolbarColumnsButton />
-      <GridToolbarFilterButton />
-      <GridToolbarExport />
-      <Button size="small" onClick={handleExcel} startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 15 }} />}>
-        Download Excel
-      </Button>
-    </GridToolbarContainer>
-  );
-};
-
-const CustomToolbar = () => (
-  <GridToolbarContainer>
-    <GridToolbarColumnsButton />
-    <GridToolbarFilterButton />
-    <GridToolbarExport />
-  </GridToolbarContainer>
-);
-
-// Prod Status "TOTAL" bar — always visible at the bottom of the grid (DataGrid
-// Community has no pinned rows, so it is the grid footer). Each cell takes the
-// width of its column so the totals line up under the numbers, and the sums
-// follow whatever rows are currently shown (search box + grid filters).
-const TOTAL_FIELDS = ["monthly_plan", "mtd_plan", "mtd_actual", "month_gap", "cw_plan_calc", "cw_actual", "cw_gap", "yd_plan", "yd_actual", "yd_gap"];
-const TOTAL_GAP_FIELDS = ["month_gap", "cw_gap", "yd_gap"];
-const TOTAL_CURRENT_MONTH_FIELDS = ["cw_plan_calc", "cw_actual", "cw_gap", "yd_plan", "yd_actual", "yd_gap"];
-
-const StatusTotalsFooter = () => {
-  const apiRef = useGridApiContext();
-  const columns = useGridSelector(apiRef, gridVisibleColumnDefinitionsSelector);
-  const entries = useGridSelector(apiRef, gridFilteredSortedRowEntriesSelector);
-  const dims = useGridSelector(apiRef, gridDimensionsSelector);
-
-  const rows = entries.map((e) => e.model);
-  const totals = {};
-  TOTAL_FIELDS.forEach((f) => { totals[f] = rows.reduce((sum, r) => sum + (Number(r[f]) || 0), 0); });
-  // C.W / YD columns are 0 (greyed) for any month other than the current one
-  const currentMonthNa = rows.length > 0 && rows.every((r) => r.cw_na);
-
-  // Everything before the first totalled column (SI, Line, Part No) becomes one label cell
-  const firstTotalIdx = columns.findIndex((c) => TOTAL_FIELDS.includes(c.field));
-  const labelCols = firstTotalIdx === -1 ? columns : columns.slice(0, firstTotalIdx);
-  const totalCols = firstTotalIdx === -1 ? [] : columns.slice(firstTotalIdx);
-  const labelWidth = labelCols.reduce((w, c) => w + (c.computedWidth || 0), 0);
-
-  const cellStyle = (c) => ({
-    width: c.computedWidth, minWidth: c.computedWidth, boxSizing: "border-box", padding: "0 8px", textAlign: "right",
-    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-  });
-
-  return (
-    <div>
-      <div
-        style={{
-          display: "flex", alignItems: "center", height: 34, boxSizing: "border-box",
-          paddingRight: dims?.hasScrollY ? dims.scrollbarSize : 0,
-          backgroundColor: "#eaf0fc", borderTop: "2px solid #b8c7ec", borderBottom: "1px solid #d0dcf5",
-          fontSize: 11, fontWeight: 700, color: "#1a2233",
-        }}
-      >
-        {labelWidth > 0 && (
-          <div style={{ width: labelWidth, minWidth: labelWidth, boxSizing: "border-box", padding: "0 8px", letterSpacing: 0.3 }}>
-            TOTAL <span style={{ fontWeight: 400, color: "#6b7280", fontSize: 10 }}>({rows.length} FG)</span>
-          </div>
-        )}
-        {totalCols.map((c) => {
-          if (!TOTAL_FIELDS.includes(c.field)) return <div key={c.field} style={cellStyle(c)} />;
-          const value = totals[c.field];
-          if (currentMonthNa && TOTAL_CURRENT_MONTH_FIELDS.includes(c.field)) {
-            return <div key={c.field} style={{ ...cellStyle(c), color: "#b6bac3", fontWeight: 400 }}>0</div>;
-          }
-          if (TOTAL_GAP_FIELDS.includes(c.field)) {
-            return (
-              <div key={c.field} style={{ ...cellStyle(c), color: value > 0 ? "#1b7a43" : value < 0 ? "#b42323" : "#6b7280" }}>
-                {gapFmt(value)}
-              </div>
-            );
-          }
-          return <div key={c.field} style={cellStyle(c)}>{numberFmt(value)}</div>;
-        })}
-      </div>
-      <GridFooter />
-    </div>
-  );
-};
-
 const todayStr = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -383,6 +273,68 @@ const isWithinInfoWindow = (planDate, today) => planDate === today;
 
 const EMPTY_ROW_VALUES = {};
 
+// ---- Daily / Shift-wise view of the Plan Entry grid ----
+// Shift-wise = one Plan input per shift (as always). Daily = ONE input per day showing A + B + C. Daily is only a view: the saved
+// per-shift rows are never touched by switching; a day edited in Daily view is written on Save as: the new total in the FIRST shift
+// and 0 in the other shifts that already hold a value (days that were not edited are never sent).
+const VIEW_MODE_KEY = "mfgProdPlanViewMode";
+const DAILY_LANE = [{ shift_name: "TOTAL" }]; // one pseudo shift, so the stock coverage runs day by day on the day totals
+const DAY_EDIT_MARK = "__DAY"; // third part of a dirty key that belongs to a Daily-view edit
+const cellKeyDay = (fgPart, periodKey) => `${fgPart}|${periodKey}|${DAY_EDIT_MARK}`;
+
+// A + B + C of one day from the shift values; null when no shift has a value
+const shiftTotal = (rowValues, periodKey, shifts) => {
+  let any = false;
+  let total = 0;
+  shifts.forEach((sh) => {
+    const v = rowValues[`${periodKey}|${sh.shift_name}`];
+    if (v !== "" && v !== null && v !== undefined) { any = true; total += Number(v) || 0; }
+  });
+  return any ? total : null;
+};
+// what the Daily input shows: the value being typed for that day, else the shift total
+const dailyDisplay = (rowDaily, rowValues, periodKey, shifts) => {
+  if (rowDaily[periodKey] !== undefined) return rowDaily[periodKey];
+  const t = shiftTotal(rowValues, periodKey, shifts);
+  return t === null ? "" : String(t);
+};
+
+// Sliding Daily | Shift-wise switch (same pill look as the page tabs): one indicator glides under the active label
+const ViewToggle = ({ value, onChange, disabled }) => {
+  const options = [
+    { key: "daily", label: "Daily", tip: "One Plan box per day (A + B + C added)" },
+    { key: "shift", label: "Shift-wise", tip: "A Plan box per shift" },
+  ];
+  const idx = value === "daily" ? 0 : 1;
+  return (
+    <div role="group" aria-label="Plan view" style={{ position: "relative", display: "inline-grid", gridTemplateColumns: "1fr 1fr", padding: 3, backgroundColor: "#eef0f3", borderRadius: 999, opacity: disabled ? 0.6 : 1 }}>
+      <span
+        aria-hidden
+        style={{
+          position: "absolute", top: 3, bottom: 3, left: 3, width: "calc(50% - 3px)", borderRadius: 999, backgroundColor: "#fff",
+          boxShadow: "0 1px 3px rgba(16,24,40,0.18)", transform: `translateX(${idx * 100}%)`, transition: "transform .24s cubic-bezier(.4,0,.2,1)", pointerEvents: "none",
+        }}
+      />
+      {options.map((o) => (
+        <button
+          key={o.key}
+          type="button"
+          title={o.tip}
+          disabled={disabled}
+          aria-pressed={value === o.key}
+          onClick={() => onChange(o.key)}
+          style={{
+            position: "relative", zIndex: 1, border: "none", background: "transparent", cursor: disabled ? "default" : "pointer", padding: "4px 12px", minWidth: 78,
+            fontSize: 11, fontWeight: value === o.key ? 700 : 500, color: value === o.key ? "#0052cc" : "#5b6472", transition: "color .2s ease", whiteSpace: "nowrap",
+          }}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+};
+
 const SectionHeader = ({ icon, title }) => (
   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
     {icon}
@@ -409,7 +361,9 @@ const STATUS_CHIP_SX = {
 // function fed each child's own stock figure from the /getDayDetail
 // endpoint (itself just the existing Set of Parts BOM+stock query, scoped
 // to one FG). Nothing is computed twice by two different methods.
-const DayInfoPopover = ({ plant, row, period, dayPeriods, shifts, rowValues, stockCoverage }) => {
+// daily = Daily view: `shifts` is then the one pseudo lane (DAILY_LANE), `rowValues` / `stockCoverage` are the day totals,
+// and `actualShifts` are the real shifts whose actuals add up to the day's Actual - the table shows ONE Plan / Balance pair
+const DayInfoPopover = ({ plant, row, period, dayPeriods, shifts, rowValues, stockCoverage, daily = false, actualShifts = null }) => {
   const [openState, setOpenState] = useState(false);
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -429,16 +383,17 @@ const DayInfoPopover = ({ plant, row, period, dayPeriods, shifts, rowValues, sto
   };
   const handleClose = () => setOpenState(false);
 
+  const actualOf = (s) => (actualShifts || [s]).reduce((t, a) => t + (row.cells[period.key]?.actual_shift?.[a.shift_name] || 0), 0);
   const dayHasAnyData = shifts.some((s) => {
     const c = stockCoverage.get(`${period.key}|${s.shift_name}`);
-    const actualQty = row.cells[period.key]?.actual_shift?.[s.shift_name] || 0;
+    const actualQty = actualOf(s);
     return (c && c.planQty > 0) || actualQty > 0;
   });
 
   const shiftTotals = shifts.map((s) => ({
     shift_name: s.shift_name,
     coverage: stockCoverage.get(`${period.key}|${s.shift_name}`),
-    actualQty: row.cells[period.key]?.actual_shift?.[s.shift_name] || 0,
+    actualQty: actualOf(s),
   }));
   const dayTotals = shiftTotals.reduce(
     (acc, s) => ({ planned: acc.planned + (s.coverage?.planQty || 0), actual: acc.actual + s.actualQty }),
@@ -518,7 +473,7 @@ const DayInfoPopover = ({ plant, row, period, dayPeriods, shifts, rowValues, sto
           <div style={{ maxHeight: 220, overflowY: "auto", overflowX: "hidden", border: "1px solid #eef0f3", borderRadius: 8 }}>
             <Table size="small" stickyHeader sx={{ minWidth: setOfPartsTableWidth }}>
               <TableHead>
-                <TableRow>
+                {!daily && <TableRow>
                   <TableCell rowSpan={2} sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px", verticalAlign: "bottom", backgroundColor: "#d0dcf5", color: "#000" }}>Part No</TableCell>
                   <TableCell rowSpan={2} sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px", verticalAlign: "bottom", backgroundColor: "#d0dcf5", color: "#000" }}>Description</TableCell>
                   <TableCell rowSpan={2} align="right" sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px", verticalAlign: "bottom", backgroundColor: "#d0dcf5", color: "#000" }}>Stock</TableCell>
@@ -527,8 +482,15 @@ const DayInfoPopover = ({ plant, row, period, dayPeriods, shifts, rowValues, sto
                       {s.shift_name}
                     </TableCell>
                   ))}
-                </TableRow>
+                </TableRow>}
                 <TableRow>
+                  {daily && (
+                    <>
+                      <TableCell sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px", backgroundColor: "#d0dcf5", color: "#000" }}>Part No</TableCell>
+                      <TableCell sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px", backgroundColor: "#d0dcf5", color: "#000" }}>Description</TableCell>
+                      <TableCell align="right" sx={{ fontSize: 10.5, fontWeight: 700, padding: "4px 6px", backgroundColor: "#d0dcf5", color: "#000" }}>Stock</TableCell>
+                    </>
+                  )}
                   {shifts.map((s) => (
                     <React.Fragment key={s.shift_name}>
                       <TableCell align="right" sx={{ fontSize: 10, fontWeight: 700, padding: "4px 6px", color: "#000", borderLeft: "1px solid #c3d0ef", backgroundColor: "#d0dcf5" }}>Plan</TableCell>
@@ -625,6 +587,7 @@ const DayInfoPopover = ({ plant, row, period, dayPeriods, shifts, rowValues, sto
 // lag when typing a 4-digit number.
 const PlanRow = React.memo(function PlanRow({
   row, idx, periods, shifts, rowValues, today, currentWeekStart, onCellChange, onShiftCellChange, plant, canEdit, viewingPast,
+  viewMode, rowDaily, onDailyCellChange,
 }) {
   // Shift-wise Plant Stock Availability — sequential consumption across this
   // row's whole week of DAY cells (see computeStockCoverage above), recomputed
@@ -634,6 +597,17 @@ const PlanRow = React.memo(function PlanRow({
   const stockCoverage = useMemo(
     () => computeStockCoverage(dayPeriods, shifts, rowValues, row.stock_available),
     [dayPeriods, shifts, rowValues, row.stock_available]
+  );
+  // Daily view: the same sequential stock consumption, run day by day on the day totals (one pseudo shift per day)
+  const dailyLane = useMemo(() => {
+    if (viewMode !== "daily") return null;
+    const lane = {};
+    dayPeriods.forEach((p) => { lane[`${p.key}|${DAILY_LANE[0].shift_name}`] = dailyDisplay(rowDaily, rowValues, p.key, shifts); });
+    return lane;
+  }, [viewMode, dayPeriods, rowDaily, rowValues, shifts]);
+  const dailyCoverage = useMemo(
+    () => (dailyLane ? computeStockCoverage(dayPeriods, DAILY_LANE, dailyLane, row.stock_available) : null),
+    [dailyLane, dayPeriods, row.stock_available]
   );
   return (
     <tr style={{ backgroundColor: idx % 2 === 0 ? "#fff" : "#fafbfc" }}>
@@ -672,6 +646,58 @@ const PlanRow = React.memo(function PlanRow({
         // DAY columns: ONE Plan box + ONE Actual box (same outer shape/
         // border as before), each internally split into one field per this
         // plant's own shifts — no cascade, no combined day total.
+        if (p.period_type === "DAY" && viewMode === "daily") {
+          const dailyVal = dailyDisplay(rowDaily, rowValues, p.key, shifts);
+          const coverage = dailyCoverage?.get(`${p.key}|${DAILY_LANE[0].shift_name}`);
+          const stockColorKey = getStockCoverageColorKey(coverage?.coveragePct, dailyVal);
+          const actualTotal = shifts.reduce((t, sh) => t + (row.cells[p.key]?.actual_shift?.[sh.shift_name] || 0), 0);
+          const colors = CELL_COLORS[getPlanActualColorKey(actualTotal, dailyVal)];
+          const names = shifts.map((sh) => sh.shift_name).join(" + ");
+          return (
+            <td key={p.key} style={{ padding: "4px 4px", borderBottom: "1px solid #eef0f3", verticalAlign: "top", position: "relative" }}>
+              {isWithinInfoWindow(p.plan_date, today) && (
+                <DayInfoPopover plant={plant} row={row} period={p} dayPeriods={dayPeriods} shifts={DAILY_LANE} rowValues={dailyLane} stockCoverage={dailyCoverage} daily actualShifts={shifts} />
+              )}
+              <div className="mfg-plan-in">
+                <div
+                  style={{
+                    boxSizing: "border-box",
+                    border: `1.5px solid ${editable ? STOCK_BORDER_COLORS[stockColorKey] : "#c7cbd1"}`,
+                    borderStyle: editable ? "solid" : "dashed",
+                    borderBottom: "none",
+                    borderRadius: "6px 6px 0 0",
+                    backgroundColor: editable ? STOCK_BG_COLORS[stockColorKey] : "#f1f2f5",
+                  }}
+                >
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={dailyVal}
+                    disabled={inputDisabled}
+                    onChange={(e) => onDailyCellChange(row.fg_part, p.key, e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    placeholder="0"
+                    title={inputDisabled ? lockedTitle : `Day total (${names})`}
+                    style={{
+                      width: "100%", boxSizing: "border-box", fontSize: 11, fontWeight: 700, padding: "4px 3px", textAlign: "center",
+                      border: "none", outline: "none", backgroundColor: "transparent", color: PLAN_TEXT_COLOR,
+                      cursor: inputDisabled ? (editable ? "default" : "not-allowed") : "text",
+                    }}
+                  />
+                </div>
+                <div
+                  title={`Day total Actual (${names})`}
+                  style={{
+                    boxSizing: "border-box", border: `1.5px solid ${colors.border}`, borderRadius: "0 0 6px 6px", backgroundColor: colors.bg,
+                    color: ACTUAL_TEXT_COLOR, fontSize: 9, fontWeight: 700, textAlign: "center", padding: "2px 0", cursor: "pointer",
+                  }}
+                >
+                  {numberFmt(actualTotal)}
+                </div>
+              </div>
+            </td>
+          );
+        }
         if (p.period_type === "DAY") {
           return (
             <td
@@ -694,6 +720,7 @@ const PlanRow = React.memo(function PlanRow({
                   stockCoverage={stockCoverage}
                 />
               )}
+              <div className="mfg-plan-in">
               <div style={{ display: "flex" }}>
                 {shifts.map((s, i) => {
                   const shiftName = s.shift_name;
@@ -780,6 +807,7 @@ const PlanRow = React.memo(function PlanRow({
                     </div>
                   );
                 })}
+              </div>
               </div>
             </td>
           );
@@ -878,7 +906,8 @@ const PlanRow = React.memo(function PlanRow({
    bucket), each column showing a small Plan(editable)/Actual(read-only)
    split, colored green/red at the 90% Actual-vs-Plan threshold.
    ============================================================ */
-const PlanEntryBody = ({ searchText = "" }) => {
+// toggleSlot = the empty gap in the page header (between the title and the search box): the Daily | Shift-wise switch is drawn there
+const PlanEntryBody = ({ searchText = "", toggleSlot = null }) => {
   const { user } = useContext(AuthContext);
   const plant = user?.PlantCode || "";
   // Only roles listed in MFG_PLAN_EDIT_ROLE_IDS may type and Save.
@@ -901,7 +930,20 @@ const PlanEntryBody = ({ searchText = "" }) => {
   // row's own sub-object — every other row's reference is untouched, which
   // is what lets the memoized PlanRow below skip re-rendering on keystroke.
   const [values, setValues] = useState({});
-  const [dirtyKeys, setDirtyKeys] = useState(new Set()); // flat "fgPart|periodKey[|shiftName]" strings
+  const [dirtyKeys, setDirtyKeys] = useState(new Set()); // flat "fgPart|periodKey[|shiftName]" strings (shiftName = "__DAY" for a Daily-view edit)
+  // Daily view: the day totals the user typed, kept apart from `values` (the saved shift values), so switching views never touches shift data.
+  const [dailyEdits, setDailyEdits] = useState({});
+  const [viewMode, setViewMode] = useState(() => {
+    // Daily is the default; the last choice the user made on this browser is remembered
+    try { return window.localStorage.getItem(VIEW_MODE_KEY) === "shift" ? "shift" : "daily"; } catch (e) { return "daily"; }
+  });
+
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
+  const shiftsRef = useRef(shifts);
+  shiftsRef.current = shifts;
+  // plants without a configured shift have nothing to total: they stay on the shift view
+  const effectiveMode = shifts.length > 0 ? viewMode : "shift";
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -997,6 +1039,7 @@ const PlanEntryBody = ({ searchText = "" }) => {
       });
       setValues(initialValues);
       setDirtyKeys(new Set());
+      setDailyEdits({});
       setLoaded(true);
     } catch (error) {
       console.error(error);
@@ -1006,6 +1049,7 @@ const PlanEntryBody = ({ searchText = "" }) => {
       setRows([]);
       setValues({});
       setDirtyKeys(new Set());
+      setDailyEdits({});
     } finally {
       setLoading(false);
     }
@@ -1092,6 +1136,57 @@ const PlanEntryBody = ({ searchText = "" }) => {
     setDirtyKeys((prev) => new Set(prev).add(cellKeyShift(fgPart, periodKey, shiftName)));
   }, []);
 
+  // Daily-view input: a day total. Typing the total the day already has is no change; any other value is kept in dailyEdits only.
+  const handleDailyCellChange = useCallback((fgPart, periodKey, rawValue) => {
+    const value = capDigits(rawValue, 5);
+    const original = shiftTotal(valuesRef.current[fgPart] || {}, periodKey, shiftsRef.current);
+    const unchanged = value === (original === null ? "" : String(original));
+    setDailyEdits((prev) => {
+      const fgEdits = { ...(prev[fgPart] || {}) };
+      if (unchanged) delete fgEdits[periodKey]; else fgEdits[periodKey] = value;
+      return { ...prev, [fgPart]: fgEdits };
+    });
+    setDirtyKeys((prev) => {
+      const next = new Set(prev);
+      if (unchanged) next.delete(cellKeyDay(fgPart, periodKey)); else next.add(cellKeyDay(fgPart, periodKey));
+      return next;
+    });
+  }, []);
+
+  // A Daily-view edit -> per-shift cells for the existing save: the total goes to the FIRST shift; every other shift that already
+  // holds a value is set to 0. A shift with no saved value and nothing to write is skipped (no empty rows are created).
+  const dailyToShiftCells = (fgPartStr, period) => {
+    const raw = dailyEdits[fgPartStr]?.[period.key];
+    const total = raw === "" || raw === undefined || raw === null ? 0 : Number(raw);
+    const saved = values[fgPartStr] || {};
+    const out = [];
+    shifts.forEach(({ shift_name: shiftName }, i) => {
+      const old = saved[`${period.key}|${shiftName}`];
+      const hasSaved = old !== "" && old !== null && old !== undefined;
+      const qty = i === 0 ? total : 0;
+      if (!hasSaved && qty === 0) return;
+      out.push({
+        fg_part: Number(fgPartStr),
+        period_type: period.period_type,
+        plan_date: period.plan_date,
+        week_number: period.week_number,
+        week_end_date: period.week_end_date,
+        user_input_qty: qty,
+        shift_name: shiftName,
+      });
+    });
+    return out;
+  };
+
+  // Daily | Shift-wise switch. Only the VIEW changes. With unsaved changes the user decides first (like changing the week).
+  const changeViewMode = (next) => {
+    if (next === viewMode) return;
+    if (dirtyKeys.size > 0 && !window.confirm("You have unsaved changes. Discard them and switch the view?")) return;
+    setViewMode(next);
+    try { window.localStorage.setItem(VIEW_MODE_KEY, next); } catch (e) { /* the choice just is not remembered */ }
+    if (dirtyKeys.size > 0) fetchGrid(); // reloads the saved values and clears the discarded edits
+  };
+
   const handleSubmit = async () => {
     if (!canEdit || viewingPast) {
       toast.error(viewingPast ? "Past weeks are view only." : "You do not have permission to save the plan.");
@@ -1113,6 +1208,10 @@ const PlanEntryBody = ({ searchText = "" }) => {
         const [fgPartStr, periodKey, shiftName] = parts;
         const period = periodMap.get(periodKey);
         if (!period) return;
+        if (shiftName === DAY_EDIT_MARK) {
+          cells.push(...dailyToShiftCells(fgPartStr, period));
+          return;
+        }
         const subKey = shiftName ? `${periodKey}|${shiftName}` : periodKey;
         const raw = values[fgPartStr]?.[subKey];
         if (raw === "" || raw === null || raw === undefined) return; // skip cleared/empty cells
@@ -1270,6 +1369,7 @@ const PlanEntryBody = ({ searchText = "" }) => {
         )}
 
         <div style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: "auto", flexShrink: 0 }}>
+          {shifts.length > 0 && toggleSlot && createPortal(<ViewToggle value={effectiveMode} onChange={changeViewMode} disabled={loading || saving} />, toggleSlot)}
           {dirtyKeys.size > 0 && (
             <span style={{ fontSize: 11, fontWeight: 600, color: "#b45309", whiteSpace: "nowrap" }}>
               {dirtyKeys.size} unsaved change{dirtyKeys.size === 1 ? "" : "s"}
@@ -1309,6 +1409,9 @@ const PlanEntryBody = ({ searchText = "" }) => {
           and a subtle hover tint instead, for a lighter, modern look. */}
       <style>{`
         .mfg-plan-tbl tbody tr:hover td { background-color: #f2f6fd; }
+        @keyframes mfgPlanIn { from { opacity: 0; transform: translateY(3px) scale(.985); } to { opacity: 1; transform: none; } }
+        .mfg-plan-in { animation: mfgPlanIn .22s ease-out both; }
+        @media (prefers-reduced-motion: reduce) { .mfg-plan-in { animation: none; } }
       `}</style>
       <div
         style={{
@@ -1372,8 +1475,15 @@ const PlanEntryBody = ({ searchText = "" }) => {
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.2, whiteSpace: "nowrap", color: "#000000" }}>{p.label}</div>
                   <div style={{ fontSize: 9, fontWeight: 500, color: "#000000", marginTop: 1, whiteSpace: "nowrap" }}>{p.sub_label}</div>
                   {p.period_type === "DAY" && shifts.length > 0 && (
-                    <div style={{ display: "flex", marginTop: 3 }}>
-                      {shifts.map((s, i) => (
+                    <div key={effectiveMode} className="mfg-plan-in" style={{ display: "flex", marginTop: 3 }}>
+                      {effectiveMode === "daily" ? (
+                        <div
+                          style={{ flex: 1, minWidth: 0, fontSize: 9, fontWeight: 700, color: "#3355aa", padding: "2px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                          title={`Day total: ${shifts.map((x) => x.shift_name).join(" + ")}`}
+                        >
+                          Total
+                        </div>
+                      ) : shifts.map((s, i) => (
                         <div
                           key={s.shift_name}
                           style={{
@@ -1429,6 +1539,9 @@ const PlanEntryBody = ({ searchText = "" }) => {
                 plant={plant}
                 canEdit={canEdit}
                 viewingPast={viewingPast}
+                viewMode={effectiveMode}
+                rowDaily={dailyEdits[row.fg_part] || EMPTY_ROW_VALUES}
+                onDailyCellChange={handleDailyCellChange}
               />
             ))}
           </tbody>
@@ -1439,20 +1552,333 @@ const PlanEntryBody = ({ searchText = "" }) => {
 };
 
 /* ============================================================
-   Tab 1: Plan History — one row per FG part with Month/Current-Week/
-   Yesterday Plan vs Actual vs Gap, resolved via getPlanHistorySummary.
-   Plant defaults to the logged-in user's own plant (still changeable);
-   Start/End Date default to 1st-of-month -> yesterday.
+   Prod Status table — lines (Line_Name of the FG part) as collapsible groups, each with its part-wise rows.
+   Same layout as the MFG Daily Component Plan: one sticky header, a line row (chevron, name, FG count and the line's totals
+   in the same columns, so a collapsed line still shows its numbers) and the part rows under it when the line is open.
+   ============================================================ */
+const GROUP_ACCENTS = [
+  { bar: "#4f6bed", tint: "#f4f6fe" },
+  { bar: "#0f9d8a", tint: "#f2f9f8" },
+  { bar: "#c27c0e", tint: "#fbf8f1" },
+  { bar: "#8a5bd6", tint: "#f8f5fc" },
+  { bar: "#5b6b82", tint: "#f5f7f9" },
+];
+const STATUS_HEAD_BG = "#d0dcf5";
+const STATUS_HEAD_LINE = "#b9c8ea";
+const NUM_FONT = { fontVariantNumeric: "tabular-nums" };
+const CUR_NOTE = " Applies to the current month only (0 for other months).";
+// Column widths (%) — one colgroup for the header and every row, so numbers line up. 3.5 + 8.5 + 19 + 10 * 6.9 = 100.
+const STATUS_PCT = { si: 3.5, line: 8.5, part: 19, num: 6.9 };
+
+// kind: plan / actual / gap. cur = applies to the current month only (0 and greyed for other months).
+// wd = the header hover is the working-days card (MTD Plan / C.W Plan).
+const STATUS_COLS = [
+  { key: "monthly_plan", label: "M.Plan", kind: "plan", tipProps: monthlyPlanTipProps() },
+  { key: "mtd_plan", label: "MTD Plan", kind: "plan", wd: "mtd" },
+  { key: "mtd_actual", label: "MTD Actual", kind: "actual", tip: "MTD Actual = production quantity of the selected month (Production Actual, movement types 101, 102, 261 and 262)" },
+  { key: "month_gap", label: "Gap", kind: "gap", tip: "Gap = MTD Actual - MTD Plan" },
+  { key: "cw_plan_calc", label: "C.W Plan", kind: "plan", wd: "cw", cur: true },
+  { key: "cw_actual", label: "C.W Actual", kind: "actual", cur: true, tip: "C.W Actual = production quantity of the current week from Monday up to yesterday, today is not included (movement types 101, 102, 261 and 262)." + CUR_NOTE },
+  { key: "cw_gap", label: "CW Gap", kind: "gap", cur: true, tip: "CW Gap = C.W Actual - C.W Plan." + CUR_NOTE },
+  { key: "yd_plan", label: "YD Plan", kind: "plan", cur: true, tip: "YD Plan = yesterday's plan: the daily plan entered for yesterday, all shifts added together (Prod Daily Plan tab)." + CUR_NOTE },
+  { key: "yd_actual", label: "YD Actual", kind: "actual", cur: true, tip: "YD Actual = yesterday's production quantity (movement types 101, 102, 261 and 262)." + CUR_NOTE },
+  { key: "yd_gap", label: "YD Gap", kind: "gap", cur: true, tip: "YD Gap = YD Actual - YD Plan (positive = ahead, negative = behind)." + CUR_NOTE },
+];
+
+const gapTextColor = (v) => (v > 0 ? "#1b7a43" : v < 0 ? "#b42323" : "#6b7280");
+
+const sumStatusRows = (rows) => {
+  const totals = {};
+  STATUS_COLS.forEach((c) => { totals[c.key] = rows.reduce((sum, r) => sum + (Number(r[c.key]) || 0), 0); });
+  return totals;
+};
+
+// text / colour / weight / hover of one number cell. `na` = the current-month-only columns of a non-current month.
+// `total` = a line or TOTAL row (dark numbers instead of the blue plan / black actual of the part rows).
+const statusCell = (c, n, na, total = false) => {
+  if (c.cur && na) return { text: "0", color: "#b6bac3", weight: 400, title: "Applies to the current month only" };
+  if (c.kind === "gap") return { text: gapFmt(n), color: gapTextColor(n), weight: 700 };
+  return { text: numberFmt(n), color: total ? "#1a2233" : c.kind === "plan" ? PLAN_TEXT_COLOR : ACTUAL_TEXT_COLOR, weight: total ? 700 : 600 };
+};
+
+const StatusColGroup = () => (
+  <colgroup>
+    <col style={{ width: `${STATUS_PCT.si}%` }} />
+    <col style={{ width: `${STATUS_PCT.line}%` }} />
+    <col style={{ width: `${STATUS_PCT.part}%` }} />
+    {STATUS_COLS.map((c) => <col key={c.key} style={{ width: `${STATUS_PCT.num}%` }} />)}
+  </colgroup>
+);
+
+const STATUS_BODY_CELL = {
+  height: 36, padding: "0 10px", fontSize: 11.5, borderBottom: "1px solid #eef0f3",
+  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+};
+
+// A line: its header row (name, FG count, totals) and, under it, ONE Collapse holding a nested table with the part rows. The nested
+// table shares the colgroup of the main table, so the numbers line up with the header. A single animated element per line keeps
+// opening / closing smooth on long lists, and the Collapse unmounts the rows while the line is closed. React.memo + a stable
+// onToggle: toggling one line does not re-render the others.
+const LINE_ANIM_MS = 200;
+const LineGroupRows = React.memo(({ group, accent, open, onToggle }) => (
+  <>
+    <TableRow
+      hover
+      onClick={() => onToggle(group.name)}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(group.name); } }}
+      tabIndex={0}
+      role="button"
+      aria-expanded={open}
+      sx={{ cursor: "pointer", "&:hover > td": { filter: "brightness(0.97)" }, "&:focus-visible": { outline: "2px solid #0066FF", outlineOffset: -2 } }}
+    >
+      <TableCell
+        colSpan={3}
+        sx={{ p: 0, height: 32, backgroundColor: accent.tint, borderTop: "1px solid #dfe3ea", borderBottom: "1px solid #dfe3ea", borderLeft: `3px solid ${accent.bar}` }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, pl: 0.5, pr: 0.5 }}>
+          <KeyboardArrowDownIcon sx={{ fontSize: 18, color: "#5b6472", transition: "transform .2s ease", transform: open ? "rotate(180deg)" : "rotate(0deg)" }} />
+          <Typography component="span" sx={{ fontSize: 11.5, fontWeight: 600, color: "#1a2233" }}>{group.name}</Typography>
+          <Typography component="span" sx={{ fontSize: 10, color: "#6b7280" }}>{group.rows.length} FG</Typography>
+        </Box>
+      </TableCell>
+      {STATUS_COLS.map((c) => {
+        const s = statusCell(c, group.totals[c.key], group.naAll, true);
+        return (
+          <TableCell
+            key={c.key}
+            align="right"
+            title={s.title}
+            sx={{ ...NUM_FONT, padding: "0 10px", fontSize: 11.5, fontWeight: s.weight === 400 ? 400 : 600, color: s.color, backgroundColor: accent.tint, borderTop: "1px solid #dfe3ea", borderBottom: "1px solid #dfe3ea" }}
+          >
+            {s.text}
+          </TableCell>
+        );
+      })}
+    </TableRow>
+    <TableRow>
+      <TableCell colSpan={3 + STATUS_COLS.length} sx={{ p: 0, border: "none" }}>
+        <Collapse in={open} timeout={LINE_ANIM_MS} unmountOnExit>
+          <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
+            <StatusColGroup />
+            <TableBody>
+              {group.rows.map((r) => (
+                <TableRow key={r.fg_part} hover sx={{ "& td": { backgroundColor: "#fff" }, "&:hover td": { backgroundColor: "#f2f6fd" } }}>
+                  <TableCell align="center" sx={{ ...STATUS_BODY_CELL, padding: "0 4px", color: "#6b7280", boxShadow: `inset 3px 0 0 ${accent.bar}` }}>{r.si}</TableCell>
+                  <TableCell sx={{ ...STATUS_BODY_CELL, color: "#4b5565" }} title={r.Line_Name || ""}>{r.Line_Name || "–"}</TableCell>
+                  <TableCell sx={{ ...STATUS_BODY_CELL, py: "3px", lineHeight: 1.3 }} title={`${r.fg_part_no} — ${r.fg_part_desc}`}>
+                    <div style={{ color: "#0052cc", fontWeight: 700, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis" }}>{r.fg_part_no}</div>
+                    <div style={{ color: "#6b7280", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis" }}>{r.fg_part_desc}</div>
+                  </TableCell>
+                  {STATUS_COLS.map((c) => {
+                    const s = statusCell(c, Number(r[c.key]) || 0, r.cw_na);
+                    return (
+                      <TableCell key={c.key} align="right" title={s.title} sx={{ ...STATUS_BODY_CELL, ...NUM_FONT, fontWeight: s.weight, color: s.color }}>
+                        {s.text}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Collapse>
+      </TableCell>
+    </TableRow>
+  </>
+));
+
+// the table itself: sticky two-part header, the line groups, and the TOTAL row (all lines shown) pinned to the bottom
+const StatusGroupTable = ({ groups, expanded, onToggle, grand, grandNa, count, wd, loading, loaded }) => {
+  const headCell = {
+    backgroundColor: STATUS_HEAD_BG, color: "#000", fontSize: 10.5, fontWeight: 700, height: 36,
+    padding: "0 10px", whiteSpace: "nowrap", borderBottom: `1px solid ${STATUS_HEAD_LINE}`,
+  };
+  const label = { cursor: "help" };
+  return (
+    <Table stickyHeader size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
+      <StatusColGroup />
+      <TableHead>
+        <TableRow>
+          <TableCell align="center" sx={{ ...headCell, padding: "0 4px" }}>
+            <InfoTip trigger="SI" text="Serial number of the part inside its line (1, 2, 3 ... per line, follows the current search)" labelStyle={label} />
+          </TableCell>
+          <TableCell sx={headCell}>
+            <InfoTip trigger="Line" text="Production line of the FG part (from the Material Master)" labelStyle={label} />
+          </TableCell>
+          <TableCell sx={headCell}>
+            <InfoTip trigger="Part No / Description" text="FG part number and its description" labelStyle={label} />
+          </TableCell>
+          {STATUS_COLS.map((c) => (
+            <TableCell key={c.key} align="right" sx={headCell}>
+              {c.wd ? (
+                <WorkingDaysTip kind={c.wd} wd={wd} labelStyle={label} extraNote={c.cur ? CUR_NOTE.trim() : undefined}>{c.label}</WorkingDaysTip>
+              ) : (
+                <InfoTip trigger={c.label} {...(c.tipProps || { text: c.tip })} labelStyle={label} />
+              )}
+            </TableCell>
+          ))}
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {groups.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={3 + STATUS_COLS.length} align="center" sx={{ py: 4, color: "#8a93a3", border: "none", fontSize: 12 }}>
+              {loading ? "Loading…" : loaded ? "No plan history found for the selected filters." : ""}
+            </TableCell>
+          </TableRow>
+        ) : (
+          groups.map((g, gi) => (
+            <LineGroupRows key={g.name} group={g} accent={GROUP_ACCENTS[gi % GROUP_ACCENTS.length]} open={expanded.has(g.name)} onToggle={onToggle} />
+          ))
+        )}
+      </TableBody>
+      {groups.length > 0 && (
+        <TableFooter>
+          <TableRow>
+            <TableCell
+              colSpan={3}
+              sx={{ position: "sticky", bottom: 0, zIndex: 3, backgroundColor: "#eaf0fc", borderTop: "2px solid #b8c7ec", borderBottom: "1px solid #d0dcf5", height: 34, padding: "0 10px", fontSize: 11, fontWeight: 700, color: "#1a2233", letterSpacing: 0.3 }}
+            >
+              TOTAL <Box component="span" sx={{ fontWeight: 400, color: "#6b7280", fontSize: 10 }}>({count} FG)</Box>
+            </TableCell>
+            {STATUS_COLS.map((c) => {
+              const s = statusCell(c, grand[c.key], grandNa, true);
+              return (
+                <TableCell
+                  key={c.key}
+                  align="right"
+                  title={s.title}
+                  sx={{ position: "sticky", bottom: 0, zIndex: 3, backgroundColor: "#eaf0fc", borderTop: "2px solid #b8c7ec", borderBottom: "1px solid #d0dcf5", ...NUM_FONT, height: 34, padding: "0 10px", fontSize: 11.5, fontWeight: s.weight, color: s.color }}
+                >
+                  {s.text}
+                </TableCell>
+              );
+            })}
+          </TableRow>
+        </TableFooter>
+      )}
+    </Table>
+  );
+};
+
+/* ============================================================
+   Break-up sheets of the Prod Status Excel: the rows behind every number of the main sheet, so the user can see how the list on
+   the screen was built. Every FG ends with shaded lines that equal the figures of the main sheet; the ALL FG lines add them up.
+     Plan Breakup    : the Monthly Plan rows (Plan Qty x Ends) -> Monthly Plan, then the MTD Plan and C.W Plan formulas
+     Actual Breakup  : the production rows of the month        -> MTD Actual, C.W Actual (Monday .. yesterday), YD Actual
+     YD Plan Breakup : the plan typed for yesterday, per shift -> YD Plan (current month only)
+   ============================================================ */
+const buildProdBreakupSheets = (models, data, { year, month }) => {
+  const num = (v) => Number(v) || 0;
+  const keyOf = (p) => String(p ?? "").trim().toLowerCase();
+  const groupBy = (list) => {
+    const m = new Map();
+    (list || []).forEach((x) => { const k = keyOf(x.part_number); if (!m.has(k)) m.set(k, []); m.get(k).push(x); });
+    return m;
+  };
+  const planBy = groupBy(data.plan);
+  const actBy = groupBy(data.actual);
+  const enBy = groupBy(data.entered);
+  const sub = (arr) => { arr.sub = true; return arr; }; // shaded, bold lines
+  const cellStyle = (v, i, c, row) => (row && row.sub ? { s: { font: { bold: true }, fill: { fgColor: { rgb: "EAF0FC" } } } } : null);
+  const head = (h, w) => ({ header: h, width: w });
+  const qtyCol = (h) => ({ header: h, width: 14, format: "#,##0" });
+  const isCurrent = models.length > 0 && models[0].is_current_month !== false; // C.W and YD only apply to the current month
+  const wd = models.length ? models[0].working_days : null;
+  const weekDays = wd && wd.week ? wd.week.days : 0;
+  const monthName = `${year}-${String(month).padStart(2, "0")}`;
+  const sumQty = (list, key) => list.reduce((t, x) => t + num(x[key]), 0);
+
+  const planRows = [];
+  const actualRows = [];
+  const ydRows = [];
+  const tot = { monthly: 0, mtdPlan: 0, cwPlan: 0, mtd: 0, cw: 0, yd: 0, ydPlan: 0 };
+  models.forEach((r) => {
+    const base = [r.fg_part_no, r.fg_part_desc || ""];
+    // ---- plan
+    const pr = planBy.get(keyOf(r.fg_part_no)) || [];
+    pr.forEach((x) => planRows.push([...base, x.effective_date, "MP", num(x.plan_qty), num(x.ends), num(x.plan_qty) * num(x.ends)]));
+    const monthly = pr.reduce((t, x) => t + num(x.plan_qty) * num(x.ends), 0);
+    planRows.push(sub([...base, "Monthly Plan (sum of Plan Qty x Ends)", "", "", "", monthly]));
+    planRows.push(sub([...base, `MTD Plan = Monthly Plan / ${wd ? wd.monthDays : "working days of the month"} working days x ${wd ? wd.elapsedDays : "working days up to yesterday"} working days up to yesterday`, "", "", "", num(r.mtd_plan)]));
+    if (isCurrent) planRows.push(sub([...base, `C.W Plan = Monthly Plan / ${wd ? wd.monthDays : "working days of the month"} working days x ${weekDays} working days of this week up to yesterday`, "", "", "", num(r.cw_plan_calc)]));
+    tot.monthly += monthly; tot.mtdPlan += num(r.mtd_plan); tot.cwPlan += isCurrent ? num(r.cw_plan_calc) : 0;
+    // ---- production
+    const ar = actBy.get(keyOf(r.fg_part_no)) || [];
+    ar.forEach((x) => actualRows.push([...base, x.prod_date, x.moment_type, num(x.prod_qty)]));
+    const mtd = sumQty(ar, "prod_qty");
+    actualRows.push(sub([...base, "MTD Actual (sum of the production rows)", "", mtd]));
+    tot.mtd += mtd;
+    if (isCurrent) {
+      const cw = sumQty(ar.filter((x) => x.prod_date >= data.cwStart && x.prod_date <= data.yesterday), "prod_qty");
+      const yd = sumQty(ar.filter((x) => x.prod_date === data.yesterday), "prod_qty");
+      actualRows.push(sub([...base, `C.W Actual (rows from Monday ${data.cwStart} to yesterday)`, "", cw]));
+      actualRows.push(sub([...base, `YD Actual (rows of yesterday ${data.yesterday})`, "", yd]));
+      tot.cw += cw; tot.yd += yd;
+      // ---- plan typed for yesterday
+      const er = enBy.get(keyOf(r.fg_part_no)) || [];
+      er.forEach((x) => ydRows.push([...base, x.plan_date, x.shift_name || "-", num(x.user_input_qty)]));
+      const ydPlan = sumQty(er, "user_input_qty");
+      ydRows.push(sub([...base, "YD Plan (all shifts added)", "", ydPlan]));
+      tot.ydPlan += ydPlan;
+    }
+  });
+  const all = [`ALL FG`, `${models.length} FG`];
+  planRows.push(sub([...all, "Total Monthly Plan", "", "", "", tot.monthly]));
+  planRows.push(sub(["ALL FG", "", "Total MTD Plan", "", "", "", tot.mtdPlan]));
+  if (isCurrent) planRows.push(sub(["ALL FG", "", "Total C.W Plan", "", "", "", tot.cwPlan]));
+  actualRows.push(sub([...all, "Total MTD Actual", "", tot.mtd]));
+  if (isCurrent) {
+    actualRows.push(sub(["ALL FG", "", "Total C.W Actual", "", tot.cw]));
+    actualRows.push(sub(["ALL FG", "", "Total YD Actual", "", tot.yd]));
+    ydRows.push(sub([...all, "Total YD Plan", "", tot.ydPlan]));
+  }
+  // the labels of the ALL FG lines sit in the Date column, like every other shaded line
+  const wdText = (d, n) => (d
+    ? `${n} = ${workingDaysSplit(d)} (weekends and DHRM holidays are not working days).`
+    : `${n} (the DHRM holidays could not be read, so the old rule is used: 26 days a month, Sundays only).`);
+  const cur = " Applies to the current month only (0 for other months).";
+  const guide = [
+    ["Item", "How it is calculated"],
+    ["Month", monthName],
+    ["Monthly Plan", "Sum of Plan Qty x Ends: each Monthly Plan row (plan type MP, Trn_Production_Plan) of the FG part inside the month is multiplied by its own Ends, then all those rows are added together; a missing Ends counts as 1. Rows: sheet 'Plan Breakup'."],
+    ["Working days of the month", wdText(wd && wd.month, wd ? wd.monthDays : "-")],
+    ["Working days up to yesterday", wdText(wd && wd.elapsed, wd ? wd.elapsedDays : "-") + " A past month counts the whole month; a future month counts 0."],
+    ["MTD Plan", "(Monthly Plan / working days of the month) x working days up to yesterday, rounded to a whole number. Shown at the end of each FG in 'Plan Breakup'."],
+    ["MTD Actual", `Sum of the production quantity (Trn_Actual_Production_Plan, movement types ${data.movements}) of the FG part inside the month. Rows: sheet 'Actual Breakup'.`],
+    ["Gap", "MTD Actual - MTD Plan (positive = ahead, negative = behind)."],
+    ["C.W Plan", "(Monthly Plan / working days of the month) x working days of this week from Monday up to yesterday (today is not counted)." + (wd && wd.week && wd.week.detail ? ` This week: ${weekDays} = ${workingDaysSplit(wd.week.detail)}.` : "") + cur],
+    ["C.W Actual", "Production of the FG part from Monday of this week up to yesterday (today is not included). Rows: sheet 'Actual Breakup'." + cur],
+    ["CW Gap", "C.W Actual - C.W Plan." + cur],
+    ["YD Plan", "The plan typed for yesterday on the Prod Daily Plan tab, all shifts added. Rows: sheet 'YD Plan Breakup'." + cur],
+    ["YD Actual", "Production of the FG part yesterday. Rows: sheet 'Actual Breakup'." + cur],
+    ["YD Gap", "YD Actual - YD Plan." + cur],
+    ["Break-up sheets", "Each FG lists the rows it is built from, then shaded lines that equal the values on the main sheet. The ALL FG lines add up every FG listed."],
+  ];
+  const sheets = [
+    { sheetName: "How to read", columns: [head("Item", 26), head("Explanation", 120)], rows: guide.slice(1), noTotal: true },
+    { sheetName: "Plan Breakup", columns: [head("FG Part No", 18), head("FG Description", 34), head("Effective Date", 16), head("Plan Type", 11), qtyCol("Plan Qty"), head("Ends", 8), qtyCol("Plan Qty x Ends")], rows: planRows, noTotal: true, cellStyle },
+    { sheetName: "Actual Breakup", columns: [head("FG Part No", 18), head("FG Description", 34), head("Production Date", 18), head("Movement Type", 15), qtyCol("Qty")], rows: actualRows, noTotal: true, cellStyle },
+  ];
+  if (isCurrent) sheets.push({ sheetName: "YD Plan Breakup", columns: [head("FG Part No", 18), head("FG Description", 34), head("Plan Date", 16), head("Shift", 10), qtyCol("Plan Qty")], rows: ydRows, noTotal: true, cellStyle });
+  return sheets;
+};
+
+/* ============================================================
+   Tab 1: Plan History — FG parts grouped by Line, each line collapsible; Month/Current-Week/Yesterday Plan vs Actual vs
+   Gap per part, resolved via getPlanHistorySummary.
+   Plant defaults to the logged-in user's own plant (still changeable); Segment narrows the Line dropdown (the lines of the
+   segment's FG parts in the plant's MFG BOM); Month/Year pick the month. Lines start collapsed.
    ============================================================ */
 const PlanHistoryBody = ({ searchText = "" }) => {
   const { user } = useContext(AuthContext);
 
   const [plants, setPlants] = useState([]);
-  const [modules, setModules] = useState([]);
-  const [lines, setLines] = useState([]);
+  const [segments, setSegments] = useState([]);
+  const [lineOptions, setLineOptions] = useState([]);
 
   const [plant, setPlant] = useState(user?.PlantCode || "");
-  const [moduleId, setModuleId] = useState("");
+  const [segmentId, setSegmentId] = useState("");
   const [lineId, setLineId] = useState("");
   // Monthly report filter — Month/Year only, no manual date entry. Defaults
   // to the current month/year; converted to a Start/End date range only at
@@ -1464,45 +1890,41 @@ const PlanHistoryBody = ({ searchText = "" }) => {
   const [historyRows, setHistoryRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // names of the lines that are OPEN (an empty Set = every line collapsed, the starting state)
+  const [expanded, setExpanded] = useState(() => new Set());
 
   useEffect(() => {
     const loadMasters = async () => {
       try {
-        const [plantRes, moduleRes, lineRes] = await Promise.all([
+        const [plantRes, segmentRes] = await Promise.all([
           getMyPlants(), // Prod Status Plant dropdown: only the plants this user may use (own + Data Access)
-          getModules(),
-          getLines(),
+          getProductSegments(),
         ]);
         setPlants(Array.isArray(plantRes) ? plantRes : []);
-        setModules((moduleRes || []).filter((m) => m.Active_Status));
-        setLines((lineRes || []).filter((l) => l.Active_Status));
+        // Segment dropdown: same order as the Product Segment screen (by segment id)
+        setSegments([...(segmentRes?.data || [])].sort((a, b) => Number(a.prod_seg_id) - Number(b.prod_seg_id)));
       } catch (error) {
         console.error(error);
-        toast.error("Failed to load Plant/Module/Line filter options.");
+        toast.error("Failed to load Plant/Segment filter options.");
       }
     };
     loadMasters();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Same Plant narrowing as the Plan Entry tab, for the same reason (Module
-  // names repeat across plants). Empty until a Plant is picked.
-  const moduleOptions = useMemo(
-    () => (plant ? modules.filter((m) => String(m.Plant_Code) === String(plant)) : []),
-    [modules, plant]
-  );
-
-  // Same Plant + Module narrowing as the Plan Entry tab, for the same reason
-  // (Line names repeat across plants). Empty until BOTH are picked.
-  const lineOptions = useMemo(
-    () =>
-      plant && moduleId
-        ? lines.filter(
-          (l) => String(l.Plant_Code) === String(plant) && String(l.Module_ID) === String(moduleId)
-        )
-        : [],
-    [lines, plant, moduleId]
-  );
+  // Line dropdown: the lines of the FG parts in the plant's MFG BOM, narrowed to the chosen Segment (loaded from the API
+  // whenever the Plant or the Segment changes). Line names repeat across plants, so nothing is listed before a Plant is picked.
+  useEffect(() => {
+    if (!plant) { setLineOptions([]); return undefined; }
+    let cancelled = false;
+    GetMfgProductionLinesApi({ plant, segmentId: segmentId || undefined })
+      .then((rows) => { if (!cancelled) setLineOptions(Array.isArray(rows) ? rows : []); })
+      .catch((error) => {
+        console.error(error);
+        if (!cancelled) { setLineOptions([]); toast.error("Failed to load Line filter options."); }
+      });
+    return () => { cancelled = true; };
+  }, [plant, segmentId]);
 
   const fetchHistory = async () => {
     if (!plant) {
@@ -1524,7 +1946,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
         plant,
         fromDate: monthStartStr(year, month),
         toDate: monthEndStr(year, month),
-        moduleId: moduleId || undefined,
+        segmentId: segmentId || undefined,
         lineId: lineId || undefined,
       });
       setHistoryRows(data || []);
@@ -1581,106 +2003,81 @@ const PlanHistoryBody = ({ searchText = "" }) => {
     );
   }, [flatRows, searchText]);
 
+  // Group by Line (built from the returned data, never hardcoded): lines by their total Monthly Plan (highest first), parts
+  // inside a line by Monthly Plan (highest first). `si` = the serial number of the part inside its line (1, 2, 3 ... per line).
+  const groups = useMemo(() => {
+    const map = new Map();
+    filteredRows.forEach((r) => {
+      const name = r.Line_Name || "No Line";
+      if (!map.has(name)) map.set(name, []);
+      map.get(name).push(r);
+    });
+    const list = Array.from(map.entries()).map(([name, rows]) => {
+      const sorted = [...rows].sort(
+        (a, b) => (Number(b.monthly_plan) || 0) - (Number(a.monthly_plan) || 0) || String(a.fg_part_no).localeCompare(String(b.fg_part_no))
+      );
+      return { name, rows: sorted, totals: sumStatusRows(sorted), naAll: sorted.every((r) => r.cw_na) };
+    }).sort((x, y) => (y.totals.monthly_plan - x.totals.monthly_plan) || x.name.localeCompare(y.name));
+    return list.map((g) => ({ ...g, rows: g.rows.map((r, i) => ({ ...r, si: i + 1 })) }));
+  }, [filteredRows]);
 
-  const gapCellSx = (value) => ({
-    color: value > 0 ? "#1b7a43" : value < 0 ? "#b42323" : "#6b7280",
-    fontWeight: 700,
-  });
-
-  // C.W Plan / C.W Actual / CW Gap / YD Plan / YD Actual / YD Gap apply to the current month only.
-  // For any other month they show 0 in a subtle grey ("not applicable").
-  const NA_STYLE = { color: "#b6bac3", fontWeight: 400 };
-  const curMonthCell = (render) => (p) => (p.row.cw_na ? <span style={NA_STYLE} title="Applies to the current month only">0</span> : render(p));
-  const CUR_NOTE = " Applies to the current month only (0 for other months).";
-
-  // MTD Plan / C.W Plan hovers: the real working-day counts of the loaded month, straight from the DHRM holiday data
+  const grand = useMemo(() => sumStatusRows(filteredRows), [filteredRows]);
+  const grandNa = filteredRows.length > 0 && filteredRows.every((r) => r.cw_na);
   const wdInfo = historyRows.length ? historyRows[0].working_days : null;
-  const HEAD_LABEL = { fontSize: "10.5px", fontWeight: 700, color: "#000" }; // renderHeader does not get the grid's header title style
-  // every column with a description shows it in the shared hover card (the grid's own header tooltip is plain text only)
-  const withInfoTipHeader = (c) => (c.description && !c.renderHeader
-    ? { ...c, description: undefined, renderHeader: () => <InfoTip trigger={c.headerName} text={c.description} labelStyle={HEAD_LABEL} /> }
-    : c);
 
-  // Every column uses `flex` (never `width`) so MUI DataGrid distributes
-  // 100% of the container's width across them proportionally — this is
-  // what guarantees no horizontal scroll ever appears, and that the table
-  // reflows automatically when the sidebar is toggled/untoggled. `minWidth`
-  // still protects each column from getting too cramped to read.
-  const columns = useMemo(() => [
-    {
-      field: "si_no", headerName: "SI", width: 46, minWidth: 46, sortable: false, filterable: false, align: "center", headerAlign: "center",
-      description: "Serial number of the row in the list (follows the current search / sort)",
-      renderCell: (p) => p.api.getRowIndexRelativeToVisibleRows(p.id) + 1,
-    },
-    { field: "Line_Name", headerName: "Line", flex: 0.9, minWidth: 70, description: "Production line of the FG part (from the Material Master)" },
-    {
-      field: "fg_part_no", headerName: "Part No / Description", flex: 1.9, minWidth: 140,
-      description: "FG part number and its description",
-      renderCell: (p) => (
-        <div
-          title={`${p.row.fg_part_no} — ${p.row.fg_part_desc}`}
-          style={{ lineHeight: 1.3, padding: "4px 0", overflow: "hidden" }}
-        >
-          <div style={{ color: "#0052cc", fontWeight: 700, fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {p.row.fg_part_no}
-          </div>
-          <div style={{ color: "#6b7280", fontSize: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {p.row.fg_part_desc}
-          </div>
-        </div>
-      ),
-    },
-    {
-      field: "monthly_plan", headerName: "Monthly Plan", flex: 0.95, minWidth: 80, align: "right", headerAlign: "center",
-      description: "Monthly Plan = sum of plan_qty (plan type MP) from the production plan for the selected month",
-      renderCell: (p) => numberFmt(p.value),
-    },
-    {
-      field: "mtd_plan", headerName: "MTD Plan", flex: 0.9, minWidth: 75, align: "right", headerAlign: "center",
-      renderHeader: () => <WorkingDaysTip kind="mtd" wd={wdInfo} labelStyle={HEAD_LABEL}>MTD Plan</WorkingDaysTip>,
-      renderCell: (p) => numberFmt(p.value),
-    },
-    {
-      field: "mtd_actual", headerName: "MTD Actual", flex: 0.9, minWidth: 75, align: "right", headerAlign: "center",
-      description: "MTD Actual = production quantity of the selected month (Production Actual, movement types 101, 102, 261 and 262)",
-      renderCell: (p) => numberFmt(p.value),
-    },
-    {
-      field: "month_gap", headerName: "Gap", flex: 0.75, minWidth: 65, align: "right", headerAlign: "center",
-      description: "Gap = MTD Actual - MTD Plan",
-      renderCell: (p) => <span style={gapCellSx(p.value)}>{gapFmt(p.value)}</span>,
-    },
-    {
-      field: "cw_plan_calc", headerName: "C.W Plan", flex: 0.8, minWidth: 68, align: "right", headerAlign: "center",
-      renderHeader: () => <WorkingDaysTip kind="cw" wd={wdInfo} labelStyle={HEAD_LABEL} extraNote={CUR_NOTE.trim()}>C.W Plan</WorkingDaysTip>,
-      renderCell: curMonthCell((p) => numberFmt(p.value)),
-    },
-    {
-      field: "cw_actual", headerName: "C.W Actual", flex: 0.85, minWidth: 72, align: "right", headerAlign: "center",
-      description: "C.W Actual = production quantity of the current week, Monday to Sunday (movement types 101, 102, 261 and 262)." + CUR_NOTE,
-      renderCell: curMonthCell((p) => numberFmt(p.value)),
-    },
-    {
-      field: "cw_gap", headerName: "CW Gap", flex: 0.75, minWidth: 62, align: "right", headerAlign: "center",
-      description: "CW Gap = C.W Actual - C.W Plan." + CUR_NOTE,
-      renderCell: curMonthCell((p) => <span style={gapCellSx(p.value)}>{gapFmt(p.value)}</span>),
-    },
-    {
-      field: "yd_plan", headerName: "YD Plan", flex: 0.75, minWidth: 62, align: "right", headerAlign: "center",
-      description: "YD Plan = yesterday's plan: the daily plan entered for yesterday, all shifts added together (Prod Daily Plan tab)." + CUR_NOTE,
-      renderCell: curMonthCell((p) => numberFmt(p.value)),
-    },
-    {
-      field: "yd_actual", headerName: "YD Actual", flex: 0.75, minWidth: 65, align: "right", headerAlign: "center",
-      description: "YD Actual = yesterday's production quantity (movement types 101, 102, 261 and 262)." + CUR_NOTE,
-      renderCell: curMonthCell((p) => numberFmt(p.value)),
-    },
-    {
-      field: "yd_gap", headerName: "YD Gap", flex: 0.75, minWidth: 62, align: "right", headerAlign: "center",
-      description: "YD Gap = YD Actual - YD Plan (positive = ahead, negative = behind)." + CUR_NOTE,
-      renderCell: curMonthCell((p) => <span style={gapCellSx(p.value)}>{gapFmt(p.value)}</span>),
-    },
-  ].map(withInfoTipHeader), [wdInfo]);
+  // lines start collapsed; while the search box is used, the lines that have a match open so the parts are visible
+  useEffect(() => {
+    setExpanded(searchText.trim() ? new Set(groups.map((g) => g.name)) : new Set());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchText]);
+  const toggleLine = useCallback((name) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+  }, []);
+  const expandAll = () => setExpanded(new Set(groups.map((g) => g.name)));
+  const collapseAll = () => setExpanded(new Set());
+
+  // Excel of the Prod Status list as shown (search applied): every part in the list order, with a TOTAL row
+  const exportExcel = async () => {
+    const models = groups.flatMap((g) => g.rows);
+    if (models.length === 0) {
+      toast.warning("No data available to export.");
+      return;
+    }
+    try {
+      const rows = models.map((r, i) => [
+        i + 1, r.plant || plant, r.Line_Name || "", r.fg_part_no, r.fg_part_desc,
+        r.monthly_plan || 0, r.mtd_plan || 0, r.mtd_actual || 0, r.month_gap || 0,
+        r.cw_plan_calc || 0, r.cw_actual || 0, r.cw_gap || 0, r.yd_plan || 0, r.yd_actual || 0, r.yd_gap || 0,
+      ]);
+      // the rows behind the numbers (plan rows, production rows, plan typed for yesterday) for the break-up sheets
+      let breakup = null;
+      try {
+        breakup = await GetMfgProductionPlanBreakupApi({
+          plant, fromDate: monthStartStr(year, month), toDate: monthEndStr(year, month),
+          fgParts: models.map((r) => r.fg_part_no).join(","), fgIds: models.map((r) => r.fg_part).join(","),
+        });
+      } catch (error) {
+        console.error(error);
+        toast.warning("The break-up sheets could not be loaded, only the main sheet is downloaded.");
+      }
+      downloadStatusExcel({
+        sheetName: "Prod Status",
+        fileName: `MFG_Prod_Status_${plant}_${year}-${String(month).padStart(2, "0")}.xlsx`,
+        columns: STATUS_EXCEL_COLUMNS,
+        rows,
+        totalLabel: `TOTAL (${rows.length} FG)`,
+        extraSheets: breakup ? buildProdBreakupSheets(models, breakup, { year, month }) : [],
+      });
+      toast.success("Excel downloaded successfully.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to generate Excel file.");
+    }
+  };
 
   return (
     <>
@@ -1702,7 +2099,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
           size="small"
           options={plants}
           value={plants.find((p) => String(p.Plant_Code) === String(plant)) || null}
-          onChange={(e, newVal) => { setPlant(newVal ? newVal.Plant_Code : ""); setModuleId(""); setLineId(""); }}
+          onChange={(e, newVal) => { setPlant(newVal ? newVal.Plant_Code : ""); setSegmentId(""); setLineId(""); }}
           getOptionLabel={(p) => (p ? myPlantLabel(p) : "")}
           isOptionEqualToValue={(o, v) => o.Plant_ID === v.Plant_ID}
           sx={compactFieldSx(190)}
@@ -1712,20 +2109,19 @@ const PlanHistoryBody = ({ searchText = "" }) => {
 
         <Autocomplete
           size="small"
-          disabled={!plant}
-          options={moduleOptions}
-          value={moduleOptions.find((m) => String(m.Module_ID) === String(moduleId)) || null}
-          onChange={(e, newVal) => { setModuleId(newVal ? newVal.Module_ID : ""); setLineId(""); }}
-          getOptionLabel={(m) => (m ? m.Module_Name : "")}
-          isOptionEqualToValue={(o, v) => o.Module_ID === v.Module_ID}
-          sx={compactFieldSx(190)}
+          options={segments}
+          value={segments.find((x) => String(x.prod_seg_id) === String(segmentId)) || null}
+          onChange={(e, newVal) => { setSegmentId(newVal ? newVal.prod_seg_id : ""); setLineId(""); }}
+          getOptionLabel={(x) => (x ? x.seg_name : "")}
+          isOptionEqualToValue={(o, v) => o.prod_seg_id === v.prod_seg_id}
+          sx={compactFieldSx(150)}
           ListboxProps={{ style: { fontSize: 11.5 } }}
-          renderInput={(params) => <TextField {...params} label="Module" placeholder={plant ? undefined : "Select Plant first"} />}
+          renderInput={(params) => <TextField {...params} label="Segment" placeholder="All Segments" />}
         />
 
         <Autocomplete
           size="small"
-          disabled={!moduleId}
+          disabled={!plant}
           options={lineOptions}
           value={lineOptions.find((l) => String(l.Line_ID) === String(lineId)) || null}
           onChange={(e, newVal) => setLineId(newVal ? newVal.Line_ID : "")}
@@ -1733,18 +2129,13 @@ const PlanHistoryBody = ({ searchText = "" }) => {
           isOptionEqualToValue={(o, v) => o.Line_ID === v.Line_ID}
           sx={compactFieldSx(190)}
           ListboxProps={{ style: { fontSize: 11.5 } }}
-          renderInput={(params) => <TextField {...params} label="Line" placeholder={moduleId ? undefined : "Select Module first"} />}
+          renderInput={(params) => <TextField {...params} label="Line" placeholder={plant ? "All Lines" : "Select Plant first"} />}
         />
 
         {/* Month + Year as ONE grouped "Period" control — a single bordered
             field with a divider between the two selects, instead of two
             separate boxes, matching a compact monthly-report filter. */}
         <div>
-          {/*
-          <div style={{ fontSize: 11, color: dateError ? "#d32f2f" : "#6b7280", marginBottom: 2, marginLeft: 2 }}>
-            Period
-          </div>
-        */}
           <div
             style={{
               display: "flex",
@@ -1805,73 +2196,42 @@ const PlanHistoryBody = ({ searchText = "" }) => {
         </div>
       </div>
 
-      <div style={{ flexGrow: 1, backgroundColor: "#fff", borderRadius: 8, border: "1px solid #e8eaee", boxShadow: "0 1px 3px rgba(16,24,40,0.05)", minHeight: 0, overflow: "hidden" }}>
-        <DataGrid
-          rows={filteredRows}
-          columns={columns}
-          // Opens sorted by Monthly Plan, highest first (the user can still click any header to re-sort)
-          initialState={{ sorting: { sortModel: [{ field: "monthly_plan", sort: "desc" }] } }}
-          pageSize={25}
-          rowsPerPageOptions={[25, 50, 100]}
-          disableSelectionOnClick
-          disableColumnMenu
-          loading={loading}
-          columnHeaderHeight={36}
-          rowHeight={38}
-          slots={{ toolbar: ProdStatusToolbar, footer: StatusTotalsFooter }}
-          slotProps={{ toolbar: { fileSuffix: `${plant}_${year}-${String(month).padStart(2, "0")}` } }}
-          localeText={{ noRowsLabel: "No plan history found for the selected filters." }}
-          sx={{
-            height: "100%",
-            border: "none",
-            // No vertical column lines in the data area — rows are
-            // separated by a thin bottom border + hover tint only.
-            "& .MuiDataGrid-columnSeparator": { display: "none" },
-            "& .MuiDataGrid-cell": { color: "#333", fontSize: "11px", padding: "0 8px", borderRight: "none" },
-            "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within": { outline: "none" },
-            "& .MuiDataGrid-columnHeaders": { position: "sticky", top: 0, zIndex: 2 },
-            "& .MuiDataGrid-columnHeader": { backgroundColor: "#d0dcf5", color: "#000000", padding: "0 8px" },
-            "& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within": { outline: "none" },
-            "& .MuiDataGrid-columnHeaderTitle": { fontSize: "10.5px", fontWeight: "bold", color: "#000000" },
-            "& .MuiDataGrid-sortIcon, & .MuiDataGrid-menuIconButton": { color: "#000000" },
-            "& .MuiDataGrid-row": { backgroundColor: "#fff" },
-            "& .MuiDataGrid-row:nth-of-type(even)": { backgroundColor: "#fafbfc" },
-            // Subtle hover tint — the one visual cue MUI adds by default,
-            // reinforced here since the zebra striping above can mute it.
-            "& .MuiDataGrid-row:hover": { backgroundColor: "#eef4ff" },
-            "& .MuiDataGrid-row.Mui-selected": { backgroundColor: "inherit" },
-            "& .MuiDataGrid-toolbarContainer": { padding: "2px 6px", minHeight: 28 },
-            "& .MuiDataGrid-toolbarContainer button": { fontSize: "11px", padding: "2px 6px" },
-            // Compact pagination footer — the default MUI footer is tall
-            // and padded for a full-page table. Fixing this properly means
-            // shrinking the CHILDREN (Toolbar/Select/IconButtons), not
-            // capping the wrapper: an outer maxHeight clipped them and
-            // forced an internal scrollbar (that was the earlier bug).
-            // MUI's Toolbar applies its own minHeight via a breakpoint
-            // media query with higher specificity than a flat class
-            // selector, so it needs `!important` to actually override.
-            "& .MuiDataGrid-footerContainer": { minHeight: 34 },
-            "& .MuiTablePagination-root": { overflow: "visible" },
-            "& .MuiTablePagination-toolbar": {
-              minHeight: "34px !important",
-              height: 34,
-              paddingLeft: 8,
-              paddingRight: 4,
-            },
-            "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-              fontSize: 11, marginTop: 0, marginBottom: 0,
-            },
-            "& .MuiTablePagination-select": {
-              fontSize: 11, paddingTop: "2px !important", paddingBottom: "2px !important", minHeight: "unset",
-            },
-            "& .MuiTablePagination-selectIcon": { fontSize: 16 },
-            "& .MuiTablePagination-actions": { marginLeft: 4 },
-            "& .MuiTablePagination-actions .MuiIconButton-root": {
-              padding: 4, width: 24, height: 24,
-            },
-            "& .MuiTablePagination-actions svg": { fontSize: 16 },
-          }}
-        />
+      <div
+        style={{
+          flexGrow: 1, backgroundColor: "#fff", borderRadius: 8, border: "1px solid #e8eaee",
+          boxShadow: "0 1px 3px rgba(16,24,40,0.05)", minHeight: 0, overflow: "hidden",
+          display: "flex", flexDirection: "column",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, px: 1.25, py: 0.5, borderBottom: "1px solid #eef0f3", minHeight: 30 }}>
+          <Typography sx={{ fontSize: 11, color: "#6b7280" }}>
+            {groups.length} {groups.length === 1 ? "line" : "lines"} · {filteredRows.length} FG
+          </Typography>
+          <Box sx={{ ml: "auto", display: "flex", gap: 0.5 }}>
+            <Button size="small" onClick={expandAll} disabled={!groups.length} startIcon={<UnfoldMoreIcon sx={{ fontSize: 15 }} />} sx={{ ...compactButtonSx, height: 24, color: "#374151" }}>
+              Expand all
+            </Button>
+            <Button size="small" onClick={collapseAll} disabled={!groups.length} startIcon={<UnfoldLessIcon sx={{ fontSize: 15 }} />} sx={{ ...compactButtonSx, height: 24, color: "#374151" }}>
+              Collapse all
+            </Button>
+            <Button size="small" onClick={exportExcel} disabled={!filteredRows.length} startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 15 }} />} sx={{ ...compactButtonSx, height: 24, color: "#374151" }}>
+              Export Excel
+            </Button>
+          </Box>
+        </Box>
+        <TableContainer sx={{ flexGrow: 1, minHeight: 0, overflowX: "auto" }}>
+          <StatusGroupTable
+            groups={groups}
+            expanded={expanded}
+            onToggle={toggleLine}
+            grand={grand}
+            grandNa={grandNa}
+            count={filteredRows.length}
+            wd={wdInfo}
+            loading={loading}
+            loaded={loaded}
+          />
+        </TableContainer>
       </div>
     </>
   );
@@ -1962,6 +2322,8 @@ const MfgProductionDailyPlan = () => {
   // list), each tab doing its own client-side filtering on its own
   // already-fetched rows by Part No. / Description.
   const [searchText, setSearchText] = useState("");
+  // the gap in the middle of the header: the Prod Daily Plan tab puts its Daily | Shift-wise switch here (a portal)
+  const [toggleSlot, setToggleSlot] = useState(null);
 
   return (
     <div
@@ -1988,6 +2350,8 @@ const MfgProductionDailyPlan = () => {
           MFG Daily Production Plan
         </Typography>
 
+        <div ref={setToggleSlot} data-view-toggle-slot style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 30 }} />
+
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <TextField
             size="small"
@@ -2004,7 +2368,7 @@ const MfgProductionDailyPlan = () => {
       </div>
 
       <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-        {tab === 0 ? <PlanHistoryBody searchText={searchText} /> : <PlanEntryBody searchText={searchText} />}
+        {tab === 0 ? <PlanHistoryBody searchText={searchText} /> : <PlanEntryBody searchText={searchText} toggleSlot={toggleSlot} />}
       </div>
     </div>
   );
