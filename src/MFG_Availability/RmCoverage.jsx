@@ -104,6 +104,7 @@ const RmCoverage = () => {
   const [buyerFilter, setBuyerFilter] = useState("All");
   const [lineFilter, setLineFilter] = useState("All");
   const [valuationFilter, setValuationFilter] = useState("All");
+  const [segmentFilter, setSegmentFilter] = useState("All");
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState({ month: "", stock_as_of: null, working_days: null });
@@ -145,8 +146,11 @@ const RmCoverage = () => {
       setMeta({ month: data?.month || "", stock_as_of: data?.stock_as_of || null, working_days: data?.working_days || null });
       setVendorFilter("All");
       setBuyerFilter("All");
-      setLineFilter("All");
       setValuationFilter("All");
+      // Segment and Line sit before the Search button: the choice made there stays unless the new data has no such Segment / Line
+      const newRows = data?.rows || [];
+      setSegmentFilter((cur) => (cur === "All" || newRows.some((r) => (r.segments || []).some((s) => s.segment_name === cur)) ? cur : "All"));
+      setLineFilter((cur) => (cur === "All" || newRows.some((r) => r.line_name === cur) ? cur : "All"));
       setLoaded(true);
     } catch (error) {
       console.error(error);
@@ -170,8 +174,25 @@ const RmCoverage = () => {
   }, [plants]);
 
   const vendorOptions = useMemo(() => uniqSorted(rows.flatMap((r) => r.vendors.map(vendorLabel))), [rows]);
-  const lineOptions = useMemo(() => uniqSorted(rows.map((r) => r.line_name).filter(Boolean)), [rows]);
   const valuationOptions = useMemo(() => uniqSorted(rows.flatMap((r) => r.valuation_types || [])), [rows]);
+  // Segment of a child part = the Segment of the FG parts that use it (same rule as the MFG Daily Component Plan); listed in Segment id order
+  // (the order of the Product Segment screen)
+  const segmentOptions = useMemo(() => {
+    const byId = new Map();
+    rows.forEach((r) => (r.segments || []).forEach((s) => byId.set(s.segment_id, s.segment_name)));
+    return [...byId.entries()].sort((a, b) => a[0] - b[0]).map(([, name]) => name);
+  }, [rows]);
+  // Line list follows the chosen Segment: only the Lines of the child parts of that Segment
+  const lineOptions = useMemo(
+    () => uniqSorted(rows
+      .filter((r) => segmentFilter === "All" || (r.segments || []).some((s) => s.segment_name === segmentFilter))
+      .map((r) => r.line_name).filter(Boolean)),
+    [rows, segmentFilter]
+  );
+  // a chosen Line that is not in the new Segment's list is cleared
+  useEffect(() => {
+    if (lineFilter !== "All" && !lineOptions.includes(lineFilter)) setLineFilter("All");
+  }, [lineOptions, lineFilter]);
   const buyerOptions = useMemo(() => uniqSorted(rows.flatMap((r) => r.vendors.filter((v) => v.buyer_id).map(buyerLabel))), [rows]);
 
   const visibleRows = useMemo(() => {
@@ -181,10 +202,11 @@ const RmCoverage = () => {
       if (buyerFilter !== "All" && !r.vendors.some((v) => v.buyer_id && buyerLabel(v) === buyerFilter)) return false;
       if (lineFilter !== "All" && r.line_name !== lineFilter) return false;
       if (valuationFilter !== "All" && !(r.valuation_types || []).includes(valuationFilter)) return false;
+      if (segmentFilter !== "All" && !(r.segments || []).some((s) => s.segment_name === segmentFilter)) return false;
       if (!text) return true;
       return String(r.child_part_no).toLowerCase().includes(text) || String(r.child_part_desc || "").toLowerCase().includes(text);
     });
-  }, [rows, vendorFilter, buyerFilter, lineFilter, valuationFilter, searchText]);
+  }, [rows, vendorFilter, buyerFilter, lineFilter, valuationFilter, segmentFilter, searchText]);
 
   // Excel of the table as shown (Vendor / Buyer / Line / Valuation Type / search applied): the numbers, the status and the 10 coverage cells
   // (100% = a whole day covered, a part = part of a day; cells coloured like the status on screen).
@@ -296,8 +318,9 @@ const RmCoverage = () => {
     }
   };
 
-  const activeFilterCount = [vendorFilter, buyerFilter, lineFilter, valuationFilter].filter((v) => v !== "All").length;
-  const clearFilters = () => { setVendorFilter("All"); setBuyerFilter("All"); setLineFilter("All"); setValuationFilter("All"); };
+  // the Filters panel holds Vendor / Buyer / Valuation Type; Segment and Line are in the top bar (before Search)
+  const activeFilterCount = [vendorFilter, buyerFilter, valuationFilter].filter((v) => v !== "All").length;
+  const clearFilters = () => { setVendorFilter("All"); setBuyerFilter("All"); setValuationFilter("All"); };
 
   // keep the header the same width as the body: leave room for the body scrollbar (0 when there is none)
   useLayoutEffect(() => {
@@ -325,14 +348,26 @@ const RmCoverage = () => {
         height: "calc(100vh - 50px)",
       }}
     >
-      <Typography sx={{ fontSize: 17, fontWeight: 700, color: "#1a2233", letterSpacing: 0.1, lineHeight: 1.3, mb: loaded ? 0.25 : 1.5 }}>
-        Child Part Coverage
-      </Typography>
-      {loaded && (
-        <Typography sx={{ fontSize: 11, color: "#8a93a3", lineHeight: 1.4, mb: 1.5 }}>
-          Plan: {monthLabel(meta.month)} (MP) / working days of the month{meta.stock_as_of ? ` | MB52 stock as of ${stockAsOfLabel(meta.stock_as_of)}` : " | no MB52 stock found"}
-        </Typography>
-      )}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: loaded ? 0 : 6 }}>
+        <div>
+          <Typography sx={{ fontSize: 17, fontWeight: 700, color: "#1a2233", letterSpacing: 0.1, lineHeight: 1.3, mb: loaded ? 0.25 : 1.5 }}>
+            Child Part Coverage
+          </Typography>
+          {loaded && (
+            <Typography sx={{ fontSize: 11, color: "#8a93a3", lineHeight: 1.4, mb: 1.5 }}>
+              Plan: {monthLabel(meta.month)} (MP) / working days of the month{meta.stock_as_of ? ` | MB52 stock as of ${stockAsOfLabel(meta.stock_as_of)}` : " | no MB52 stock found"}
+            </Typography>
+          )}
+        </div>
+        <TextField
+          size="small"
+          placeholder="Search part number / description"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          InputProps={{ startAdornment: <SearchIcon sx={{ fontSize: 16, color: "#8a93a3", mr: 0.5 }} /> }}
+          sx={compactFieldSx(240)}
+        />
+      </div>
 
       {/* Filters */}
       <div
@@ -358,6 +393,8 @@ const RmCoverage = () => {
           inputProps={{ min: "2000-01", max: "2099-12" }}
           sx={compactFieldSx(150)}
         />
+        <FilterSelect label="Segment" value={segmentFilter} options={segmentOptions} onChange={setSegmentFilter} minWidth={150} />
+        <FilterSelect label="Line" value={lineFilter} options={lineOptions} onChange={setLineFilter} minWidth={150} />
         <Button
           onClick={() => fetchData(plantSelect)}
           disabled={loading}
@@ -368,14 +405,6 @@ const RmCoverage = () => {
         >
           {loading ? "Loading..." : "Search"}
         </Button>
-        <TextField
-          size="small"
-          placeholder="Search part number / description"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          InputProps={{ startAdornment: <SearchIcon sx={{ fontSize: 16, color: "#8a93a3", mr: 0.5 }} /> }}
-          sx={compactFieldSx(240)}
-        />
         <FilterToggleButton open={filtersOpen} onClick={() => setFiltersOpen((o) => !o)} activeCount={activeFilterCount} />
         <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: "#6b7280", textAlign: "right", lineHeight: 1.4 }}>
           {loaded && (
@@ -420,7 +449,6 @@ const RmCoverage = () => {
         >
           <FilterSelect label="Vendor" value={vendorFilter} options={vendorOptions} onChange={setVendorFilter} minWidth={220} />
           <FilterSelect label="Buyer" value={buyerFilter} options={buyerOptions} onChange={setBuyerFilter} minWidth={170} />
-          <FilterSelect label="Line" value={lineFilter} options={lineOptions} onChange={setLineFilter} minWidth={170} />
           <FilterSelect label="Valuation Type" value={valuationFilter} options={valuationOptions} onChange={setValuationFilter} minWidth={170} />
         </FilterPanel>
       </div>
