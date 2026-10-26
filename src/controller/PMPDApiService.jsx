@@ -40,6 +40,11 @@ export const AddOrEditProductMapping = async (data) => {
 
 //Trn Production Plan 
 
+export const getCustomerGroupsForPlan = async () => {
+    const response = await axios.get(`${api}/PMPDRouter/GetCustomerGroupsForPlan`);
+    return response.data;
+};
+
 export const AddProductionPlan = async (data) => {
     const response = await axios.post(`${api}/PMPDRouter/AddProductionPlan`, data, {
         headers: {

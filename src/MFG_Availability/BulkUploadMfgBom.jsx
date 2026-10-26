@@ -23,7 +23,6 @@ const HEADER_COLUMNS = [
   "Operation_No",
   "Operation_Name",
   "Valuation_Class",
-  "Vendor_Code",
   "Active_Status",
   "Is_Assembly_Part",
   "BOM_Qty",
@@ -108,21 +107,21 @@ const MfgBomBulkUpload = ({ open, onClose, onOpen, setRefreshData }) => {
     });
 
     // Active Status
-    worksheet.dataValidations.add("I2:I1000", {
+    worksheet.dataValidations.add("H2:H1000", {
       type: "list",
       allowBlank: false,
       formulae: ['"Active,Inactive"'],
     });
 
     // Is Assembly Part — optional; blank/omitted is treated as No.
-    worksheet.dataValidations.add("J2:J1000", {
+    worksheet.dataValidations.add("I2:I1000", {
       type: "list",
       allowBlank: true,
       formulae: ['"Yes,No"'],
     });
 
     // BOM_Qty — required: pieces of the Part_No needed for one FG (a number greater than 0).
-    worksheet.dataValidations.add("K2:K1000", {
+    worksheet.dataValidations.add("J2:J1000", {
       type: "decimal",
       operator: "greaterThan",
       allowBlank: false,

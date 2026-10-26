@@ -223,7 +223,7 @@ const FIXED_COLS = [
   // FG part number with its description underneath (one column, like Prod Status's "Part No / Description")
   { field: "fg_part_no", label: "Part No / Description", width: 160, left: 110, tip: "FG part number and its description" },
   { field: "monthly_plan", label: "M.Plan", width: 100, left: 270, align: "right", tip: "Monthly Plan = sum of plan_qty x ends (plan type MP) from the production plan for the selected month" },
-  { field: "mtd_plan", label: "MTD Plan", width: 100, left: 370, align: "right", tip: "MTD Plan = (Monthly Plan / working days of the month) x working days up to yesterday. Weekends and DHRM holidays are not working days (Sunday only; Saturday and Sunday for plant 1000)" },
+  { field: "mtd_plan", label: "MTD Plan", width: 100, left: 370, align: "right", tip: "MTD Plan = (Monthly Plan / working days of the month) x working days up to yesterday. The month's working days are set on the Working Days screen (default 26); Sundays are not counted" },
   { field: "mtd_actual", label: "MTD Act", width: 100, left: 470, align: "right", tip: "MTD Actual = production quantity of the selected month (movement types 101, 102, 261 and 262)" },
   { field: "gap", label: "Gap", width: 100, left: 570, align: "right", tip: "Gap = MTD Actual - MTD Plan (positive = ahead, negative = behind)" },
 ];
@@ -291,16 +291,19 @@ const buildProdStatusBreakupSheets = (rows, data, month) => {
     }
     return ws;
   };
-  // working-day split for the guide, e.g. "25 = 31 days - 4 weekend days - 2 holidays"; legacy = DHRM could not be read
-  const wdText = (d, n) => (d
-    ? `${n} = ${d.total_days} days - ${d.weekend_days} weekend days - ${d.holiday_days} holidays (weekends and DHRM holidays are not working days).`
-    : `${n} (the DHRM holidays could not be read, so the old rule is used: 26 days a month, Sundays only).`);
+  // working days of the month for the guide: from the Working Days master, or the default of 26
+  const firstPlantWd = (data) => (data && data.workingDays ? Object.values(data.workingDays)[0] : null);
+  const wdText = (d, n, src) => (d
+    ? `${n}.`
+    : src === "table"
+      ? `${n} (from the Working Days master).`
+      : `${n} (default: this plant and month has no entry in the Working Days master).`);
   const guide = [
     ["Item", "How it is calculated"],
     ["Month", `${month}`],
     ["Monthly Plan", "Sum of (Plan Qty x Ends): each Monthly Plan row (plan type MP, Trn_Production_Plan) of the FG part inside the month is multiplied by its own Ends, then all those rows are added together; a missing Ends counts as 1. Rows: sheet 'Plan Breakup'."],
-    ["Working days of the month", wdText(data.workingDays && data.workingDays.month, data.planDays)],
-    ["Working days up to yesterday", wdText(data.workingDays && data.workingDays.elapsed, data.nwd) + " A past month counts the whole month; a future month counts 0."],
+    ["Working days of the month", wdText(firstPlantWd(data) && firstPlantWd(data).month, data.planDays, firstPlantWd(data) && firstPlantWd(data).source)],
+    ["Working days up to yesterday", `${data.nwd} (Sundays are not counted).` + " A past month counts the whole month; a future month counts 0."],
     ["MTD Plan", `(Monthly Plan / ${data.planDays}) x ${data.nwd}, rounded to a whole number. Shown at the end of each FG in 'Plan Breakup'.`],
     ["MTD Actual", `Sum of the production quantity (Trn_Actual_Production_Plan, movement types ${data.movements}) of the FG part inside the month. Rows: sheet 'Actual Breakup'.`],
     ["Gap", "MTD Actual - MTD Plan (positive = ahead, negative = behind)."],

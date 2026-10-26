@@ -10,7 +10,7 @@ import * as ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
 import { getMyPlants, myPlantLabel } from '../../controller/CommonApiService'
 import { findPlantsNotAllowed, plantsNotAllowedMessage } from '../../common/plantFileCheck'
-import { AddProductionPlan, getProductionPlandetails, getProductSegmentdetails } from '../../controller/PMPDApiService'
+import { AddProductionPlan, getProductionPlandetails, getProductSegmentdetails, getCustomerGroupsForPlan } from '../../controller/PMPDApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton, gridFilteredSortedRowIdsSelector, useGridApiContext } from '@mui/x-data-grid'
 import { endOfDay, format, isValid, startOfDay } from 'date-fns'
 import { useFormik } from 'formik'
@@ -542,8 +542,7 @@ const UniqueKeyInfo = () => (
     <UniqueGroupingInfo
         intro=""
         sections={[
-            { title: "AOP", fields: ["Plant", "Customer Name", "Part Number", "Plan Type (AOP)", "Plan Date"] },
-            { title: "MP", fields: ["Plant", "Part Number", "Plan Type (MP)", "Plan Date"] },
+            { title: "MP (the only plan type allowed)", fields: ["Plant", "Part Number", "Plan Type (MP)", "Plan Date"] },
         ]}
         notes={[<>Same combination already exists: the plan is <b>updated</b>. Otherwise a new row is <b>added</b>.</>]}
     />
@@ -574,14 +573,16 @@ const ExcelUploadModal = ({
 
     async function downloadProductionPlanTemplate() {
         // 1️⃣ Fetch dropdown data
-        const [plant, prod_segments] = await Promise.all([
+        const [plant, prod_segments, customerGroupRows] = await Promise.all([
             getMyPlants(), // only the plants this user may use (own plant + Data Access)
             getProductSegmentdetails(),
+            getCustomerGroupsForPlan(),
         ]);
+        const customerGroups = Array.isArray(customerGroupRows) ? customerGroupRows : [];
 
         const plantCodes = (Array.isArray(plant) ? plant : []).map((e) => e.Plant_Code);
         const prodSegNames = prod_segments.map((e) => e.seg_name);
-        const planTypes = ["AOP", "MP"];
+        const planTypes = ["MP"]; // only MP is allowed; AOP is not accepted any more
 
         // 2️⃣ Create workbook & worksheet
         const workbook = new ExcelJS.Workbook();
@@ -662,6 +663,17 @@ const ExcelUploadModal = ({
                 cell.font = { size: 10 };
             });
         });
+
+        // 6b. "Customer" sheet: the active customer groups (company code + name) the user can copy into the Customer Name column
+        const customerSheet = workbook.addWorksheet("Customer");
+        customerSheet.addRow(["Company Code", "Customer Group Code", "Customer Name"]);
+        customerSheet.getRow(1).eachCell((cell) => {
+            cell.font = { bold: true };
+            cell.alignment = { horizontal: "center" };
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFADD8E6" } };
+        });
+        customerGroups.forEach((g) => customerSheet.addRow([g.Company_Code, g.Customer_Group_Code, g.Customer_Group_Name]));
+        customerSheet.columns = [{ width: 16 }, { width: 22 }, { width: 50 }];
 
         // 7️⃣ Download file
         const buffer = await workbook.xlsx.writeBuffer();

@@ -1592,7 +1592,7 @@ const STATUS_COL_PCT = { child: 32, num: 68 / 11 };
 
 const STATUS_NUM_COLS = [
   { label: "M.Plan", tip: "Monthly Plan = sum of (Plan Qty x Ends) of the Monthly Plan rows (plan type MP) of every FG part that uses this Child Part", key: "monthly_plan", kind: "plan" },
-  { label: "MTD Plan", tip: "MTD Plan = (Monthly Plan / working days of the month) x working days up to yesterday. Weekends and DHRM holidays are not working days", key: "mtd_plan", kind: "plan" },
+  { label: "MTD Plan", tip: "MTD Plan = (Monthly Plan / working days of the month) x working days up to yesterday. The month's working days are set on the Working Days screen (default 26); Sundays are not counted", key: "mtd_plan", kind: "plan" },
   { label: "MTD Actual", tip: "MTD Actual — the production of this Child Part from the 1st of the month (Production Actual, movement types 101 and 102)", key: "mtd_actual_fg", kind: "actual" },
   { label: "MTD Gap", tip: "MTD Gap — MTD Actual minus MTD Plan (positive = ahead, negative = behind)", key: "month_gap", kind: "gap" },
   { label: "YD Plan", tip: "YD Plan — yesterday's plan: the daily plan entered for this Child Part for yesterday, all shifts added together (Component Daily Plan tab)", key: "yd_plan", kind: "plan" },
@@ -1608,6 +1608,8 @@ const STATUS_NUM_COLS = [
 // First column of each section (MTD / YD / 541 Monthly / 541 Daily)
 // gets a divider line.
 const SECTION_START = new Set(["monthly_plan", "yd_plan", "sub541_mtd_actual", "sub541_yd_actual"]);
+// 541 MTD Actual and 541 MTD Gap: no total on the Part Name and Line rows (nor in the Excel TOTAL row)
+const NO_TOTAL_KEYS = new Set(["sub541_mtd_actual", "sub541_month_gap"]);
 const TOTAL_STATUS_COLS = 1 + STATUS_NUM_COLS.length;
 const SUB541_HEAD_BG = "#e6dff0";
 
@@ -1660,7 +1662,7 @@ Part Name: ${groupName}`}>
         </TableCell>
         {STATUS_NUM_COLS.map((c) => {
           const n = total(c.key);
-          const shown = gapShow(c, n);
+          const shown = NO_TOTAL_KEYS.has(c.key) ? { text: "" } : gapShow(c, n);
           return (
             <TableCell
               key={c.key}
@@ -1758,7 +1760,7 @@ const PartGroupRows = ({ group, accent, collapsed, onToggle }) => {
         </TableCell>
         {STATUS_NUM_COLS.map((c) => {
           const n = total(c.key);
-          const shown = gapShow(c, n);
+          const shown = NO_TOTAL_KEYS.has(c.key) ? { text: "" } : gapShow(c, n);
           return (
             <TableCell
               key={c.key}
@@ -1855,17 +1857,19 @@ const buildBreakupSheets = (shown, data, { year, month }) => {
     (key) => [key === "m" ? "Total 541 MTD Actual" : "Total 541 YA", "", ""],
   );
 
-  // working-day split for the guide, e.g. "25 = 31 days - 4 weekend days - 2 holidays"; legacy = DHRM could not be read
+  // working days of the month for the guide: from the Working Days master, or the default of 26
   const wd = shown.length ? shown[0].working_days : null;
-  const wdText = (d, n) => (d
-    ? `${n} = ${d.total_days} days - ${d.weekend_days} weekend days - ${d.holiday_days} holidays (weekends and DHRM holidays are not working days).`
-    : `${n} (the DHRM holidays could not be read, so the old rule is used: 26 days a month, Sundays only).`);
+  const wdText = (d, n, src) => (d
+    ? `${n}.`
+    : src === "table"
+      ? `${n} (from the Working Days master).`
+      : `${n} (default: this plant and month has no entry in the Working Days master).`);
   const guide = [
     ["Sheet", "What it shows"],
     ["Component Prod Status", `The Prod Status table as shown on the screen for ${monthName} (search and filters applied), with a TOTAL row.`],
     ["Monthly Plan", "Sum of (Plan Qty x Ends): each Monthly Plan row (plan type MP) of every FG part that uses the Child Part (MFG BOM) in the month is multiplied by its own Ends, then all those rows are added together; a missing Ends counts as 1. Rows: sheet 'Plan Breakup'."],
-    ["Working days of the month", wdText(wd && wd.month, wd && wd.monthDays)],
-    ["Working days up to yesterday", wdText(wd && wd.elapsed, wd && wd.elapsedDays) + " A past month counts the whole month; a future month counts 0."],
+    ["Working days of the month", wdText(wd && wd.month, wd && wd.monthDays, wd && wd.source)],
+    ["Working days up to yesterday", `${wd ? wd.elapsedDays : "-"} (Sundays are not counted).` + " A past month counts the whole month; a future month counts 0."],
     ["MTD Plan", `(Monthly Plan / ${wd ? wd.monthDays : "working days of the month"}) x ${wd ? wd.elapsedDays : "working days up to yesterday"}, rounded to a whole number. Shown at the end of each Child Part in 'Plan Breakup'.`],
     ["MTD Actual", "Production of the Child Part itself from the 1st of the month (Production Actual, movement types 101 and 102). Rows: sheet 'MTD Actual Breakup'."],
     ["MTD Gap", "MTD Actual - MTD Plan (positive = ahead, negative = behind)."],
@@ -2174,8 +2178,8 @@ const PlanHistoryBody = ({ searchText = "" }) => {
         { header: "YD Plan", width: 11, total: true },
         { header: "YD Actual", width: 12, total: true },
         { header: "YD Gap", width: 10, total: true, gap: true },
-        { header: "541 MTD Actual", width: 14, total: true },
-        { header: "541 MTD Gap", width: 13, total: true, gap: true },
+        { header: "541 MTD Actual", width: 14 },
+        { header: "541 MTD Gap", width: 13, gap: true },
         { header: "541 YA", width: 10, total: true },
         { header: "541 YG", width: 10, total: true, gap: true },
       ];

@@ -7,14 +7,14 @@ import { downloadStatusExcel } from "./statusExcel";
 import { GetRmCoverageApi } from "../controller/RmCoverageApiService";
 import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import InfoTip from "../components/InfoTip";
-import { workingDaysSplit, WORKING_DAYS_RULE } from "../components/WorkingDaysTip";
+import { WORKING_DAYS_RULE } from "../components/WorkingDaysTip";
 import { FilterPanel, FilterToggleButton } from "../components/FilterPanel";
 import FilterSelect from "../components/FilterSelect";
 import { compactFieldSx, primaryButtonSx } from "../components/compactUi";
 import { DAY_CELLS, STATUS_META, COVERAGE_GREEN, COVERAGE_EMPTY, coverageFills, coverageFillPercent, fmtNum } from "./rmCoverageUtils";
 
 // Child Part Coverage (PPC & MRPC; code name RmCoverage): raw-material coverage of the child parts: ROH used with any valuation type, HALB used with any valuation type except INHOUSE.
-//   Plan = SUM of (FG monthly MP plan x BOM qty) of every FG that uses the child part;  Demand per Day = Plan / working days of the month (weekends and DHRM holidays removed)
+//   Plan = SUM of (FG monthly MP plan x BOM qty) of every FG that uses the child part;  Demand per Day = Plan / working days of the month (Working Days master, default 26)
 //   Coverage Days = Current Stock (latest MB52 snapshot) / Demand per Day
 //   Status: R = stock below the Safety Stock, G = coverage > 3 days and stock above the Safety Stock, Y = anything else
 // The numbers are calculated by the backend (MFG_BOM/RmCoverage.router.js); this screen shows them.
@@ -52,7 +52,7 @@ const Head = ({ tip, tipProps, children, ...props }) => (
   </th>
 );
 
-// Demand / Day hover: the formula and the working days of the plan month per plant (straight from the DHRM holiday data)
+// Demand / Day hover: the formula and the working days of the plan month per plant (from the Working Days master, default 26)
 const demandPerDayTip = (workingDays) => {
   const plants = Object.keys(workingDays || {});
   if (plants.length === 0) return { title: "Demand per Day = Plan ÷ working days of the month", note: WORKING_DAYS_RULE };
@@ -61,9 +61,8 @@ const demandPerDayTip = (workingDays) => {
     title: one ? `Demand per Day = Plan ÷ ${one.monthDays}` : "Demand per Day = Plan ÷ working days of the plant's month",
     points: plants.map((p) => {
       const wd = workingDays[p];
-      return wd.source === "dhrm" && wd.month
-        ? { label: `Plant ${p}: working days in the month`, value: wd.monthDays, detail: workingDaysSplit(wd.month) }
-        : { label: `Plant ${p}: old rule in use`, value: `${wd.monthDays} days`, detail: "the DHRM holidays could not be read" };
+      if (wd.source === "table") return { label: `Plant ${p}: working days in the month`, value: wd.monthDays, detail: "from the Working Days master" };
+      return { label: `Plant ${p}: working days in the month`, value: wd.monthDays, detail: "default: no entry in the Working Days master" };
     }),
     note: WORKING_DAYS_RULE,
   };

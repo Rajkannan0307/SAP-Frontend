@@ -37,6 +37,10 @@ export const getProductSegments = async () => {
   const response = await axios.get(`${api}/Master/Get_Segments`);
   return response;
 };
+export const getMaterialCategories = async () => {
+  const response = await axios.get(`${api}/Master/Get_Categories`);
+  return response;
+};
 export const getSupvCode = async (PlantCode) => {
 
   const response = await axios.get(`${api}/Master/Get_SupvCode?PlantCode=${PlantCode}`);

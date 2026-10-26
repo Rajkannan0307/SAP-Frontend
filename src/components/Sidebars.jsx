@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Tooltip } from "@mui/material";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import MenuIcon from "@mui/icons-material/Menu";
+import KeyboardDoubleArrowLeftIcon from "@mui/icons-material/KeyboardDoubleArrowLeft";
+import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import ScheduleIcon from "@mui/icons-material/Schedule";
@@ -114,19 +116,22 @@ const Sidebar = ({ setSidebarOpen }) => {
 
   return (
     <div
-      style={{ scrollbarGutter: "stable" }}
-      className={`fixed top-15 left-0 h-[calc(100vh-60px)] bg-[#595959] text-white transition-[width] duration-300 ease-in-out z-50 overflow-y-auto overflow-x-hidden pb-12 shadow-lg
-        [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent
-        [&::-webkit-scrollbar-thumb]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full
+      className={`fixed top-15 left-0 h-[calc(100vh-60px)] bg-[#1e293b] text-white transition-[width] duration-300 ease-in-out z-50 flex flex-col overflow-hidden border-r border-white/5
         ${open ? "w-65" : "w-15"}`}
     >
+      <style>{`
+        /* thin scrollbar, shown only while the pointer is over the menu */
+        .sidebar-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+        .sidebar-scroll:hover { scrollbar-color: rgba(148,163,184,0.5) transparent; }
+        .flyout-scroll { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,0.45) transparent; }
+      `}</style>
       {/* Sidebar Header */}
       <div
-        className={`flex items-center p-3 border-b border-gray-600 ${open ? "justify-between" : "justify-center"
+        className={`shrink-0 flex items-center p-3 border-b border-white/10 ${open ? "justify-between" : "justify-center"
           }`}
       >
         <h3
-          className={`m-0 text-white font-bold cursor-pointer hover:text-gray-300 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${open ? "max-w-[160px] opacity-100" : "max-w-0 opacity-0 pointer-events-none"
+          className={`m-0 text-white font-semibold tracking-wider text-[13px] cursor-pointer hover:text-sky-300 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${open ? "max-w-[160px] opacity-100" : "max-w-0 opacity-0 pointer-events-none"
             }`}
           onClick={() => {
             const roleId = parseInt(Role);
@@ -142,14 +147,15 @@ const Sidebar = ({ setSidebarOpen }) => {
 
         <button
           onClick={toggleSidebar}
-          className="text-white hover:text-gray-300 transition-colors p-1"
+          title={open ? "Collapse menu" : "Expand menu"}
+          className="text-slate-300 hover:text-white hover:bg-white/10 rounded-md transition-colors p-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/60"
         >
-          <MenuIcon />
+          {open ? <KeyboardDoubleArrowLeftIcon fontSize="small" /> : <KeyboardDoubleArrowRightIcon fontSize="small" />}
         </button>
       </div>
 
       {/* Sidebar Menu Items */}
-      <div className="p-2 pr-1.5 flex flex-col gap-0.5">
+      <div style={{ scrollbarGutter: "stable" }} className="sidebar-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden my-3 px-2 pr-1.5 flex flex-col gap-0.5">
         {/* Masters Section */}
         <SidebarSection
           open={open}
@@ -443,6 +449,30 @@ const Sidebar = ({ setSidebarOpen }) => {
               ),
               code: "MaterialVendorMapping",
             },
+            {
+              name: "Material Category",
+              path: "/home/MaterialCategory",
+              icon: (
+                <FaCogs style={{ color: "bisque" }} className="text-[22px]" />
+              ),
+              code: "MaterialCategory",
+            },
+            {
+              name: "Material Remarks",
+              path: "/home/MaterialRemarks",
+              icon: (
+                <FaCogs style={{ color: "bisque" }} className="text-[22px]" />
+              ),
+              code: "MaterialRemarks",
+            },
+            {
+              name: "Working Days",
+              path: "/home/WorkingDays",
+              icon: (
+                <FaCogs style={{ color: "bisque" }} className="text-[22px]" />
+              ),
+              code: "WorkingDays",
+            },
           ]}
           codeList={[
             "company",
@@ -474,6 +504,9 @@ const Sidebar = ({ setSidebarOpen }) => {
             "PMPD_FixedManpower",
             "Indirect_Material",
             "MaterialVendorMapping",
+            "MaterialCategory",
+            "MaterialRemarks",
+            "WorkingDays",
           ]}
         />
         {/* Transaction Button */}
@@ -1251,26 +1284,44 @@ const Sidebar = ({ setSidebarOpen }) => {
   );
 };
 
-/* Reusable Component for Standalone Buttons */
+/* Reusable Component for Standalone Buttons. Collapsed menu: a small label pops up beside the icon. */
 const StandaloneButton = ({ open, onClick, icon, label, active = false }) => (
-  <button
-    onClick={onClick}
-    className={`flex items-center w-full gap-2.5 px-3 py-2 rounded-md text-left transition-colors duration-150 ${active ? "bg-gray-600 text-white" : "text-white bg-transparent hover:bg-gray-600"
-      }`}
+  <Tooltip
+    title={label}
+    placement="right"
+    arrow
+    disableHoverListener={open}
+    disableFocusListener={open}
+    disableTouchListener
+    slotProps={{
+      popper: { sx: { zIndex: 1300 } },
+      tooltip: { sx: { bgcolor: "#0f172a", color: "#fff", fontSize: 12, fontWeight: 600, px: 1.5, py: 0.75, borderRadius: "8px", boxShadow: "0 6px 18px rgba(0,0,0,0.35)" } },
+      arrow: { sx: { color: "#0f172a" } },
+    }}
   >
-    <span className="flex items-center justify-center w-5 h-5 shrink-0 leading-none">
-      {icon}
-    </span>
-    <span
-      className={`font-semibold text-[14px] leading-snug text-left whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${open ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"
+    <button
+      onClick={onClick}
+      aria-label={label}
+      className={`relative flex items-center w-full gap-2.5 px-3 py-2 rounded-lg text-left transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/60 ${active ? "bg-white/15 text-white" : "text-slate-100 bg-transparent hover:bg-white/10"
         }`}
     >
-      {label}
-    </span>
-  </button>
+      {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-sky-400" />}
+      <span className="flex items-center justify-center w-5 h-5 shrink-0 leading-none">
+        {icon}
+      </span>
+      <span
+        className={`font-semibold text-[14px] leading-snug text-left whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${open ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"
+          }`}
+      >
+        {label}
+      </span>
+    </button>
+  </Tooltip>
 );
 
-/* Sidebar Section Dropdown Component */
+/* Sidebar Section Dropdown Component.
+   Menu open: the links drop down under the section (as before).
+   Menu collapsed: pointing at the icon opens a Material UI tooltip card (with its arrow) beside it with the section's links. */
 const SidebarSection = ({
   open,
   isOpen,
@@ -1282,6 +1333,59 @@ const SidebarSection = ({
   Permissions = [],
   currentPath = "",
 }) => {
+  const [flyout, setFlyout] = useState(false);
+  const [placeBelow, setPlaceBelow] = useState(false); // true = the card grows upward from the icon (icon in the lower half of the screen)
+  const buttonRef = useRef(null);
+  const openFlyout = () => {
+    const r = buttonRef.current ? buttonRef.current.getBoundingClientRect() : null;
+    setPlaceBelow(Boolean(r && r.top + r.height / 2 > window.innerHeight / 2));
+    setFlyout(true);
+  };
+  // the pop-up belongs to the collapsed menu only
+  useEffect(() => {
+    if (open) setFlyout(false);
+  }, [open]);
+  // a page change closes it
+  useEffect(() => {
+    setFlyout(false);
+  }, [currentPath]);
+  // while it is open: close it when the pointer has been away from both the icon and the card for a moment (the short wait lets the
+  // pointer cross the gap between them), when the pointer leaves the window, on a tap elsewhere, and on Escape
+  useEffect(() => {
+    if (!flyout) return undefined;
+    let timer = null;
+    const insideFlyout = (el) =>
+      Boolean(el && ((buttonRef.current && buttonRef.current.contains(el)) || (el.closest && el.closest(".sidebar-flyout-popper"))));
+    const onMove = (e) => {
+      if (insideFlyout(e.target)) {
+        clearTimeout(timer);
+        timer = null;
+      } else if (!timer) {
+        timer = setTimeout(() => setFlyout(false), 250);
+      }
+    };
+    const onTouch = (e) => {
+      if (!insideFlyout(e.target)) setFlyout(false);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") setFlyout(false);
+    };
+    const close = () => setFlyout(false);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("touchstart", onTouch);
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mouseleave", close);
+    window.addEventListener("blur", close);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("touchstart", onTouch);
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mouseleave", close);
+      window.removeEventListener("blur", close);
+    };
+  }, [flyout]);
+
   const permissionArray = Array.isArray(Permissions)
     ? Permissions
     : typeof Permissions === "string"
@@ -1300,30 +1404,108 @@ const SidebarSection = ({
 
   if (filteredLinks.length === 0) return null;
 
-  return (
-    <div>
-      <button
-        onClick={toggleSection}
-        className={`flex items-center justify-between w-full gap-2 px-3 py-2 rounded-md text-left transition-colors duration-150 ${isOpen ? "bg-gray-600 text-white" : "text-white bg-transparent hover:bg-gray-600"
-          }`}
-      >
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="flex items-center justify-center w-5 h-5 shrink-0 leading-none">
-            {icon}
-          </span>
-          <span
-            className={`font-semibold text-[14px] leading-snug text-left whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${open ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"
+  const hasActiveLink = filteredLinks.some((link) => currentPath === link.path);
+
+  const flyoutCard = (
+    <div className="flyout-scroll flex flex-col gap-1.5 min-w-[210px] pr-1" style={{ maxHeight: "calc(100vh - 64px)", overflowY: "auto" }}>
+      {filteredLinks.map((link, index) => {
+        const isActive = currentPath === link.path;
+        return (
+          <Link
+            key={index}
+            to={link.path}
+            onClick={() => setFlyout(false)}
+            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] leading-snug no-underline transition-colors duration-150 ${isActive
+              ? "bg-sky-500/25 text-white font-semibold"
+              : "text-slate-200 hover:bg-white/10 hover:text-white"
               }`}
           >
-            {label}
-          </span>
-        </div>
-        <ArrowRightIcon
-          fontSize="small"
-          className={`shrink-0 transition-all duration-200 ease-in-out ${isOpen ? "rotate-90" : "rotate-0"
-            } ${open ? "max-w-[24px] opacity-100" : "max-w-0 opacity-0 overflow-hidden"}`}
-        />
-      </button>
+            {link.icon && (
+              <span className="flex items-center justify-center w-5 h-5 shrink-0 leading-none">
+                {link.icon}
+              </span>
+            )}
+            <span className="break-words">{link.name}</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <div>
+      <Tooltip
+        title={open ? "" : flyoutCard}
+        placement={placeBelow ? "right-end" : "right-start"}
+        arrow
+        open={!open && flyout}
+        onOpen={openFlyout}
+        onClose={() => setFlyout(false)}
+        enterDelay={80}
+        leaveDelay={160}
+        enterTouchDelay={0}
+        leaveTouchDelay={5000}
+        slotProps={{
+          popper: {
+            className: "sidebar-flyout-popper",
+            sx: { zIndex: 1300 },
+            // the first row of the card is level with the icon, so the arrow (centered on the icon) points at it
+            modifiers: [
+              { name: "offset", options: { offset: [placeBelow ? 8 : -8, 12] } },
+              { name: "arrow", options: { padding: 22 } },
+              { name: "preventOverflow", options: { padding: 8 } },
+            ],
+          },
+          tooltip: {
+            sx: {
+              bgcolor: "#0f172a",
+              color: "#fff",
+              p: 1,
+              maxWidth: 300,
+              fontSize: 13,
+              fontWeight: 400,
+              borderRadius: "16px",
+              border: "1px solid rgba(255,255,255,0.1)",
+              boxShadow: "0 10px 28px rgba(0,0,0,0.35)",
+              "&.MuiTooltip-tooltipPlacementRight": { ml: "16px" },
+            },
+          },
+          arrow: {
+            sx: {
+              color: "#0f172a",
+              fontSize: 22,
+              "&::before": { border: "1px solid rgba(255,255,255,0.1)", boxSizing: "border-box" },
+            },
+          },
+        }}
+      >
+        <button
+          ref={buttonRef}
+          onClick={open ? toggleSection : openFlyout}
+          aria-label={label}
+          aria-expanded={open ? isOpen : flyout}
+          className={`relative flex items-center justify-between w-full gap-2 px-3 py-2 rounded-lg text-left transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/60 ${(open ? isOpen : flyout || hasActiveLink) ? "bg-white/10 text-white" : "text-slate-100 bg-transparent hover:bg-white/10"
+            } ${!open && flyout ? "ring-1 ring-white/15" : ""}`}
+        >
+          {!open && hasActiveLink && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-sky-400" />}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="flex items-center justify-center w-5 h-5 shrink-0 leading-none">
+              {icon}
+            </span>
+            <span
+              className={`font-semibold text-[14px] leading-snug text-left whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${open ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"
+                }`}
+            >
+              {label}
+            </span>
+          </div>
+          <ArrowRightIcon
+            fontSize="small"
+            className={`shrink-0 text-slate-400 transition-all duration-200 ease-in-out ${isOpen ? "rotate-90" : "rotate-0"
+              } ${open ? "max-w-[24px] opacity-100" : "max-w-0 opacity-0 overflow-hidden"}`}
+          />
+        </button>
+      </Tooltip>
 
       {open && (
         <div
@@ -1331,7 +1513,7 @@ const SidebarSection = ({
             }`}
         >
           <div className="overflow-hidden">
-            <div className="mt-0.5 mb-0.5 p-1 pl-3 flex flex-col gap-0.5 bg-[#4b4b4b] rounded-md shadow-inner">
+            <div className="mt-1 mb-1 ml-3 p-1 pl-2 flex flex-col gap-0.5 bg-black/20 rounded-lg border-l border-white/10">
               {filteredLinks.map((link, index) => {
                 const isActive = currentPath === link.path;
                 return (
@@ -1339,9 +1521,9 @@ const SidebarSection = ({
                     key={index}
                     to={link.path}
                     title={link.name}
-                    className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] leading-snug no-underline transition-colors duration-150 ${isActive
-                      ? "bg-gray-500 text-white font-semibold"
-                      : "text-gray-200 hover:bg-gray-500 hover:text-white"
+                    className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] leading-snug no-underline border-l-2 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/60 ${isActive
+                      ? "bg-sky-500/20 border-sky-400 text-white font-semibold"
+                      : "border-transparent text-slate-300 hover:bg-white/10 hover:text-white"
                       }`}
                   >
                     {link.icon && (

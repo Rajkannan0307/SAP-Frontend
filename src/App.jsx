@@ -14,6 +14,9 @@ import Department from "./Masters/Department";
 import Vendor from "./Masters/Vendor";
 import MaterialVendorMapping from "./Masters/MaterialVendorMapping";
 import Customer from "./Masters/Customer";
+import MaterialCategory from "./Masters/MaterialCategory";
+import MaterialRemarks from "./Masters/MaterialRemarks";
+import WorkingDays from "./Masters/WorkingDays";
 import Movement_Type from "./Masters/Movement_Type";
 import Main from "./main";
 import Phy from "./Dashboard/phy";
@@ -141,6 +144,9 @@ const App = () => {
             <Route path="material" element={<ProtectedRoute screenCode="Material"><Material /></ProtectedRoute>} />
             <Route path="Vendor" element={<ProtectedRoute screenCode="Vendor"><Vendor /></ProtectedRoute>} />
             <Route path="MaterialVendorMapping" element={<ProtectedRoute screenCode="MaterialVendorMapping"><MaterialVendorMapping /></ProtectedRoute>} />
+            <Route path="MaterialCategory" element={<ProtectedRoute screenCode="MaterialCategory"><MaterialCategory /></ProtectedRoute>} />
+            <Route path="MaterialRemarks" element={<ProtectedRoute screenCode="MaterialRemarks"><MaterialRemarks /></ProtectedRoute>} />
+            <Route path="WorkingDays" element={<ProtectedRoute screenCode="WorkingDays"><WorkingDays /></ProtectedRoute>} />
             <Route path="Customer" element={<ProtectedRoute screenCode="Customer"><Customer /></ProtectedRoute>} />
             <Route path="StorageLocation" element={<ProtectedRoute screenCode="StorageLocation"><StorageLocation /></ProtectedRoute>} />
             <Route path="SupvCode" element={<ProtectedRoute screenCode="SupvCode"><SupvCode /></ProtectedRoute>} />

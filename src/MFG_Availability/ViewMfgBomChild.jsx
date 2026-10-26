@@ -43,8 +43,6 @@ const ViewMfgBomChildDialog = ({ open, setOpenAddModal, mfgBomData }) => {
     { field: "opt_no", headerName: "Opt No", width: 65, align: "center", headerAlign: "center" },
     { field: "opt_name", headerName: "Opt Name", flex: 1 },
     { field: "Valuation_Name", headerName: "Valuation/Procurement", flex: 1 },
-    { field: "Vendor_Code", headerName: "Vendor Code", width: 65 },
-    { field: "Vendor_Name", headerName: "Vendor Name", flex: 1 },
     {
       field: "Is_assembly_part",
       headerName: "Assembly Part",

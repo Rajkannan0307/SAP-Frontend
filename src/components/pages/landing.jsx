@@ -1,6 +1,6 @@
 import React, { useState, useContext } from "react";
 import { Link } from "react-router-dom";
-import { Snackbar, Alert } from "@mui/material";
+import { Snackbar, Alert, Paper, ButtonBase, Collapse } from "@mui/material";
 import LoginImage from "../images/llogin.png";
 import { getLogin } from "../../controller/Masterapiservice";
 import { encryptSessionData } from "../../controller/StorageUtils";
@@ -241,7 +241,7 @@ const Landing = () => {
     const storeCount = PLANTS.reduce((sum, p) => sum + p.stores.length, 0);
 
     return (
-        <div className="bg-[#f1f5f9] text-slate-800 h-screen overflow-hidden flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+        <div className="bg-[#f1f5f9] text-slate-800 min-h-screen lg:h-screen lg:overflow-hidden flex flex-col antialiased selection:bg-sky-500 selection:text-white">
             <style>{`
                 @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes livePulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); } 70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } }
@@ -252,41 +252,17 @@ const Landing = () => {
                     100% { transform: translate3d(var(--drift-x, 12px), -70px, 0) scale(0.6); opacity: 0; }
                 }
             `}</style>
-            {/* Header */}
-            <header
-                className="w-full bg-white border-b border-slate-200/90 shadow-sm px-6 lg:px-12 py-2.5 z-30 flex-shrink-0"
-                style={{ animation: "fadeSlideUp 0.4s ease-out both" }}
-            >
-                <div className="max-w-[1600px] mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg bg-linear-to-tr from-[#16417C] to-[#0284c7] flex items-center justify-center text-white shadow-md shadow-blue-900/20">
-                            <span className="material-symbols-outlined text-lg">precision_manufacturing</span>
-                        </div>
-                        <div>
-                            <h1 className="text-sm md:text-balance font-bold tracking-wide text-slate-900 uppercase leading-tight">Manufacturing Workspace</h1>
-                            {/* <p className="text-[10px] text-slate-500  hidden sm:block leading-tight">Central Operations &amp; Inventory Management Portal</p> */}
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <div className="hidden md:flex items-center gap-2 px-2 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-semibold">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            Systems Online
-                        </div>
-                    </div>
-                </div>
-            </header>
-
             {/* Main */}
-            <main className="flex-1 min-h-0 w-full mx-auto px-4 sm:px-6 lg:px-10 py-6 md:py-8 flex flex-col justify-center overflow-hidden">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-stretch h-full max-h-180 min-h-0 mx-[7%]">
+            <main className="flex-1 min-h-0 w-full mx-auto px-4 sm:px-6 lg:px-10 py-6 md:py-8 flex flex-col justify-center lg:overflow-hidden">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-start lg:items-center min-h-0 lg:mx-[7%]">
                     {/* Left: Authentication */}
                     <section
-                        className="lg:col-span-8 flex flex-col"
+                        className="lg:col-span-8 flex flex-col lg:h-[540px] lg:max-h-[calc(100vh-3rem)]"
                         style={{ animation: "fadeSlideUp 0.5s ease-out 0.1s both" }}
                     >
-                        <div className="rounded-2xl shadow-[0_20px_45px_-12px_rgba(22,57,108,0.35)] relative flex flex-col lg:flex-row h-full min-h-0 overflow-y-auto overflow-x-hidden bg-white">
+                        <div className="rounded-2xl border border-slate-200 shadow-sm relative flex flex-col lg:flex-row lg:h-full min-h-0 overflow-y-auto overflow-x-hidden bg-white">
                             {/* Left brand panel */}
-                            <div className="relative overflow-hidden flex flex-col text-white flex-shrink-0 w-full lg:w-[42%] p-6 sm:p-7 bg-gradient-to-br from-[#1B4C87] to-[#0284c7]">
+                            <div className="relative overflow-hidden hidden lg:flex lg:flex-col text-white flex-shrink-0 w-full lg:w-[42%] p-6 sm:p-7 bg-gradient-to-br from-[#1B4C87] to-[#0284c7]">
                                 {[
                                     { left: "8%", bottom: "8%", size: 4, delay: 0, duration: 7, drift: 16 },
                                     { left: "18%", bottom: "55%", size: 3, delay: 1.5, duration: 6, drift: -12 },
@@ -322,7 +298,7 @@ const Landing = () => {
                                     <img
                                         alt="SAP Approval Flow"
                                         src={LoginImage}
-                                        className="relative max-w-full max-h-[340px] w-auto h-auto object-contain rounded-xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.45)]"
+                                        className="relative max-w-full max-h-[300px] w-auto h-auto object-contain rounded-xl ring-1 ring-white/10"
                                     />
                                 </div>
 
@@ -332,8 +308,14 @@ const Landing = () => {
                             </div>
 
                             {/* Right login panel */}
-                            <div className="flex-1 flex items-center justify-center p-7 sm:p-10">
+                            <div className="flex-1 flex items-center justify-center p-6 sm:p-10">
                                 <div className="w-full max-w-[380px]">
+                                    <div className="flex items-center gap-2.5 mb-6">
+                                        <div className="h-9 w-9 rounded-lg bg-linear-to-tr from-[#16417C] to-[#0284c7] flex items-center justify-center text-white">
+                                            <span className="material-symbols-outlined text-xl">precision_manufacturing</span>
+                                        </div>
+                                        <h1 className="text-sm font-bold tracking-wide text-slate-900 uppercase leading-tight">Manufacturing Workspace</h1>
+                                    </div>
                                     <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-100">
                                         Authorized Personnel Only
                                     </span>
@@ -390,7 +372,7 @@ const Landing = () => {
                                             </div>
                                         </div>
                                         <button
-                                            className="w-full py-3 px-8 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] active:bg-[#075985] disabled:bg-[#0284c7]/60 disabled:cursor-not-allowed text-white font-semibold text-sm tracking-wide uppercase shadow-md shadow-sky-600/25 transition-all duration-200 mt-2 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
+                                            className="w-full py-3 px-8 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] active:bg-[#075985] disabled:bg-[#0284c7]/60 disabled:cursor-not-allowed text-white font-semibold text-sm tracking-wide uppercase transition-all duration-200 mt-2 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
                                             type="submit"
                                             disabled={loading}
                                         >
@@ -413,7 +395,7 @@ const Landing = () => {
 
                     {/* Right: Plants & Stores grid */}
                     <section
-                        className="lg:col-span-4 flex flex-col h-full min-h-0"
+                        className="lg:col-span-4 flex flex-col min-h-0 lg:h-[540px] lg:max-h-[calc(100vh-3rem)]"
                         style={{ animation: "fadeSlideUp 0.5s ease-out 0.2s both" }}
                     >
                         <div className="flex items-start justify-between px-1 mb-3 shrink-0 flex-wrap gap-2">
@@ -435,20 +417,20 @@ const Landing = () => {
                             </span>
                         </div>
 
-                        <div className="flex-1 min-h-0 overflow-hidden pr-1">
+                        <div className="flex-1 min-h-0 lg:overflow-y-auto pr-1">
                             <div className="flex flex-col gap-3">
                                 {PLANTS.map((plant, plantIndex) => {
                                     const isOpen = openPlant === plant.name;
                                     return (
-                                        <div
+                                        <Paper
                                             key={plant.name}
-                                            className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_-2px_rgba(15,23,42,0.06)] overflow-hidden"
+                                            elevation={0}
                                             style={{ animation: `fadeSlideUp 0.4s ease-out ${plantIndex * 0.08}s both` }}
+                                            sx={{ borderRadius: "16px", border: "1px solid #e5e7eb", boxShadow: "0 1px 2px rgba(16,24,40,0.05)", overflow: "hidden", transition: "box-shadow .2s ease", "&:hover": { boxShadow: "0 2px 8px rgba(16,24,40,0.08)" } }}
                                         >
-                                            <button
-                                                type="button"
+                                            <ButtonBase
                                                 onClick={() => togglePlant(plant.name)}
-                                                className="w-full flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors duration-200"
+                                                sx={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, textAlign: "left", transition: "background-color .2s", "&:hover": { bgcolor: "#f8fafc" } }}
                                             >
                                                 <div className="flex items-center gap-2 min-w-0">
                                                     <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${plant.dot}`} />
@@ -462,17 +444,17 @@ const Landing = () => {
                                                         expand_more
                                                     </span>
                                                 </div>
-                                            </button>
+                                            </ButtonBase>
 
-                                            <div
-                                                className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "max-h-100 opacity-100" : "max-h-0 opacity-0"}`}
-                                            >
-                                                <div className="space-y-2 px-3 pb-3 pt-2">
+                                            <Collapse in={isOpen} timeout={300}>
+                                                <div className="flex flex-col gap-2 px-3 pb-3 pt-2">
                                                     {plant.stores.map((store) => (
-                                                        <Link
+                                                        <ButtonBase
+                                                            component={Link}
                                                             key={store.label}
                                                             to={store.to}
-                                                            className="group flex items-center justify-between p-2.5 rounded-xl bg-slate-50 hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-slate-200 cursor-pointer"
+                                                            className="group"
+                                                            sx={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", textAlign: "left", p: "10px", borderRadius: "12px", bgcolor: "#f8fafc", border: "1px solid transparent", transition: "all .2s ease", "&:hover": { bgcolor: "#fff", borderColor: "#e2e8f0", boxShadow: "0 1px 3px rgba(16,24,40,0.08)" } }}
                                                         >
                                                             <div className="flex items-center gap-2.5 min-w-0">
                                                                 <div className={`h-9 w-9 rounded-lg group-hover:text-white flex items-center justify-center transition-colors shrink-0 ${store.iconBg}`}>
@@ -487,7 +469,7 @@ const Landing = () => {
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" style={{ animation: "livePulse 2s ease-out infinite" }} />
                                                                 Active
                                                             </span>
-                                                        </Link>
+                                                        </ButtonBase>
                                                     ))}
 
                                                     {plant.centralHub && (
@@ -500,8 +482,8 @@ const Landing = () => {
                                                         </div>
                                                     )}
                                                 </div>
-                                            </div>
-                                        </div>
+                                            </Collapse>
+                                        </Paper>
                                     );
                                 })}
                             </div>

@@ -174,8 +174,6 @@ const MFG_BOM = () => {
       "Operation No",
       "Operation Name",
       "Valuation/Procurement",
-      "Vendor Code",
-      "Vendor Name",
     ];
 
     const filteredData = data.map((item, index) => ({
@@ -191,8 +189,6 @@ const MFG_BOM = () => {
       "Operation No": item.opt_no,
       "Operation Name": item.opt_name,
       "Valuation/Procurement": item.Valuation_Name,
-      "Vendor Code": item.Vendor_Code,
-      "Vendor Name": item.Vendor_Name,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(filteredData, { header: DataColumns });
@@ -327,7 +323,7 @@ const MFG_BOM = () => {
             notes={[
               <><b>Add / Edit:</b> a combination that already exists is rejected.</>,
               <><b>Bulk upload:</b> the same combination is <b>updated</b>, any other is <b>added</b>. If any row is invalid nothing is saved.</>,
-              "On update: a blank Vendor_Code clears the vendor (INHOUSE lines), and a blank or missing Is_Assembly_Part sets the line to No.",
+              "The BOM does not carry a vendor (it is kept in Material Master). On update: a blank or missing Is_Assembly_Part sets the line to No.",
             ]}
           />
         </div>

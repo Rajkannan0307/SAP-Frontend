@@ -1834,16 +1834,18 @@ const buildProdBreakupSheets = (models, data, { year, month }) => {
     ydRows.push(sub([...all, "Total YD Plan", "", tot.ydPlan]));
   }
   // the labels of the ALL FG lines sit in the Date column, like every other shaded line
-  const wdText = (d, n) => (d
-    ? `${n} = ${workingDaysSplit(d)} (weekends and DHRM holidays are not working days).`
-    : `${n} (the DHRM holidays could not be read, so the old rule is used: 26 days a month, Sundays only).`);
+  const wdText = (d, n, src) => (d
+    ? `${n}.`
+    : src === "table"
+      ? `${n} (from the Working Days master).`
+      : `${n} (default: this plant and month has no entry in the Working Days master).`);
   const cur = " Applies to the current month only (0 for other months).";
   const guide = [
     ["Item", "How it is calculated"],
     ["Month", monthName],
     ["Monthly Plan", "Sum of Plan Qty x Ends: each Monthly Plan row (plan type MP, Trn_Production_Plan) of the FG part inside the month is multiplied by its own Ends, then all those rows are added together; a missing Ends counts as 1. Rows: sheet 'Plan Breakup'."],
-    ["Working days of the month", wdText(wd && wd.month, wd ? wd.monthDays : "-")],
-    ["Working days up to yesterday", wdText(wd && wd.elapsed, wd ? wd.elapsedDays : "-") + " A past month counts the whole month; a future month counts 0."],
+    ["Working days of the month", wdText(wd && wd.month, wd ? wd.monthDays : "-", wd && wd.source)],
+    ["Working days up to yesterday", `${wd ? wd.elapsedDays : "-"} (Sundays are not counted).` + " A past month counts the whole month; a future month counts 0."],
     ["MTD Plan", "(Monthly Plan / working days of the month) x working days up to yesterday, rounded to a whole number. Shown at the end of each FG in 'Plan Breakup'."],
     ["MTD Actual", `Sum of the production quantity (Trn_Actual_Production_Plan, movement types ${data.movements}) of the FG part inside the month. Rows: sheet 'Actual Breakup'.`],
     ["Gap", "MTD Actual - MTD Plan (positive = ahead, negative = behind)."],

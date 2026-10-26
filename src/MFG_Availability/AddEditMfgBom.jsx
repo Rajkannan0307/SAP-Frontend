@@ -24,7 +24,6 @@ import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import { getProductdetails } from "../controller/PMPDApiService";
 import { getdetails as getOperations } from "../controller/OperationMasterapiservice";
 import { getdetails as getValuations } from "../controller/ValuationTypeMasterapiservice";
-import { getdetails as getVendors } from "../controller/VendorMasterapiservice";
 import { GetMfgBomChildApi, InsertMfgBomApi, GetMaterialWithDescApi } from "../controller/MfgBomApiService";
 
 const OPERATION_NO_OPTIONS = Array.from({ length: 20 }, (_, i) => ({
@@ -138,7 +137,6 @@ const createEmptyRow = (id) => ({
   bom_qty: "",
   opt_id: "",
   valuation_id: "",
-  vendor_id: "",
   status: true,
   is_assembly_part: false,
   new: true,
@@ -154,7 +152,6 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
   const [products, setProducts] = useState([]);
   const [operations, setOperations] = useState([]);
   const [valuations, setValuations] = useState([]);
-  const [vendors, setVendors] = useState([]);
   const [gridRows, setGridRows] = useState([]);
 
   const handleClose = () => {
@@ -198,13 +195,6 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
           toast.error(`Row ${i + 1}: BOM Qty can have at most 3 decimals.`);
           return;
         }
-        // Vendor is optional only when the Valuation is INHOUSE.
-        const valuationName = valuations.find((v) => v.Valuation_ID === r.valuation_id)?.Valuation_Name;
-        const isInhouse = String(valuationName || "").trim().toUpperCase() === "INHOUSE";
-        if (!isInhouse && !r.vendor_id) {
-          toast.error(`Row ${i + 1}: Vendor Code is required unless Valuation is INHOUSE.`);
-          return;
-        }
       }
 
       const comboSeen = new Set();
@@ -232,7 +222,6 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
             bom_qty: Number(r.bom_qty),
             opt_id: r.opt_id,
             valuation_id: r.valuation_id,
-            vendor_id: r.vendor_id,
             status: r.status,
             is_assembly_part: Boolean(r.is_assembly_part),
           })),
@@ -253,18 +242,16 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
   useEffect(() => {
     if (!open) return;
     const fetchData = async () => {
-      const [plantRes, productRes, operationRes, valuationRes, vendorRes] = await Promise.all([
+      const [plantRes, productRes, operationRes, valuationRes] = await Promise.all([
         getMyPlants(), // only the plants this user may use (own + Data Access), with their Division
         getProductdetails(),
         getOperations(),
         getValuations(),
-        getVendors(),
       ]);
       setPlants(Array.isArray(plantRes) ? plantRes : []);
       setProducts((productRes || []).filter((p) => p.Active_Status));
       setOperations((operationRes || []).filter((o) => o.status));
       setValuations(valuationRes || []);
-      setVendors((vendorRes || []).filter((v) => v.Active_Status));
     };
     fetchData();
   }, [open]);
@@ -319,9 +306,6 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
         opt_name: e.opt_name,
         valuation_id: e.valuation_id,
         Valuation_Name: e.Valuation_Name,
-        vendor_id: e.vendor_id,
-        Vendor_Code: e.Vendor_Code,
-        Vendor_Name: e.Vendor_Name,
         status: e.status,
         is_assembly_part: Boolean(e.Is_assembly_part),
       }));
@@ -351,9 +335,6 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
   }));
   const operationOptions = operations.map((o) => ({ value: o.opt_id, label: o.opt_name }));
   const valuationOptions = valuations.map((v) => ({ value: v.Valuation_ID, label: v.Valuation_Name }));
-  const vendorOptions = vendors
-    .filter((v) => String(v.Plant_Code) === String(formik.values.plant))
-    .map((v) => ({ value: v.Vendor_ID, label: `${v.Vendor_Code} - ${v.Vendor_Name}` }));
 
   const childColumns = [
     { field: "id", headerName: "SI No", width: 55 },
@@ -494,26 +475,6 @@ const AddEditMfgBomDialog = ({ open, setOpenAddModal, setRefreshData, editData }
             options={valuationOptions}
             value={valuationOptions.find((o) => o.value === params.row.valuation_id) || null}
             onChange={(option) => handleProcessRowUpdate({ ...params.row, valuation_id: option?.value || "" })}
-          />
-        </GridSelectCell>
-      ),
-    },
-    {
-      field: "vendor_id",
-      headerName: "Vendor Code",
-      flex: 1.3,
-      minWidth: 180,
-      renderCell: (params) => (
-        <GridSelectCell>
-          <Select
-            menuPortalTarget={document.body}
-            menuPosition="fixed"
-            styles={reactSelectStyle}
-            options={vendorOptions}
-            isClearable
-            placeholder="Optional if INHOUSE"
-            value={vendorOptions.find((o) => o.value === params.row.vendor_id) || null}
-            onChange={(option) => handleProcessRowUpdate({ ...params.row, vendor_id: option?.value || "" })}
           />
         </GridSelectCell>
       ),
