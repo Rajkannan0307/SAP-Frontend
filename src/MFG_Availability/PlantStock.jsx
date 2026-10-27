@@ -53,7 +53,7 @@ const getRowId = (row) => row.row_id;
 // Stock is a point-in-time snapshot, so say which one the table is showing.
 const summary = (rows) =>
   rows.length
-    ? `Showing the latest active Plant Stock snapshot (dated ${rows[0].stock_date}) · ${rows.length.toLocaleString("en-IN")} rows`
+    ? `Plant Stock as of ${rows[0].stock_date} · ${rows.length.toLocaleString("en-IN")} rows`
     : null;
 
 const emptyLabel = ({ searching }) =>

@@ -462,6 +462,12 @@ const bodyGroupSeparatorClass = "border-l border-gray-200";
 // unchanged in filters/calculations/columns/APIs/behavior. Only its outer
 // page frame (title) moved up to the shared MatAvailabilityStatus wrapper
 // so both tabs sit under one title + tab bar.
+const wallClock = (v) => {
+  // the stock date is stored as the local wall-clock time and arrives as "...Z": read its parts as they are, no time-zone shift
+  const d = new Date(v);
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
+};
+
 const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) => {
   const { user } = useContext(AuthContext);
   // Plant dropdown = only the plants this user may use (own plant + User Master > Data Access);
@@ -830,7 +836,7 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
         "Unrestricted Qty": r.unrestricted_qty,
         "Quality Inspection Qty": r.quality_inspection_qty,
         "Blocked Qty": r.blocked_qty,
-        "Stock Date": r.stock_date ? format(new Date(r.stock_date), "dd-MM-yyyy HH:mm") : "",
+        "Stock Date": r.stock_date ? format(wallClock(r.stock_date), "dd-MM-yyyy HH:mm") : "",
       }));
 
       // Sheet 4 — the exact latest Supplier Stock batch used for this month
@@ -842,7 +848,7 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
         "Material Code": r.material_code,
         "Material Description": r.material_desc,
         "Unrestricted Qty": r.unrestricted_qty,
-        "Stock Date": r.stock_date ? format(new Date(r.stock_date), "dd-MM-yyyy HH:mm") : "",
+        "Stock Date": r.stock_date ? format(wallClock(r.stock_date), "dd-MM-yyyy HH:mm") : "",
       }));
 
       const wb = XLSX.utils.book_new();
@@ -1735,9 +1741,9 @@ const MatAvailabilityStatus = () => {
           </Typography>
           {(activeStockAsOf.plant || activeStockAsOf.supplier) && (
             <Typography sx={{ fontSize: 9.5, color: "#9aa1ac", mt: 0.25, display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
-              {activeStockAsOf.plant && <span>PS - {format(new Date(activeStockAsOf.plant), "dd-MMM-yyyy HH:mm")}</span>}
+              {activeStockAsOf.plant && <span>PS - {format(wallClock(activeStockAsOf.plant), "dd-MMM-yyyy HH:mm")}</span>}
               {activeStockAsOf.plant && activeStockAsOf.supplier && <span style={{ color: "#d3d7dd" }}>|</span>}
-              {activeStockAsOf.supplier && <span>SS - {format(new Date(activeStockAsOf.supplier), "dd-MMM-yyyy HH:mm")}</span>}
+              {activeStockAsOf.supplier && <span>SS - {format(wallClock(activeStockAsOf.supplier), "dd-MMM-yyyy HH:mm")}</span>}
             </Typography>
           )}
         </div>
