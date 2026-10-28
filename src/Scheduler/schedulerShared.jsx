@@ -28,6 +28,7 @@ export const StatusChip = ({ status, size = "small" }) => {
 
 export const LOAD_MODES = {
   SNAPSHOT: { label: "Snapshot", help: "Every file is a new batch; the previous batch is deactivated." },
+  SNAPSHOT_REPLACE: { label: "Snapshot - replace (delete previous data)", help: "Every file replaces the previous data: the old rows are deleted and only the data just loaded is kept." },
   INSERT_ONLY: { label: "Insert only", help: "Adds rows that don't exist yet; never updates or deletes." },
   PROCEDURE: { label: "Stored procedure", help: "Stages the rows and runs a stored procedure that inserts them." },
 };

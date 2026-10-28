@@ -15,7 +15,8 @@ import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarEx
 import { format, isValid } from 'date-fns'
 import { useFormik } from 'formik'
 import * as yup from 'yup'
-import { getPMPDAccess } from '../../Authentication/ActionAccessType'
+import { getPMPDAccess, UPLOAD_ADMIN_ROLE_IDS } from '../../Authentication/ActionAccessType'
+import RoleButton from '../../components/RoleButton'
 import { AuthContext } from '../../Authentication/AuthContext'
 import ValidationResponseGrid from '../../components/ValidationResponseTable'
 import DateRangeDownloadDialog from '../../components/DateRangeDownloadDialog'
@@ -523,7 +524,7 @@ const PMPD_ActualProductionPlan = () => {
             notes={[
               <><b>Upload:</b> only <b>adds</b> new records. A row whose combination already exists is skipped, and existing records are never changed. Duplicates inside the file keep the highest quantity.</>,
               "One upload can hold one plant and one month only.",
-              "Fetch (MB51) also only inserts new records.",
+              "SAP Sync (MB51) also only inserts new records.",
             ]}
           />
         </div>
@@ -531,8 +532,8 @@ const PMPD_ActualProductionPlan = () => {
         <FilterPanel
           open={filtersOpen} activeCount={activeFilterCount} onClear={clearFilters}
           actions={(
-            <div style={{ display: PMPDAccess.disableAction ? "none" : "flex", gap: 8, alignItems: "center" }}>
-              <Button
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              {!PMPDAccess.disableAction && <Button
                 variant="contained"
                 disableElevation
                 onClick={handleFetchProdData}
@@ -541,8 +542,8 @@ const PMPD_ActualProductionPlan = () => {
                 sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc" } }}
                 title="Fetch latest MB51 Prod Data from the FTP source and insert new records"
               >
-                {fetchingProdData ? "Fetching..." : "Fetch"}
-              </Button>
+                {fetchingProdData ? "Syncing..." : "SAP Sync"}
+              </Button>}
               <ExcelUploadModal open={openUploadModal}
                 onClose={() => {
                   setOpenUploadModal(false)
@@ -789,7 +790,9 @@ const ExcelUploadModal = ({
 
   return (
     <>
-      <Button
+      <RoleButton
+        allowedRoles={UPLOAD_ADMIN_ROLE_IDS}
+        deniedMessage="Only Corp Admin has access to upload"
         variant="contained"
         disableElevation
         onClick={() => {
@@ -799,7 +802,7 @@ const ExcelUploadModal = ({
         sx={{ ...compactButtonSx, backgroundColor: "#1B7A43", "&:hover": { backgroundColor: "#166238" } }}
       >
         Upload
-      </Button>
+      </RoleButton>
 
       <Modal open={open} onClose={() => { }}>
         <Box

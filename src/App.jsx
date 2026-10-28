@@ -75,6 +75,7 @@ import Mst_Operation from "./Masters/Mst_Operation"
 import MFG_BOM from "./MFG_Availability"
 import PlantStock from "./MFG_Availability/PlantStock"
 import SupplierStock from "./MFG_Availability/SupplierStock"
+import Grn103Pending from "./MFG_Availability/Grn103Pending"
 import MatAvailabilityStatus from "./MFG_Availability/MatAvailabilityStatus"
 import MfgProductionDailyPlan from "./MFG_Availability/MfgProductionDailyPlan"
 import MfgComponentDailyPlan from "./MFG_Availability/MfgComponentDailyPlan"
@@ -157,6 +158,7 @@ const App = () => {
             <Route path="MFG_BOM" element={<ProtectedRoute screenCode="MFG_BOM"><MFG_BOM /></ProtectedRoute>} />
             <Route path="PlantStock" element={<ProtectedRoute screenCode="PlantStock"><PlantStock /></ProtectedRoute>} />
             <Route path="SupplierStock" element={<ProtectedRoute screenCode="SupplierStock"><SupplierStock /></ProtectedRoute>} />
+            <Route path="Grn103Pending" element={<ProtectedRoute screenCode="Grn103Pending"><Grn103Pending /></ProtectedRoute>} />
             <Route path="MatAvailabilityStatus" element={<ProtectedRoute screenCode="MatAvailabilityStatus"><MatAvailabilityStatus /></ProtectedRoute>} />
             <Route path="MfgProductionDailyPlan" element={<ProtectedRoute screenCode="MfgProductionDailyPlan"><MfgProductionDailyPlan /></ProtectedRoute>} />
             <Route path="MfgComponentDailyPlan" element={<ProtectedRoute screenCode="MfgComponentDailyPlan"><MfgComponentDailyPlan /></ProtectedRoute>} />

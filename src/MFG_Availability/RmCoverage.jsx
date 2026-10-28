@@ -15,7 +15,7 @@ import { DAY_CELLS, STATUS_META, COVERAGE_GREEN, COVERAGE_EMPTY, coverageFills, 
 
 // Child Part Coverage (PPC & MRPC; code name RmCoverage): raw-material coverage of the child parts: ROH used with any valuation type, HALB used with any valuation type except INHOUSE.
 //   Plan = SUM of (FG monthly MP plan x BOM qty) of every FG that uses the child part;  Demand per Day = Plan / working days of the month (Working Days master, default 26)
-//   Coverage Days = Current Stock (latest MB52 snapshot) / Demand per Day
+//   Coverage Days = Current Stock (latest MB52 snapshot + GRN 103-105 Pending) / Demand per Day
 //   Status: R = stock below the Safety Stock, G = coverage > 3 days and stock above the Safety Stock, Y = anything else
 // The numbers are calculated by the backend (MFG_BOM/RmCoverage.router.js); this screen shows them.
 
@@ -102,8 +102,8 @@ const RmCoverage = () => {
   const [vendorFilter, setVendorFilter] = useState("All");
   const [buyerFilter, setBuyerFilter] = useState("All");
   const [lineFilter, setLineFilter] = useState("All");
-  const [valuationFilter, setValuationFilter] = useState("All");
-  const [segmentFilter, setSegmentFilter] = useState("All");
+  const [productFilter, setProductFilter] = useState("All");
+  const [categoryFilter, setCategoryFilter] = useState("All");
   const [searchText, setSearchText] = useState("");
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState({ month: "", stock_as_of: null, working_days: null });
@@ -145,10 +145,8 @@ const RmCoverage = () => {
       setMeta({ month: data?.month || "", stock_as_of: data?.stock_as_of || null, working_days: data?.working_days || null });
       setVendorFilter("All");
       setBuyerFilter("All");
-      setValuationFilter("All");
-      // Segment and Line sit before the Search button: the choice made there stays unless the new data has no such Segment / Line
+      // the chosen Line stays after a new search unless the new data has no such Line
       const newRows = data?.rows || [];
-      setSegmentFilter((cur) => (cur === "All" || newRows.some((r) => (r.segments || []).some((s) => s.segment_name === cur)) ? cur : "All"));
       setLineFilter((cur) => (cur === "All" || newRows.some((r) => r.line_name === cur) ? cur : "All"));
       setLoaded(true);
     } catch (error) {
@@ -173,22 +171,21 @@ const RmCoverage = () => {
   }, [plants]);
 
   const vendorOptions = useMemo(() => uniqSorted(rows.flatMap((r) => r.vendors.map(vendorLabel))), [rows]);
-  const valuationOptions = useMemo(() => uniqSorted(rows.flatMap((r) => r.valuation_types || [])), [rows]);
-  // Segment of a child part = the Segment of the FG parts that use it (same rule as the MFG Daily Component Plan); listed in Segment id order
-  // (the order of the Product Segment screen)
-  const segmentOptions = useMemo(() => {
-    const byId = new Map();
-    rows.forEach((r) => (r.segments || []).forEach((s) => byId.set(s.segment_id, s.segment_name)));
-    return [...byId.entries()].sort((a, b) => a[0] - b[0]).map(([, name]) => name);
-  }, [rows]);
-  // Line list follows the chosen Segment: only the Lines of the child parts of that Segment
-  const lineOptions = useMemo(
-    () => uniqSorted(rows
-      .filter((r) => segmentFilter === "All" || (r.segments || []).some((s) => s.segment_name === segmentFilter))
-      .map((r) => r.line_name).filter(Boolean)),
-    [rows, segmentFilter]
+  const lineOptions = useMemo(() => uniqSorted(rows.map((r) => r.line_name).filter(Boolean)), [rows]);
+  // Product and Material Category of a child part come from its own Material Master row (the category belongs to one Product);
+  // the Material Category list follows the chosen Product. Child parts without a category are listed only when both are All.
+  const productOptions = useMemo(() => uniqSorted(rows.map((r) => r.product_name).filter(Boolean)), [rows]);
+  const categoryOptions = useMemo(
+    () => uniqSorted(rows.filter((r) => productFilter === "All" || r.product_name === productFilter).map((r) => r.material_category).filter(Boolean)),
+    [rows, productFilter]
   );
-  // a chosen Line that is not in the new Segment's list is cleared
+  useEffect(() => {
+    if (productFilter !== "All" && !productOptions.includes(productFilter)) setProductFilter("All");
+  }, [productOptions, productFilter]);
+  useEffect(() => {
+    if (categoryFilter !== "All" && !categoryOptions.includes(categoryFilter)) setCategoryFilter("All");
+  }, [categoryOptions, categoryFilter]);
+  // a chosen Line that is not in the new list is cleared
   useEffect(() => {
     if (lineFilter !== "All" && !lineOptions.includes(lineFilter)) setLineFilter("All");
   }, [lineOptions, lineFilter]);
@@ -200,14 +197,14 @@ const RmCoverage = () => {
       if (vendorFilter !== "All" && !r.vendors.some((v) => vendorLabel(v) === vendorFilter)) return false;
       if (buyerFilter !== "All" && !r.vendors.some((v) => v.buyer_id && buyerLabel(v) === buyerFilter)) return false;
       if (lineFilter !== "All" && r.line_name !== lineFilter) return false;
-      if (valuationFilter !== "All" && !(r.valuation_types || []).includes(valuationFilter)) return false;
-      if (segmentFilter !== "All" && !(r.segments || []).some((s) => s.segment_name === segmentFilter)) return false;
+      if (productFilter !== "All" && r.product_name !== productFilter) return false;
+      if (categoryFilter !== "All" && r.material_category !== categoryFilter) return false;
       if (!text) return true;
       return String(r.child_part_no).toLowerCase().includes(text) || String(r.child_part_desc || "").toLowerCase().includes(text);
     });
-  }, [rows, vendorFilter, buyerFilter, lineFilter, valuationFilter, segmentFilter, searchText]);
+  }, [rows, vendorFilter, buyerFilter, lineFilter, productFilter, categoryFilter, searchText]);
 
-  // Excel of the table as shown (Vendor / Buyer / Line / Valuation Type / search applied): the numbers, the status and the 10 coverage cells
+  // Excel of the table as shown (Vendor / Buyer / Line / search applied): the numbers, the status and the 10 coverage cells
   // (100% = a whole day covered, a part = part of a day; cells coloured like the status on screen).
   const handleExportExcel = () => {
     if (visibleRows.length === 0) {
@@ -230,18 +227,20 @@ const RmCoverage = () => {
         { header: "Safety Stock", width: 11 },
         { header: "Max Stock", width: 11 },
         { header: "Current Stock", width: 13, total: true },
+        { header: "Plant Stock", width: 12, total: true },
+        { header: "GRN 103-105 Pending", width: 18, total: true },
         { header: "Status", width: 12 },
         { header: "Coverage Days", width: 13 },
         ...Array.from({ length: DAY_CELLS }, (_, i) => ({ header: String(i + 1), width: 6 })),
       ];
-      const STATUS_COL = 14;
-      const DAY_FROM = 16;
+      const STATUS_COL = 16;
+      const DAY_FROM = 18;
       const blank = (v) => (v === null || v === undefined ? "" : v);
       const rows = visibleRows.map((r, i) => [
         i + 1, r.plant, r.child_part_no, r.child_part_desc || "", r.material_type || "", r.line_name || "", (r.valuation_types || []).join(", "),
         r.vendor_code ? `${r.vendor_code} ${r.vendor_name || ""}${r.vendors.length > 1 ? ` (+${r.vendors.length - 1} more)` : ""}` : "",
         r.buyer_name || "",
-        r.plan_qty || 0, Math.round(r.demand_per_day || 0), blank(r.safety_stock), blank(r.max_stock), r.current_stock || 0,
+        r.plan_qty || 0, Math.round(r.demand_per_day || 0), blank(r.safety_stock), blank(r.max_stock), r.current_stock || 0, r.plant_stock || 0, r.grn103_pending || 0,
         (STATUS_META[r.status] || {}).name || "", blank(r.coverage_days),
         ...coverageFills(r.coverage_days),
       ]);
@@ -317,9 +316,9 @@ const RmCoverage = () => {
     }
   };
 
-  // the Filters panel holds Vendor / Buyer / Valuation Type; Segment and Line are in the top bar (before Search)
-  const activeFilterCount = [vendorFilter, buyerFilter, valuationFilter].filter((v) => v !== "All").length;
-  const clearFilters = () => { setVendorFilter("All"); setBuyerFilter("All"); setValuationFilter("All"); };
+  // the Filters panel holds Vendor / Buyer / Line; Product and Material Category are in the top bar (before Search)
+  const activeFilterCount = [vendorFilter, buyerFilter, lineFilter].filter((v) => v !== "All").length;
+  const clearFilters = () => { setVendorFilter("All"); setBuyerFilter("All"); setLineFilter("All"); };
 
   // keep the header the same width as the body: leave room for the body scrollbar (0 when there is none)
   useLayoutEffect(() => {
@@ -392,8 +391,8 @@ const RmCoverage = () => {
           inputProps={{ min: "2000-01", max: "2099-12" }}
           sx={compactFieldSx(150)}
         />
-        <FilterSelect label="Segment" value={segmentFilter} options={segmentOptions} onChange={setSegmentFilter} minWidth={150} />
-        <FilterSelect label="Line" value={lineFilter} options={lineOptions} onChange={setLineFilter} minWidth={150} />
+        <FilterSelect label="Product" value={productFilter} options={productOptions} onChange={setProductFilter} minWidth={170} />
+        <FilterSelect label="Material Category" value={categoryFilter} options={categoryOptions} onChange={setCategoryFilter} minWidth={190} />
         <Button
           onClick={() => fetchData(plantSelect)}
           disabled={loading}
@@ -448,7 +447,7 @@ const RmCoverage = () => {
         >
           <FilterSelect label="Vendor" value={vendorFilter} options={vendorOptions} onChange={setVendorFilter} minWidth={220} />
           <FilterSelect label="Buyer" value={buyerFilter} options={buyerOptions} onChange={setBuyerFilter} minWidth={170} />
-          <FilterSelect label="Valuation Type" value={valuationFilter} options={valuationOptions} onChange={setValuationFilter} minWidth={170} />
+          <FilterSelect label="Line" value={lineFilter} options={lineOptions} onChange={setLineFilter} minWidth={150} />
         </FilterPanel>
       </div>
 
@@ -481,7 +480,7 @@ const RmCoverage = () => {
               <Head rowSpan={2} tipProps={demandPerDayTip(meta.working_days)} style={{ ...headBase, top: 0 }}>Demand / Day</Head>
               <Head rowSpan={2} tip="Safety Stock from the Material Master" style={{ ...headBase, top: 0 }}>Safety Stock</Head>
               <Head rowSpan={2} tip="Maximum Stock from the Material Master" style={{ ...headBase, top: 0 }}>Max Stock</Head>
-              <Head rowSpan={2} tip="Current Stock = unrestricted stock of the latest MB52 (Plant Stock) snapshot" style={{ ...headBase, top: 0 }}>Current Stock</Head>
+              <Head rowSpan={2} tip="Current Stock = unrestricted stock of the latest MB52 (Plant Stock) snapshot + the GRN 103-105 Pending quantity (hover a number to see the split)" style={{ ...headBase, top: 0 }}>Current Stock</Head>
               <Head rowSpan={2} tip="R = stock below Safety Stock | G = coverage over 3 days and stock above Safety Stock | Y = any other case" style={{ ...headBase, top: 0 }}>Status</Head>
               <Head colSpan={DAY_CELLS + 1} tip="Coverage Days = Current Stock / Demand per Day. Each block = 1 day of stock, in the colour of the status (R red, Y yellow, G green)" style={{ ...headBase, top: 0, height: HEAD_H, borderLeft: "1px solid #b9c8ec" }}>Coverage Days</Head>
             </tr>
@@ -554,7 +553,18 @@ const RmCoverage = () => {
                     <td style={num} title={`Exact: ${fmtNum(row.demand_per_day)} per day`}>{fmtNum(row.demand_per_day, 0)}</td>
                     <td style={{ ...num, color: row.safety_stock === null ? "#b6bac3" : "#333" }}>{fmtNum(row.safety_stock)}</td>
                     <td style={{ ...num, color: row.max_stock === null ? "#b6bac3" : "#333" }}>{fmtNum(row.max_stock)}</td>
-                    <td style={{ ...num, fontWeight: 700 }}>{fmtNum(row.current_stock)}</td>
+                    <td style={{ ...num, fontWeight: 700 }}>
+                      <InfoTip
+                        trigger={fmtNum(row.current_stock)}
+                        labelStyle={{ cursor: "help" }}
+                        title="Current Stock"
+                        points={[
+                          { label: "Plant Stock:", value: fmtNum(row.plant_stock) },
+                          { label: "GRN 103-105 Pending:", value: fmtNum(row.grn103_pending), detail: "SAP T-Code ZM095K" },
+                          { label: "Total:", value: fmtNum(row.current_stock) },
+                        ]}
+                      />
+                    </td>
                     <td style={{ ...cellBase, textAlign: "center" }}><StatusChip status={row.status} /></td>
                     <td
                       style={{ ...num, fontWeight: 700, color: noDemand ? "#b6bac3" : "#1a2233", borderLeft: "1px solid #eef0f3" }}

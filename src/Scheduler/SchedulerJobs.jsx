@@ -139,8 +139,8 @@ const JobDialog = ({ open, job, targets, onClose, onSaved }) => {
     try {
       const payload = {
         ...form,
-        keep_days: form.keep_mode === "ALL" ? null : form.keep_days,
-        retention_date_column: form.keep_mode === "ALL" ? null : form.retention_date_column,
+        keep_days: form.keep_mode === "ALL" || form.load_mode === "SNAPSHOT_REPLACE" ? null : form.keep_days,
+        retention_date_column: form.keep_mode === "ALL" || form.load_mode === "SNAPSHOT_REPLACE" ? null : form.retention_date_column,
         dup_key_columns: form.load_mode === "INSERT_ONLY" ? form.dup_key_columns.join(",") : null,
         dup_prefer_column: form.load_mode === "INSERT_ONLY" ? form.dup_prefer_column || null : null,
         userId: currentUserId(),
@@ -270,6 +270,9 @@ const JobDialog = ({ open, job, targets, onClose, onSaved }) => {
         </Box>
 
         <SectionLabel>Keep history</SectionLabel>
+        {form.load_mode === "SNAPSHOT_REPLACE" ? (
+          <Alert severity="info" sx={{ fontSize: 12, mb: 1 }}>Only the data of the latest file is kept. The previous data is deleted when a new file is loaded, so there is nothing to configure here.</Alert>
+        ) : (<>
         {editing && ["PROD_ACTUAL", "SUBCONTRACT"].includes(job.job_code) && (
           <Alert severity="info" sx={{ fontSize: 12, mb: 1 }}>This job keeps all records permanently. Nothing is ever deleted from its table.</Alert>
         )}
@@ -302,7 +305,8 @@ const JobDialog = ({ open, job, targets, onClose, onSaved }) => {
             )}
           </Box>
         )}
-        {impact && (
+        </>)}
+        {impact && form.load_mode !== "SNAPSHOT_REPLACE" && (
           <Alert severity={impact.rows > 0 ? "warning" : "info"} sx={{ mt: 1.25, fontSize: 12.5 }}>
             {impact.rows > 0
               ? `${impact.rows.toLocaleString("en-IN")} existing row(s) would be deleted by this setting on the next run. This cannot be undone.`

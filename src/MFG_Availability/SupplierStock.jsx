@@ -4,6 +4,7 @@ import { MdOutlineCancel } from "react-icons/md";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { toast } from "react-toastify";
 import MfgListScreen, { compactButtonSx } from "../components/MfgListScreen";
+import TCodeBadge from "../components/TCodeBadge";
 import ValidationResponseGrid from "../components/ValidationResponseTable";
 import { GetSupplierStockActiveApi, DownloadSupplierStockApi, FetchSupplierStockApi } from "../controller/MfgBomApiService";
 
@@ -57,7 +58,7 @@ const summary = (rows) =>
 const emptyLabel = ({ searching }) =>
   searching
     ? "No records match your search."
-    : "No Supplier Stock data found. Click \"Fetch\" to import the latest MBLB file.";
+    : "No Supplier Stock data found. Click \"SAP Sync\" to import the latest MBLB file.";
 
 const SupplierStock = () => {
   const [fetching, setFetching] = useState(false);
@@ -99,6 +100,7 @@ const SupplierStock = () => {
   return (
     <MfgListScreen
       title="Supplier Stock"
+      titleInfo={<TCodeBadge code="MBLB" />}
       columns={COLUMNS}
       getRowId={getRowId}
       searchFields={SEARCH_FIELDS}
@@ -121,7 +123,7 @@ const SupplierStock = () => {
           sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc" } }}
           title="Fetch the latest MBLB Supplier Stock file from the FTP source"
         >
-          {fetching ? "Fetching..." : "Fetch"}
+          {fetching ? "Syncing..." : "SAP Sync"}
         </Button>
       }
     >

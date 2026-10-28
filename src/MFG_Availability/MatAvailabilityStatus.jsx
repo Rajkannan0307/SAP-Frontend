@@ -55,7 +55,7 @@ const tooltipPopperSx = {
 // Supp side, the per-supplier breakdown feeding that number; for the IH
 // side, a single plant-stock line (no per-storage-location API data exists
 // on this screen, so that side stays a single figure).
-const ChildPartSection = ({ child, side, suppliers, isLast }) => (
+const ChildPartSection = ({ child, side, suppliers, isLast, showGrn = true }) => (
   <div
     style={{
       padding: "8px 12px",
@@ -93,10 +93,24 @@ const ChildPartSection = ({ child, side, suppliers, isLast }) => (
         <div style={{ fontSize: 11.5, color: "#8a93a3" }}>No supplier stock for this month.</div>
       )
     ) : (
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "#333" }}>
-        <span>Plant stock</span>
-        <span style={{ fontWeight: 600, color: "#0066FF" }}>{numberFmt(child[side])} Qty</span>
-      </div>
+      <>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "#333" }}>
+          <span>Plant stock</span>
+          <span style={{ fontWeight: 600, color: "#0066FF" }}>{numberFmt(child.plant_stock_qty ?? child[side])} Qty</span>
+        </div>
+        {showGrn && (
+          <>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: "#333" }}>
+              <span>GRN 103-105 Pending</span>
+              <span style={{ fontWeight: 600, color: "#0066FF" }}>{numberFmt(child.grn103_qty || 0)} Qty</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, fontWeight: 700, color: "#1a2233", borderTop: "1px solid #eef0f3", marginTop: 3, paddingTop: 3 }}>
+              <span>Total</span>
+              <span style={{ color: "#0066FF" }}>{numberFmt(child[side])} Qty</span>
+            </div>
+          </>
+        )}
+      </>
     )}
   </div>
 );
@@ -105,7 +119,7 @@ const ChildPartSection = ({ child, side, suppliers, isLast }) => (
 // summed number. For Supp cells, drills one level further into the actual
 // supplier-wise breakdown (reusing the same snapshot data already fetched
 // for Excel export — no new API, no backend change).
-const ChildPartTooltip = ({ value, children, side, supplierMap, plant }) => {
+const ChildPartTooltip = ({ value, children, side, supplierMap, plant, showGrn = true }) => {
   const display = opCellFmt(value);
   if (!children || children.length === 0) {
     return <span>{display}</span>;
@@ -125,6 +139,25 @@ const ChildPartTooltip = ({ value, children, side, supplierMap, plant }) => {
       >
         {side === "supplier_qty" ? "SUPPLIER STOCK BREAKDOWN" : "PLANT STOCK BREAKDOWN"}
       </div>
+      {side !== "supplier_qty" && showGrn && children.length > 1 && (() => {
+        // IH = plant stock + GRN 103-105 Pending (SAP T-Code ZM095K): show how the number in the cell is split
+        const stock = children.reduce((s, c) => s + (Number(c.plant_stock_qty ?? c.plant_qty) || 0), 0);
+        const grn = children.reduce((s, c) => s + (Number(c.grn103_qty) || 0), 0);
+        const line = (label, val, bold) => (
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 16, fontSize: 12, fontWeight: bold ? 700 : 500, color: "#1a2233" }}>
+            <span>{label}</span>
+            <span style={{ color: "#0066FF" }}>{numberFmt(val)}</span>
+          </div>
+        );
+        return (
+          <div style={{ padding: "8px 12px", backgroundColor: "#f4f8ff", borderBottom: "1px solid #dbe6fb" }}>
+            {line("Plant Stock", stock)}
+            {line("GRN 103-105 Pending", grn)}
+            <div style={{ borderTop: "1px solid #cbd9f5", margin: "4px 0" }} />
+            {line("Total (IH)", stock + grn, true)}
+          </div>
+        );
+      })()}
       {/* Scrollable list, header stays fixed above — with many child parts
           this could otherwise grow taller than the viewport and run off
           screen, since a Tooltip/Popper never clips or repositions its own
@@ -137,6 +170,7 @@ const ChildPartTooltip = ({ value, children, side, supplierMap, plant }) => {
             side={side}
             suppliers={supplierMap ? supplierMap.get(`${plant}|${c.child_part_no}`) : undefined}
             isLast={i === children.length - 1}
+            showGrn={showGrn}
           />
         ))}
       </div>
@@ -229,7 +263,7 @@ const FIXED_COLS = [
 ];
 
 // Hover explanations for the dynamic header cells.
-const TIP_IH = "IH = plant (in-house) stock of the child parts, from the latest Plant Stock upload up to the month end";
+const TIP_IH = "IH = plant (in-house) stock of the child parts, from the latest Plant Stock upload up to the month end, plus their GRN 103-105 Pending quantity (hover a number to see the split)";
 const TIP_SUPP = "Supp = stock lying with the supplier, from the latest Supplier Stock upload up to the month end";
 const TIP_TOT = "TOT = IH + Supp";
 const TIP_SET_OF_PARTS = "Set of Parts = the lowest IH quantity across this FG's operation columns (the bottleneck: how many complete sets can be made)";
@@ -806,6 +840,8 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
             "Part Name": child.part_name_label,
             Operation: child.opt_name,
             "IH (Plant) Qty": child.plant_qty,
+            "Plant Stock Qty": child.plant_stock_qty ?? child.plant_qty,
+            "GRN 103-105 Pending Qty": child.grn103_qty || 0,
             "Supp (Supplier) Qty": child.supplier_qty,
             "Total Qty": child.total_qty,
           });
@@ -1029,7 +1065,7 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
                 <React.Fragment key={group.part_name}>
                   {group.ops.map((op) => (
                     <th key={op.col_key} colSpan={2} className={`${matTheadCellClass()} ${groupSeparatorClass}`} style={{ top: HEAD_ROW_H, height: HEAD_ROW_H }}>
-                      <HeadTip tip={`${op.opt_name}: IH (plant) and Supp (supplier) stock of the child parts used at this operation`}>{op.opt_name}</HeadTip>
+                      <HeadTip tip={`${op.opt_name}: IH (plant stock + GRN 103-105 Pending) and Supp (supplier) stock of the child parts used at this operation`}>{op.opt_name}</HeadTip>
                     </th>
                   ))}
                   <th colSpan={3} className={`${matTheadCellClass()} ${groupSeparatorClass}`} style={{ top: HEAD_ROW_H, height: HEAD_ROW_H }}>
@@ -1523,7 +1559,7 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
               ))}
               {partNameGroups.map((group) => (
                 <th key={group.part_name} colSpan={group.ops.length} className={`${matTheadCellClass()} ${groupSeparatorClass}`} style={{ top: 0, height: HEAD_ROW_H }}>
-                  <HeadTip tip={`${group.part_name_label}: IH (plant) stock of the assembly child parts at each of its operations`}>{group.part_name_label}</HeadTip>
+                  <HeadTip tip={`${group.part_name_label}: IH (plant stock) of the assembly child parts at each of its operations`}>{group.part_name_label}</HeadTip>
                 </th>
               ))}
               <th rowSpan={2} className={`${matTheadCellClass("text-right")} ${groupSeparatorClass}`} style={{ top: 0 }}><HeadTip tip={TIP_SET_OF_PARTS}>Set of Parts</HeadTip></th>
@@ -1533,7 +1569,7 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
                 <React.Fragment key={group.part_name}>
                   {group.ops.map((op, opIdx) => (
                     <th key={op.col_key} className={`${matTheadCellClass()} ${opIdx === 0 ? groupSeparatorClass : ""}`} style={{ top: HEAD_ROW_H, height: HEAD_ROW_H }}>
-                      <HeadTip tip={`${op.opt_name}: IH (plant) stock of the assembly child parts used at this operation`}>{op.opt_name}</HeadTip>
+                      <HeadTip tip={`${op.opt_name}: IH (plant stock) of the assembly child parts used at this operation`}>{op.opt_name}</HeadTip>
                     </th>
                   ))}
                 </React.Fragment>
@@ -1572,7 +1608,7 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
                     <React.Fragment key={group.part_name}>
                       {group.ops.map((op, opIdx) => (
                         <td key={op.col_key} className={matTintCellClass("ih", opIdx === 0 ? bodyGroupSeparatorClass : "")}>
-                          <ChildPartTooltip value={row[`op_${op.col_key}_ih`]} children={row[`op_${op.col_key}_children`]} side="plant_qty" plant={row.plant} />
+                          <ChildPartTooltip value={row[`op_${op.col_key}_ih`]} children={row[`op_${op.col_key}_children`]} side="plant_qty" plant={row.plant} showGrn={false} />
                         </td>
                       ))}
                     </React.Fragment>

@@ -97,6 +97,22 @@ export const DownloadPlantStockApi = async (body) => {
   return response.data;
 };
 
+// GRN 103 Pending (SAP report ZM095K): the active (latest) list, the Excel download and the manual Fetch
+export const GetGrn103PendingActiveApi = async (body) => {
+  const response = await axios.post(`${api}/MFG_BOM/getGrn103PendingActive`, body);
+  return response.data;
+};
+
+export const DownloadGrn103PendingApi = async (body) => {
+  const response = await axios.post(`${api}/MFG_BOM/downloadGrn103Pending`, body, { responseType: "blob" });
+  return response.data;
+};
+
+export const FetchGrn103PendingApi = async (body) => {
+  const response = await axios.post(`${api}/MFG_BOM/fetchGrn103Pending`, body);
+  return response;
+};
+
 export const GetSupplierStockActiveApi = async (body) => {
   const response = await axios.post(`${api}/MFG_BOM/getSupplierStockActive`, body);
   return response.data;

@@ -1878,7 +1878,7 @@ const buildBreakupSheets = (shown, data, { year, month }) => {
     ["YD Gap", "YD Actual - YD Plan."],
     ["541 MTD Actual", "Net quantity of movement types 541 and 542 for the Child Part this month, from the Subcontract Daily Plan (541 is stored negative, so it is multiplied by -1). Rows: sheet '541 Breakup'."],
     ["541 MTD Gap", "541 MTD Actual - MTD Actual."],
-    ["541 YA", "Net 541 / 542 quantity of yesterday. Rows: sheet '541 Breakup'."],
+    ["541 YA", "Net 541 / 542 quantity of yesterday Rows: sheet '541 Breakup'."],
     ["541 YG", "541 YA - YD Actual."],
     ["Break-up sheets", "Each Child Part lists the rows it is built from, followed by a shaded Subtotal row that equals the figure on the main sheet. The last lines (ALL PARTS) add up all parts shown."],
   ];

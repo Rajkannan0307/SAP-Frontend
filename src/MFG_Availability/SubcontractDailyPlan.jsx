@@ -4,6 +4,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import { toast } from "react-toastify";
 import MfgListScreen, { compactButtonSx } from "../components/MfgListScreen";
 import InfoHover, { InfoChip, InfoSection } from "../components/InfoHover";
+import TCodeBadge from "../components/TCodeBadge";
 import { getPMPDAccess } from "../Authentication/ActionAccessType";
 import {
   downloadSubcontractPlanExcel,
@@ -142,6 +143,8 @@ const emptyLabel = ({ periodLabel, searching }) =>
 
 // What the (i) icon next to the title explains.
 const TITLE_INFO = (
+  <>
+  <TCodeBadge code="MB51" />
   <InfoHover title="Movement types & grouping" width={320}>
     <InfoSection label="Movement types">
       <InfoChip>541</InfoChip>
@@ -155,6 +158,7 @@ const TITLE_INFO = (
       <b>SUM</b> of the 541 and 542 quantities in each group
     </InfoSection>
   </InfoHover>
+  </>
 );
 
 const SubcontractDailyPlan = () => {
@@ -205,7 +209,7 @@ const SubcontractDailyPlan = () => {
             sx={{ ...compactButtonSx, backgroundColor: "#0066FF", "&:hover": { backgroundColor: "#0052cc" } }}
             title="Fetch latest MB51 541/542 data from the FTP source and insert new records"
           >
-            {fetching ? "Fetching..." : "Fetch"}
+            {fetching ? "Syncing..." : "SAP Sync"}
           </Button>
         )
       }

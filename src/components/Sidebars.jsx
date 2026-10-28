@@ -576,6 +576,17 @@ const Sidebar = ({ setSidebarOpen }) => {
               code: "SupplierStock",
             },
             {
+              name: "GRN 103 Pending",
+              path: "/home/Grn103Pending",
+              icon: (
+                <PrecisionManufacturingIcon
+                  style={{ color: "darkseagreen" }}
+                  className="text-[22px]"
+                />
+              ),
+              code: "Grn103Pending",
+            },
+            {
               name: "Subcontract Daily Dispatch",
               path: "/home/SubcontractDailyPlan",
               icon: (
@@ -653,7 +664,7 @@ const Sidebar = ({ setSidebarOpen }) => {
               code: "RmCoverage",
             }
           ]}
-          codeList={["MFG_BOM", "PlantStock", "SupplierStock", "SubcontractDailyPlan", "MatAvailabilityStatus", "MfgProductionDailyPlan", "MfgComponentDailyPlan", "ProductionPlan", "PMPD_ActualProductionPlan", "RmCoverage"]}
+          codeList={["MFG_BOM", "PlantStock", "SupplierStock", "Grn103Pending", "SubcontractDailyPlan", "MatAvailabilityStatus", "MfgProductionDailyPlan", "MfgComponentDailyPlan", "ProductionPlan", "PMPD_ActualProductionPlan", "RmCoverage"]}
         />
         {/* Scheduler Section */}
         <SidebarSection

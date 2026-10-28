@@ -50,3 +50,19 @@ export const getSchedulerAccess = () => {
     const roleId = Number(localStorage.getItem("RoleID") || 0);
     return { canManage: SCHEDULER_ADMIN_ROLE_IDS.includes(roleId) };
 };
+
+// ---------------------------------------------------------------------------
+// Reusable role check. Pass the Role_IDs (Mst_Role) that may do something:
+//   hasRole([9])  ->  true only for CORP ADMIN
+// Use it with <RoleButton> (components/RoleButton.jsx) to show a button disabled
+// for everyone else, or on its own to hide / disable any other control.
+// ---------------------------------------------------------------------------
+export const hasRole = (allowedRoleIds) => {
+    const roleId = Number(localStorage.getItem("RoleID") || 0);
+    return (allowedRoleIds || []).includes(roleId);
+};
+
+// Production Actual: only these roles can use the Upload button.
+export const UPLOAD_ADMIN_ROLE_IDS = [
+    9, // CORP ADMIN
+];
