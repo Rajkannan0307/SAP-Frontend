@@ -560,7 +560,7 @@ const RmCoverage = () => {
                         title="Current Stock"
                         points={[
                           { label: "Plant Stock:", value: fmtNum(row.plant_stock) },
-                          { label: "GRN 103-105 Pending:", value: fmtNum(row.grn103_pending), detail: "SAP T-Code ZM095K" },
+                          { label: "GRN 103-105 Pending:", value: fmtNum(row.grn103_pending) },
                           { label: "Total:", value: fmtNum(row.current_stock) },
                         ]}
                       />
