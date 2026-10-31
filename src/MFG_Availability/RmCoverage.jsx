@@ -12,6 +12,16 @@ import { FilterPanel, FilterToggleButton } from "../components/FilterPanel";
 import FilterSelect from "../components/FilterSelect";
 import { compactFieldSx, primaryButtonSx } from "../components/compactUi";
 import { DAY_CELLS, STATUS_META, COVERAGE_GREEN, COVERAGE_EMPTY, coverageFills, coverageFillPercent, fmtNum } from "./rmCoverageUtils";
+import SupplierKanban from "./SupplierKanban";
+import PillTabs from "../components/PillTabs";
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
+
+// The two tabs of this screen (the same pill tabs as the MFG Set of Parts - Stock Report)
+const TABS = [
+  { key: "coverage", label: "Child Part Coverage", Icon: Inventory2OutlinedIcon },
+  { key: "kanban", label: "Supplier Kanban", Icon: LocalShippingOutlinedIcon },
+];
 
 // Child Part Coverage (PPC & MRPC; code name RmCoverage): raw-material coverage of the child parts: ROH used with any valuation type, HALB used with any valuation type except INHOUSE.
 //   Plan = SUM of (FG monthly MP plan x BOM qty) of every FG that uses the child part;  Demand per Day = Plan / working days of the month (Working Days master, default 26)
@@ -111,6 +121,9 @@ const RmCoverage = () => {
   const [loaded, setLoaded] = useState(false);
   const [month, setMonth] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; }); // yyyy-MM
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [tab, setTab] = useState(0); // 0 = Child Part Coverage (this screen), 1 = Supplier Kanban (SupplierKanban.jsx)
+  const [kanbanSearch, setKanbanSearch] = useState(""); // the vendor search of the Kanban tab
+  const [kanbanCount, setKanbanCount] = useState(0); // number of Kanban vendors (badge of the tab)
   const plantDefaulted = useRef(false);
   const headScrollRef = useRef(null);
   const bodyScrollRef = useRef(null);
@@ -335,6 +348,41 @@ const RmCoverage = () => {
     return c;
   }, [visibleRows]);
 
+  // Supplier Kanban tab: the same page frame with the Kanban list; the Plant and Month choice is shared with the Coverage tab
+  const tabCounts = { coverage: rows.length, kanban: kanbanCount };
+  if (tab === 1) {
+    return (
+      <div className="flex flex-col p-5 mt-[50px] bg-[#F5F5F5] h-[calc(100vh-50px)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <h1 className="text-[17px] font-bold leading-[1.3] tracking-[0.1px] text-[#1a2233]">Child Part Coverage</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative">
+              <SearchIcon sx={{ fontSize: 16 }} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8a93a3]" />
+              <input
+                type="text"
+                value={kanbanSearch}
+                onChange={(e) => setKanbanSearch(e.target.value)}
+                placeholder="Search Vendor code / name"
+                className="h-[30px] w-[240px] rounded-md border border-[#dde1e7] bg-[#fafbfc] pl-8 pr-2 text-[11px] text-[#333] outline-none hover:border-[#0066FF] focus:border-[#0066FF] focus:border-[1.5px]"
+              />
+            </div>
+            <PillTabs tabs={TABS} value={tab} onChange={setTab} counts={tabCounts} />
+          </div>
+        </div>
+        <SupplierKanban
+          plants={plants.map(myPlantLabel)}
+          plantSelect={plantSelect}
+          onPlantChange={setPlantSelect}
+          plantCodes={plantCodesFor(plantSelect)}
+          month={month}
+          onMonthChange={setMonth}
+          searchText={kanbanSearch}
+          onCountChange={setKanbanCount}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -357,14 +405,17 @@ const RmCoverage = () => {
             </Typography>
           )}
         </div>
-        <TextField
-          size="small"
-          placeholder="Search part number / description"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          InputProps={{ startAdornment: <SearchIcon sx={{ fontSize: 16, color: "#8a93a3", mr: 0.5 }} /> }}
-          sx={compactFieldSx(240)}
-        />
+        <div className="flex flex-wrap items-center gap-3">
+          <TextField
+            size="small"
+            placeholder="Search part number / description"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            InputProps={{ startAdornment: <SearchIcon sx={{ fontSize: 16, color: "#8a93a3", mr: 0.5 }} /> }}
+            sx={compactFieldSx(240)}
+          />
+          <PillTabs tabs={TABS} value={tab} onChange={setTab} counts={tabCounts} />
+        </div>
       </div>
 
       {/* Filters */}
@@ -529,9 +580,9 @@ const RmCoverage = () => {
                 const fills = coverageFills(row.coverage_days);
                 const noDemand = row.coverage_days === null;
                 const vendorLine = row.vendor_code
-                  ? `${row.vendor_code} ${row.vendor_name || ""}${row.buyer_name ? `  |  Buyer: ${row.buyer_name}` : ""}${row.vendors.length > 1 ? `  (+${row.vendors.length - 1} more)` : ""}`
+                  ? `${row.vendor_code} ${row.vendor_name || ""}${row.vendors.length > 1 ? `  (+${row.vendors.length - 1} more)` : ""}`
                   : "";
-                const vendorTip = row.vendors.map((v) => `${vendorLabel(v)} - SOB ${fmtNum(v.sob)}%, lot ${fmtNum(v.lot_size, 3)}${v.buyer_name ? `, buyer ${buyerLabel(v)}` : ""}`).join("\n");
+                const vendorTip = row.vendors.map((v) => `${vendorLabel(v)}${v.sob !== null && v.sob !== undefined ? ` - SOB ${fmtNum(v.sob)}%` : ""}${v.lot_size !== null && v.lot_size !== undefined ? `, lot ${fmtNum(v.lot_size, 3)}` : ""}`).join("\n");
                 return (
                   <tr key={`${row.plant}-${row.child_part}`} style={{ backgroundColor: idx % 2 ? "#fafbfc" : "#fff" }}>
                     <td style={{ ...cellBase, textAlign: "center" }}>{idx + 1}</td>

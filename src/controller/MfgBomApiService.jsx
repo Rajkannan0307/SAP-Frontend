@@ -122,3 +122,19 @@ export const DownloadSupplierStockApi = async (body) => {
   const response = await axios.post(`${api}/MFG_BOM/downloadSupplierStock`, body, { responseType: "blob" });
   return response.data;
 };
+
+// Open Schedule (SAP report ZM055): the active (latest) list, the Excel download and the manual SAP Sync
+export const GetOpenScheduleActiveApi = async (body) => {
+  const response = await axios.post(`${api}/MFG_BOM/getOpenScheduleActive`, body);
+  return response.data;
+};
+
+export const DownloadOpenScheduleApi = async (body) => {
+  const response = await axios.post(`${api}/MFG_BOM/downloadOpenSchedule`, body, { responseType: "blob" });
+  return response.data;
+};
+
+export const FetchOpenScheduleApi = async (body) => {
+  const response = await axios.post(`${api}/MFG_BOM/fetchOpenSchedule`, body);
+  return response;
+};

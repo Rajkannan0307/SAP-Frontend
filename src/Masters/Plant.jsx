@@ -52,12 +52,14 @@ const Plant = () => {
   const [PlantID, setPlantID] = useState("");
   const [PlantName, setPlantName] = useState("");
   const [ShortName, setShortName] = useState("");
+  const [Location, setLocation] = useState("");
   const columns = [
     { field: "Com_Code", headerName: "Company Code ", flex: 1 },
 
     { field: "Plant_Code", headerName: "Plant Code", flex: 1 },
 
     { field: "Plant_Name", headerName: "Plant Name ", flex: 1 },
+    { field: "Location", headerName: "Location", flex: 1 },
     // { field: "Short_Name", headerName: "Short Name ", flex: 1 },
 
 
@@ -136,6 +138,7 @@ const Plant = () => {
     setCompanyCode("");
     setPlantName("");
     setShortName("");
+    setLocation("");
 
     setActiveStatus(true);
     setOpenAddModal(true);
@@ -155,6 +158,7 @@ const Plant = () => {
     setPlantCode(params.row.Plant_Code);
     setPlantName(params.row.Plant_Name);
     setShortName(params.row.Short_Name);
+    setLocation(params.row.Location || "");
     setActiveStatus(params.row.Active_Status);
     setOpenEditModal(true); // Open the modal
     // get_Plant();
@@ -172,7 +176,7 @@ const Plant = () => {
           "Com_Code",
           "Plant_Code",
           "Plant_Name",
-
+          "Location",
 
         ].some((key) => {
           const value = row[key];
@@ -205,6 +209,7 @@ const Plant = () => {
 
         Plant_Name: PlantName,
         Short_Name: ShortName,
+        Location: Location,
         Active_Status: ActiveStatus,
       };
       const response = await getAdd(data);
@@ -236,6 +241,7 @@ const Plant = () => {
 
         Plant_Name: PlantName,
         Short_Name: ShortName,
+        Location: Location,
         Active_Status: ActiveStatus,
       };
 
@@ -274,7 +280,7 @@ const Plant = () => {
       "CompanyCode",
       "PlantCode",
       "PlantName",
-
+      "Location",
 
       "ActiveStatus",
     ];
@@ -283,6 +289,7 @@ const Plant = () => {
       PlantCode: item.Plant_Code,
       CompanyCode: item.Com_Code,
       PlantName: item.Plant_Name,
+      Location: item.Location || "",
 
       ActiveStatus: item.Active_Status ? "Active" : "Inactive"
     }));
@@ -569,6 +576,13 @@ const Plant = () => {
             onChange={(e) => setShortName(e.target.value)}
             required
           />
+          <TextField
+            label="Location"
+            name="Location"
+            value={Location}
+            onChange={(e) => setLocation(e.target.value)}
+            inputProps={{ maxLength: 100 }}
+          />
 
           <FormControlLabel
             control={
@@ -684,6 +698,13 @@ const Plant = () => {
             value={ShortName}
             onChange={(e) => setShortName(e.target.value)}
             required
+          />
+          <TextField
+            label="Location"
+            name="Location"
+            value={Location}
+            onChange={(e) => setLocation(e.target.value)}
+            inputProps={{ maxLength: 100 }}
           />
 
           <FormControlLabel

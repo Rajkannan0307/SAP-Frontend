@@ -41,6 +41,7 @@ import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import { findPlantsNotAllowed, plantsNotAllowedMessage } from "../common/plantFileCheck";
 import { VendorMaster } from "../controller/VendorMasterapiservice";
 import FilterSelect from "../components/FilterSelect";
+import MailIdsInput, { parseMailIds } from "../components/MailIdsInput";
 import UniqueGroupingInfo from "../components/UniqueGroupingInfo";
 import { FilterToggleButton, FilterPanel } from "../components/FilterPanel";
 import {
@@ -175,7 +176,22 @@ const Vendor = () => {
       minWidth: 90,
       valueGetter: (value, row) => (row?.kanban_mail ? "Yes" : "No"),
     },
-    { field: "mail_id", headerName: "Mail ID", flex: 1.4, minWidth: 140 },
+    {
+      field: "mail_id",
+      headerName: "Mail ID",
+      flex: 1.4,
+      minWidth: 140,
+      renderCell: (params) => {
+        const ids = parseMailIds(params.value);
+        if (ids.length <= 1) return params.value || "";
+        return (
+          <span className="flex min-w-0 items-center gap-1.5" title={ids.join("\n")}>
+            <span className="truncate">{ids[0]}</span>
+            <span className="shrink-0 rounded-full bg-[#eef4ff] px-1.5 text-[10.5px] font-semibold text-[#1d4ed8]">+{ids.length - 1}</span>
+          </span>
+        );
+      },
+    },
     {
       field: "buyer_id",
       headerName: "Buyer",
@@ -863,7 +879,7 @@ const Vendor = () => {
           intro="One vendor per combination of:"
           notes={[
             <><b>Add:</b> the same Plant + Vendor Code that already exists is rejected.</>,
-            <><b>Bulk upload:</b> the same combination is <b>updated</b>, any other is <b>added</b>. A blank Kanban_Mail / Buyer_ID / Mail_ID cell keeps the saved value (a new vendor starts with Kanban Mail No).</>,
+            <><b>Bulk upload:</b> the same combination is <b>updated</b>, any other is <b>added</b>. A blank Kanban_Mail / Buyer_ID / Mail_ID cell keeps the saved value (a new vendor starts with Kanban Mail No). Several mail ids go in one Mail_ID cell separated by ; (for example a@x.com; b@y.com).</>,
           ]}
         />
 
@@ -938,13 +954,9 @@ const Vendor = () => {
         <TextInput label="Vendor Name" value={VendorName} onChange={(e) => setVendorName(e.target.value)} />
         <TextInput label="Vendor Address" value={VendorAddress} onChange={(e) => setVendorAddress(e.target.value)} />
         <SelectField label="Kanban Mail" value={KanbanMail} onChange={(e) => setKanbanMail(e.target.value)} options={yesNoOptions} />
-        <TextInput
-          label="Mail ID"
-          value={MailID}
-          onChange={(e) => setMailID(e.target.value)}
-          placeholder="name@company.com (several: ;)"
-          inputProps={{ maxLength: 200 }}
-        />
+        <Box sx={{ gridColumn: "span 2" }}>
+          <MailIdsInput value={MailID} onChange={setMailID} />
+        </Box>
         <Box sx={{ gridColumn: "span 2" }}>{buyerPicker(!PlantCode)}</Box>
         <Box sx={{ gridColumn: "span 2" }}>
           <ActiveSwitch checked={!!ActiveStatus} onChange={(e) => setActiveStatus(e.target.checked)} />
@@ -968,13 +980,9 @@ const Vendor = () => {
         <TextInput label="Vendor Name" value={VendorName} onChange={(e) => setVendorName(e.target.value)} />
         <TextInput label="Vendor Address" value={VendorAddress} onChange={(e) => setVendorAddress(e.target.value)} />
         <SelectField label="Kanban Mail" value={KanbanMail} onChange={(e) => setKanbanMail(e.target.value)} options={yesNoOptions} />
-        <TextInput
-          label="Mail ID"
-          value={MailID}
-          onChange={(e) => setMailID(e.target.value)}
-          placeholder="name@company.com (several: ;)"
-          inputProps={{ maxLength: 200 }}
-        />
+        <Box sx={{ gridColumn: "span 2" }}>
+          <MailIdsInput value={MailID} onChange={setMailID} />
+        </Box>
         <Box sx={{ gridColumn: "span 2" }}>{buyerPicker(false)}</Box>
         <Box sx={{ gridColumn: "span 2" }}>
           <ActiveSwitch checked={!!ActiveStatus} onChange={(e) => setActiveStatus(e.target.checked)} />

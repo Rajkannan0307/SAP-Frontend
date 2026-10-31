@@ -79,10 +79,10 @@ const WorkingDays = () => {
   const [searchText, setSearchText] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [fPlant, setFPlant] = useState("All");
-  // the list opens on the current month and the user's own plant (both can be changed or cleared)
-  const [fMonth, setFMonth] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
+  // the list opens on the user's own plant (the Plant field in the toolbar); every month is listed
   const plantDefaulted = useRef(false);
   const [fStatus, setFStatus] = useState("All");
+  const [fYear, setFYear] = useState("All"); // one year, or All years
   const [pageModel, setPageModel] = useState({ page: 0, pageSize: 25 });
 
   const [openAddModal, setOpenAddModal] = useState(false);
@@ -136,13 +136,19 @@ const WorkingDays = () => {
     const text = searchText.trim().toLowerCase();
     return scopedRows.filter((row) => {
       if (fPlant !== "All" && plantLabelOf(row) !== fPlant) return false;
-      if (fMonth && row.work_month !== fMonth) return false;
+      if (fYear !== "All" && String(row.work_month || "").slice(0, 4) !== fYear) return false;
       if (fStatus !== "All" && (fStatus === "Active") !== !!row.active_status) return false;
       if (!text) return true;
       return [row.Plant_Code, row.Plant_Name, monthLabel(row.work_month), row.work_month, String(row.working_days)].some((v) => v && String(v).toLowerCase().includes(text));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scopedRows, searchText, fPlant, fMonth, fStatus, plants]);
+  }, [scopedRows, searchText, fPlant, fYear, fStatus, plants]);
+
+  // the years that have rows (newest first); All = every year
+  const yearOptions = useMemo(
+    () => [...new Set(scopedRows.map((r) => String(r.work_month || "").slice(0, 4)).filter(Boolean))].sort((a, b) => b.localeCompare(a)),
+    [scopedRows]
+  );
 
   const activeFilterCount = fStatus !== "All" ? 1 : 0;
   const clearFilters = () => setFStatus("All");
@@ -235,6 +241,7 @@ const WorkingDays = () => {
     try {
       const response = await addWorkingDays({ UserID: EmpId, User_ID: UserID, plant_id: PlantID, work_month: WorkMonth, working_days: WorkingDaysCount, active_status: ActiveStatus });
       alert(response.data.message || "Working days added successfully.");
+      if (fYear !== "All") setFYear(String(WorkMonth).slice(0, 4)); // the Year field follows the row that was just added
       getData();
       setOpenAddModal(false);
     } catch (error) {
@@ -326,6 +333,7 @@ const WorkingDays = () => {
         }}
       >
         <FilterSelect label="Plant" value={fPlant} options={plantFilterOptions} onChange={setFPlant} minWidth={190} />
+        <FilterSelect label="Year" value={fYear} options={yearOptions} onChange={setFYear} minWidth={110} isSearchable={false} />
         <TextField
           size="small"
           placeholder="Search plant, month"
