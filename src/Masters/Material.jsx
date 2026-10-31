@@ -74,6 +74,15 @@ const getStockError = (materialType, safetyStock, maxStock) => {
   return "";
 };
 
+// Per Day Capacity: optional; when given it must be a number, never negative (the API and the database procedures enforce the same rule)
+const getCapacityError = (capacity) => {
+  const txt = String(capacity ?? "").trim();
+  if (txt === "") return "";
+  if (!/^-?\d+(\.\d+)?$/.test(txt)) return "Per Day Capacity must be a number.";
+  if (Number(txt) < 0) return "Per Day Capacity cannot be negative.";
+  return "";
+};
+
 // Procurement Type (mandatory): only these four codes are allowed (the API and the database procedures enforce the same list)
 const PROCUREMENT_TYPES = [
   { value: "E", label: "E \u2013 Inhouse" },
@@ -193,6 +202,7 @@ const Material = () => {
   const [Rate, setRate] = useState("");
   const [SafetyStock, setSafetyStock] = useState("");
   const [MaxStock, setMaxStock] = useState("");
+  const [PerDayCapacity, setPerDayCapacity] = useState("");
   const [ActiveStatus, setActiveStatus] = useState(false);
   // Only the plants this user may use (own plant + User Master > Data Access) - the same list and rule as Vendor Master,
   // Material - Vendor Mapping and the Manufacturing BOM. PlantTable = the same plants for the Add dialog (Plant_Id = Plant_ID).
@@ -274,6 +284,7 @@ const Material = () => {
     { field: "Rate", headerName: "Rate", flex: 0.6, minWidth: 70 },
     { field: "safety_stock", headerName: "Safety Stock", flex: 0.8, minWidth: 90 },
     { field: "max_stock", headerName: "Max Stock", flex: 0.7, minWidth: 80 },
+    { field: "per_day_capacity", headerName: "Per Day Capacity", flex: 0.8, minWidth: 110 },
     {
       field: "Active_Status",
       headerName: "Status",
@@ -539,6 +550,7 @@ const Material = () => {
     setRate("");
     setSafetyStock("");
     setMaxStock("");
+    setPerDayCapacity("");
     setActiveStatus(true);
     setOpenAddModal(true);
     get_Material_Type();
@@ -572,7 +584,7 @@ const Material = () => {
     workbook.creator = 'MATERIAL_MASTER';
     workbook.created = new Date();
 
-    const headers = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Active_Status', 'Line_Name', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type'];
+    const headers = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Active_Status', 'Line_Name', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity'];
     const worksheet = workbook.addWorksheet('MATERIAL');
     worksheet.addRow(headers);
     worksheet.getRow(1).eachCell((cell) => {
@@ -594,6 +606,7 @@ const Material = () => {
       { width: 26 }, // Material_Category (mandatory)
       { width: 14, style: { numFmt: '@' } }, // Vendor_Code (optional, text so codes keep their leading zeros)
       { width: 18 }, // Procurement_Type (mandatory)
+      { width: 18 }, // Per_Day_Capacity (optional)
     ];
     worksheet.views = [{ state: 'frozen', ySplit: 1 }];
     // Safety_Stock / Max_Stock: mandatory for material type ROH, optional for the others; 0 or more
@@ -617,6 +630,17 @@ const Material = () => {
       errorTitle: 'Invalid Procurement Type',
       error: 'Choose E, F, F30 or E50.',
       formulae: [`"${PROCUREMENT_TYPES.map((p) => p.value).join(',')}"`],
+    });
+    // Per_Day_Capacity (optional): a number, 0 or more; blank = an existing material keeps its capacity
+    worksheet.getCell('N1').note = 'Optional. Number, 0 or more. Blank = an existing material keeps its Per Day Capacity.';
+    worksheet.dataValidations.add('N2:N1000', {
+      type: 'decimal',
+      operator: 'greaterThanOrEqual',
+      formulae: [0],
+      allowBlank: true,
+      showErrorMessage: true,
+      errorTitle: 'Invalid value',
+      error: 'Enter a number, 0 or more.',
     });
     worksheet.dataValidations.add('H2:I1000', {
       type: 'decimal',
@@ -797,9 +821,9 @@ const Material = () => {
   const downloadExcel = (newRecord, updateRecord, errRecord) => {
     const wb = XLSX.utils.book_new();
 
-    const newRecordsColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'ActiveStatus', 'Status'];
-    const UpdatedColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'ActiveStatus', 'Status'];
-    const ErrorColumns = ['Excel_Row', 'Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation', 'Segment_Validation', 'Material_Category_Validation', 'Procurement_Type_Validation', 'Vendor_Code_Validation'];
+    const newRecordsColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity', 'ActiveStatus', 'Status'];
+    const UpdatedColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity', 'ActiveStatus', 'Status'];
+    const ErrorColumns = ['Excel_Row', 'Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation', 'Segment_Validation', 'Material_Category_Validation', 'Procurement_Type_Validation', 'Vendor_Code_Validation', 'Per_Day_Capacity_Validation'];
 
     const filteredNewData = newRecord.map(item => ({
       Plant_Code: item.Plant_Code,
@@ -814,6 +838,7 @@ const Material = () => {
       Material_Category: item.Material_Category,
       Vendor_Code: item.Vendor_Code,
       Procurement_Type: item.Procurement_Type,
+      Per_Day_Capacity: item.per_day_capacity,
       ActiveStatus: item.Active_Status,
       Status: item.Status,
     }));
@@ -831,6 +856,7 @@ const Material = () => {
       Material_Category: item.Material_Category,
       Vendor_Code: item.Vendor_Code,
       Procurement_Type: item.Procurement_Type,
+      Per_Day_Capacity: item.per_day_capacity,
       ActiveStatus: item.Active_Status,
       Status: item.Status,
     }));
@@ -850,6 +876,7 @@ const Material = () => {
       Material_Category: item.Material_Category,
       Vendor_Code: item.Vendor_Code,
       Procurement_Type: item.Procurement_Type,
+      Per_Day_Capacity: item.Per_Day_Capacity,
       ActiveStatus: item.Active_Status,
       PlantCode_Validation: item.Plant_Val,
       Material_Type_Validation: item.Material_Val,
@@ -858,6 +885,7 @@ const Material = () => {
       Material_Category_Validation: item.Category_Val,
       Procurement_Type_Validation: item.Proc_Val,
       Vendor_Code_Validation: item.Vendor_Val,
+      Per_Day_Capacity_Validation: item.Capacity_Val,
     }));
 
     // ðŸ”¹ Helper to style header cells
@@ -876,7 +904,7 @@ const Material = () => {
 
     // ðŸ”´ Style red text for validation columns only
     const styleValidationColumns = (worksheet, columns, dataLength) => {
-      const validationCols = ['PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation', 'Segment_Validation', 'Material_Category_Validation', 'Procurement_Type_Validation', 'Vendor_Code_Validation'];
+      const validationCols = ['PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation', 'Segment_Validation', 'Material_Category_Validation', 'Procurement_Type_Validation', 'Vendor_Code_Validation', 'Per_Day_Capacity_Validation'];
 
       for (let row = 1; row <= dataLength; row++) {
         validationCols.forEach(colName => {
@@ -942,6 +970,7 @@ const Material = () => {
     setRate(params.row.Rate);
     setSafetyStock(params.row.safety_stock ?? "");
     setMaxStock(params.row.max_stock ?? "");
+    setPerDayCapacity(params.row.per_day_capacity ?? "");
     setActiveStatus(params.row.Active_Status);
     setLineID(params.row.Line_ID || "");
     setSegmentID(params.row.prod_seg_id || "");
@@ -975,6 +1004,11 @@ const Material = () => {
       alert(stockError);
       return;
     }
+    const capacityError = getCapacityError(PerDayCapacity);
+    if (capacityError) {
+      alert(capacityError);
+      return;
+    }
     const procError = getProcurementError(ProcType);
     if (procError) {
       alert(procError);
@@ -1000,6 +1034,7 @@ const Material = () => {
         Rate: Rate,
         Safety_Stock: String(SafetyStock).trim() === "" ? null : SafetyStock,
         Max_Stock: String(MaxStock).trim() === "" ? null : MaxStock,
+        Per_Day_Capacity: String(PerDayCapacity).trim() === "" ? null : PerDayCapacity,
         Active_Status: ActiveStatus,
         Line_ID: LineID || null,
         Prod_Seg_ID: SegmentID || null,
@@ -1032,6 +1067,11 @@ const Material = () => {
       alert(stockError);
       return;
     }
+    const capacityError = getCapacityError(PerDayCapacity);
+    if (capacityError) {
+      alert(capacityError);
+      return;
+    }
     const procError = getProcurementError(ProcType);
     if (procError) {
       alert(procError);
@@ -1055,6 +1095,7 @@ const Material = () => {
         Rate: Rate,
         Safety_Stock: String(SafetyStock).trim() === "" ? null : SafetyStock,
         Max_Stock: String(MaxStock).trim() === "" ? null : MaxStock,
+        Per_Day_Capacity: String(PerDayCapacity).trim() === "" ? null : PerDayCapacity,
         Active_Status: ActiveStatus,
         Line_ID: LineID || null,
         Prod_Seg_ID: SegmentID || null,
@@ -1095,7 +1136,7 @@ const Material = () => {
       return;
     }
 
-    const DataColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor', 'Procurement_Type', 'ActiveStatus'];
+    const DataColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor', 'Procurement_Type', 'Per_Day_Capacity', 'ActiveStatus'];
 
     const filteredData = data.map(item => ({
       Plant_Code: item.Plant_Code,
@@ -1111,6 +1152,7 @@ const Material = () => {
       Material_Category: item.Material_Category || "",
       Vendor: item.Vendor_Code ? `${item.Vendor_Code} –${item.Vendor_Name || ""}` : "",
       Procurement_Type: procurementLabel(item.Procurement_Type),
+      Per_Day_Capacity: item.per_day_capacity,
       ActiveStatus: item.Active_Status ? "Active" : "Inactive"
     }));
 
@@ -1318,6 +1360,7 @@ const Material = () => {
         {/* Safety / Max Stock: mandatory only for material type ROH */}
         <TextInput label="Safety Stock" type="number" value={SafetyStock} onChange={(e) => setSafetyStock(e.target.value)} inputProps={{ min: 0, step: "any" }} required={String(MaterialType).toUpperCase() === "ROH"} />
         <TextInput label="Max Stock" type="number" value={MaxStock} onChange={(e) => setMaxStock(e.target.value)} inputProps={{ min: 0, step: "any" }} required={String(MaterialType).toUpperCase() === "ROH"} />
+        <TextInput label="Per Day Capacity" type="number" value={PerDayCapacity} onChange={(e) => setPerDayCapacity(e.target.value)} inputProps={{ min: 0, step: "any" }} />
         <Box sx={{ gridColumn: "span 2" }}>
           <ActiveSwitch checked={!!ActiveStatus} onChange={(e) => setActiveStatus(e.target.checked)} />
         </Box>
@@ -1350,6 +1393,7 @@ const Material = () => {
         {/* Safety / Max Stock: mandatory only for material type ROH */}
         <TextInput label="Safety Stock" type="number" value={SafetyStock} onChange={(e) => setSafetyStock(e.target.value)} inputProps={{ min: 0, step: "any" }} required={String(MaterialType).toUpperCase() === "ROH"} />
         <TextInput label="Max Stock" type="number" value={MaxStock} onChange={(e) => setMaxStock(e.target.value)} inputProps={{ min: 0, step: "any" }} required={String(MaterialType).toUpperCase() === "ROH"} />
+        <TextInput label="Per Day Capacity" type="number" value={PerDayCapacity} onChange={(e) => setPerDayCapacity(e.target.value)} inputProps={{ min: 0, step: "any" }} />
         <Box sx={{ gridColumn: "span 2" }}>
           <ActiveSwitch checked={!!ActiveStatus} onChange={(e) => setActiveStatus(e.target.checked)} />
         </Box>
@@ -1390,7 +1434,7 @@ const Material = () => {
           />
           <span style={{ fontSize: 11, lineHeight: 1.5, color: "#6b7280" }}>
             Required columns: Plant_Code, Material_Type, Material_Code, Description, Rate, Active_Status (Active / Inactive) and Line_Name
-            (may be blank). Procurement_Type is mandatory (E, F, F30 or E50 - pick it from the dropdown). Vendor_Code (must be in the Vendor Master sheet of the template; blank keeps the stored vendor) and Material_Category (a name from the Material Category sheet) are mandatory when Procurement_Type is F or F30, optional for E and E50. Optional: Safety_Stock and Max_Stock (mandatory for ROH) and Segment. A material that already exists is updated;
+            (may be blank). Procurement_Type is mandatory (E, F, F30 or E50 - pick it from the dropdown). Vendor_Code (must be in the Vendor Master sheet of the template; blank keeps the stored vendor) and Material_Category (a name from the Material Category sheet) are mandatory when Procurement_Type is F or F30, optional for E and E50. Optional: Safety_Stock and Max_Stock (mandatory for ROH), Segment and Per_Day_Capacity (a number, 0 or more). A material that already exists is updated;
             a new one is added. Rows with errors are skipped and listed in the log file.
           </span>
         </Box>

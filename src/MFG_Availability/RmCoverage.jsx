@@ -11,7 +11,7 @@ import { WORKING_DAYS_RULE } from "../components/WorkingDaysTip";
 import { FilterPanel, FilterToggleButton } from "../components/FilterPanel";
 import FilterSelect from "../components/FilterSelect";
 import { compactFieldSx, primaryButtonSx } from "../components/compactUi";
-import { DAY_CELLS, STATUS_META, COVERAGE_GREEN, COVERAGE_EMPTY, coverageFills, coverageFillPercent, fmtNum } from "./rmCoverageUtils";
+import { DAY_CELLS, STATUS_META, STATUS_ORDER, COVERAGE_GREEN, COVERAGE_EMPTY, coverageFills, coverageFillPercent, fmtNum } from "./rmCoverageUtils";
 import SupplierKanban from "./SupplierKanban";
 import PillTabs from "../components/PillTabs";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
@@ -26,7 +26,7 @@ const TABS = [
 // Child Part Coverage (PPC & MRPC; code name RmCoverage): raw-material coverage of the child parts: ROH used with any valuation type, HALB used with any valuation type except INHOUSE.
 //   Plan = SUM of (FG monthly MP plan x BOM qty) of every FG that uses the child part;  Demand per Day = Plan / working days of the month (Working Days master, default 26)
 //   Coverage Days = Current Stock (latest MB52 snapshot + GRN 103-105 Pending) / Demand per Day
-//   Status: R = stock below the Safety Stock, G = coverage > 3 days and stock above the Safety Stock, Y = anything else
+//   Status: the cover band of the Coverage Days: R under 1 day, Y 1 - 2 days, G 3 - 5 days, B more than 5 days
 // The numbers are calculated by the backend (MFG_BOM/RmCoverage.router.js); this screen shows them.
 
 const HEAD_H = 24; // height of the first header row (the second one sticks right below it)
@@ -65,10 +65,10 @@ const Head = ({ tip, tipProps, children, ...props }) => (
 // Demand / Day hover: the formula and the working days of the plan month per plant (from the Working Days master, default 26)
 const demandPerDayTip = (workingDays) => {
   const plants = Object.keys(workingDays || {});
-  if (plants.length === 0) return { title: "Demand per Day = Plan ÷ working days of the month", note: WORKING_DAYS_RULE };
+  if (plants.length === 0) return { title: "Demand per Day = the material's Per Day Capacity (Material Master), or else Plan ÷ working days of the month", note: WORKING_DAYS_RULE };
   const one = plants.length === 1 ? workingDays[plants[0]] : null;
   return {
-    title: one ? `Demand per Day = Plan ÷ ${one.monthDays}` : "Demand per Day = Plan ÷ working days of the plant's month",
+    title: one ? `Demand per Day = the material's Per Day Capacity (Material Master), or else Plan ÷ ${one.monthDays}` : "Demand per Day = the material's Per Day Capacity (Material Master), or else Plan ÷ working days of the plant's month",
     points: plants.map((p) => {
       const wd = workingDays[p];
       if (wd.source === "table") return { label: `Plant ${p}: working days in the month`, value: wd.monthDays, detail: "from the Working Days master" };
@@ -90,7 +90,7 @@ const stockAsOfLabel = (iso) => {
 };
 
 const StatusChip = ({ status }) => {
-  const meta = STATUS_META[status] || STATUS_META.Y;
+  const meta = STATUS_META[status] || STATUS_META.B;
   return (
     <Tooltip title={`${meta.name}: ${meta.rule}`} arrow placement="top">
       <span
@@ -314,7 +314,7 @@ const RmCoverage = () => {
             const fill = Number(value) || 0;
             const st = STATUS_META[visibleRows[rowIdx] && visibleRows[rowIdx].status] || STATUS_META.G;
             const solid = st.color.slice(1).toUpperCase();
-            const light = { R: "F2B8B8", Y: "FBE3A0", G: "B7DDB9" }[st.letter] || "B7DDB9";
+            const light = { R: "F2B8B8", Y: "FBE3A0", G: "B7DDB9", B: "BBD6F3" }[st.letter] || "BBD6F3";
             if (fill >= 1) return { z: "0%", s: { fill: { fgColor: { rgb: solid } }, font: { color: { rgb: st.text === "#fff" ? "FFFFFF" : "1A2233" } }, alignment: { horizontal: "center" } } };
             if (fill > 0) return { z: "0%", s: { fill: { fgColor: { rgb: light } }, alignment: { horizontal: "center" } } };
             return { z: "0%", s: { fill: { fgColor: { rgb: "E9ECF1" } }, font: { color: { rgb: "B6BAC3" } }, alignment: { horizontal: "center" } } };
@@ -343,7 +343,7 @@ const RmCoverage = () => {
   const multiPlant = useMemo(() => new Set(rows.map((r) => r.plant)).size > 1, [rows]);
 
   const counts = useMemo(() => {
-    const c = { R: 0, G: 0, Y: 0 };
+    const c = { R: 0, Y: 0, G: 0, B: 0 };
     visibleRows.forEach((r) => { c[r.status] = (c[r.status] || 0) + 1; });
     return c;
   }, [visibleRows]);
@@ -464,7 +464,7 @@ const RmCoverage = () => {
         </span>
         <InfoTip label="Status legend">
       <b style={{ color: "#1a2233", fontSize: 12 }}>Status</b>
-      {["R", "G", "Y"].map((k) => (
+      {STATUS_ORDER.map((k) => (
         <div key={k} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
           <span style={{ flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, borderRadius: "50%", backgroundColor: STATUS_META[k].color, color: STATUS_META[k].text, fontSize: 10, fontWeight: 700 }}>{k}</span>
           <span><b>{STATUS_META[k].name}</b> {STATUS_META[k].rule}{loaded && <span style={{ color: "#8a93a3" }}> ({counts[k] || 0})</span>}</span>
@@ -472,9 +472,9 @@ const RmCoverage = () => {
       ))}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ flex: "none", display: "inline-flex", gap: 2 }}>
-          {["R", "Y", "G"].map((k) => <span key={k} style={{ width: 10, height: 12, backgroundColor: STATUS_META[k].color, borderRadius: 2 }} />)}
+          {STATUS_ORDER.map((k) => <span key={k} style={{ width: 10, height: 12, backgroundColor: STATUS_META[k].color, borderRadius: 2 }} />)}
         </span>
-        <span>each block = 1 day of stock coverage (a part block = part of a day); its colour is the row's status: red R, yellow Y, green G</span>
+        <span>each block = 1 day of stock coverage (a part block = part of a day); its colour is the row's status: red R, yellow Y, green G, blue B</span>
       </div>
         </InfoTip>
 
@@ -532,8 +532,8 @@ const RmCoverage = () => {
               <Head rowSpan={2} tip="Safety Stock from the Material Master" style={{ ...headBase, top: 0 }}>Safety Stock</Head>
               <Head rowSpan={2} tip="Maximum Stock from the Material Master" style={{ ...headBase, top: 0 }}>Max Stock</Head>
               <Head rowSpan={2} tip="Current Stock = unrestricted stock of the latest MB52 (Plant Stock) snapshot + the GRN 103-105 Pending quantity (hover a number to see the split)" style={{ ...headBase, top: 0 }}>Current Stock</Head>
-              <Head rowSpan={2} tip="R = stock below Safety Stock | G = coverage over 3 days and stock above Safety Stock | Y = any other case" style={{ ...headBase, top: 0 }}>Status</Head>
-              <Head colSpan={DAY_CELLS + 1} tip="Coverage Days = Current Stock / Demand per Day. Each block = 1 day of stock, in the colour of the status (R red, Y yellow, G green)" style={{ ...headBase, top: 0, height: HEAD_H, borderLeft: "1px solid #b9c8ec" }}>Coverage Days</Head>
+              <Head rowSpan={2} tip="By Coverage Days: R = under 1 day | Y = 1 to 2 days | G = 3 to 5 days | B = more than 5 days (or no demand)" style={{ ...headBase, top: 0 }}>Status</Head>
+              <Head colSpan={DAY_CELLS + 1} tip="Coverage Days = Current Stock / Demand per Day. Each block = 1 day of stock, in the colour of the status (R red, Y yellow, G green, B blue)" style={{ ...headBase, top: 0, height: HEAD_H, borderLeft: "1px solid #b9c8ec" }}>Coverage Days</Head>
             </tr>
             <tr>
               <Head tip="Calculated coverage in days. '-' = no demand in the plan, so it cannot be calculated" style={{ ...headBase, top: HEAD_H, height: HEAD_H, borderLeft: "1px solid #b9c8ec" }}>Days</Head>
@@ -601,7 +601,7 @@ const RmCoverage = () => {
                       </div>
                     </td>
                     <td style={num}>{fmtNum(row.plan_qty)}</td>
-                    <td style={num} title={`Exact: ${fmtNum(row.demand_per_day)} per day`}>{fmtNum(row.demand_per_day, 0)}</td>
+                    <td style={num} title={row.demand_source === "capacity" ? `Per Day Capacity from the Material Master: ${fmtNum(row.demand_per_day)} per day (used instead of Plan ÷ working days)` : `Exact: ${fmtNum(row.demand_per_day)} per day`}>{fmtNum(row.demand_per_day, 0)}</td>
                     <td style={{ ...num, color: row.safety_stock === null ? "#b6bac3" : "#333" }}>{fmtNum(row.safety_stock)}</td>
                     <td style={{ ...num, color: row.max_stock === null ? "#b6bac3" : "#333" }}>{fmtNum(row.max_stock)}</td>
                     <td style={{ ...num, fontWeight: 700 }}>
@@ -626,7 +626,7 @@ const RmCoverage = () => {
                     {fills.map((fill, i) => (
                       <td key={i} style={{ padding: "5px 1px", borderBottom: "1px solid #eef0f3", boxSizing: "border-box" }}
                         title={noDemand ? "No demand" : `Day ${i + 1}: ${fill >= 1 ? "covered" : fill > 0 ? `${Math.round(fill * 100)}% covered` : "not covered"}`}>
-                        {/* a light-grey box with a bar inside, in the colour of the row's status (R red / Y yellow / G green): full width = a whole day covered, part width = part of a day */}
+                        {/* a light-grey box with a bar inside, in the colour of the row's status (R red / Y yellow / G green / B blue): full width = a whole day covered, part width = part of a day */}
                         <div style={{ height: 18, borderRadius: 2, backgroundColor: COVERAGE_EMPTY, overflow: "hidden" }}>
                           <div data-fill={coverageFillPercent(fill)} style={{ height: "100%", width: `${coverageFillPercent(fill)}%`, backgroundColor: (STATUS_META[row.status] || {}).color || COVERAGE_GREEN }} />
                         </div>

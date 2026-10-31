@@ -162,6 +162,7 @@ const Vendor = () => {
   const [VendorAddress, setVendorAddress] = useState("");
   const [KanbanMail, setKanbanMail] = useState("No"); // "Yes" / "No"
   const [MailID, setMailID] = useState(""); // vendor e-mail ("" = none); several can be separated with ; or ,
+  const [MailCC, setMailCC] = useState(""); // CC mail ids copied on the Supplier Kanban mail ("" = none); several can be separated with ; or ,
   const [BuyerID, setBuyerID] = useState(""); // Mst_User.Employee_ID (gen_id); "" = no buyer
   const [BuyerTable, setBuyerTable] = useState([]);
   const columns = [
@@ -181,6 +182,22 @@ const Vendor = () => {
       headerName: "Mail ID",
       flex: 1.4,
       minWidth: 140,
+      renderCell: (params) => {
+        const ids = parseMailIds(params.value);
+        if (ids.length <= 1) return params.value || "";
+        return (
+          <span className="flex min-w-0 items-center gap-1.5" title={ids.join("\n")}>
+            <span className="truncate">{ids[0]}</span>
+            <span className="shrink-0 rounded-full bg-[#eef4ff] px-1.5 text-[10.5px] font-semibold text-[#1d4ed8]">+{ids.length - 1}</span>
+          </span>
+        );
+      },
+    },
+    {
+      field: "mail_cc",
+      headerName: "CC Mail ID",
+      flex: 1.2,
+      minWidth: 130,
       renderCell: (params) => {
         const ids = parseMailIds(params.value);
         if (ids.length <= 1) return params.value || "";
@@ -305,6 +322,7 @@ const Vendor = () => {
     setVendorAddress("");
     setKanbanMail("No");
     setMailID("");
+    setMailCC("");
     setBuyerID("");
     setActiveStatus(true);
     setOpenAddModal(true);
@@ -330,18 +348,19 @@ const Vendor = () => {
     workbook.creator = "VENDOR_MASTER";
     workbook.created = new Date();
     const worksheet = workbook.addWorksheet("Sheet1");
-    worksheet.addRow(["Plant_Code", "Vendor_Code", "Vendor_Name", "Vendor_Address", "Kanban_Mail", "Buyer_ID", "Mail_ID", "Active_Status"]);
+    worksheet.addRow(["Plant_Code", "Vendor_Code", "Vendor_Name", "Vendor_Address", "Kanban_Mail", "Buyer_ID", "Mail_ID", "Active_Status", "Mail_CC"]);
     worksheet.getRow(1).eachCell((cell) => {
       cell.font = { bold: true };
       cell.alignment = { horizontal: "center" };
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFADD8E6" } };
     });
-    worksheet.columns = [{ width: 14 }, { width: 16 }, { width: 30 }, { width: 30 }, { width: 14 }, { width: 12 }, { width: 32 }, { width: 14 }];
+    worksheet.columns = [{ width: 14 }, { width: 16 }, { width: 30 }, { width: 30 }, { width: 14 }, { width: 12 }, { width: 32 }, { width: 14 }, { width: 32 }];
     worksheet.views = [{ state: "frozen", ySplit: 1 }];
     worksheet.getCell("E1").note = "Optional: Yes or No. Blank = No for a new vendor, unchanged for an existing one.";
     worksheet.getCell("F1").note = "Optional: employee ID of an active user (the buyer). Blank = unchanged.";
     worksheet.getCell("G1").note = "Optional: e-mail address (several can be separated with ;). Blank = unchanged.";
     worksheet.getCell("H1").note = "Active or Inactive.";
+    worksheet.getCell("I1").note = "Optional: CC e-mail addresses of the Supplier Kanban mail (several can be separated with ;). Blank = unchanged.";
 
     const plantCodes = (plants || []).map((p) => `${p.Plant_Code}`); // only the plants this user may use
     if (plantCodes.length) {
@@ -414,6 +433,7 @@ const Vendor = () => {
       "Kanban_Mail",
       "Buyer_ID",
       "Mail_ID",
+      "Mail_CC",
       "Status",
     ];
     const UpdatedColumns = [
@@ -425,6 +445,7 @@ const Vendor = () => {
       "Kanban_Mail",
       "Buyer_ID",
       "Mail_ID",
+      "Mail_CC",
       "Status",
     ];
     const ErrorColumns = [
@@ -437,10 +458,12 @@ const Vendor = () => {
       "Kanban_Mail",
       "Buyer_ID",
       "Mail_ID",
+      "Mail_CC",
       "PlantCode_Validation",
       "Kanban_Validation",
       "Buyer_Validation",
       "Mail_Validation",
+      "Mail_CC_Validation",
 
     ];
     // Kanban_Mail comes back as 1 / 0 (new / updated rows) or as typed in the file (error rows)
@@ -455,6 +478,7 @@ const Vendor = () => {
       Kanban_Mail: kanbanText(item.Kanban_Mail),
       Buyer_ID: item.Buyer_ID ?? "",
       Mail_ID: item.Mail_ID ?? "",
+      Mail_CC: item.Mail_CC ?? "",
       Status: item.Status,
     }));
 
@@ -467,6 +491,7 @@ const Vendor = () => {
       Kanban_Mail: kanbanText(item.Kanban_Mail),
       Buyer_ID: item.Buyer_ID ?? "",
       Mail_ID: item.Mail_ID ?? "",
+      Mail_CC: item.Mail_CC ?? "",
       Status: item.Status,
     }));
 
@@ -479,10 +504,12 @@ const Vendor = () => {
       Kanban_Mail: item.Kanban_Mail ?? "",
       Buyer_ID: item.Buyer_ID ?? "",
       Mail_ID: item.Mail_ID ?? "",
+      Mail_CC: item.Mail_CC ?? "",
       PlantCode_Validation: item.Plant_Val,
       Kanban_Validation: item.Kanban_Val,
       Buyer_Validation: item.Buyer_Val,
       Mail_Validation: item.Mail_Val,
+      Mail_CC_Validation: item.Mail_CC_Val,
 
     }));
 
@@ -507,6 +534,7 @@ const Vendor = () => {
         "Kanban_Validation",
         "Buyer_Validation",
         "Mail_Validation",
+        "Mail_CC_Validation",
 
       ];
 
@@ -573,6 +601,7 @@ const Vendor = () => {
     setVendorAddress(params.row.Vendor_Address);
     setKanbanMail(params.row.kanban_mail ? "Yes" : "No");
     setMailID(params.row.mail_id || "");
+    setMailCC(params.row.mail_cc || "");
     setBuyerID(params.row.buyer_id || "");
     get_Buyers({ plantCode: params.row.Plant_Code });
     setActiveStatus(params.row.Active_Status);
@@ -663,6 +692,7 @@ const Vendor = () => {
         Vendor_Address: VendorAddress,
         Kanban_Mail: KanbanMail === "Yes",
         Mail_ID: MailID.trim(),
+        Mail_CC: MailCC.trim(),
         Buyer_ID: BuyerID || null,
         Active_Status: ActiveStatus,
       };
@@ -697,6 +727,7 @@ const Vendor = () => {
         Vendor_Address: VendorAddress,
         Kanban_Mail: KanbanMail === "Yes",
         Mail_ID: MailID.trim(),
+        Mail_CC: MailCC.trim(),
         Buyer_ID: BuyerID || null,
         Active_Status: ActiveStatus,
       };
@@ -739,6 +770,7 @@ const Vendor = () => {
       "Vendor_Address",
       "KanbanMail",
       "Mail_ID",
+      "Mail_CC",
       "Buyer_ID",
       "Buyer_Name",
 
@@ -752,6 +784,7 @@ const Vendor = () => {
       Vendor_Address: item.Vendor_Address,
       KanbanMail: item.kanban_mail ? "Yes" : "No",
       Mail_ID: item.mail_id || "",
+      Mail_CC: item.mail_cc || "",
       Buyer_ID: item.buyer_id || "",
       Buyer_Name: item.buyer_name || "",
       ActiveStatus: item.Active_Status ? "Active" : "Inactive"
@@ -879,7 +912,7 @@ const Vendor = () => {
           intro="One vendor per combination of:"
           notes={[
             <><b>Add:</b> the same Plant + Vendor Code that already exists is rejected.</>,
-            <><b>Bulk upload:</b> the same combination is <b>updated</b>, any other is <b>added</b>. A blank Kanban_Mail / Buyer_ID / Mail_ID cell keeps the saved value (a new vendor starts with Kanban Mail No). Several mail ids go in one Mail_ID cell separated by ; (for example a@x.com; b@y.com).</>,
+            <><b>Bulk upload:</b> the same combination is <b>updated</b>, any other is <b>added</b>. A blank Kanban_Mail / Buyer_ID / Mail_ID / Mail_CC cell keeps the saved value (a new vendor starts with Kanban Mail No). Several mail ids go in one Mail_ID cell separated by ; (for example a@x.com; b@y.com).</>,
           ]}
         />
 
@@ -957,6 +990,9 @@ const Vendor = () => {
         <Box sx={{ gridColumn: "span 2" }}>
           <MailIdsInput value={MailID} onChange={setMailID} />
         </Box>
+        <Box sx={{ gridColumn: "span 2" }}>
+          <MailIdsInput label="CC Mail ID" value={MailCC} onChange={setMailCC} />
+        </Box>
         <Box sx={{ gridColumn: "span 2" }}>{buyerPicker(!PlantCode)}</Box>
         <Box sx={{ gridColumn: "span 2" }}>
           <ActiveSwitch checked={!!ActiveStatus} onChange={(e) => setActiveStatus(e.target.checked)} />
@@ -982,6 +1018,9 @@ const Vendor = () => {
         <SelectField label="Kanban Mail" value={KanbanMail} onChange={(e) => setKanbanMail(e.target.value)} options={yesNoOptions} />
         <Box sx={{ gridColumn: "span 2" }}>
           <MailIdsInput value={MailID} onChange={setMailID} />
+        </Box>
+        <Box sx={{ gridColumn: "span 2" }}>
+          <MailIdsInput label="CC Mail ID" value={MailCC} onChange={setMailCC} />
         </Box>
         <Box sx={{ gridColumn: "span 2" }}>{buyerPicker(false)}</Box>
         <Box sx={{ gridColumn: "span 2" }}>
@@ -1023,7 +1062,7 @@ const Vendor = () => {
             }}
           />
           <span style={{ fontSize: 11, lineHeight: 1.5, color: "#6b7280" }}>
-            Columns: Plant_Code, Vendor_Code, Vendor_Name, Vendor_Address, the optional Kanban_Mail (Yes / No), Buyer_ID and Mail_ID, and Active_Status (Active / Inactive).
+            Columns: Plant_Code, Vendor_Code, Vendor_Name, Vendor_Address, the optional Kanban_Mail (Yes / No), Buyer_ID, Mail_ID and Mail_CC, and Active_Status (Active / Inactive).
             A vendor that already exists is updated; a new one is added. A blank optional cell keeps the saved value.
           </span>
         </Box>

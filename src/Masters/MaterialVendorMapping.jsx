@@ -40,6 +40,7 @@ import {
 import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import { findPlantsNotAllowed, plantsNotAllowedMessage } from "../common/plantFileCheck";
 import FilterSelect from "../components/FilterSelect";
+import ValidationResponseGrid from "../components/ValidationResponseTable";
 import UniqueGroupingInfo from "../components/UniqueGroupingInfo";
 import { FilterToggleButton, FilterPanel } from "../components/FilterPanel";
 import {
@@ -132,12 +133,12 @@ const ActiveSwitch = ({ checked, onChange }) => (
 );
 
 // Shell of the Add / Edit / Upload dialogs
-const FormDialog = ({ open, title, onClose, children, actions }) => (
+const FormDialog = ({ open, title, onClose, children, actions, width = 460 }) => (
   <Dialog
     open={open}
     onClose={onClose}
     maxWidth={false}
-    PaperProps={{ sx: { width: 460, maxWidth: "94vw", borderRadius: "10px" } }}
+    PaperProps={{ sx: { width, maxWidth: "94vw", borderRadius: "10px" } }}
   >
     <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 2, py: 1, borderBottom: "1px solid #e8eaee", backgroundColor: "#f3f7ff" }}>
       <Typography sx={{ fontSize: 14, fontWeight: 700, color: "#1a2233" }}>{title}</Typography>
@@ -179,6 +180,7 @@ const MaterialVendorMapping = () => {
   const [openUploadModal, setOpenUploadModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [uploadProblems, setUploadProblems] = useState(null); // the wrong rows of the last upload, shown in the shared validation grid
 
   // filters (the search box above them works on the same rows)
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -456,11 +458,13 @@ const MaterialVendorMapping = () => {
   // ---------- Bulk upload ----------
   const handleOpenUploadModal = () => {
     setUploadedFile(null);
+    setUploadProblems(null);
     setOpenUploadModal(true);
   };
   const handleCloseUploadModal = () => {
     setOpenUploadModal(false);
     setUploadedFile(null);
+    setUploadProblems(null);
     setIsUploading(false);
   };
 
@@ -566,14 +570,37 @@ const MaterialVendorMapping = () => {
         downloadUploadLog(NewRecord, UpdatedData, ErrorRecords);
       }
       getData();
+      if (ErrorRecords.length > 0) {
+        // the correct rows are saved; the wrong ones stay on the screen, in the same grid as the other upload screens
+        setUploadProblems({
+          summary: { totalRows: NewRecord.length + UpdatedData.length + ErrorRecords.length, validRows: NewRecord.length + UpdatedData.length, invalidRows: ErrorRecords.length },
+          invalidTable: ErrorRecords.map((e) => ({
+            row: e.Row_No,
+            data: { Plant_Code: e.Plant_Code, Material_Code: e.Material_Code, Vendor_Code: e.Vendor_Code, Unit_Pack_Qty: e.Unit_Pack_Qty, Lot_Size: e.Lot_Size, SOB: e.SOB, Active_Status: e.Active_Status },
+            errors: [e.Row_Error],
+          })),
+        });
+        setIsUploading(false);
+        return;
+      }
     } catch (error) {
-      if (error.response && error.response.status === 400) {
+      if (error.response && error.response.status === 400 && error.response.data.invalidData?.length) {
+        // rows with a blank cell: nothing was uploaded, they are listed with what is missing
+        const required = ["Plant_Code", "Material_Code", "Vendor_Code", "Unit_Pack_Qty", "Lot_Size", "SOB"];
         const blank = error.response.data.invalidData;
-        alert(
-          blank?.length
-            ? `${error.response.data.message} (Excel rows: ${blank.slice(0, 20).map((r) => r.Row_No).join(", ")}${blank.length > 20 ? ", ..." : ""})`
-            : error.response.data.message
-        );
+        setUploadProblems({
+          summary: { totalRows: blank.length, validRows: 0, invalidRows: blank.length },
+          invalidTable: blank.map((r) => ({
+            row: r.Row_No,
+            data: { Plant_Code: r.Plant_Code ?? "", Material_Code: r.Material_Code ?? "", Vendor_Code: r.Vendor_Code ?? "", Unit_Pack_Qty: r.Unit_Pack_Qty ?? "", Lot_Size: r.Lot_Size ?? "", SOB: r.SOB ?? "", Active_Status: r.Active_Status ?? "" },
+            errors: required.filter((c) => String(r[c] ?? "").trim() === "").map((c) => `${c} is required.`),
+          })),
+        });
+        setIsUploading(false);
+        return;
+      }
+      if (error.response && error.response.status === 400) {
+        alert(error.response.data.message);
       } else {
         alert("Error while processing the file.");
       }
@@ -713,7 +740,6 @@ const MaterialVendorMapping = () => {
           getRowId={(row) => row.material_vendor_mapping_id}
           onRowClick={handleRowClick}
           disableRowSelectionOnClick
-          disableColumnMenu
           columnHeaderHeight={36}
           rowHeight={38}
           initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
@@ -819,6 +845,7 @@ const MaterialVendorMapping = () => {
         open={openUploadModal}
         title="Material - Vendor Mapping Excel Upload"
         onClose={handleCloseUploadModal}
+        width={uploadProblems ? 860 : 460}
         actions={
           <>
             <Button variant="outlined" onClick={handleCloseUploadModal} sx={outlineButtonSx}>Close</Button>
@@ -837,7 +864,7 @@ const MaterialVendorMapping = () => {
           <input
             type="file"
             accept=".xlsx, .xls"
-            onChange={(e) => setUploadedFile(e.target.files[0])}
+            onChange={(e) => { setUploadedFile(e.target.files[0]); setUploadProblems(null); }}
             style={{
               fontSize: 11,
               padding: "6px 8px",
@@ -849,9 +876,10 @@ const MaterialVendorMapping = () => {
           />
           <span style={{ fontSize: 11, lineHeight: 1.5, color: "#6b7280" }}>
             Columns: Plant_Code, Material_Code, Vendor_Code, Unit_Pack_Qty, Lot_Size, SOB and an optional Active_Status (Active / Inactive).
-            A Material + Vendor that is already mapped is updated; a new one is added. Rows with errors are skipped and listed in the log file.
+            A Material + Vendor that is already mapped is updated; a new one is added. Rows with errors are skipped and listed below and in the log file.
           </span>
         </Box>
+        {uploadProblems && <Box sx={{ gridColumn: "span 2" }}><ValidationResponseGrid response={uploadProblems} /></Box>}
       </FormDialog>
     </div>
   );

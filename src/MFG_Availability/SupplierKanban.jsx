@@ -143,6 +143,9 @@ const SupplierKanban = ({ plants, plantSelect, onPlantChange, plantCodes, month,
   const [confirm, setConfirm] = useState(null); // the vendor a mail is about to be sent for
   const [sending, setSending] = useState(false);
   const [kanbanFilter, setKanbanFilter] = useState("All"); // All / Yes / No: the vendor's Kanban mail flag (Vendor Master)
+  const [buyerFilter, setBuyerFilter] = useState("All"); // the vendor's buyer (Vendor Master)
+  const [productFilter, setProductFilter] = useState("All"); // only the child parts of this Product are listed and counted
+  const [products, setProducts] = useState([]);
   const [history, setHistory] = useState(null); // { vendor, loading, rows, missing }: the History dialog
   const [historyCard, setHistoryCard] = useState(null); // { row, loading, data }: one past mail's card
   const autoLoaded = useRef(false);
@@ -163,8 +166,9 @@ const SupplierKanban = ({ plants, plantSelect, onPlantChange, plantCodes, month,
     }
     setLoading(true);
     try {
-      const data = await GetSupplierKanbanApi(params);
+      const data = await GetSupplierKanbanApi({ ...params, product: productFilter === "All" ? "" : productFilter });
       setVendors(data?.vendors || []);
+      setProducts(data?.products || []);
       setLoaded(true);
     } catch (error) {
       console.error(error);
@@ -173,7 +177,7 @@ const SupplierKanban = ({ plants, plantSelect, onPlantChange, plantCodes, month,
     } finally {
       setLoading(false);
     }
-  }, [params, plantCodes.length, month]);
+  }, [params, plantCodes.length, month, productFilter]);
 
   // open the tab = show the list once the plant list is there; after that the user presses Search
   useEffect(() => {
@@ -182,15 +186,28 @@ const SupplierKanban = ({ plants, plantSelect, onPlantChange, plantCodes, month,
     load();
   }, [plantCodes, load]);
 
+  // a Product that is no longer in the list (another plant or month) goes back to All
+  useEffect(() => { if (productFilter !== "All" && loaded && !products.includes(productFilter)) setProductFilter("All"); }, [products, productFilter, loaded]);
+  // changing the Product shows the list for it at once (the Product is worked out on the server)
+  const productSeen = useRef(productFilter);
+  useEffect(() => {
+    if (productSeen.current === productFilter) return;
+    productSeen.current = productFilter;
+    if (loaded) load();
+  }, [productFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  const buyerOptions = useMemo(() => [...new Set(vendors.map((v) => v.buyer_name).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [vendors]);
+  useEffect(() => { if (buyerFilter !== "All" && !buyerOptions.includes(buyerFilter)) setBuyerFilter("All"); }, [buyerOptions, buyerFilter]);
+
   // the search box above the tabs finds a vendor by code, name or mail id
   const shownVendors = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     return vendors.filter((v) => {
       if (kanbanFilter === "Yes" && !v.kanban_mail) return false;
       if (kanbanFilter === "No" && v.kanban_mail) return false;
+      if (buyerFilter !== "All" && v.buyer_name !== buyerFilter) return false;
       return !q || `${v.vendor_code} ${v.vendor_name} ${v.buyer_name || ""} ${v.mail_id || ""}`.toLowerCase().includes(q);
     });
-  }, [vendors, searchText, kanbanFilter]);
+  }, [vendors, searchText, kanbanFilter, buyerFilter]);
   useEffect(() => { if (onCountChange) onCountChange(vendors.length); }, [vendors.length, onCountChange]);
 
   const openView = async (vendor) => {
@@ -290,6 +307,8 @@ const SupplierKanban = ({ plants, plantSelect, onPlantChange, plantCodes, month,
           />
         </div>
         <FilterSelect label="Kanban mail" value={kanbanFilter} options={["Yes", "No"]} onChange={setKanbanFilter} minWidth={140} />
+        <FilterSelect label="Buyer" value={buyerFilter} options={buyerOptions} onChange={setBuyerFilter} minWidth={150} />
+        <FilterSelect label="Product" value={productFilter} options={products} onChange={setProductFilter} minWidth={150} />
         <button type="button" onClick={load} disabled={loading} className={BTN_PRIMARY}>
           {loading ? <Spinner className="h-3 w-3" /> : <SearchIcon sx={{ fontSize: 16 }} />}
           {loading ? "Loading..." : "Search"}

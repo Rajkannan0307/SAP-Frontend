@@ -14,12 +14,15 @@ export const coverageFills = (days) =>
     return Math.max(0, Math.min(1, Number(days) - i));
   });
 
-// One place for the Red / Green / Yellow look and wording (the table chips and the legend use the same values).
+// One place for the Red / Yellow / Green / Blue look and wording (the table chips and the legend use the same values).
+// The status is the cover band of the Coverage Days, the same four bands as the Supplier Kanban list.
 export const STATUS_META = {
-  R: { letter: "R", name: "Red", color: "#d32f2f", text: "#fff", rule: "Current stock is below the Safety Stock" },
-  G: { letter: "G", name: "Green", color: "#2e7d32", text: "#fff", rule: "Coverage is more than 3 days and the stock is above the Safety Stock" },
-  Y: { letter: "Y", name: "Yellow", color: "#f5b301", text: "#1a2233", rule: "Any other case: coverage of 3 days or less while the stock is not below the Safety Stock" },
+  R: { letter: "R", name: "Red", color: "#d32f2f", text: "#fff", rule: "Coverage is under 1 day" },
+  Y: { letter: "Y", name: "Yellow", color: "#f5b301", text: "#1a2233", rule: "Coverage is 1 to 2 days (1 day up to under 3 days)" },
+  G: { letter: "G", name: "Green", color: "#2e7d32", text: "#fff", rule: "Coverage is 3 to 5 days" },
+  B: { letter: "B", name: "Blue", color: "#1976d2", text: "#fff", rule: "Coverage is more than 5 days (or no demand)" },
 };
+export const STATUS_ORDER = ["R", "Y", "G", "B"];
 
 export const COVERAGE_GREEN = "#2e7d32";
 export const COVERAGE_EMPTY = "#e9ecf1";

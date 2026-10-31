@@ -10,8 +10,8 @@ export const GetRmCoverageApi = async ({ plants, month }) => {
 
 // Supplier Kanban (tab of the Child Part Coverage screen, same backend router)
 // the vendors with Kanban mail = Yes, with the R / Y / G count of their child parts
-export const GetSupplierKanbanApi = async ({ plants, month }) => {
-  const response = await axios.get(`${api}/RmCoverage/getSupplierKanban`, { params: { plants, month } });
+export const GetSupplierKanbanApi = async ({ plants, month, product }) => {
+  const response = await axios.get(`${api}/RmCoverage/getSupplierKanban`, { params: { plants, month, product: product || undefined } });
   return response.data;
 };
 
