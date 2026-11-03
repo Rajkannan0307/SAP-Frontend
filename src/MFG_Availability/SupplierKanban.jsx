@@ -8,8 +8,9 @@ import SearchIcon from "@mui/icons-material/Search";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import { toast } from "react-toastify";
 import FilterSelect from "../components/FilterSelect";
+import FilterMultiSelect from "../components/FilterMultiSelect";
 import InfoTip from "../components/InfoTip";
-import { GetSupplierKanbanApi, GetSupplierKanbanDetailApi, SendSupplierKanbanMailApi, GetSupplierKanbanHistoryApi, GetSupplierKanbanHistoryCardApi } from "../controller/RmCoverageApiService";
+import { GetSupplierKanbanApi, GetSupplierKanbanDetailApi, SendSupplierKanbanMailApi, GetSupplierKanbanHistoryApi, GetSupplierKanbanHistoryCardApi, StartBulkSupplierKanbanApi, GetBulkSupplierKanbanApi, GetActiveBulkSupplierKanbanApi, SendBulkSupplierKanbanApi, StopBulkSupplierKanbanApi, DiscardBulkSupplierKanbanApi } from "../controller/RmCoverageApiService";
 import { fmtNum } from "./rmCoverageUtils";
 
 // Supplier Kanban: the second tab of the Child Part Coverage screen (tabs: components/PillTabs.jsx).
@@ -93,6 +94,8 @@ const MAIL_STATUS = {
 };
 // a mail still PENDING after 3 minutes will never finish: it is shown as "Not confirmed"
 const mailStatusKey = (row) => (row.status === "PENDING" ? (Number(row.age_min) > 3 ? "UNCONFIRMED" : "SENDING") : row.status);
+// a mail list for the screen: a space after each separator, so a long list wraps instead of running far to the right
+const spacedMails = (s) => String(s || "").replace(/\s*[;,]\s*/g, ", ");
 const todayText = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
 // The card page (built by the backend) in a frame as tall as the card; print() prints only the card
@@ -135,6 +138,44 @@ const CountPill = ({ band, count }) => {
   );
 };
 
+// Buyer picker of the Bulk Mail dialog: one input, several buyers (react-select, like the other filters; its list opens above the dialog)
+const BuyerMultiSelect = ({ options, value, onChange, disabled }) => {
+  const allOn = options.length > 0 && options.every((o) => value.includes(o.id));
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-end">
+        <button
+          type="button"
+          disabled={disabled || options.length === 0}
+          onClick={() => onChange(allOn ? [] : options.map((o) => o.id))}
+          className="cursor-pointer text-[11.5px] font-semibold text-[#0066FF] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {allOn ? "Clear all" : "Select all"} ({options.length})
+        </button>
+      </div>
+      <FilterMultiSelect
+        label="Buyer"
+        placeholder="Select one or more buyers"
+        disabled={disabled}
+        value={value}
+        options={options.map((o) => ({ value: o.id, label: o.name, hint: `${o.count} supplier${o.count === 1 ? "" : "s"}` }))}
+        onChange={onChange}
+      />
+    </div>
+  );
+};
+
+// how a supplier row of the Bulk Mail dialog is shown
+const BULK_STATE = {
+  queued: { text: "Waiting", cls: "bg-[#f1f5f9] text-[#64748b]" },
+  checking: { text: "Checking...", cls: "bg-[#e8f1ff] text-[#1d4ed8]" },
+  mail: { text: "Will be mailed", cls: "bg-[#e8f1ff] text-[#1d4ed8]" },
+  skip: { text: "Skipped", cls: "bg-[#f1f5f9] text-[#64748b]" },
+  sending: { text: "Sending...", cls: "bg-[#e8f1ff] text-[#1d4ed8]" },
+  sent: { text: "Sent", cls: "bg-[#e3f4e6] text-[#2e7d32]" },
+  failed: { text: "Failed", cls: "bg-[#fde8e8] text-[#c62828]" },
+};
+
 const SupplierKanban = ({ plants, plantSelect, onPlantChange, plantCodes, month, onMonthChange, searchText = "", onCountChange }) => {
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -146,6 +187,9 @@ const SupplierKanban = ({ plants, plantSelect, onPlantChange, plantCodes, month,
   const [buyerFilter, setBuyerFilter] = useState("All"); // the vendor's buyer (Vendor Master)
   const [productFilter, setProductFilter] = useState("All"); // only the child parts of this Product are listed and counted
   const [products, setProducts] = useState([]);
+  // Bulk Mail (a job on the server): { buyers: [buyer ids], again: bool, phase: "pick" | "checking" | "ready" | "sending" | "done", jobId, error,
+  //   rows: [{ vendor_id, vendor_code, vendor_name, buyer_name, state, reason, card_no }] }
+  const [bulk, setBulk] = useState(null);
   const [history, setHistory] = useState(null); // { vendor, loading, rows, missing }: the History dialog
   const [historyCard, setHistoryCard] = useState(null); // { row, loading, data }: one past mail's card
   const autoLoaded = useRef(false);
@@ -267,6 +311,92 @@ const SupplierKanban = ({ plants, plantSelect, onPlantChange, plantCodes, month,
     if (noMail(v)) return "This vendor has no mail id. Add it on the Vendor Master.";
     return "";
   };
+  // ---------- Bulk Mail ----------
+  // The work is done by a job on the SERVER (RmCoverage.router.js): it checks the suppliers of the chosen buyers (Kanban mail Yes, a mail id, a mapped
+  // material, something to collect, not already mailed today unless "send again") and, after the user confirms, mails them one by one with the same
+  // code as the Mail button (own Cart No and History row, To = the supplier's mail ids, CC = the buyer + the supplier's CC mail ids).
+  // This screen only starts it and reads its progress, so closing or refreshing the page cannot break it; reopening Bulk Mail shows the running job.
+  const bulkBuyers = useMemo(() => {
+    const map = new Map();
+    vendors.forEach((v) => {
+      if (!v.buyer_id) return;
+      const id = String(v.buyer_id);
+      if (!map.has(id)) map.set(id, { id, name: v.buyer_name || id, count: 0 });
+      map.get(id).count += 1;
+    });
+    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [vendors]);
+
+  const bulkFromJob = (job) => ({ buyers: job.buyer_ids || [], again: !!job.again, phase: job.state, rows: job.rows || [], jobId: job.job_id, error: job.error || null });
+
+  const openBulk = async () => {
+    setBulk({ buyers: [], again: false, phase: "pick", rows: [], jobId: null, error: null });
+    try {
+      const active = await GetActiveBulkSupplierKanbanApi(); // a job that is checking, sending or waiting for "Send" (e.g. after a refresh)
+      if (active?.job) setBulk(bulkFromJob(active.job));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // while the server is checking or sending, read its progress
+  const bulkJobId = bulk?.jobId;
+  const bulkPhase = bulk?.phase;
+  useEffect(() => {
+    if (!bulkJobId || (bulkPhase !== "checking" && bulkPhase !== "sending")) return undefined;
+    let alive = true;
+    const timer = setInterval(async () => {
+      try {
+        const job = await GetBulkSupplierKanbanApi(bulkJobId);
+        if (!alive) return;
+        setBulk((b) => (b && b.jobId === bulkJobId ? { ...b, phase: job.state, rows: job.rows, error: job.error || null } : b));
+        if (job.state === "done") load(); // the "last mailed" of the suppliers
+      } catch (error) {
+        if (!alive) return;
+        setBulk((b) => (b && b.jobId === bulkJobId ? { ...b, phase: "done", error: "The server no longer knows this bulk mail (it may have been restarted). Check the History of the suppliers." } : b));
+      }
+    }, 1200);
+    return () => { alive = false; clearInterval(timer); };
+  }, [bulkJobId, bulkPhase]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const checkBulk = async () => {
+    if (!bulk || bulk.buyers.length === 0) return;
+    setBulk((b) => ({ ...b, phase: "checking", rows: [], error: null }));
+    try {
+      const started = await StartBulkSupplierKanbanApi({ ...params, buyerIds: bulk.buyers, again: bulk.again, userId: localStorage.getItem("EmpId") });
+      setBulk((b) => ({ ...b, jobId: started.job_id, phase: "checking" }));
+    } catch (error) {
+      const data = error?.response?.data;
+      if (data?.code === "BULK_RUNNING" && data.job_id) { // another bulk mail is running: show that one
+        try { setBulk(bulkFromJob(await GetBulkSupplierKanbanApi(data.job_id))); return; } catch (e) { /* falls through */ }
+      }
+      toast.error(data?.message || "Failed to start the bulk mail.");
+      setBulk((b) => ({ ...b, phase: "pick" }));
+    }
+  };
+
+  const sendBulk = async () => {
+    if (!bulk?.jobId) return;
+    try {
+      await SendBulkSupplierKanbanApi(bulk.jobId);
+      setBulk((b) => ({ ...b, phase: "sending" }));
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to start sending.");
+    }
+  };
+
+  const stopBulkSend = async () => {
+    if (!bulk?.jobId) return;
+    try { await StopBulkSupplierKanbanApi(bulk.jobId); toast.info("It will stop after the mail being sent."); } catch (error) { toast.error("Could not stop the bulk mail."); }
+  };
+
+  // closing never stops a running job; a checked job that was not sent is thrown away
+  const closeBulk = () => {
+    if (bulk?.phase === "ready" && bulk.jobId) DiscardBulkSupplierKanbanApi(bulk.jobId).catch(() => {});
+    if (bulk && (bulk.phase === "checking" || bulk.phase === "sending")) toast.info("The bulk mail keeps running on the server. Open Bulk Mail again to see the progress.");
+    setBulk(null);
+  };
+
   const lines = view?.detail?.lines || [];
   const viewVendor = view ? vendors.find((x) => x.vendor_id === view.vendor.vendor_id) || view.vendor : null;
 
@@ -313,6 +443,18 @@ const SupplierKanban = ({ plants, plantSelect, onPlantChange, plantCodes, month,
           {loading ? <Spinner className="h-3 w-3" /> : <SearchIcon sx={{ fontSize: 16 }} />}
           {loading ? "Loading..." : "Search"}
         </button>
+        <Tooltip title={productFilter !== "All" ? "Set Product to All to send Bulk Mail (the Kanban card always lists all the supplier's mapped materials)." : "Mail the Kanban card to all the suppliers of the chosen buyers"} arrow placement="top" enterDelay={200}>
+          <span className={productFilter !== "All" ? "cursor-not-allowed" : ""}>
+            <button
+              type="button"
+              disabled={loading || vendors.length === 0 || productFilter !== "All"}
+              onClick={openBulk}
+              className={`${BTN_OUTLINE} ${productFilter !== "All" ? "pointer-events-none" : ""}`}
+            >
+              <MailOutlineIcon sx={{ fontSize: 15 }} /> Bulk Mail
+            </button>
+          </span>
+        </Tooltip>
         <span className="ml-auto text-[11px] font-semibold text-[#6b7280]">
           {loaded && (shownVendors.length === vendors.length
             ? `${vendors.length} supplier${vendors.length === 1 ? "" : "s"}`
@@ -494,7 +636,12 @@ const SupplierKanban = ({ plants, plantSelect, onPlantChange, plantCodes, month,
                         <td className={`${TD} font-semibold text-[#1a2233]`}>{h.card_no || "-"}</td>
                         <td className={TD}>{fmtSent(h.sent_on)}</td>
                         <td className={TD}>{h.sent_by_name || "-"}</td>
-                        <td className={`${TD} !whitespace-normal`}>{h.mail_to}{h.mail_cc ? <span className="text-[#8a93a3]"> (cc {h.mail_cc})</span> : null}</td>
+                        <td className={`${TD} !whitespace-normal`}>
+                          <div className="min-w-[220px] max-w-[420px] [overflow-wrap:anywhere]" title={`To ${spacedMails(h.mail_to)}${h.mail_cc ? `\ncc ${spacedMails(h.mail_cc)}` : ""}`}>
+                            <div>{spacedMails(h.mail_to)}</div>
+                            {h.mail_cc ? <div className="mt-0.5 text-[#8a93a3]">cc {spacedMails(h.mail_cc)}</div> : null}
+                          </div>
+                        </td>
                         <td className={`${TD} text-center`}>{h.material_count}</td>
                         <td className={`${TD} text-center font-semibold`}>{fmtNum(h.total_requirement, 3)}</td>
                         <td className={`${TD} text-center`}>
@@ -530,7 +677,7 @@ const SupplierKanban = ({ plants, plantSelect, onPlantChange, plantCodes, month,
                   Kanban Collection Card <span className="font-normal text-[#6b7280]">| {historyCard.row.card_no ? `Cart No ${historyCard.row.card_no} | ` : ""}mailed {fmtSent(historyCard.row.sent_on)}{historyCard.row.sent_by_name ? ` by ${historyCard.row.sent_by_name}` : ""}</span>
                 </div>
                 <div className="text-[10.5px] text-[#8a93a3]">
-                  To {historyCard.row.mail_to}{historyCard.row.mail_cc ? ` | cc ${historyCard.row.mail_cc}` : ""} | {(MAIL_STATUS[mailStatusKey(historyCard.row)] || MAIL_STATUS.FAILED).text}
+                  To {spacedMails(historyCard.row.mail_to)}{historyCard.row.mail_cc ? ` | cc ${spacedMails(historyCard.row.mail_cc)}` : ""} | {(MAIL_STATUS[mailStatusKey(historyCard.row)] || MAIL_STATUS.FAILED).text}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -552,6 +699,122 @@ const SupplierKanban = ({ plants, plantSelect, onPlantChange, plantCodes, month,
       </Dialog>
 
       {/* Mail: confirm the recipients first */}
+      <Dialog open={Boolean(bulk)} onClose={closeBulk} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: "12px" } }}>
+        {bulk && (() => {
+          const busy = bulk.phase === "checking" || bulk.phase === "sending";
+          const count = (s) => bulk.rows.filter((r) => r.state === s).length;
+          const toMail = count("mail");
+          return (
+            <div className="flex max-h-[88vh] flex-col">
+              <div className="flex items-start justify-between border-b border-[#e8eaee] px-5 py-3">
+                <div>
+                  <div className="text-[15px] font-bold text-[#1a2233]">Bulk Mail</div>
+                  <div className="text-[11.5px] text-[#6b7280]">Mail the Kanban card to every supplier of the chosen buyers. To = the supplier's mail ids, CC = the buyer and the supplier's CC mail ids.</div>
+                </div>
+                <button type="button" onClick={closeBulk} className="cursor-pointer rounded p-1 text-[#6b7280] hover:bg-[#f1f5f9]" aria-label="Close">
+                  <CloseIcon sx={{ fontSize: 18 }} />
+                </button>
+              </div>
+
+              <div className="space-y-3 overflow-auto px-5 py-4">
+                <BuyerMultiSelect
+                  options={bulkBuyers}
+                  value={bulk.buyers}
+                  disabled={busy || bulk.phase === "done"}
+                  onChange={(buyers) => setBulk((b) => ({ ...b, buyers, phase: "pick", rows: [], jobId: null }))}
+                />
+                <label className="flex cursor-pointer items-center gap-2 text-[12px] text-[#333]">
+                  <input type="checkbox" disabled={busy || bulk.phase === "done"} checked={bulk.again} onChange={(e) => setBulk((b) => ({ ...b, again: e.target.checked, phase: "pick", rows: [], jobId: null }))} />
+                  Send again to suppliers already mailed today
+                </label>
+                {bulk.error && <div className="rounded-md border border-[#f3c1c1] bg-[#fff7f7] px-3 py-2 text-[11.5px] text-[#b42323]">{bulk.error}</div>}
+                {busy && <div className="rounded-md border border-[#cfe0ff] bg-[#f3f7ff] px-3 py-2 text-[11.5px] text-[#1d4ed8]">It runs on the server: you can close this window or refresh the page, and open Bulk Mail again to see the progress.</div>}
+
+                {bulk.rows.length > 0 && (
+                  <>
+                    <div className="flex flex-wrap items-center gap-4 text-[11.5px]">
+                      <span>Suppliers: <b>{bulk.rows.length}</b></span>
+                      {bulk.phase === "ready" && <span className="text-[#1d4ed8]">To mail: <b>{toMail}</b></span>}
+                      {bulk.phase === "ready" && <span className="text-[#64748b]">Skipped: <b>{count("skip")}</b></span>}
+                      {(bulk.phase === "sending" || bulk.phase === "done") && (
+                        <>
+                          <span className="text-[#2e7d32]">Sent: <b>{count("sent")}</b></span>
+                          <span className="text-[#c62828]">Failed: <b>{count("failed")}</b></span>
+                          <span className="text-[#64748b]">Skipped: <b>{count("skip")}</b></span>
+                          {bulk.phase === "done" && toMail > 0 && <span className="text-[#8a6500]">Not sent (stopped): <b>{toMail}</b></span>}
+                        </>
+                      )}
+                    </div>
+                    <div className="max-h-[42vh] overflow-auto rounded-md border border-[#e8eaee]">
+                      <table className="w-full table-fixed border-separate border-spacing-0">
+                        <thead>
+                          <tr>
+                            <th className={`${TH} !text-left`} style={{ width: "13%" }}>Buyer</th>
+                            <th className={`${TH} !text-left`} style={{ width: "27%" }}>Supplier</th>
+                            <th className={TH} style={{ width: "13%" }}>Result</th>
+                            <th className={`${TH} !text-left`}>Details</th>
+                            <th className={`${TH} !text-left`} style={{ width: "17%" }} title="The latest mail sent to this supplier in the selected plants (from the mail history)">Last mailed</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bulk.rows.map((r) => {
+                            const meta = BULK_STATE[r.state] || BULK_STATE.queued;
+                            return (
+                              <tr key={r.vendor_id}>
+                                <td className={`${TD} overflow-hidden text-ellipsis`}>{r.buyer_name}</td>
+                                <td className={`${TD} overflow-hidden text-ellipsis`} title={`${r.vendor_name} (${r.vendor_code})`}>{r.vendor_name} <span className="text-[#8a93a3]">({r.vendor_code})</span></td>
+                                <td className={`${TD} text-center`}><span className={`rounded-full px-2 py-px text-[10px] font-semibold ${meta.cls}`}>{meta.text}</span></td>
+                                <td className={`${TD} !whitespace-normal text-[11px] ${r.state === "failed" ? "text-[#c62828]" : "text-[#6b7280]"}`}>{r.state === "sent" && r.card_no ? `Cart No ${r.card_no}` : r.reason}</td>
+                                <td className={`${TD} !whitespace-normal text-[11px]`} title={r.last_card_no ? `Cart No ${r.last_card_no}` : ""}>
+                                  {r.last_mailed_on ? (
+                                    <>
+                                      <div className={String(r.last_mailed_on).startsWith(todayText()) ? "font-semibold text-[#8a6500]" : "text-[#333]"}>{fmtSent(r.last_mailed_on)}</div>
+                                      {r.last_mailed_by ? <div className="text-[10.5px] text-[#8a93a3]">{r.last_mailed_by}</div> : null}
+                                    </>
+                                  ) : <span className="text-[#a4a9b3]">Never</span>}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+                {bulk.phase === "checking" && bulk.rows.length === 0 && <div className="text-[11.5px] text-[#6b7280]">Starting the check...</div>}
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t border-[#e8eaee] px-5 py-3">
+                {bulk.phase === "sending" && (
+                  <button type="button" onClick={stopBulkSend} className={BTN_OUTLINE}>Stop after this mail</button>
+                )}
+                <button type="button" onClick={closeBulk} className={BTN_OUTLINE}>{bulk.phase === "done" ? "Close" : bulk.phase === "ready" ? "Cancel" : busy ? "Close (keeps running)" : "Cancel"}</button>
+                {(bulk.phase === "pick" || bulk.phase === "checking") && (
+                  <button type="button" disabled={busy || bulk.buyers.length === 0} onClick={checkBulk} className={BTN_PRIMARY}>
+                    {busy ? <Spinner className="h-3 w-3" /> : <SearchIcon sx={{ fontSize: 15 }} />}
+                    {busy ? "Checking..." : "Check suppliers"}
+                  </button>
+                )}
+                {bulk.phase === "ready" && (
+                  <>
+                    <button type="button" onClick={checkBulk} className={BTN_OUTLINE}>Check again</button>
+                    <button type="button" disabled={toMail === 0} onClick={sendBulk} className={BTN_PRIMARY}>
+                      <MailOutlineIcon sx={{ fontSize: 15 }} /> {toMail === 0 ? "Nothing to send" : `Send ${toMail} mail${toMail === 1 ? "" : "s"}`}
+                    </button>
+                  </>
+                )}
+                {bulk.phase === "sending" && (
+                  <button type="button" disabled className={BTN_PRIMARY}><Spinner className="h-3 w-3" /> Sending...</button>
+                )}
+                {bulk.phase === "done" && (
+                  <button type="button" onClick={() => setBulk({ buyers: [], again: false, phase: "pick", rows: [], jobId: null, error: null })} className={BTN_PRIMARY}>New bulk mail</button>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+      </Dialog>
+
       <Dialog open={Boolean(confirm)} onClose={() => (sending ? null : setConfirm(null))} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: "12px" } }}>
         {confirm && (
           <div className="p-5">

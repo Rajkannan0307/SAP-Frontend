@@ -41,6 +41,7 @@ import { getMyPlants, myPlantLabel } from "../controller/CommonApiService";
 import { findPlantsNotAllowed, plantsNotAllowedMessage } from "../common/plantFileCheck";
 import InfoTip from "../components/InfoTip";
 import FilterSelect from "../components/FilterSelect";
+import ValidationResponseGrid from "../components/ValidationResponseTable";
 import UniqueGroupingInfo from "../components/UniqueGroupingInfo";
 import { FilterToggleButton, FilterPanel } from "../components/FilterPanel";
 import {
@@ -82,6 +83,21 @@ const getCapacityError = (capacity) => {
   if (Number(txt) < 0) return "Per Day Capacity cannot be negative.";
   return "";
 };
+
+// Why an upload row was rejected, in words: the procedure returns one validation value per check ("Valid", "Invalid" or "Invalid: <reason>")
+const uploadRowReasons = (r) => {
+  const out = [];
+  if (r.Plant_Val === "Invalid") out.push("Plant_Code is not an active plant.");
+  if (r.Material_Val === "Invalid") out.push("Material_Type is missing or not an active material type.");
+  if (r.Line_Val === "Invalid") out.push(`Line_Name '${r.Line_Name}' not found in the lines of this plant.`);
+  if (r.Active_Val === "Invalid") out.push("Active_Status must be Active or Inactive (a new material needs it).");
+  [r.Desc_Val, r.Rate_Val, r.Stock_Val, r.Segment_Val, r.Category_Val, r.Proc_Val, r.Vendor_Val, r.Capacity_Val].forEach((v) => {
+    const s = String(v || "");
+    if (s && s !== "Valid" && s !== "Invalid") out.push(s.replace(/^Invalid: ?/, "") + ".");
+  });
+  return out.length ? out : ["The row is not valid."];
+};
+const UPLOAD_FIELDS = ["Plant_Code", "Material_Code", "Material_Type", "Description", "Rate", "Active_Status", "Procurement_Type", "Line_Name", "Segment", "Material_Category", "Vendor_Code", "Safety_Stock", "Max_Stock", "Per_Day_Capacity"];
 
 // Procurement Type (mandatory): only these four codes are allowed (the API and the database procedures enforce the same list)
 const PROCUREMENT_TYPES = [
@@ -154,12 +170,12 @@ const ActiveSwitch = ({ checked, onChange }) => (
 );
 
 // Shell of the Add / Edit / Upload dialogs
-const FormDialog = ({ open, title, onClose, children, actions }) => (
+const FormDialog = ({ open, title, onClose, children, actions, width = 460 }) => (
   <Dialog
     open={open}
     onClose={onClose}
     maxWidth={false}
-    PaperProps={{ sx: { width: 460, maxWidth: "94vw", borderRadius: "10px" } }}
+    PaperProps={{ sx: { width, maxWidth: "94vw", borderRadius: "10px" } }}
   >
     <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 2, py: 1, borderBottom: "1px solid #e8eaee", backgroundColor: "#f3f7ff" }}>
       <Typography sx={{ fontSize: 14, fontWeight: 700, color: "#1a2233" }}>{title}</Typography>
@@ -193,6 +209,7 @@ const Material = () => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState(""); // Track upload status
   const [uploadedFileData, setUploadedFileData] = useState(null);
+  const [uploadProblems, setUploadProblems] = useState(null); // the rows of the last upload that were not saved, shown in the shared validation grid
   const [PlantCode, setPlantCode] = useState([]);
   const [MaterialType, setMaterialType] = useState([]);
   const [MaterialCode, setMaterialCode] = useState("");
@@ -625,7 +642,7 @@ const Material = () => {
     worksheet.getCell('M1').note = 'Mandatory. E = Inhouse, F = Domestic, F30 = Subcontract, E50 = Phatam. F and F30: Vendor_Code and Material_Category are mandatory.';
     worksheet.dataValidations.add('M2:M1000', {
       type: 'list',
-      allowBlank: false,
+      allowBlank: true, // blank is fine for a material that already exists (it keeps its Procurement Type); a NEW material needs it
       showErrorMessage: true,
       errorTitle: 'Invalid Procurement Type',
       error: 'Choose E, F, F30 or E50.',
@@ -761,6 +778,7 @@ const Material = () => {
   const handleCloseUploadModal = () => {
     setOpenUploadModal(false);
     setUploadStatus("");
+    setUploadProblems(null);
     setUploadedFile(null);
     setUploadProgress(0);
     setUploadedFileData(null);
@@ -769,6 +787,7 @@ const Material = () => {
 
   const handleFileUpload = (event) => {
     setUploadedFile(event.target.files[0]);
+    setUploadProblems(null);
   };
 
   const handleUploadData = async () => {
@@ -791,24 +810,40 @@ const Material = () => {
         formData.append("UserID", UserID);
         const response = await MaterialMaster(formData)
         console.log('response', response.data)
-        // rows rejected because of an unknown Segment are named in the message (the full list is in the downloaded log)
-        const badSegments = [...new Set((response.data.ErrorRecords || []).filter((r) => String(r.Segment_Val || '').startsWith('Invalid')).map((r) => String(r.Segment || '').trim()))];
-        // rows rejected because of Procurement Type / Vendor Code are listed row-wise (Excel row numbers)
-        const ruleErrors = (response.data.ErrorRecords || []).flatMap((r) => [r.Category_Val, r.Proc_Val, r.Vendor_Val].filter((v) => String(v || '').startsWith('Invalid')).map((v) => `Row ${r.Row_No}: ${String(v).replace(/^Invalid: /, '')}`));
-        const ruleText = ruleErrors.length
-          ? '\n\n' + ruleErrors.slice(0, 10).join('\n') + (ruleErrors.length > 10 ? `\n... and ${ruleErrors.length - 10} more (see the Error Records sheet of the log file).` : '')
-          : '';
-        alert(badSegments.length
-          ? `${response.data.message}\n\nRows rejected - Segment not found in Segment Master: ${badSegments.map((x) => "'" + x + "'").join(', ')}. See the Error Records sheet of the log file.${ruleText}`
-          : response.data.message + ruleText)
-        // console.log('response', response.data)
-        if (response.data.NewRecord.length > 0 || response.data.UpdatedData.length > 0 || response.data.ErrorRecords.length > 0) {
-          downloadExcel(response.data.NewRecord, response.data.UpdatedData, response.data.ErrorRecords);
+        const { NewRecord = [], UpdatedData = [], ErrorRecords = [] } = response.data;
+        const counts = `${NewRecord.length} added, ${UpdatedData.length} updated`;
+        if (ErrorRecords.length > 0) {
+          // the correct rows are saved; the wrong ones stay on the screen in the shared validation grid (no log file)
+          setUploadProblems({
+            summary: { totalRows: NewRecord.length + UpdatedData.length + ErrorRecords.length, validRows: NewRecord.length + UpdatedData.length, invalidRows: ErrorRecords.length },
+            invalidTable: ErrorRecords.map((r) => ({
+              row: r.Row_No,
+              data: Object.fromEntries(UPLOAD_FIELDS.map((k) => [k, r[k] ?? ""])),
+              errors: uploadRowReasons(r),
+            })),
+          });
+          getData();
+          alert(`Material Master uploaded: ${counts}. ${ErrorRecords.length} row${ErrorRecords.length === 1 ? " was" : "s were"} not saved - see the list below.`);
+          return;
         }
+        alert(`Material Master uploaded: ${counts}.`);
         getData();
       } catch (error) {
+        const data = error.response && error.response.data;
+        if (error.response && error.response.status === 400 && data.blankRows && data.blankRows.length) {
+          // a row without its Plant_Code / Material_Code: nothing was uploaded, the rows are listed
+          setUploadProblems({
+            summary: { totalRows: data.blankRows.length, validRows: 0, invalidRows: data.blankRows.length },
+            invalidTable: data.blankRows.map((b, i) => ({
+              row: b.row,
+              data: { Plant_Code: (data.invalidData && data.invalidData[i] && data.invalidData[i].Plant_Code) ?? "", Material_Code: (data.invalidData && data.invalidData[i] && data.invalidData[i].Material_Code) ?? "" },
+              errors: b.columns.map((c) => `${c} is required.`),
+            })),
+          });
+          return;
+        }
         if (error.response && error.response.status === 400) {
-          alert(error.response.data.message);
+          alert(data.message);
         }
       }
     }
@@ -823,7 +858,7 @@ const Material = () => {
 
     const newRecordsColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity', 'ActiveStatus', 'Status'];
     const UpdatedColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity', 'ActiveStatus', 'Status'];
-    const ErrorColumns = ['Excel_Row', 'Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation', 'Segment_Validation', 'Material_Category_Validation', 'Procurement_Type_Validation', 'Vendor_Code_Validation', 'Per_Day_Capacity_Validation'];
+    const ErrorColumns = ['Excel_Row', 'Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation', 'Description_Validation', 'Rate_Validation', 'Active_Status_Validation', 'Line_Name_Validation', 'Stock_Validation', 'Segment_Validation', 'Material_Category_Validation', 'Procurement_Type_Validation', 'Vendor_Code_Validation', 'Per_Day_Capacity_Validation'];
 
     const filteredNewData = newRecord.map(item => ({
       Plant_Code: item.Plant_Code,
@@ -880,6 +915,10 @@ const Material = () => {
       ActiveStatus: item.Active_Status,
       PlantCode_Validation: item.Plant_Val,
       Material_Type_Validation: item.Material_Val,
+      Description_Validation: item.Desc_Val,
+      Rate_Validation: item.Rate_Val,
+      Active_Status_Validation: item.Active_Val,
+      Line_Name_Validation: item.Line_Val,
       Stock_Validation: item.Stock_Val,
       Segment_Validation: item.Segment_Val,
       Material_Category_Validation: item.Category_Val,
@@ -904,7 +943,7 @@ const Material = () => {
 
     // ðŸ”´ Style red text for validation columns only
     const styleValidationColumns = (worksheet, columns, dataLength) => {
-      const validationCols = ['PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation', 'Segment_Validation', 'Material_Category_Validation', 'Procurement_Type_Validation', 'Vendor_Code_Validation', 'Per_Day_Capacity_Validation'];
+      const validationCols = ['PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation', 'Segment_Validation', 'Material_Category_Validation', 'Procurement_Type_Validation', 'Vendor_Code_Validation', 'Per_Day_Capacity_Validation', 'Description_Validation', 'Rate_Validation', 'Active_Status_Validation', 'Line_Name_Validation'];
 
       for (let row = 1; row <= dataLength; row++) {
         validationCols.forEach(colName => {
@@ -1404,6 +1443,7 @@ const Material = () => {
         open={openUploadModal}
         title="Material Master Excel Upload"
         onClose={handleCloseUploadModal}
+        width={uploadProblems ? 1180 : 460}
         actions={
           <>
             <Button variant="outlined" onClick={handleCloseUploadModal} sx={outlineButtonSx}>Close</Button>
@@ -1433,11 +1473,12 @@ const Material = () => {
             }}
           />
           <span style={{ fontSize: 11, lineHeight: 1.5, color: "#6b7280" }}>
-            Required columns: Plant_Code, Material_Type, Material_Code, Description, Rate, Active_Status (Active / Inactive) and Line_Name
-            (may be blank). Procurement_Type is mandatory (E, F, F30 or E50 - pick it from the dropdown). Vendor_Code (must be in the Vendor Master sheet of the template; blank keeps the stored vendor) and Material_Category (a name from the Material Category sheet) are mandatory when Procurement_Type is F or F30, optional for E and E50. Optional: Safety_Stock and Max_Stock (mandatory for ROH), Segment and Per_Day_Capacity (a number, 0 or more). A material that already exists is updated;
-            a new one is added. Rows with errors are skipped and listed in the log file.
+            Columns: Plant_Code, Material_Type, Material_Code, Description, Rate, Active_Status (Active / Inactive), Line_Name (may be blank) and Procurement_Type
+            (E, F, F30 or E50 - pick it from the dropdown). Plant_Code and Material_Code are always needed. For a material that already exists, a BLANK cell is left as it is (not checked, not changed) and a filled cell is checked and updated; a NEW material needs Material_Type, Description, Rate, Active_Status and Procurement_Type. Vendor_Code (must be in the Vendor Master sheet of the template; blank keeps the stored vendor) and Material_Category (a name from the Material Category sheet) are mandatory when Procurement_Type is F or F30, optional for E and E50. Optional: Safety_Stock and Max_Stock (mandatory for ROH), Segment and Per_Day_Capacity (a number, 0 or more).
+            A new material is added. Rows with errors are skipped (the correct rows are saved) and listed below.
           </span>
         </Box>
+        {uploadProblems && <Box sx={{ gridColumn: "span 2" }}><ValidationResponseGrid response={uploadProblems} /></Box>}
       </FormDialog>
     </div>
   );

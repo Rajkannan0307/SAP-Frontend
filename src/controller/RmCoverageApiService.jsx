@@ -22,6 +22,23 @@ export const GetSupplierKanbanDetailApi = async ({ plants, month, vendorId }) =>
 };
 
 // mails the same table to the vendor (To) and the buyer (CC)
+// Bulk Mail: a background job on the server (RmCoverage.router.js, bulkSupplierKanban*); the screen starts it and reads its progress
+export const StartBulkSupplierKanbanApi = async ({ plants, month, buyerIds, again, userId }) => {
+  const response = await axios.post(`${api}/RmCoverage/bulkSupplierKanbanStart`, { plants, month, buyerIds, again, userId });
+  return response.data;
+};
+export const GetBulkSupplierKanbanApi = async (jobId) => {
+  const response = await axios.get(`${api}/RmCoverage/bulkSupplierKanbanStatus`, { params: { jobId } });
+  return response.data;
+};
+export const GetActiveBulkSupplierKanbanApi = async () => {
+  const response = await axios.get(`${api}/RmCoverage/bulkSupplierKanbanActive`);
+  return response.data;
+};
+export const SendBulkSupplierKanbanApi = async (jobId) => (await axios.post(`${api}/RmCoverage/bulkSupplierKanbanSend`, { jobId })).data;
+export const StopBulkSupplierKanbanApi = async (jobId) => (await axios.post(`${api}/RmCoverage/bulkSupplierKanbanStop`, { jobId })).data;
+export const DiscardBulkSupplierKanbanApi = async (jobId) => (await axios.post(`${api}/RmCoverage/bulkSupplierKanbanDiscard`, { jobId })).data;
+
 export const SendSupplierKanbanMailApi = async ({ plants, month, vendorId, userId }) => {
   const response = await axios.post(`${api}/RmCoverage/sendSupplierKanbanMail`, { plants, month, vendorId, userId });
   return response.data;
