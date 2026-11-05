@@ -1,5 +1,7 @@
 import React, { useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useFgCustomers, fgHasCustomer, customersOfParts } from "./fgCustomers";
+import PartTrendDialog from "./PartTrendDialog";
 import {
   TextField, Button, CircularProgress, Typography, Autocomplete, MenuItem, Select, Tooltip,
   Chip, Table, TableHead, TableBody, TableFooter, TableRow, TableCell, TableContainer, Box, IconButton, Collapse,
@@ -1620,7 +1622,7 @@ const STATUS_BODY_CELL = {
 // opening / closing smooth on long lists, and the Collapse unmounts the rows while the line is closed. React.memo + a stable
 // onToggle: toggling one line does not re-render the others.
 const LINE_ANIM_MS = 200;
-const LineGroupRows = React.memo(({ group, accent, open, onToggle }) => (
+const LineGroupRows = React.memo(({ group, accent, open, onToggle, onPartClick }) => (
   <>
     <TableRow
       hover
@@ -1666,7 +1668,13 @@ const LineGroupRows = React.memo(({ group, accent, open, onToggle }) => (
                   <TableCell align="center" sx={{ ...STATUS_BODY_CELL, padding: "0 4px", color: "#6b7280", boxShadow: `inset 3px 0 0 ${accent.bar}` }}>{r.si}</TableCell>
                   <TableCell sx={{ ...STATUS_BODY_CELL, color: "#4b5565" }} title={r.Line_Name || ""}>{r.Line_Name || "–"}</TableCell>
                   <TableCell sx={{ ...STATUS_BODY_CELL, py: "3px", lineHeight: 1.3 }} title={`${r.fg_part_no} — ${r.fg_part_desc}`}>
-                    <div style={{ color: "#0052cc", fontWeight: 700, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis" }}>{r.fg_part_no}</div>
+                    <div
+                      style={{ color: "#0052cc", fontWeight: 700, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", cursor: onPartClick ? "pointer" : "inherit" }}
+                      onClick={onPartClick ? () => onPartClick(r) : undefined}
+                      onMouseEnter={(e) => { if (onPartClick) e.currentTarget.style.textDecoration = "underline"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.textDecoration = "none"; }}
+                      title={onPartClick ? "Click for the 6-month Plan vs Actual of this part" : undefined}
+                    >{r.fg_part_no}</div>
                     <div style={{ color: "#6b7280", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis" }}>{r.fg_part_desc}</div>
                   </TableCell>
                   {STATUS_COLS.map((c) => {
@@ -1688,7 +1696,7 @@ const LineGroupRows = React.memo(({ group, accent, open, onToggle }) => (
 ));
 
 // the table itself: sticky two-part header, the line groups, and the TOTAL row (all lines shown) pinned to the bottom
-const StatusGroupTable = ({ groups, expanded, onToggle, grand, grandNa, count, wd, loading, loaded }) => {
+const StatusGroupTable = ({ groups, expanded, onToggle, grand, grandNa, count, wd, loading, loaded, onPartClick }) => {
   const headCell = {
     backgroundColor: STATUS_HEAD_BG, color: "#000", fontSize: 10.5, fontWeight: 700, height: 36,
     padding: "0 10px", whiteSpace: "nowrap", borderBottom: `1px solid ${STATUS_HEAD_LINE}`,
@@ -1728,7 +1736,7 @@ const StatusGroupTable = ({ groups, expanded, onToggle, grand, grandNa, count, w
           </TableRow>
         ) : (
           groups.map((g, gi) => (
-            <LineGroupRows key={g.name} group={g} accent={GROUP_ACCENTS[gi % GROUP_ACCENTS.length]} open={expanded.has(g.name)} onToggle={onToggle} />
+            <LineGroupRows key={g.name} group={g} accent={GROUP_ACCENTS[gi % GROUP_ACCENTS.length]} open={expanded.has(g.name)} onToggle={onToggle} onPartClick={onPartClick} />
           ))
         )}
       </TableBody>
@@ -1882,12 +1890,17 @@ const PlanHistoryBody = ({ searchText = "" }) => {
   const [plant, setPlant] = useState(user?.PlantCode || "");
   const [segmentId, setSegmentId] = useState("");
   const [lineId, setLineId] = useState("");
+  const [customer, setCustomer] = useState(""); // Customer filter: hides the FG rows of the other customers of the plan
   // Monthly report filter — Month/Year only, no manual date entry. Defaults
   // to the current month/year; converted to a Start/End date range only at
   // fetch time, since the backend endpoint still expects fromDate/toDate.
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
+  const fgCustomers = useFgCustomers(plant, `${year}-${String(month).padStart(2, "0")}`);
   const [dateError, setDateError] = useState("");
+  // the FG part whose 6-month Plan vs Actual is open (a click on its part number in the table)
+  const [trendPart, setTrendPart] = useState(null);
+  const openTrend = useCallback((row) => setTrendPart(row), []);
 
   const [historyRows, setHistoryRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -1995,15 +2008,20 @@ const PlanHistoryBody = ({ searchText = "" }) => {
     [historyRows]
   );
 
+  // only the customers of the parts this grid lists
+  const customerOptions = useMemo(() => customersOfParts(fgCustomers.byPart, flatRows.map((r) => ({ plant, part: r.fg_part_no }))), [fgCustomers, flatRows, plant]);
+  useEffect(() => { if (customer && flatRows.length && !customerOptions.includes(customer)) setCustomer(""); }, [customerOptions, customer, flatRows]);
+
   // Shared header search (before the tabs) — filters by Part No. or
   // Description, client-side, on the rows already fetched for this tab.
   const filteredRows = useMemo(() => {
     const q = searchText.trim().toLowerCase();
-    if (!q) return flatRows;
-    return flatRows.filter(
+    const byCustomer = customer ? flatRows.filter((r) => fgHasCustomer(fgCustomers.byPart, plant, r.fg_part_no, customer)) : flatRows;
+    if (!q) return byCustomer;
+    return byCustomer.filter(
       (r) => r.fg_part_no?.toLowerCase().includes(q) || r.fg_part_desc?.toLowerCase().includes(q)
     );
-  }, [flatRows, searchText]);
+  }, [flatRows, searchText, customer, fgCustomers, plant]);
 
   // Group by Line (built from the returned data, never hardcoded): lines by their total Monthly Plan (highest first), parts
   // inside a line by Monthly Plan (highest first). `si` = the serial number of the part inside its line (1, 2, 3 ... per line).
@@ -2124,6 +2142,18 @@ const PlanHistoryBody = ({ searchText = "" }) => {
         <Autocomplete
           size="small"
           disabled={!plant}
+          options={customerOptions}
+          value={customer || null}
+          onChange={(e, newVal) => setCustomer(newVal || "")}
+          sx={compactFieldSx(170)}
+          ListboxProps={{ style: { fontSize: 11.5 } }}
+          noOptionsText="No customer in this month's plan"
+          renderInput={(params) => <TextField {...params} label="Customer" placeholder={plant ? "All Customers" : "Select Plant first"} />}
+        />
+
+        <Autocomplete
+          size="small"
+          disabled={!plant}
           options={lineOptions}
           value={lineOptions.find((l) => String(l.Line_ID) === String(lineId)) || null}
           onChange={(e, newVal) => setLineId(newVal ? newVal.Line_ID : "")}
@@ -2232,8 +2262,10 @@ const PlanHistoryBody = ({ searchText = "" }) => {
             wd={wdInfo}
             loading={loading}
             loaded={loaded}
+            onPartClick={openTrend}
           />
         </TableContainer>
+        <PartTrendDialog plant={plant} part={trendPart} onClose={() => setTrendPart(null)} />
       </div>
     </>
   );

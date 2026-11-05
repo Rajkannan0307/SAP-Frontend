@@ -1,9 +1,11 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
+import { useFgCustomers, fgHasCustomer, customersOfParts } from "./fgCustomers";
 import { TextField, Button, CircularProgress, Tooltip, Typography, Autocomplete } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import PrecisionManufacturingOutlinedIcon from "@mui/icons-material/PrecisionManufacturingOutlined";
 import SharedPillTabs from "../components/PillTabs";
+import { FilterToggleButton, FilterPanel } from "../components/FilterPanel";
 import { FaFileExcel } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { format } from "date-fns";
@@ -516,6 +518,10 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
   // Segment of the FG part (Mst_Product_Segment, active segments), filtered by the API like the Line
   const [segments, setSegments] = useState([]);
   const [segmentId, setSegmentId] = useState("");
+  // Customer filter (on the screen only): the FG rows of the other customers of this month's plan are hidden
+  const [customer, setCustomer] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false); // the Filters panel (Part Name, Line) under the bar
+  const fgCustomers = useFgCustomers(plant, month);
 
   const [reportRows, setReportRows] = useState([]);
   const [operationColumns, setOperationColumns] = useState([]);
@@ -684,18 +690,23 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
     });
   }, [reportRows, partNameGroups]);
 
+  // only the customers of the parts this grid lists
+  const customerOptions = useMemo(() => customersOfParts(fgCustomers.byPart, flatRows.map((r) => ({ plant: r.plant, part: r.fg_part_no }))), [fgCustomers, flatRows]);
+  useEffect(() => { if (customer && flatRows.length && !customerOptions.includes(customer)) setCustomer(""); }, [customerOptions, customer, flatRows]);
+
   // Search filters the already-fetched rows by Plant code, Part No., or
   // Description — same behavior as the Daily Production Plan's own search
   // box, extended to also match Plant (no separate Plant filter needed).
   const filteredRows = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     // Highest Monthly Plan first (same order as the MFG Daily Production Plan list)
-    const sorted = [...flatRows].sort((a, b) => (Number(b.monthly_plan) || 0) - (Number(a.monthly_plan) || 0));
+    let sorted = [...flatRows].sort((a, b) => (Number(b.monthly_plan) || 0) - (Number(a.monthly_plan) || 0));
+    if (customer) sorted = sorted.filter((r) => fgHasCustomer(fgCustomers.byPart, r.plant, r.fg_part_no, customer));
     if (!q) return sorted;
     return sorted.filter(
       (r) => r.fg_part_no?.toLowerCase().includes(q) || r.fg_desc?.toLowerCase().includes(q) || String(r.plant).toLowerCase().includes(q)
     );
-  }, [flatRows, searchText]);
+  }, [flatRows, searchText, customer, fgCustomers]);
 
   // Grand-TOTAL block (summing across every Part Name) removed on screen
   // — each Part Name group already shows its own TOTAL, so a second
@@ -955,27 +966,14 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
 
         <Autocomplete
           size="small"
-          options={filterOptions.partNames}
-          value={filterOptions.partNames.find((p) => String(p.Prod_ID) === String(partNameId)) || null}
-          onChange={(e, newVal) => setPartNameId(newVal ? newVal.Prod_ID : "")}
-          getOptionLabel={(p) => (p ? p.Name : "")}
-          isOptionEqualToValue={(o, v) => o.Prod_ID === v.Prod_ID}
-          sx={compactFieldSx(180)}
-          ListboxProps={{ style: { fontSize: 11.5 } }}
-          renderInput={(params) => <TextField {...params} label="Part Name" placeholder="All Part Names" />}
-        />
-
-        <Autocomplete
-          size="small"
           disabled={!plant}
-          options={lineOptions}
-          value={lineOptions.find((l) => String(l.Line_ID) === String(lineId)) || null}
-          onChange={(e, newVal) => setLineId(newVal ? newVal.Line_ID : "")}
-          getOptionLabel={(l) => (l ? l.Line_Name : "")}
-          isOptionEqualToValue={(o, v) => o.Line_ID === v.Line_ID}
+          options={customerOptions}
+          value={customer || null}
+          onChange={(e, newVal) => setCustomer(newVal || "")}
           sx={compactFieldSx(170)}
           ListboxProps={{ style: { fontSize: 11.5 } }}
-          renderInput={(params) => <TextField {...params} label="Line" placeholder={plant ? "All Lines" : "Select Plant first"} />}
+          noOptionsText="No customer in this month's plan"
+          renderInput={(params) => <TextField {...params} label="Customer" placeholder={plant ? "All Customers" : "Select Plant first"} />}
         />
 
         <TextField
@@ -984,6 +982,8 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
           sx={compactFieldSx(140)}
           InputLabelProps={{ shrink: true, sx: { fontSize: 12 } }}
         />
+
+        <FilterToggleButton open={filtersOpen} onClick={() => setFiltersOpen((o) => !o)} activeCount={[partNameId, lineId].filter(Boolean).length} />
 
         <div style={{ display: "flex", gap: 8, marginLeft: "auto", flexShrink: 0 }}>
           <Button
@@ -1007,6 +1007,32 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
             {excelLoading ? "Exporting..." : "Export Excel"}
           </Button>
         </div>
+
+        <FilterPanel open={filtersOpen} activeCount={[partNameId, lineId].filter(Boolean).length} onClear={() => { setPartNameId(""); setLineId(""); }}>
+          <Autocomplete
+            size="small"
+            options={filterOptions.partNames}
+            value={filterOptions.partNames.find((p) => String(p.Prod_ID) === String(partNameId)) || null}
+            onChange={(e, newVal) => setPartNameId(newVal ? newVal.Prod_ID : "")}
+            getOptionLabel={(p) => (p ? p.Name : "")}
+            isOptionEqualToValue={(o, v) => o.Prod_ID === v.Prod_ID}
+            sx={compactFieldSx(180)}
+            ListboxProps={{ style: { fontSize: 11.5 } }}
+            renderInput={(params) => <TextField {...params} label="Part Name" placeholder="All Part Names" />}
+          />
+          <Autocomplete
+            size="small"
+            disabled={!plant}
+            options={lineOptions}
+            value={lineOptions.find((l) => String(l.Line_ID) === String(lineId)) || null}
+            onChange={(e, newVal) => setLineId(newVal ? newVal.Line_ID : "")}
+            getOptionLabel={(l) => (l ? l.Line_Name : "")}
+            isOptionEqualToValue={(o, v) => o.Line_ID === v.Line_ID}
+            sx={compactFieldSx(170)}
+            ListboxProps={{ style: { fontSize: 11.5 } }}
+            renderInput={(params) => <TextField {...params} label="Line" placeholder={plant ? "All Lines" : "Select Plant first"} />}
+          />
+        </FilterPanel>
       </div>
 
       {/* Main report grid — a plain, scrollable native <table> (same
@@ -1190,6 +1216,10 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
   // Segment of the FG part (Mst_Product_Segment, active segments), filtered by the API like the Line
   const [segments, setSegments] = useState([]);
   const [segmentId, setSegmentId] = useState("");
+  // Customer filter (on the screen only): the FG rows of the other customers of this month's plan are hidden
+  const [customer, setCustomer] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false); // the Filters panel (Part Name, Line) under the bar
+  const fgCustomers = useFgCustomers(plant, month);
 
   const [reportRows, setReportRows] = useState([]);
   const [operationColumns, setOperationColumns] = useState([]);
@@ -1302,18 +1332,23 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
     });
   }, [reportRows]);
 
+  // only the customers of the parts this grid lists
+  const customerOptions = useMemo(() => customersOfParts(fgCustomers.byPart, flatRows.map((r) => ({ plant: r.plant, part: r.fg_part_no }))), [fgCustomers, flatRows]);
+  useEffect(() => { if (customer && flatRows.length && !customerOptions.includes(customer)) setCustomer(""); }, [customerOptions, customer, flatRows]);
+
   // Search filters the already-fetched rows by Plant code, Part No., or
   // Description — same behavior as the Daily Production Plan's own search
   // box, extended to also match Plant (no separate Plant filter needed).
   const filteredRows = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     // Highest Monthly Plan first (same order as the MFG Daily Production Plan list)
-    const sorted = [...flatRows].sort((a, b) => (Number(b.monthly_plan) || 0) - (Number(a.monthly_plan) || 0));
+    let sorted = [...flatRows].sort((a, b) => (Number(b.monthly_plan) || 0) - (Number(a.monthly_plan) || 0));
+    if (customer) sorted = sorted.filter((r) => fgHasCustomer(fgCustomers.byPart, r.plant, r.fg_part_no, customer));
     if (!q) return sorted;
     return sorted.filter(
       (r) => r.fg_part_no?.toLowerCase().includes(q) || r.fg_desc?.toLowerCase().includes(q) || String(r.plant).toLowerCase().includes(q)
     );
-  }, [flatRows, searchText]);
+  }, [flatRows, searchText, customer, fgCustomers]);
 
   // Distinct Part Names present in the CURRENT result set — never
   // hardcoded, and naturally collapses to one group when a Part Name
@@ -1486,27 +1521,14 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
 
         <Autocomplete
           size="small"
-          options={filterOptions.partNames}
-          value={filterOptions.partNames.find((p) => String(p.Prod_ID) === String(partNameId)) || null}
-          onChange={(e, newVal) => setPartNameId(newVal ? newVal.Prod_ID : "")}
-          getOptionLabel={(p) => (p ? p.Name : "")}
-          isOptionEqualToValue={(o, v) => o.Prod_ID === v.Prod_ID}
-          sx={compactFieldSx(180)}
-          ListboxProps={{ style: { fontSize: 11.5 } }}
-          renderInput={(params) => <TextField {...params} label="Part Name" placeholder="All Part Names" />}
-        />
-
-        <Autocomplete
-          size="small"
           disabled={!plant}
-          options={lineOptions}
-          value={lineOptions.find((l) => String(l.Line_ID) === String(lineId)) || null}
-          onChange={(e, newVal) => setLineId(newVal ? newVal.Line_ID : "")}
-          getOptionLabel={(l) => (l ? l.Line_Name : "")}
-          isOptionEqualToValue={(o, v) => o.Line_ID === v.Line_ID}
+          options={customerOptions}
+          value={customer || null}
+          onChange={(e, newVal) => setCustomer(newVal || "")}
           sx={compactFieldSx(170)}
           ListboxProps={{ style: { fontSize: 11.5 } }}
-          renderInput={(params) => <TextField {...params} label="Line" placeholder={plant ? "All Lines" : "Select Plant first"} />}
+          noOptionsText="No customer in this month's plan"
+          renderInput={(params) => <TextField {...params} label="Customer" placeholder={plant ? "All Customers" : "Select Plant first"} />}
         />
 
         <TextField
@@ -1516,6 +1538,7 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
           InputLabelProps={{ shrink: true, sx: { fontSize: 12 } }}
         />
 
+        <FilterToggleButton open={filtersOpen} onClick={() => setFiltersOpen((o) => !o)} activeCount={[partNameId, lineId].filter(Boolean).length} />
 
         <div style={{ display: "flex", gap: 8, marginLeft: "auto", flexShrink: 0 }}>
           <Button
@@ -1539,6 +1562,32 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
             {excelLoading ? "Exporting..." : "Export Excel"}
           </Button>
         </div>
+
+        <FilterPanel open={filtersOpen} activeCount={[partNameId, lineId].filter(Boolean).length} onClear={() => { setPartNameId(""); setLineId(""); }}>
+          <Autocomplete
+            size="small"
+            options={filterOptions.partNames}
+            value={filterOptions.partNames.find((p) => String(p.Prod_ID) === String(partNameId)) || null}
+            onChange={(e, newVal) => setPartNameId(newVal ? newVal.Prod_ID : "")}
+            getOptionLabel={(p) => (p ? p.Name : "")}
+            isOptionEqualToValue={(o, v) => o.Prod_ID === v.Prod_ID}
+            sx={compactFieldSx(180)}
+            ListboxProps={{ style: { fontSize: 11.5 } }}
+            renderInput={(params) => <TextField {...params} label="Part Name" placeholder="All Part Names" />}
+          />
+          <Autocomplete
+            size="small"
+            disabled={!plant}
+            options={lineOptions}
+            value={lineOptions.find((l) => String(l.Line_ID) === String(lineId)) || null}
+            onChange={(e, newVal) => setLineId(newVal ? newVal.Line_ID : "")}
+            getOptionLabel={(l) => (l ? l.Line_Name : "")}
+            isOptionEqualToValue={(o, v) => o.Line_ID === v.Line_ID}
+            sx={compactFieldSx(170)}
+            ListboxProps={{ style: { fontSize: 11.5 } }}
+            renderInput={(params) => <TextField {...params} label="Line" placeholder={plant ? "All Lines" : "Select Plant first"} />}
+          />
+        </FilterPanel>
       </div>
 
       <style>{matScrollbarCss}</style>
@@ -1632,8 +1681,8 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
 // with a sliding highlight that animates to the active segment's measured
 // position — the same "capsule" tab pattern used in modern dashboard UIs.
 const TAB_DEFS = [
-  { key: "materials", label: "Materials", Icon: DescriptionOutlinedIcon },
   { key: "productionIH", label: "Production-IH", Icon: PrecisionManufacturingOutlinedIcon },
+  { key: "materials", label: "Materials", Icon: DescriptionOutlinedIcon },
 ];
 
 const PillTabs = (props) => <SharedPillTabs tabs={TAB_DEFS} {...props} />;
@@ -1651,7 +1700,7 @@ const MatAvailabilityStatus = () => {
     materials: { plant: null, supplier: null },
     productionIH: { plant: null, supplier: null },
   });
-  const activeStockAsOf = tab === 0 ? stockAsOf.materials : stockAsOf.productionIH;
+  const activeStockAsOf = tab === 0 ? stockAsOf.productionIH : stockAsOf.materials; // tab 0 = Production-IH (the first tab, shown first), tab 1 = Materials
   // Shared search box, sitting before the tabs — same placement as the
   // Daily Production Plan's own header search. Filters whichever tab is
   // currently active, each tab doing its own client-side filtering on its
@@ -1689,7 +1738,7 @@ const MatAvailabilityStatus = () => {
               lineHeight: 1.3,
             }}
           >
-            MFG Set of Parts - Stock Report{" "}
+            ASSY Set of Parts - Stock Report{" "}
             <Typography component="span" sx={{ fontSize: 13, fontWeight: 500, color: "#6b7280" }}>
               [MB52 / MBLB]
             </Typography>
@@ -1720,16 +1769,16 @@ const MatAvailabilityStatus = () => {
 
       <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
         {tab === 0 ? (
-          <MaterialsBody
-            searchText={searchText}
-            onCountChange={(c) => setCounts((s) => ({ ...s, materials: c }))}
-            onStockAsOfChange={(plant, supplier) => setStockAsOf((s) => ({ ...s, materials: { plant, supplier } }))}
-          />
-        ) : (
           <ProductionIHBody
             searchText={searchText}
             onCountChange={(c) => setCounts((s) => ({ ...s, productionIH: c }))}
             onStockAsOfChange={(plant, supplier) => setStockAsOf((s) => ({ ...s, productionIH: { plant, supplier } }))}
+          />
+        ) : (
+          <MaterialsBody
+            searchText={searchText}
+            onCountChange={(c) => setCounts((s) => ({ ...s, materials: c }))}
+            onStockAsOfChange={(plant, supplier) => setStockAsOf((s) => ({ ...s, materials: { plant, supplier } }))}
           />
         )}
       </div>

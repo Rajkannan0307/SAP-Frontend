@@ -642,7 +642,7 @@ const Sidebar = ({ setSidebarOpen }) => {
               code: "PMPD_ActualProductionPlan",
             },
             {
-              name: "Material Coverage",
+              name: "ASSY Set of Parts",
               path: "/home/MatAvailabilityStatus",
               icon: (
                 <PrecisionManufacturingIcon
@@ -675,7 +675,7 @@ const Sidebar = ({ setSidebarOpen }) => {
               code: "MfgComponentDailyPlan",
             },
             {
-              name: "Child Part Coverage",
+              name: "Bought Out Coverage",
               path: "/home/RmCoverage",
               icon: (
                 <PrecisionManufacturingIcon

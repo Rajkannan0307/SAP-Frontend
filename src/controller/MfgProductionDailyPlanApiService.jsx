@@ -33,6 +33,12 @@ export const GetMfgProductionLinesApi = async (params) => {
   return response.data;
 };
 
+// 6-Month Plan vs Actual of one FG part (the last 6 completed months), for the dialog of the Prod Status tab
+export const GetMfgProductionPartTrendApi = async (params) => {
+  const response = await axios.get(`${api}/MfgProductionDailyPlan/getPartTrend`, { params });
+  return response.data;
+};
+
 export const GetMfgProductionDailyPlanDayDetailApi = async (params) => {
   const response = await axios.get(`${api}/MfgProductionDailyPlan/getDayDetail`, { params });
   return response.data;

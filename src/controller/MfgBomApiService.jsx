@@ -63,6 +63,12 @@ export const GetMatAvailabilityFiltersApi = async () => {
   return response.data;
 };
 
+// the customers of the FG parts in the month's plan (read only): { month, customers: [...], byPart: { "<plant>|<FG part>": [...] } }
+export const GetFgCustomersApi = async ({ plant, month }) => {
+  const response = await axios.get(`${api}/MFG_BOM/getFgCustomers`, { params: { plant, month } });
+  return response.data;
+};
+
 export const GetMatAvailabilityReportApi = async (params) => {
   const response = await axios.get(`${api}/MFG_BOM/getMatAvailabilityReport`, { params });
   return response.data;

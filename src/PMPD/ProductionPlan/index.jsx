@@ -608,8 +608,7 @@ const ExcelUploadModal = ({
             "Segment",
             "Plan Type",
             "Plan_qty",
-            "Ends",
-            "Effective Date",
+            "Effective Date (dd-mm-yyyy)",
         ];
 
         worksheet.addRow(headers);
@@ -627,6 +626,7 @@ const ExcelUploadModal = ({
 
         // Column widths
         worksheet.columns.forEach((col) => (col.width = 22));
+        worksheet.getColumn("H").width = 30; // fits "Effective Date (dd-mm-yyyy)"
 
         // 4️⃣ APPLY DROPDOWNS (ROW 2 → 1000)
 
@@ -653,7 +653,22 @@ const ExcelUploadModal = ({
 
         // 5️⃣ Date formatting
         worksheet.getColumn("F").numFmt = "yyyy-mm-dd";
-        worksheet.getColumn("I").numFmt = "yyyy-mm-dd";
+        // Effective Date (column H): the header says "Effective Date (dd-mm-yyyy)" (the upload accepts that and the old plain name), the cells are
+        // shown as dd-mm-yyyy, and it must be a real Excel date (not text); also a note on the header and a hint when a cell is selected.
+        worksheet.getColumn("H").numFmt = "dd-mm-yyyy";
+        worksheet.getCell("H1").note = "Enter a real date in dd-mm-yyyy format, e.g. 01-12-2026 (the first day of the plan month). Do not type it as text.";
+        worksheet.dataValidations.add("H2:H1000", {
+            type: "date",
+            operator: "greaterThan",
+            formulae: [new Date(Date.UTC(2000, 0, 1))],
+            allowBlank: true,
+            showInputMessage: true,
+            promptTitle: "Effective Date",
+            prompt: "Date format: dd-mm-yyyy (e.g. 01-12-2026)",
+            showErrorMessage: true,
+            errorTitle: "Invalid date",
+            error: "Enter a valid date in dd-mm-yyyy format, e.g. 01-12-2026.",
+        });
 
         // 6️⃣ Cell styling (rows below header)
         worksheet.eachRow((row, rowNumber) => {

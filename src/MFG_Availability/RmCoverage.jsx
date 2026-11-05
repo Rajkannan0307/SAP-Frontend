@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Button, CircularProgress, TextField, Tooltip, Typography } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import { toast } from "react-toastify";
@@ -19,7 +19,7 @@ import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined
 
 // The two tabs of this screen (the same pill tabs as the MFG Set of Parts - Stock Report)
 const TABS = [
-  { key: "coverage", label: "Child Part Coverage", Icon: Inventory2OutlinedIcon },
+  { key: "coverage", label: "Bought Out Coverage", Icon: Inventory2OutlinedIcon },
   { key: "kanban", label: "Supplier Kanban", Icon: LocalShippingOutlinedIcon },
 ];
 
@@ -112,6 +112,10 @@ const RmCoverage = () => {
   const [vendorFilter, setVendorFilter] = useState("All");
   const [buyerFilter, setBuyerFilter] = useState("All");
   const [lineFilter, setLineFilter] = useState("All");
+  // a filter change redraws the whole table (hundreds of rows): it is run as a transition, so the click answers at once and a spinner shows over the table meanwhile
+  const [isFiltering, startFilter] = useTransition();
+  const withLoading = (setter) => (value) => startFilter(() => setter(value));
+  const [statusFilter, setStatusFilter] = useState([]); // the R / Y / G / B buttons of the Filters panel (none chosen = every status)
   const [productFilter, setProductFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [searchText, setSearchText] = useState("");
@@ -164,7 +168,7 @@ const RmCoverage = () => {
       setLoaded(true);
     } catch (error) {
       console.error(error);
-      toast.error(error?.response?.data?.message || "Failed to load the Child Part Coverage.");
+      toast.error(error?.response?.data?.message || "Failed to load the Bought Out Coverage.");
       setRows([]);
     } finally {
       setLoading(false);
@@ -204,7 +208,7 @@ const RmCoverage = () => {
   }, [lineOptions, lineFilter]);
   const buyerOptions = useMemo(() => uniqSorted(rows.flatMap((r) => r.vendors.filter((v) => v.buyer_id).map(buyerLabel))), [rows]);
 
-  const visibleRows = useMemo(() => {
+  const baseRows = useMemo(() => {
     const text = searchText.trim().toLowerCase();
     return rows.filter((r) => {
       if (vendorFilter !== "All" && !r.vendors.some((v) => vendorLabel(v) === vendorFilter)) return false;
@@ -216,6 +220,7 @@ const RmCoverage = () => {
       return String(r.child_part_no).toLowerCase().includes(text) || String(r.child_part_desc || "").toLowerCase().includes(text);
     });
   }, [rows, vendorFilter, buyerFilter, lineFilter, productFilter, categoryFilter, searchText]);
+  const visibleRows = useMemo(() => (statusFilter.length ? baseRows.filter((r) => statusFilter.includes(r.status)) : baseRows), [baseRows, statusFilter]);
 
   // Excel of the table as shown (Vendor / Buyer / Line / search applied): the numbers, the status and the 10 coverage cells
   // (100% = a whole day covered, a part = part of a day; cells coloured like the status on screen).
@@ -258,8 +263,8 @@ const RmCoverage = () => {
         ...coverageFills(r.coverage_days),
       ]);
       downloadStatusExcel({
-        sheetName: "Child Part Coverage",
-        fileName: `Child_Part_Coverage_${plantSelect === "All" ? "All" : plantSelect.split(" ")[0]}_${meta.month || month}.xlsx`,
+        sheetName: "Bought Out Coverage",
+        fileName: `Bought_Out_Coverage_${plantSelect === "All" ? "All" : plantSelect.split(" ")[0]}_${meta.month || month}.xlsx`,
         columns,
         groups: [{ label: "Coverage (each block = 1 day)", from: DAY_FROM, to: DAY_FROM + DAY_CELLS - 1 }],
         rows,
@@ -330,8 +335,8 @@ const RmCoverage = () => {
   };
 
   // the Filters panel holds Vendor / Buyer / Line; Product and Material Category are in the top bar (before Search)
-  const activeFilterCount = [vendorFilter, buyerFilter, lineFilter].filter((v) => v !== "All").length;
-  const clearFilters = () => { setVendorFilter("All"); setBuyerFilter("All"); setLineFilter("All"); };
+  const activeFilterCount = [vendorFilter, buyerFilter, lineFilter].filter((v) => v !== "All").length + (statusFilter.length ? 1 : 0);
+  const clearFilters = () => startFilter(() => { setVendorFilter("All"); setBuyerFilter("All"); setLineFilter("All"); setStatusFilter([]); });
 
   // keep the header the same width as the body: leave room for the body scrollbar (0 when there is none)
   useLayoutEffect(() => {
@@ -344,9 +349,9 @@ const RmCoverage = () => {
 
   const counts = useMemo(() => {
     const c = { R: 0, Y: 0, G: 0, B: 0 };
-    visibleRows.forEach((r) => { c[r.status] = (c[r.status] || 0) + 1; });
+    baseRows.forEach((r) => { c[r.status] = (c[r.status] || 0) + 1; });
     return c;
-  }, [visibleRows]);
+  }, [baseRows]);
 
   // Supplier Kanban tab: the same page frame with the Kanban list; the Plant and Month choice is shared with the Coverage tab
   const tabCounts = { coverage: rows.length, kanban: kanbanCount };
@@ -354,7 +359,7 @@ const RmCoverage = () => {
     return (
       <div className="flex flex-col p-5 mt-[50px] bg-[#F5F5F5] h-[calc(100vh-50px)]">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-          <h1 className="text-[17px] font-bold leading-[1.3] tracking-[0.1px] text-[#1a2233]">Child Part Coverage</h1>
+          <h1 className="text-[17px] font-bold leading-[1.3] tracking-[0.1px] text-[#1a2233]">Bought Out Coverage</h1>
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative">
               <SearchIcon sx={{ fontSize: 16 }} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8a93a3]" />
@@ -397,7 +402,7 @@ const RmCoverage = () => {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: loaded ? 0 : 6 }}>
         <div>
           <Typography sx={{ fontSize: 17, fontWeight: 700, color: "#1a2233", letterSpacing: 0.1, lineHeight: 1.3, mb: loaded ? 0.25 : 1.5 }}>
-            Child Part Coverage
+            Bought Out Coverage
           </Typography>
           {loaded && (
             <Typography sx={{ fontSize: 11, color: "#8a93a3", lineHeight: 1.4, mb: 1.5 }}>
@@ -442,8 +447,8 @@ const RmCoverage = () => {
           inputProps={{ min: "2000-01", max: "2099-12" }}
           sx={compactFieldSx(150)}
         />
-        <FilterSelect label="Product" value={productFilter} options={productOptions} onChange={setProductFilter} minWidth={170} />
-        <FilterSelect label="Material Category" value={categoryFilter} options={categoryOptions} onChange={setCategoryFilter} minWidth={190} />
+        <FilterSelect label="Product" value={productFilter} options={productOptions} onChange={withLoading(setProductFilter)} minWidth={170} />
+        <FilterSelect label="Material Category" value={categoryFilter} options={categoryOptions} onChange={withLoading(setCategoryFilter)} minWidth={190} />
         <Button
           onClick={() => fetchData(plantSelect)}
           disabled={loading}
@@ -496,9 +501,33 @@ const RmCoverage = () => {
             </Button>
           )}
         >
-          <FilterSelect label="Vendor" value={vendorFilter} options={vendorOptions} onChange={setVendorFilter} minWidth={220} />
-          <FilterSelect label="Buyer" value={buyerFilter} options={buyerOptions} onChange={setBuyerFilter} minWidth={170} />
-          <FilterSelect label="Line" value={lineFilter} options={lineOptions} onChange={setLineFilter} minWidth={150} />
+          <FilterSelect label="Vendor" value={vendorFilter} options={vendorOptions} onChange={withLoading(setVendorFilter)} minWidth={220} />
+          <FilterSelect label="Buyer" value={buyerFilter} options={buyerOptions} onChange={withLoading(setBuyerFilter)} minWidth={170} />
+          <FilterSelect label="Line" value={lineFilter} options={lineOptions} onChange={withLoading(setLineFilter)} minWidth={150} />
+          {/* Status: the four colours of the table; click to show only those parts (several can be chosen), click again to remove */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 10.5, fontWeight: 600, color: "#6b7280" }}>Status</span>
+            {STATUS_ORDER.map((k) => {
+              const m = STATUS_META[k];
+              const on = statusFilter.includes(k);
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => startFilter(() => setStatusFilter((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k])))}
+                  title={`${m.name}: ${m.rule}. Click to ${on ? "remove this" : "show only this"} status.`}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 10px 0 5px", borderRadius: 15, cursor: "pointer",
+                    border: on ? `2px solid ${m.color}` : "1px solid #dde1e7", backgroundColor: on ? "#fff" : "#fafbfc",
+                    boxShadow: on ? `0 0 0 3px ${m.color}30` : "none", opacity: !on && statusFilter.length ? 0.55 : 1, fontSize: 11.5, fontWeight: 700, color: "#1a2233",
+                  }}
+                >
+                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "50%", backgroundColor: m.color, color: m.text, fontSize: 10, fontWeight: 700 }}>{k}</span>
+                  {loaded ? counts[k] || 0 : ""}
+                </button>
+              );
+            })}
+          </div>
         </FilterPanel>
       </div>
 
@@ -506,9 +535,15 @@ const RmCoverage = () => {
       <div
         style={{
           flexGrow: 1, minHeight: 0, backgroundColor: "#fff", borderRadius: 8, border: "1px solid #e8eaee",
-          boxShadow: "0 1px 3px rgba(16,24,40,0.05)", overflow: "hidden", display: "flex", flexDirection: "column",
+          boxShadow: "0 1px 3px rgba(16,24,40,0.05)", overflow: "hidden", display: "flex", flexDirection: "column", position: "relative",
         }}
       >
+        {isFiltering && (
+          <div style={{ position: "absolute", inset: 0, zIndex: 5, backgroundColor: "rgba(255,255,255,0.6)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", gap: 8, paddingTop: 110, pointerEvents: "none" }}>
+            <CircularProgress size={28} />
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: "#0066FF" }}>Applying the filter...</span>
+          </div>
+        )}
         <div ref={headScrollRef} style={{ overflow: "hidden", flex: "none", paddingRight: scrollbarW, backgroundColor: "#cfdaf5" }}>
           <table style={TABLE_STYLE}>
           <colgroup>
