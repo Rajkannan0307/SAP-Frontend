@@ -10,7 +10,7 @@ import * as ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
 import { getMyPlants, myPlantLabel } from '../../controller/CommonApiService'
 import { findPlantsNotAllowed, plantsNotAllowedMessage } from '../../common/plantFileCheck'
-import { AddProductionPlan, getProductionPlandetails, getProductSegmentdetails, getCustomerGroupsForPlan } from '../../controller/PMPDApiService'
+import { AddProductionPlan, getProductionPlandetails } from '../../controller/PMPDApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton, gridFilteredSortedRowIdsSelector, useGridApiContext } from '@mui/x-data-grid'
 import { endOfDay, format, isValid, startOfDay } from 'date-fns'
 import { useFormik } from 'formik'
@@ -542,9 +542,12 @@ const UniqueKeyInfo = () => (
     <UniqueGroupingInfo
         intro=""
         sections={[
-            { title: "MP (the only plan type allowed)", fields: ["Plant", "Part Number", "Plan Type (MP)", "Plan Date"] },
+            { title: "MP (the only plan type allowed)", fields: ["Plant", "Part Number", "Plan Type (MP)", "Month and Year of the Plan Date"] },
         ]}
-        notes={[<>Same combination already exists: the plan is <b>updated</b>. Otherwise a new row is <b>added</b>.</>]}
+        notes={[
+            <>Same combination already exists: the quantity is <b>updated</b>. Otherwise a new row is <b>added</b>.</>,
+            "The Part Number must be an active material of the plant in the Material Master (a part that is not found is rejected). Customer, Segment and Description are not uploaded (the list shows them from the Material Master); Ends comes from the PMPD Master.",
+        ]}
     />
 )
 
@@ -573,15 +576,10 @@ const ExcelUploadModal = ({
 
     async function downloadProductionPlanTemplate() {
         // 1️⃣ Fetch dropdown data
-        const [plant, prod_segments, customerGroupRows] = await Promise.all([
-            getMyPlants(), // only the plants this user may use (own plant + Data Access)
-            getProductSegmentdetails(),
-            getCustomerGroupsForPlan(),
-        ]);
-        const customerGroups = Array.isArray(customerGroupRows) ? customerGroupRows : [];
-
+        // The upload needs only Plant, Part Number, Plan Type, Plan Qty and Plan Date: Customer, Segment and Description come from the
+        // Material Master, Ends from the PMPD Master.
+        const plant = await getMyPlants(); // only the plants this user may use (own plant + Data Access)
         const plantCodes = (Array.isArray(plant) ? plant : []).map((e) => e.Plant_Code);
-        const prodSegNames = prod_segments.map((e) => e.seg_name);
         const planTypes = ["MP"]; // only MP is allowed; AOP is not accepted any more
 
         // 2️⃣ Create workbook & worksheet
@@ -602,10 +600,7 @@ const ExcelUploadModal = ({
         // ];
         const headers = [
             "Plant",
-            "Customer Name",
             "Part Number",
-            "Description",
-            "Segment",
             "Plan Type",
             "Plan_qty",
             "Effective Date (dd-mm-yyyy)",
@@ -626,7 +621,7 @@ const ExcelUploadModal = ({
 
         // Column widths
         worksheet.columns.forEach((col) => (col.width = 22));
-        worksheet.getColumn("H").width = 30; // fits "Effective Date (dd-mm-yyyy)"
+        worksheet.getColumn("E").width = 30; // fits "Effective Date (dd-mm-yyyy)"
 
         // 4️⃣ APPLY DROPDOWNS (ROW 2 → 1000)
 
@@ -637,27 +632,19 @@ const ExcelUploadModal = ({
             formulae: [`"${plantCodes.join(",")}"`],
         });
 
-        // Column E → product segment
-        worksheet.dataValidations.add("E2:E1000", {
-            type: "list",
-            allowBlank: false,
-            formulae: [`"${prodSegNames.join(",")}"`],
-        });
-
-        // Column G → plan type
-        worksheet.dataValidations.add("F2:F1000", {
+        // Column C → plan type
+        worksheet.dataValidations.add("C2:C1000", {
             type: "list",
             allowBlank: false,
             formulae: [`"${planTypes.join(",")}"`],
         });
 
         // 5️⃣ Date formatting
-        worksheet.getColumn("F").numFmt = "yyyy-mm-dd";
-        // Effective Date (column H): the header says "Effective Date (dd-mm-yyyy)" (the upload accepts that and the old plain name), the cells are
+        // Effective Date (column E): the header says "Effective Date (dd-mm-yyyy)" (the upload accepts that and the old plain name), the cells are
         // shown as dd-mm-yyyy, and it must be a real Excel date (not text); also a note on the header and a hint when a cell is selected.
-        worksheet.getColumn("H").numFmt = "dd-mm-yyyy";
-        worksheet.getCell("H1").note = "Enter a real date in dd-mm-yyyy format, e.g. 01-12-2026 (the first day of the plan month). Do not type it as text.";
-        worksheet.dataValidations.add("H2:H1000", {
+        worksheet.getColumn("E").numFmt = "dd-mm-yyyy";
+        worksheet.getCell("E1").note = "Enter a real date in dd-mm-yyyy format, e.g. 01-12-2026 (the first day of the plan month). Do not type it as text. One plan per part and month: a part already planned for that month gets its quantity updated.";
+        worksheet.dataValidations.add("E2:E1000", {
             type: "date",
             operator: "greaterThan",
             formulae: [new Date(Date.UTC(2000, 0, 1))],
@@ -678,17 +665,6 @@ const ExcelUploadModal = ({
                 cell.font = { size: 10 };
             });
         });
-
-        // 6b. "Customer" sheet: the active customer groups (company code + name) the user can copy into the Customer Name column
-        const customerSheet = workbook.addWorksheet("Customer");
-        customerSheet.addRow(["Company Code", "Customer Group Code", "Customer Name"]);
-        customerSheet.getRow(1).eachCell((cell) => {
-            cell.font = { bold: true };
-            cell.alignment = { horizontal: "center" };
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFADD8E6" } };
-        });
-        customerGroups.forEach((g) => customerSheet.addRow([g.Company_Code, g.Customer_Group_Code, g.Customer_Group_Name]));
-        customerSheet.columns = [{ width: 16 }, { width: 22 }, { width: 50 }];
 
         // 7️⃣ Download file
         const buffer = await workbook.xlsx.writeBuffer();

@@ -37,6 +37,12 @@ export const getProductSegments = async () => {
   const response = await axios.get(`${api}/Master/Get_Segments`);
   return response;
 };
+// Customer Groups for the Material Customer dropdowns / template: with a plant_id only the customers of the company of that plant;
+// without it every active group once per plant of its company (the Customer sheet of the upload template)
+export const getMaterialCustomers = async (plant_id) => {
+  const response = await axios.get(`${api}/Master/Get_Customers`, { params: plant_id ? { plant_id } : {} });
+  return response;
+};
 export const getMaterialCategories = async () => {
   const response = await axios.get(`${api}/Master/Get_Categories`);
   return response;

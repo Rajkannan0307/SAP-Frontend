@@ -10,6 +10,7 @@ import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 //   value     array of the chosen option values
 //   options   [{ value, label, hint? }]  (hint = a small grey text at the right of the option, e.g. "46 suppliers")
 //   onChange  (values) => void
+//   maxChips  how many chosen options are drawn before "+N more" (default 3)
 const BLUE = "#0066FF";
 const SHOWN_CHIPS = 3;
 
@@ -64,17 +65,18 @@ const ValueContainer = ({ children, ...props }) => {
   const [chips, input] = children;
   const list = Array.isArray(chips) ? chips : null;
   if (!list) return <components.ValueContainer {...props}>{children}</components.ValueContainer>;
-  const extra = list.length - SHOWN_CHIPS;
+  const shown = props.selectProps.maxChips || SHOWN_CHIPS;
+  const extra = list.length - shown;
   return (
     <components.ValueContainer {...props}>
-      {list.slice(0, SHOWN_CHIPS)}
+      {list.slice(0, shown)}
       {extra > 0 && <span style={{ background: "#1d4ed8", color: "#fff", borderRadius: 999, padding: "1px 8px", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>+{extra} more</span>}
       {input}
     </components.ValueContainer>
   );
 };
 
-const FilterMultiSelect = ({ label, value = [], options = [], onChange, disabled = false, placeholder = "Select" }) => {
+const FilterMultiSelect = ({ label, value = [], options = [], onChange, disabled = false, placeholder = "Select", maxChips = SHOWN_CHIPS }) => {
   const [focused, setFocused] = useState(false);
   const selected = options.filter((o) => value.includes(o.value));
   return (
@@ -90,6 +92,7 @@ const FilterMultiSelect = ({ label, value = [], options = [], onChange, disabled
       <ReactSelect
         isMulti
         isDisabled={disabled}
+        maxChips={maxChips}
         value={selected}
         options={options}
         onChange={(picked) => onChange((picked || []).map((o) => o.value))}

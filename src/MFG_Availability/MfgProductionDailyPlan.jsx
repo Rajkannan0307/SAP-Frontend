@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useFgCustomers, fgHasCustomer, customersOfParts } from "./fgCustomers";
+import { STATUS_META } from "./rmCoverageUtils";
 import PartTrendDialog from "./PartTrendDialog";
 import {
   TextField, Button, CircularProgress, Typography, Autocomplete, MenuItem, Select, Tooltip,
@@ -50,6 +51,9 @@ const STATUS_EXCEL_COLUMNS = [
   { header: "Line", width: 14 },
   { header: "Part No", width: 18 },
   { header: "Description", width: 34 },
+  { header: "P.Val Cr", width: 11, total: true, format: "#,##0.00" },
+  { header: "A.Val Cr", width: 11, total: true, format: "#,##0.00" },
+  { header: "Gap Cr", width: 10, total: true, gap: true, format: "#,##0.00" },
   { header: "Monthly Plan", width: 13, total: true },
   { header: "MTD Plan", width: 11, total: true },
   { header: "MTD Actual", width: 12, total: true },
@@ -81,6 +85,18 @@ const monthEndStr = (year, month) => {
 };
 
 const numberFmt = (v) => (v || v === 0 ? Number(v).toLocaleString("en-IN") : "0");
+
+// Value in crores (1 Cr = 1,00,00,000) with 2 decimals; the Gap Cr carries its sign
+const CRORE = 10000000;
+const crFmt = (v) => (Math.round((Number(v) || 0) * 100) / 100 + 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const crGapFmt = (v) => { const n = Math.round((Number(v) || 0) * 100) / 100 + 0; return n > 0 ? `+${crFmt(n)}` : crFmt(n); };
+
+// the same crore value as full rupees for the hover, e.g. "\u20B9 4,43,87,215.40" (a gap: "-\u20B9 1,90,12,345.00" / "+\u20B9 ...")
+const rsText = (cr, signed = false) => {
+  const v = Math.round((Number(cr) || 0) * CRORE * 100) / 100 + 0;
+  const body = `\u20B9 ${Math.abs(v).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return v < 0 ? `-${body}` : signed && v > 0 ? `+${body}` : body;
+};
 
 // Signed Gap formatting — "+100" / "-40" / "0", never just a bare positive
 // number, so a gap is always immediately readable as ahead/behind/on-target.
@@ -1569,25 +1585,102 @@ const STATUS_HEAD_BG = "#d0dcf5";
 const STATUS_HEAD_LINE = "#b9c8ea";
 const NUM_FONT = { fontVariantNumeric: "tabular-nums" };
 const CUR_NOTE = " Applies to the current month only (0 for other months).";
-// Column widths (%) — one colgroup for the header and every row, so numbers line up. 3.5 + 8.5 + 19 + 10 * 6.9 = 100.
-const STATUS_PCT = { si: 3.5, line: 8.5, part: 19, num: 6.9 };
+// Column widths (%) — one colgroup for the header and every row, so numbers line up. 3 + 6.5 + 12.5 + 13 * 6 = 100.
+// The number columns share STATUS_PCT.nums by weight. STATUS_MIN_WIDTH: only on a window narrower than that the table scrolls sideways.
+const STATUS_PCT = { si: 3, line: 6.2, part: 14, nums: 76.8 };
+const STATUS_COL_W = { plan_val: 1, actual_val: 1, val_gap: 1, monthly_plan: 1.2, mtd_plan: 1.2, mtd_actual: 1.25, month_gap: 1.3, cw_plan_calc: 1, cw_actual: 1.05, cw_gap: 1, yd_plan: 0.95, yd_actual: 1.15, yd_gap: 0.95 };
+const STATUS_W_SUM = Object.values(STATUS_COL_W).reduce((s, w) => s + w, 0);
+const statusColPct = (key) => ((STATUS_COL_W[key] || 1) / STATUS_W_SUM) * STATUS_PCT.nums;
+const STATUS_MIN_WIDTH = 1100;
+const LINE_CHARS = 10; // the Line column of a part row shows the first 10 characters (the full name is the hover)
+const shortLine = (name) => (name ? (name.length > LINE_CHARS ? `${name.slice(0, LINE_CHARS)}\u2026` : name) : "\u2013");
 
 // kind: plan / actual / gap. cur = applies to the current month only (0 and greyed for other months).
 // wd = the header hover is the working-days card (MTD Plan / C.W Plan).
+const VAL_TIP = " In crores (1 Cr = 1,00,00,000). Price = the latest price of the part on the Material Price screen whose effective date is on or before the last day of the selected month; a part with no price shows a dash and counts as 0.";
 const STATUS_COLS = [
+  { key: "plan_val", label: "P.Val Cr", kind: "plan", val: true, tip: "P.Val = MTD Plan x Price." + VAL_TIP },
+  { key: "actual_val", label: "A.Val Cr", kind: "actual", val: true, tip: "A.Val = MTD Actual x Price." + VAL_TIP },
+  { key: "val_gap", label: "Gap Cr", kind: "gap", val: true, tip: "Gap Cr = A.Val - P.Val (positive = ahead, negative = behind)." + VAL_TIP },
   { key: "monthly_plan", label: "M.Plan", kind: "plan", tipProps: monthlyPlanTipProps() },
   { key: "mtd_plan", label: "MTD Plan", kind: "plan", wd: "mtd" },
   { key: "mtd_actual", label: "MTD Actual", kind: "actual", tip: "MTD Actual = production quantity of the selected month (Production Actual, movement types 101, 102, 261 and 262)" },
-  { key: "month_gap", label: "Gap", kind: "gap", tip: "Gap = MTD Actual - MTD Plan" },
+  { key: "month_gap", label: "Gap", kind: "gap", tip: "Gap = MTD Actual - MTD Plan. Colour = adherence (MTD Actual / MTD Plan): Green above 90%, Yellow 80% to 90%, Red below 80%." },
   { key: "cw_plan_calc", label: "C.W Plan", kind: "plan", wd: "cw", cur: true },
   { key: "cw_actual", label: "C.W Actual", kind: "actual", cur: true, tip: "C.W Actual = production quantity of the current week from Monday up to yesterday, today is not included (movement types 101, 102, 261 and 262)." + CUR_NOTE },
   { key: "cw_gap", label: "CW Gap", kind: "gap", cur: true, tip: "CW Gap = C.W Actual - C.W Plan." + CUR_NOTE },
   { key: "yd_plan", label: "YD Plan", kind: "plan", cur: true, tip: "YD Plan = yesterday's plan: the daily plan entered for yesterday, all shifts added together (Prod Daily Plan tab)." + CUR_NOTE },
-  { key: "yd_actual", label: "YD Actual", kind: "actual", cur: true, tip: "YD Actual = yesterday's production quantity (movement types 101, 102, 261 and 262)." + CUR_NOTE },
+  { key: "yd_actual", label: "YD Actual", kind: "actual", cur: true, tip: "YD Actual = yesterday's production quantity (movement types 101, 102, 261 and 262). Colour = YD Actual / YD Plan: Green above 90%, Yellow 80% to 90%; below 80% (and no YD Plan) is not coloured." + CUR_NOTE },
   { key: "yd_gap", label: "YD Gap", kind: "gap", cur: true, tip: "YD Gap = YD Actual - YD Plan (positive = ahead, negative = behind)." + CUR_NOTE },
 ];
 
 const gapTextColor = (v) => (v > 0 ? "#1b7a43" : v < 0 ? "#b42323" : "#6b7280");
+
+// Adherence of the MTD Gap = MTD Actual / MTD Plan x 100:  Green above 90 %, Yellow 80 - 90 %, Red below 80 %.
+// A part (or line / total) with no MTD Plan has no adherence: its Gap is shown plain and it is not counted in any colour.
+const ADH_LEVELS = {
+  green: { label: "Green", short: "G", rule: "> 90%", bg: "#eafaf1", fg: "#1b7a43", dot: STATUS_META.G.color, text: STATUS_META.G.text },
+  yellow: { label: "Yellow", short: "Y", rule: "80 - 90%", bg: "#fff6e0", fg: "#946200", dot: STATUS_META.Y.color, text: STATUS_META.Y.text },
+  red: { label: "Red", short: "R", rule: "< 80%", bg: "#fdeeee", fg: "#b42323", dot: STATUS_META.R.color, text: STATUS_META.R.text },
+};
+const adherenceOf = (plan, actual) => {
+  const p = Number(plan) || 0;
+  const a = Number(actual) || 0;
+  if (!(p > 0)) return { level: null, pct: null };
+  const pct = (a / p) * 100;
+  return { level: pct > 90 ? "green" : pct >= 80 ? "yellow" : "red", pct };
+};
+
+// the Gap number inside its colour pill
+const GapPill = ({ s }) => (
+  <span style={{ display: "inline-block", minWidth: 40, textAlign: "center", padding: "2px 8px", borderRadius: 999, backgroundColor: s.pill.bg, color: s.pill.fg, fontWeight: 700, lineHeight: 1.45 }}>
+    {s.text}
+  </span>
+);
+
+// Gap colour filter above the list - the same look as the Status buttons of Bought Out Coverage: a coloured circle with the letter (G / Y / R) and the
+// number of parts; click to show only those parts (several can be chosen), click again to remove. The rules are in the info icon.
+const AdherenceChips = ({ counts, selected, onToggle, onClear }) => (
+  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap", justifyContent: "center" }}>
+    {Object.entries(ADH_LEVELS).map(([key, lv]) => {
+      const on = selected.has(key);
+      return (
+        <button
+          key={key}
+          type="button"
+          onClick={() => onToggle(key)}
+          aria-pressed={on}
+          title={`Click to ${on ? "remove" : "show only"} the ${lv.label} parts`}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 5, height: 24, boxSizing: "border-box", padding: "0 9px 0 3px", borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
+            border: `2px solid ${on ? lv.dot : "#e6e9ee"}`, backgroundColor: on ? "#fff" : "#fafbfc",
+            boxShadow: on ? `0 0 0 2px ${lv.dot}26` : "none", opacity: !on && selected.size ? 0.55 : 1, fontSize: 11, fontWeight: 700, color: "#1a2233",
+            transition: "border-color .15s ease, box-shadow .15s ease, opacity .15s ease",
+          }}
+        >
+          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: "50%", backgroundColor: lv.dot, color: lv.text, fontSize: 9, fontWeight: 700 }}>{lv.short}</span>
+          {counts[key]}
+        </button>
+      );
+    })}
+    {selected.size > 0 && (
+      <button type="button" onClick={onClear} style={{ border: "none", background: "transparent", color: "#0066FF", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "0 4px" }}>
+        Clear
+      </button>
+    )}
+    <InfoTip
+      label="Gap colour rules"
+      title="Gap adherence = MTD Actual / MTD Plan x 100"
+      points={[
+        { label: "G (Green):", value: "above 90%" },
+        { label: "Y (Yellow):", value: "80% to 90%" },
+        { label: "R (Red):", value: "below 80%" },
+        "A part with no MTD Plan has no colour and is not counted.",
+      ]}
+      note="The counts are the parts in the list (the other filters and the search applied). Click a colour to show only those parts."
+    />
+  </Box>
+);
 
 const sumStatusRows = (rows) => {
   const totals = {};
@@ -1597,8 +1690,23 @@ const sumStatusRows = (rows) => {
 
 // text / colour / weight / hover of one number cell. `na` = the current-month-only columns of a non-current month.
 // `total` = a line or TOTAL row (dark numbers instead of the blue plan / black actual of the part rows).
-const statusCell = (c, n, na, total = false) => {
+const statusCell = (c, n, na, total = false, adh = null) => {
   if (c.cur && na) return { text: "0", color: "#b6bac3", weight: 400, title: "Applies to the current month only" };
+  if (c.val) {
+    // na = the part has no price on the Material Price screen
+    if (na) return { text: "\u2013", color: "#b6bac3", weight: 400, title: "No price for this part on the Material Price screen" };
+    if (c.key === "val_gap") return { text: crGapFmt(n), color: gapTextColor(n), weight: 700, title: rsText(n, true) };
+    return { text: crFmt(n), color: total ? "#1a2233" : c.kind === "plan" ? PLAN_TEXT_COLOR : ACTUAL_TEXT_COLOR, weight: total ? 700 : 600, title: rsText(n) };
+  }
+  if (c.key === "yd_actual" && adh && (adh.level === "green" || adh.level === "yellow")) {
+    const lv = ADH_LEVELS[adh.level];
+    return { text: numberFmt(n), color: lv.fg, weight: 700, pill: lv, title: `Yesterday's adherence ${adh.pct.toFixed(1)}% (YD Actual / YD Plan) - ${lv.label}` };
+  }
+  if (c.kind === "gap" && adh && adh.level) {
+    const lv = ADH_LEVELS[adh.level];
+    return { text: gapFmt(n), color: lv.fg, weight: 700, pill: lv, title: `Adherence ${adh.pct.toFixed(1)}% (MTD Actual / MTD Plan) - ${lv.label}` };
+  }
+  if (c.kind === "gap" && adh) return { text: gapFmt(n), color: gapTextColor(n), weight: 700, title: "No MTD Plan, so no adherence" };
   if (c.kind === "gap") return { text: gapFmt(n), color: gapTextColor(n), weight: 700 };
   return { text: numberFmt(n), color: total ? "#1a2233" : c.kind === "plan" ? PLAN_TEXT_COLOR : ACTUAL_TEXT_COLOR, weight: total ? 700 : 600 };
 };
@@ -1608,12 +1716,12 @@ const StatusColGroup = () => (
     <col style={{ width: `${STATUS_PCT.si}%` }} />
     <col style={{ width: `${STATUS_PCT.line}%` }} />
     <col style={{ width: `${STATUS_PCT.part}%` }} />
-    {STATUS_COLS.map((c) => <col key={c.key} style={{ width: `${STATUS_PCT.num}%` }} />)}
+    {STATUS_COLS.map((c) => <col key={c.key} style={{ width: `${statusColPct(c.key)}%` }} />)}
   </colgroup>
 );
 
 const STATUS_BODY_CELL = {
-  height: 36, padding: "0 10px", fontSize: 11.5, borderBottom: "1px solid #eef0f3",
+  height: 36, padding: "0 8px", fontSize: 11.5, borderBottom: "1px solid #eef0f3",
   whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
 };
 
@@ -1644,15 +1752,15 @@ const LineGroupRows = React.memo(({ group, accent, open, onToggle, onPartClick }
         </Box>
       </TableCell>
       {STATUS_COLS.map((c) => {
-        const s = statusCell(c, group.totals[c.key], group.naAll, true);
+        const s = statusCell(c, group.totals[c.key], c.val ? false : group.naAll, true, c.key === "month_gap" ? adherenceOf(group.totals.mtd_plan, group.totals.mtd_actual) : c.key === "yd_actual" ? adherenceOf(group.totals.yd_plan, group.totals.yd_actual) : null);
         return (
           <TableCell
             key={c.key}
             align="right"
             title={s.title}
-            sx={{ ...NUM_FONT, padding: "0 10px", fontSize: 11.5, fontWeight: s.weight === 400 ? 400 : 600, color: s.color, backgroundColor: accent.tint, borderTop: "1px solid #dfe3ea", borderBottom: "1px solid #dfe3ea" }}
+            sx={{ ...NUM_FONT, padding: "0 8px", fontSize: 11.5, fontWeight: s.weight === 400 ? 400 : 600, color: s.color, backgroundColor: accent.tint, borderTop: "1px solid #dfe3ea", borderBottom: "1px solid #dfe3ea" }}
           >
-            {s.text}
+            {s.pill ? <GapPill s={s} /> : s.text}
           </TableCell>
         );
       })}
@@ -1666,7 +1774,7 @@ const LineGroupRows = React.memo(({ group, accent, open, onToggle, onPartClick }
               {group.rows.map((r) => (
                 <TableRow key={r.fg_part} hover sx={{ "& td": { backgroundColor: "#fff" }, "&:hover td": { backgroundColor: "#f2f6fd" } }}>
                   <TableCell align="center" sx={{ ...STATUS_BODY_CELL, padding: "0 4px", color: "#6b7280", boxShadow: `inset 3px 0 0 ${accent.bar}` }}>{r.si}</TableCell>
-                  <TableCell sx={{ ...STATUS_BODY_CELL, color: "#4b5565" }} title={r.Line_Name || ""}>{r.Line_Name || "–"}</TableCell>
+                  <TableCell sx={{ ...STATUS_BODY_CELL, color: "#4b5565" }} title={r.Line_Name || ""}>{shortLine(r.Line_Name)}</TableCell>
                   <TableCell sx={{ ...STATUS_BODY_CELL, py: "3px", lineHeight: 1.3 }} title={`${r.fg_part_no} — ${r.fg_part_desc}`}>
                     <div
                       style={{ color: "#0052cc", fontWeight: 700, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", cursor: onPartClick ? "pointer" : "inherit" }}
@@ -1678,10 +1786,10 @@ const LineGroupRows = React.memo(({ group, accent, open, onToggle, onPartClick }
                     <div style={{ color: "#6b7280", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis" }}>{r.fg_part_desc}</div>
                   </TableCell>
                   {STATUS_COLS.map((c) => {
-                    const s = statusCell(c, Number(r[c.key]) || 0, r.cw_na);
+                    const s = statusCell(c, Number(r[c.key]) || 0, c.val ? !r.has_price : r.cw_na, false, c.key === "month_gap" ? r.adh : c.key === "yd_actual" ? r.yd_adh : null);
                     return (
                       <TableCell key={c.key} align="right" title={s.title} sx={{ ...STATUS_BODY_CELL, ...NUM_FONT, fontWeight: s.weight, color: s.color }}>
-                        {s.text}
+                        {s.pill ? <GapPill s={s} /> : s.text}
                       </TableCell>
                     );
                   })}
@@ -1698,12 +1806,12 @@ const LineGroupRows = React.memo(({ group, accent, open, onToggle, onPartClick }
 // the table itself: sticky two-part header, the line groups, and the TOTAL row (all lines shown) pinned to the bottom
 const StatusGroupTable = ({ groups, expanded, onToggle, grand, grandNa, count, wd, loading, loaded, onPartClick }) => {
   const headCell = {
-    backgroundColor: STATUS_HEAD_BG, color: "#000", fontSize: 10.5, fontWeight: 700, height: 36,
-    padding: "0 10px", whiteSpace: "nowrap", borderBottom: `1px solid ${STATUS_HEAD_LINE}`,
+    backgroundColor: STATUS_HEAD_BG, color: "#000", fontSize: 10.5, fontWeight: 700, height: 40, lineHeight: 1.2,
+    padding: "0 6px", whiteSpace: "normal", borderBottom: `1px solid ${STATUS_HEAD_LINE}`,
   };
-  const label = { cursor: "help" };
+  const label = { cursor: "help", whiteSpace: "normal", textOverflow: "clip", lineHeight: 1.2 };
   return (
-    <Table stickyHeader size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
+    <Table stickyHeader size="small" sx={{ tableLayout: "fixed", width: "100%", minWidth: STATUS_MIN_WIDTH }}>
       <StatusColGroup />
       <TableHead>
         <TableRow>
@@ -1750,15 +1858,15 @@ const StatusGroupTable = ({ groups, expanded, onToggle, grand, grandNa, count, w
               TOTAL <Box component="span" sx={{ fontWeight: 400, color: "#6b7280", fontSize: 10 }}>({count} FG)</Box>
             </TableCell>
             {STATUS_COLS.map((c) => {
-              const s = statusCell(c, grand[c.key], grandNa, true);
+              const s = statusCell(c, grand[c.key], c.val ? false : grandNa, true, c.key === "month_gap" ? adherenceOf(grand.mtd_plan, grand.mtd_actual) : c.key === "yd_actual" ? adherenceOf(grand.yd_plan, grand.yd_actual) : null);
               return (
                 <TableCell
                   key={c.key}
                   align="right"
                   title={s.title}
-                  sx={{ position: "sticky", bottom: 0, zIndex: 3, backgroundColor: "#eaf0fc", borderTop: "2px solid #b8c7ec", borderBottom: "1px solid #d0dcf5", ...NUM_FONT, height: 34, padding: "0 10px", fontSize: 11.5, fontWeight: s.weight, color: s.color }}
+                  sx={{ position: "sticky", bottom: 0, zIndex: 3, backgroundColor: "#eaf0fc", borderTop: "2px solid #b8c7ec", borderBottom: "1px solid #d0dcf5", ...NUM_FONT, height: 34, padding: "0 8px", fontSize: 11.5, fontWeight: s.weight, color: s.color }}
                 >
-                  {s.text}
+                  {s.pill ? <GapPill s={s} /> : s.text}
                 </TableCell>
               );
             })}
@@ -1890,6 +1998,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
   const [plant, setPlant] = useState(user?.PlantCode || "");
   const [segmentId, setSegmentId] = useState("");
   const [lineId, setLineId] = useState("");
+  const [adhSel, setAdhSel] = useState(() => new Set()); // Gap colour chips (green / yellow / red): empty = every part
   const [customer, setCustomer] = useState(""); // Customer filter: hides the FG rows of the other customers of the plan
   // Monthly report filter — Month/Year only, no manual date entry. Defaults
   // to the current month/year; converted to a Start/End date range only at
@@ -1991,6 +2100,10 @@ const PlanHistoryBody = ({ searchText = "" }) => {
         const cwPlan = na ? 0 : r.cw_plan_calc || 0;
         const ydActual = na ? 0 : r.yd_actual || 0;
         const ydPlan = na ? 0 : r.yd_plan || 0;
+        // value in crores: quantity x the unit price of the part (Material Price); no price = no value
+        const price = r.unit_price === null || r.unit_price === undefined ? null : Number(r.unit_price);
+        const planVal = price === null ? 0 : ((r.mtd_plan || 0) * price) / CRORE;
+        const actualVal = price === null ? 0 : ((r.mtd_actual || 0) * price) / CRORE;
         return {
           id: r.fg_part,
           ...r,
@@ -2003,6 +2116,12 @@ const PlanHistoryBody = ({ searchText = "" }) => {
           month_gap: (r.mtd_actual || 0) - (r.mtd_plan || 0),
           cw_gap: cwActual - cwPlan,
           yd_gap: ydActual - ydPlan,
+          plan_val: planVal,
+          actual_val: actualVal,
+          val_gap: actualVal - planVal,
+          has_price: price !== null,
+          adh: adherenceOf(r.mtd_plan, r.mtd_actual),
+          yd_adh: adherenceOf(ydPlan, ydActual),
         };
       }),
     [historyRows]
@@ -2014,7 +2133,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
 
   // Shared header search (before the tabs) — filters by Part No. or
   // Description, client-side, on the rows already fetched for this tab.
-  const filteredRows = useMemo(() => {
+  const baseRows = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     const byCustomer = customer ? flatRows.filter((r) => fgHasCustomer(fgCustomers.byPart, plant, r.fg_part_no, customer)) : flatRows;
     if (!q) return byCustomer;
@@ -2022,6 +2141,14 @@ const PlanHistoryBody = ({ searchText = "" }) => {
       (r) => r.fg_part_no?.toLowerCase().includes(q) || r.fg_part_desc?.toLowerCase().includes(q)
     );
   }, [flatRows, searchText, customer, fgCustomers, plant]);
+  // parts per Gap colour (of the list before the colour filter, so a chip shows what it would give)
+  const adhCounts = useMemo(() => {
+    const counts = { green: 0, yellow: 0, red: 0 };
+    baseRows.forEach((r) => { if (r.adh && r.adh.level) counts[r.adh.level] += 1; });
+    return counts;
+  }, [baseRows]);
+  const filteredRows = useMemo(() => (adhSel.size ? baseRows.filter((r) => r.adh && adhSel.has(r.adh.level)) : baseRows), [baseRows, adhSel]);
+  const toggleAdh = (key) => setAdhSel((prev) => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
 
   // Group by Line (built from the returned data, never hardcoded): lines by their total Monthly Plan (highest first), parts
   // inside a line by Monthly Plan (highest first). `si` = the serial number of the part inside its line (1, 2, 3 ... per line).
@@ -2070,6 +2197,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
     try {
       const rows = models.map((r, i) => [
         i + 1, r.plant || plant, r.Line_Name || "", r.fg_part_no, r.fg_part_desc,
+        r.has_price ? r.plan_val : "", r.has_price ? r.actual_val : "", r.has_price ? r.val_gap : "",
         r.monthly_plan || 0, r.mtd_plan || 0, r.mtd_actual || 0, r.month_gap || 0,
         r.cw_plan_calc || 0, r.cw_actual || 0, r.cw_gap || 0, r.yd_plan || 0, r.yd_actual || 0, r.yd_gap || 0,
       ]);
@@ -2147,7 +2275,7 @@ const PlanHistoryBody = ({ searchText = "" }) => {
           onChange={(e, newVal) => setCustomer(newVal || "")}
           sx={compactFieldSx(170)}
           ListboxProps={{ style: { fontSize: 11.5 } }}
-          noOptionsText="No customer in this month's plan"
+          noOptionsText="No customer found for these parts"
           renderInput={(params) => <TextField {...params} label="Customer" placeholder={plant ? "All Customers" : "Select Plant first"} />}
         />
 
@@ -2235,10 +2363,14 @@ const PlanHistoryBody = ({ searchText = "" }) => {
           display: "flex", flexDirection: "column",
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, px: 1.25, py: 0.5, borderBottom: "1px solid #eef0f3", minHeight: 30 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, px: 1.25, py: 1, borderBottom: "1px solid #eef0f3", minHeight: 46, flexShrink: 0 }}>
           <Typography sx={{ fontSize: 11, color: "#6b7280" }}>
             {groups.length} {groups.length === 1 ? "line" : "lines"} · {filteredRows.length} FG
           </Typography>
+          {/* the Gap colour chips sit in the middle of the bar, with room on both sides */}
+          <Box sx={{ flex: 1, display: "flex", justifyContent: "center", px: 3 }}>
+            <AdherenceChips counts={adhCounts} selected={adhSel} onToggle={toggleAdh} onClear={() => setAdhSel(new Set())} />
+          </Box>
           <Box sx={{ ml: "auto", display: "flex", gap: 0.5 }}>
             <Button size="small" onClick={expandAll} disabled={!groups.length} startIcon={<UnfoldMoreIcon sx={{ fontSize: 15 }} />} sx={{ ...compactButtonSx, height: 24, color: "#374151" }}>
               Expand all

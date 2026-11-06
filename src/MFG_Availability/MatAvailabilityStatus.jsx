@@ -972,7 +972,7 @@ const MaterialsBody = ({ onCountChange, onStockAsOfChange, searchText = "" }) =>
           onChange={(e, newVal) => setCustomer(newVal || "")}
           sx={compactFieldSx(170)}
           ListboxProps={{ style: { fontSize: 11.5 } }}
-          noOptionsText="No customer in this month's plan"
+          noOptionsText="No customer found for these parts"
           renderInput={(params) => <TextField {...params} label="Customer" placeholder={plant ? "All Customers" : "Select Plant first"} />}
         />
 
@@ -1527,7 +1527,7 @@ const ProductionIHBody = ({ onCountChange, onStockAsOfChange, searchText = "" })
           onChange={(e, newVal) => setCustomer(newVal || "")}
           sx={compactFieldSx(170)}
           ListboxProps={{ style: { fontSize: 11.5 } }}
-          noOptionsText="No customer in this month's plan"
+          noOptionsText="No customer found for these parts"
           renderInput={(params) => <TextField {...params} label="Customer" placeholder={plant ? "All Customers" : "Select Plant first"} />}
         />
 

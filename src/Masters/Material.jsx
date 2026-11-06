@@ -33,7 +33,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { MaterialMaster } from "../controller/Masterapiservice";
 import { FaDownload } from "react-icons/fa";
 import { api } from "../controller/constants";
-import { getdetails, getAdd, getPlants, getUpdates, getMaterialType, getProductSegments, getMaterialCategories } from '../controller/Masterapiservice';
+import { getdetails, getAdd, getPlants, getUpdates, getMaterialType, getProductSegments, getMaterialCategories, getMaterialCustomers } from '../controller/Masterapiservice';
 import { getdetails as getLines } from '../controller/LineMasterapiservice';
 import { getdetails as getVendors } from '../controller/VendorMasterapiservice';
 import LineSelect from '../components/LineSelect';
@@ -91,13 +91,13 @@ const uploadRowReasons = (r) => {
   if (r.Material_Val === "Invalid") out.push("Material_Type is missing or not an active material type.");
   if (r.Line_Val === "Invalid") out.push(`Line_Name '${r.Line_Name}' not found in the lines of this plant.`);
   if (r.Active_Val === "Invalid") out.push("Active_Status must be Active or Inactive (a new material needs it).");
-  [r.Desc_Val, r.Rate_Val, r.Stock_Val, r.Segment_Val, r.Category_Val, r.Proc_Val, r.Vendor_Val, r.Capacity_Val].forEach((v) => {
+  [r.Desc_Val, r.Rate_Val, r.Stock_Val, r.Segment_Val, r.Category_Val, r.Proc_Val, r.Vendor_Val, r.Capacity_Val, r.Customer_Val].forEach((v) => {
     const s = String(v || "");
     if (s && s !== "Valid" && s !== "Invalid") out.push(s.replace(/^Invalid: ?/, "") + ".");
   });
   return out.length ? out : ["The row is not valid."];
 };
-const UPLOAD_FIELDS = ["Plant_Code", "Material_Code", "Material_Type", "Description", "Rate", "Active_Status", "Procurement_Type", "Line_Name", "Segment", "Material_Category", "Vendor_Code", "Safety_Stock", "Max_Stock", "Per_Day_Capacity"];
+const UPLOAD_FIELDS = ["Plant_Code", "Material_Code", "Material_Type", "Description", "Rate", "Active_Status", "Procurement_Type", "Line_Name", "Segment", "Material_Category", "Vendor_Code", "Safety_Stock", "Max_Stock", "Per_Day_Capacity", "Customer_Group_Code"];
 
 // Procurement Type (mandatory): only these four codes are allowed (the API and the database procedures enforce the same list)
 const PROCUREMENT_TYPES = [
@@ -247,6 +247,11 @@ const Material = () => {
   const [VendorTable, setVendorTable] = useState([]);
   const [VendorID, setVendorID] = useState("");
   const [ProcType, setProcType] = useState("");
+  // Customer (Mst_Customer_Group, optional, ONE per material): CustomerTable = the customers of the company of the plant chosen in the dialog;
+  // CustomerExtra = the customer the material has now when it is no longer in that list (still shown in the Edit dropdown so the saved value is not lost)
+  const [CustomerTable, setCustomerTable] = useState([]);
+  const [CustomerID, setCustomerID] = useState("");
+  const [CustomerExtra, setCustomerExtra] = useState(null);
 
   // const [userID, setUserID] = useState("");
 
@@ -260,6 +265,7 @@ const Material = () => {
     { field: "Plant_Code", headerName: "Plant", flex: 0.6, minWidth: 70 },
     { field: "Material_Type", headerName: "Material Type", flex: 0.8, minWidth: 90 },
     { field: "Segment_Name", headerName: "Segment", flex: 0.8, minWidth: 90 },
+    { field: "Customer_Group_Name", headerName: "Customer", flex: 1.2, minWidth: 140 },
     {
       field: "Vendor_Code",
       headerName: "Vendor",
@@ -387,6 +393,7 @@ const Material = () => {
   const [fLine, setFLine] = useState("All");
   const [fSegment, setFSegment] = useState("All");
   const [fCategory, setFCategory] = useState("All");
+  const [fCustomer, setFCustomer] = useState("All");
   const [fStatus, setFStatus] = useState("All");
   const visibleRows = useMemo(() => {
     const text = searchText.trim().toLowerCase();
@@ -396,18 +403,19 @@ const Material = () => {
       if (fLine !== "All" && row.Line_Name !== fLine) return false;
       if (fSegment !== "All" && row.Segment_Name !== fSegment) return false;
       if (fCategory !== "All" && row.Material_Category !== fCategory) return false;
+      if (fCustomer !== "All" && row.Customer_Group_Name !== fCustomer) return false;
       if (fStatus !== "All" && (fStatus === "Active") !== !!row.Active_Status) return false;
       if (!text) return true;
-      return ["Plant_Code", "Material_Type", "Material_Code", "Description", "Rate", "Segment_Name", "Material_Category", "Line_Name", "Vendor_Code", "Vendor_Name", "Procurement_Type"].some((key) => {
+      return ["Plant_Code", "Material_Type", "Material_Code", "Description", "Rate", "Segment_Name", "Customer_Group_Name", "Customer_Group_Code", "Material_Category", "Line_Name", "Vendor_Code", "Vendor_Name", "Procurement_Type"].some((key) => {
         const value = key === "Procurement_Type" ? procurementLabel(row[key]) : row[key];
         return value !== null && value !== undefined && String(value).toLowerCase().includes(text);
       });
     });
-  }, [scopedData, searchText, plantFilterCode, fType, fLine, fSegment, fCategory, fStatus]);
+  }, [scopedData, searchText, plantFilterCode, fType, fLine, fSegment, fCategory, fCustomer, fStatus]);
   const uniq = (key) => [...new Set(scopedData.map((r) => r[key]).filter((v) => v !== null && v !== undefined && v !== "").map(String))].sort();
   // the Plant filter sits in front of the search box (always visible); the badge / "Clear filters" are for the panel filters
-  const activeFilterCount = [fType, fLine, fSegment, fCategory, fStatus].filter((v) => v !== "All").length;
-  const clearFilters = () => { setFType("All"); setFLine("All"); setFSegment("All"); setFCategory("All"); setFStatus("All"); };
+  const activeFilterCount = [fType, fLine, fSegment, fCategory, fCustomer, fStatus].filter((v) => v !== "All").length;
+  const clearFilters = () => { setFType("All"); setFLine("All"); setFSegment("All"); setFCategory("All"); setFCustomer("All"); setFStatus("All"); };
 
 
 
@@ -520,6 +528,35 @@ const Material = () => {
       options={[{ value: "", label: "None" }, ...segmentOptions.map((x) => ({ value: x.prod_seg_id, label: x.seg_name }))]}
     />
   );
+  // Customer dropdown (Add and Edit): the active customers of the company of the plant chosen in the dialog (+ the customer the material has now).
+  // Optional, ONE customer per material. The Add form holds Plant_ID, the Edit form holds Plant_Code.
+  const formPlantId = openAddModal ? PlantCode : (plants.find((p) => String(p.Plant_Code) === String(PlantCode))?.Plant_ID || "");
+  useEffect(() => {
+    if (!(openAddModal || openEditModal) || !formPlantId) { setCustomerTable([]); return undefined; }
+    let alive = true;
+    getMaterialCustomers(formPlantId)
+      .then((res) => { if (alive) setCustomerTable(Array.isArray(res.data) ? res.data : []); })
+      .catch((error) => { console.error("Error loading Customer list:", error); if (alive) setCustomerTable([]); });
+    return () => { alive = false; };
+  }, [openAddModal, openEditModal, formPlantId]);
+  const customerOptions = [
+    ...(CustomerExtra && !CustomerTable.some((x) => String(x.Customer_Group_ID) === String(CustomerExtra.Customer_Group_ID)) ? [CustomerExtra] : []),
+    ...CustomerTable,
+  ];
+  const customerField = (
+    <Autocomplete
+      size="small"
+      options={customerOptions}
+      value={customerOptions.find((c) => String(c.Customer_Group_ID) === String(CustomerID)) || null}
+      onChange={(_, c) => setCustomerID(c ? c.Customer_Group_ID : "")}
+      getOptionLabel={(c) => (c.Customer_Group_Code ? `${c.Customer_Group_Name} (${c.Customer_Group_Code})` : c.Customer_Group_Name || "")}
+      isOptionEqualToValue={(o, v) => o.Customer_Group_ID === v.Customer_Group_ID}
+      disabled={!formPlantId}
+      noOptionsText={formPlantId ? "No customers found for this plant's company" : "Select a plant first"}
+      ListboxProps={{ sx: { fontSize: 12 } }}
+      renderInput={(params) => <TextField {...params} label="Customer" sx={DIALOG_FIELD_SX} />}
+    />
+  );
   // Material Category dropdown (Add and Edit): every active category (+ the one the material has now). A name that two Products use
   // is shown with its Product.
   const categoryOptions = [
@@ -563,6 +600,8 @@ const Material = () => {
     setCategoryExtra(null);
     setVendorID("");
     setProcType("");
+    setCustomerID("");
+    setCustomerExtra(null);
 
     setRate("");
     setSafetyStock("");
@@ -601,7 +640,7 @@ const Material = () => {
     workbook.creator = 'MATERIAL_MASTER';
     workbook.created = new Date();
 
-    const headers = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Active_Status', 'Line_Name', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity'];
+    const headers = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Active_Status', 'Line_Name', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity', 'Customer_Group_Code'];
     const worksheet = workbook.addWorksheet('MATERIAL');
     worksheet.addRow(headers);
     worksheet.getRow(1).eachCell((cell) => {
@@ -624,6 +663,7 @@ const Material = () => {
       { width: 14, style: { numFmt: '@' } }, // Vendor_Code (optional, text so codes keep their leading zeros)
       { width: 18 }, // Procurement_Type (mandatory)
       { width: 18 }, // Per_Day_Capacity (optional)
+      { width: 22, style: { numFmt: '@' } }, // Customer_Group_Code (optional, text so codes keep their leading zeros)
     ];
     worksheet.views = [{ state: 'frozen', ySplit: 1 }];
     // Safety_Stock / Max_Stock: mandatory for material type ROH, optional for the others; 0 or more
@@ -649,6 +689,8 @@ const Material = () => {
       formulae: [`"${PROCUREMENT_TYPES.map((p) => p.value).join(',')}"`],
     });
     // Per_Day_Capacity (optional): a number, 0 or more; blank = an existing material keeps its capacity
+    // Customer_Group_Code (optional): the customer of the material - ONE per material
+    worksheet.getCell('O1').note = 'Optional: the Customer_Group_Code of the ONE customer of this material. It must be a customer of the plant\'s company - look it up in the Customer sheet (Plant_Code, Customer_Group_Code, Customer_Name). Blank = an existing material keeps its customer.';
     worksheet.getCell('N1').note = 'Optional. Number, 0 or more. Blank = an existing material keeps its Per Day Capacity.';
     worksheet.dataValidations.add('N2:N1000', {
       type: 'decimal',
@@ -769,6 +811,26 @@ const Material = () => {
       });
     }
 
+    // Customer sheet: the active customers of each plant's company (only the plants this user may use), so the user knows which
+    // Customer_Group_Code can be entered for which Plant_Code
+    const customerSheet = workbook.addWorksheet('Customer');
+    customerSheet.addRow(['Plant_Code', 'Customer_Group_Code', 'Customer_Name']);
+    customerSheet.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true };
+      cell.alignment = { horizontal: 'center' };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFADD8E6' } };
+    });
+    customerSheet.columns = [{ width: 14 }, { width: 22, style: { numFmt: '@' } }, { width: 50 }];
+    customerSheet.views = [{ state: 'frozen', ySplit: 1 }];
+    try {
+      const res = await getMaterialCustomers();
+      (Array.isArray(res.data) ? res.data : [])
+        .filter((c) => allowedPlants.has(String(c.Plant_Code)))
+        .forEach((c) => customerSheet.addRow([String(c.Plant_Code), String(c.Customer_Group_Code), c.Customer_Group_Name]));
+    } catch (error) {
+      console.error('Error loading Customer list:', error);
+    }
+
     const buffer = await workbook.xlsx.writeBuffer();
     saveAs(
       new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
@@ -856,9 +918,9 @@ const Material = () => {
   const downloadExcel = (newRecord, updateRecord, errRecord) => {
     const wb = XLSX.utils.book_new();
 
-    const newRecordsColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity', 'ActiveStatus', 'Status'];
-    const UpdatedColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity', 'ActiveStatus', 'Status'];
-    const ErrorColumns = ['Excel_Row', 'Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation', 'Description_Validation', 'Rate_Validation', 'Active_Status_Validation', 'Line_Name_Validation', 'Stock_Validation', 'Segment_Validation', 'Material_Category_Validation', 'Procurement_Type_Validation', 'Vendor_Code_Validation', 'Per_Day_Capacity_Validation'];
+    const newRecordsColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity', 'Customer_Group_Code', 'Customer_Name', 'ActiveStatus', 'Status'];
+    const UpdatedColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity', 'Customer_Group_Code', 'Customer_Name', 'ActiveStatus', 'Status'];
+    const ErrorColumns = ['Excel_Row', 'Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor_Code', 'Procurement_Type', 'Per_Day_Capacity', 'Customer_Group_Code', 'ActiveStatus', 'PlantCode_Validation', 'Material_Type_Validation', 'Description_Validation', 'Rate_Validation', 'Active_Status_Validation', 'Line_Name_Validation', 'Stock_Validation', 'Segment_Validation', 'Material_Category_Validation', 'Procurement_Type_Validation', 'Vendor_Code_Validation', 'Per_Day_Capacity_Validation', 'Customer_Validation'];
 
     const filteredNewData = newRecord.map(item => ({
       Plant_Code: item.Plant_Code,
@@ -874,6 +936,8 @@ const Material = () => {
       Vendor_Code: item.Vendor_Code,
       Procurement_Type: item.Procurement_Type,
       Per_Day_Capacity: item.per_day_capacity,
+      Customer_Group_Code: item.Customer_Group_Code,
+      Customer_Name: item.Customer_Name,
       ActiveStatus: item.Active_Status,
       Status: item.Status,
     }));
@@ -892,6 +956,8 @@ const Material = () => {
       Vendor_Code: item.Vendor_Code,
       Procurement_Type: item.Procurement_Type,
       Per_Day_Capacity: item.per_day_capacity,
+      Customer_Group_Code: item.Customer_Group_Code,
+      Customer_Name: item.Customer_Name,
       ActiveStatus: item.Active_Status,
       Status: item.Status,
     }));
@@ -912,6 +978,7 @@ const Material = () => {
       Vendor_Code: item.Vendor_Code,
       Procurement_Type: item.Procurement_Type,
       Per_Day_Capacity: item.Per_Day_Capacity,
+      Customer_Group_Code: item.Customer_Group_Code,
       ActiveStatus: item.Active_Status,
       PlantCode_Validation: item.Plant_Val,
       Material_Type_Validation: item.Material_Val,
@@ -925,6 +992,7 @@ const Material = () => {
       Procurement_Type_Validation: item.Proc_Val,
       Vendor_Code_Validation: item.Vendor_Val,
       Per_Day_Capacity_Validation: item.Capacity_Val,
+      Customer_Validation: item.Customer_Val,
     }));
 
     // ðŸ”¹ Helper to style header cells
@@ -943,7 +1011,7 @@ const Material = () => {
 
     // ðŸ”´ Style red text for validation columns only
     const styleValidationColumns = (worksheet, columns, dataLength) => {
-      const validationCols = ['PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation', 'Segment_Validation', 'Material_Category_Validation', 'Procurement_Type_Validation', 'Vendor_Code_Validation', 'Per_Day_Capacity_Validation', 'Description_Validation', 'Rate_Validation', 'Active_Status_Validation', 'Line_Name_Validation'];
+      const validationCols = ['PlantCode_Validation', 'Material_Type_Validation', 'Stock_Validation', 'Segment_Validation', 'Material_Category_Validation', 'Procurement_Type_Validation', 'Vendor_Code_Validation', 'Per_Day_Capacity_Validation', 'Customer_Validation', 'Description_Validation', 'Rate_Validation', 'Active_Status_Validation', 'Line_Name_Validation'];
 
       for (let row = 1; row <= dataLength; row++) {
         validationCols.forEach(colName => {
@@ -1017,6 +1085,8 @@ const Material = () => {
     setCategoryID(params.row.mat_cat_id || "");
     setCategoryExtra(params.row.mat_cat_id ? { mat_cat_id: params.row.mat_cat_id, prod_seg_id: params.row.prod_seg_id, material_category_name: params.row.Material_Category || String(params.row.mat_cat_id) } : null);
     setVendorID(params.row.Vendor_ID || "");
+    setCustomerID(params.row.customer_group_id || "");
+    setCustomerExtra(params.row.customer_group_id ? { Customer_Group_ID: params.row.customer_group_id, Customer_Group_Code: params.row.Customer_Group_Code || "", Customer_Group_Name: params.row.Customer_Group_Name || String(params.row.customer_group_id) } : null);
     setProcType(params.row.Procurement_Type || "");
     get_Segment();
     get_Category();
@@ -1079,6 +1149,7 @@ const Material = () => {
         Prod_Seg_ID: SegmentID || null,
         Mat_Cat_ID: CategoryID || null,
         Vendor_ID: VendorID || null,
+        Customer_Group_ID: CustomerID || null,
         Procurement_Type: ProcType,
       }
       const response = await getAdd(data);
@@ -1140,6 +1211,7 @@ const Material = () => {
         Prod_Seg_ID: SegmentID || null,
         Mat_Cat_ID: CategoryID || null,
         Vendor_ID: VendorID || null, // empty = the stored vendor is left as it is
+        Customer_Group_ID: CustomerID || null, // empty = no customer
         Procurement_Type: ProcType,
         // UserID: userID,  // Ensure the UserID is also included
       };
@@ -1175,7 +1247,7 @@ const Material = () => {
       return;
     }
 
-    const DataColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Material_Category', 'Vendor', 'Procurement_Type', 'Per_Day_Capacity', 'ActiveStatus'];
+    const DataColumns = ['Plant_Code', 'Material_Type', 'Material_Code', 'Description', 'Rate', 'Safety_Stock', 'Max_Stock', 'Segment', 'Customer', 'Material_Category', 'Vendor', 'Procurement_Type', 'Per_Day_Capacity', 'ActiveStatus'];
 
     const filteredData = data.map(item => ({
       Plant_Code: item.Plant_Code,
@@ -1188,6 +1260,7 @@ const Material = () => {
       Safety_Stock: item.safety_stock,
       Max_Stock: item.max_stock,
       Segment: item.Segment_Name || "",
+      Customer: item.Customer_Group_Name || "",
       Material_Category: item.Material_Category || "",
       Vendor: item.Vendor_Code ? `${item.Vendor_Code} –${item.Vendor_Name || ""}` : "",
       Procurement_Type: procurementLabel(item.Procurement_Type),
@@ -1207,6 +1280,7 @@ const Material = () => {
       { wch: 16 },
       { wch: 16 },
       { wch: 20 },
+      { wch: 24 },
     ];
     // Style header row
     DataColumns.forEach((_, index) => {
@@ -1323,6 +1397,7 @@ const Material = () => {
             <><b>Add:</b> the same Plant + Material Code that already exists is rejected.</>,
             <><b>Bulk upload:</b> the same combination is <b>updated</b>, any other is <b>added</b>. A blank Line / Segment cell keeps the saved value.</>,
             "The Material Type of an existing material is not changed by an upload.",
+            "Customer: one customer group of the plant's company per material (chosen in the dialog, or Customer_Group_Code in the upload).",
           ]}
         />
 
@@ -1330,6 +1405,7 @@ const Material = () => {
           <FilterSelect label="Material Type" value={fType} options={uniq("Material_Type")} onChange={setFType} minWidth={150} />
           <FilterSelect label="Line" value={fLine} options={uniq("Line_Name")} onChange={setFLine} minWidth={170} />
           <FilterSelect label="Segment" value={fSegment} options={uniq("Segment_Name")} onChange={setFSegment} minWidth={150} />
+          <FilterSelect label="Customer" value={fCustomer} options={uniq("Customer_Group_Name")} onChange={setFCustomer} minWidth={190} />
           <FilterSelect label="Material Category" value={fCategory} options={uniq("Material_Category")} onChange={setFCategory} minWidth={170} />
           <FilterSelect label="Status" value={fStatus} options={["Active", "Inactive"]} onChange={setFStatus} minWidth={120} isSearchable={false} />
         </FilterPanel>
@@ -1383,6 +1459,7 @@ const Material = () => {
             setPlantCode(e.target.value);
             setLineID(""); // previous plant's line no longer valid
             setVendorID(""); // ... and its vendor
+            setCustomerID(""); // ... and its customer (customers belong to the plant's company)
           }}
           options={plantOptions}
           required
@@ -1390,6 +1467,7 @@ const Material = () => {
         <SelectField label="Material Type" value={MaterialType} onChange={(e) => setMaterialType(e.target.value)} options={typeOptions} required />
         <LineSelect value={LineID} options={lineOptions} onChange={setLineID} disabled={!PlantCode} size="compact" />
         {segmentField}
+        {customerField}
         {categoryField}
         {procurementField}
         {vendorField}
@@ -1423,6 +1501,7 @@ const Material = () => {
             resolves to the row's own plant's lines only. */}
         <LineSelect value={LineID} options={editLineOptions} onChange={setLineID} disabled={!PlantCode} size="compact" />
         {segmentField}
+        {customerField}
         {categoryField}
         {procurementField}
         {vendorField}
@@ -1472,10 +1551,21 @@ const Material = () => {
               cursor: "pointer",
             }}
           />
-          <span style={{ fontSize: 11, lineHeight: 1.5, color: "#6b7280" }}>
-            Columns: Plant_Code, Material_Type, Material_Code, Description, Rate, Active_Status (Active / Inactive), Line_Name (may be blank) and Procurement_Type
-            (E, F, F30 or E50 - pick it from the dropdown). Plant_Code and Material_Code are always needed. For a material that already exists, a BLANK cell is left as it is (not checked, not changed) and a filled cell is checked and updated; a NEW material needs Material_Type, Description, Rate, Active_Status and Procurement_Type. Vendor_Code (must be in the Vendor Master sheet of the template; blank keeps the stored vendor) and Material_Category (a name from the Material Category sheet) are mandatory when Procurement_Type is F or F30, optional for E and E50. Optional: Safety_Stock and Max_Stock (mandatory for ROH), Segment and Per_Day_Capacity (a number, 0 or more).
-            A new material is added. Rows with errors are skipped (the correct rows are saved) and listed below.
+          <span style={{ fontSize: 11, lineHeight: 1.5, color: "#6b7280", display: "flex", alignItems: "center" }}>
+            Download the template, fill it and upload. Rows with errors are skipped and listed below.
+            <InfoTip
+              label="Upload rules"
+              title="Material upload"
+              points={[
+                "Plant_Code and Material_Code are always needed.",
+                { label: "Existing material:", value: "a blank cell is left as it is; a filled cell is checked and updated" },
+                { label: "New material needs:", value: "Material_Type, Description, Rate, Active_Status, Procurement_Type" },
+                { label: "Procurement_Type F / F30:", value: "Vendor_Code and Material_Category are mandatory" },
+                { label: "ROH:", value: "Safety_Stock and Max_Stock are mandatory" },
+                { label: "Customer_Group_Code:", value: "optional - one customer of the plant's company (see the Customer sheet of the template)" },
+              ]}
+              note="Vendor_Code, Material_Category and Customer_Group_Code are looked up in the sheets of the template."
+            />
           </span>
         </Box>
         {uploadProblems && <Box sx={{ gridColumn: "span 2" }}><ValidationResponseGrid response={uploadProblems} /></Box>}

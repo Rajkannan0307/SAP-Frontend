@@ -1,125 +1,236 @@
-import React, { useContext, useEffect, useState } from 'react'
-import SectionHeading from '../../components/Header'
-import { Box, Button, Checkbox, IconButton, ListItemText, MenuItem, Modal, TextField, Typography } from '@mui/material'
-import { CloudUploadIcon, EditIcon, SearchIcon } from 'lucide-react'
-import { FaDownload, FaUpload } from 'react-icons/fa6'
-import { deepPurple } from '@mui/material/colors';
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Box, Button, CircularProgress, Dialog, IconButton, MenuItem, TextField, Typography } from '@mui/material'
+import SearchIcon from '@mui/icons-material/Search'
+import CloseIcon from '@mui/icons-material/Close'
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'
+import SyncIcon from '@mui/icons-material/Sync'
+import { FaDownload, FaFileExcel } from 'react-icons/fa6'
+import * as XLSX from 'xlsx-js-style'
 import * as ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
-import { getPlantdetails, getMyPlants, myPlantLabel } from '../../controller/CommonApiService'
+import { getMyPlants, myPlantLabel } from '../../controller/CommonApiService'
 import { DataGrid, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid'
 import { format, } from 'date-fns'
-import { useFormik } from 'formik'
-import * as yup from 'yup'
-import { AuthContext } from '../../Authentication/AuthContext'
-import { AddTrnIndirectMaterialPrice_BULK, getTrnIndirectMaterialPrice } from '../../controller/ContributionalChartApiService'
+import { AddTrnIndirectMaterialPrice_BULK, getTrnIndirectMaterialPrice, SyncMaterialPriceFromSales } from '../../controller/ContributionalChartApiService'
 import { getMaterialType } from '../../controller/Masterapiservice'
 import { MaterialGroupEnumTypes } from '../../common/enumValues'
 import { toast } from 'react-toastify'
 import { findPlantsNotAllowed, plantsNotAllowedMessage } from '../../common/plantFileCheck'
+import FilterSelect from '../../components/FilterSelect'
+import FilterMultiSelect from '../../components/FilterMultiSelect'
+import UniqueGroupingInfo from '../../components/UniqueGroupingInfo'
+import { compactFieldSx, compactMenuProps, compactGridSx, primaryButtonSx, successButtonSx, outlineButtonSx } from '../../components/compactUi'
+
+// Material Price - laid out like the Vendor Master screen (title, one card with the filters / search / actions, compact grid, compact upload
+// dialog), built from the same shared pieces (compactUi, FilterSelect, FilterMultiSelect, UniqueGroupingInfo). The prices come from the same
+// API as before; the Month / Year and Material Type filters work on the loaded list (no extra call), and the list loads by itself.
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+// 'YYYY-MM' of a date
+const ymOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+
+// the months the Sync from Sales can use: the current month and the 12 before it
+const syncMonthOptions = () => Array.from({ length: 13 }, (_, i) => {
+    const d = new Date(new Date().getFullYear(), new Date().getMonth() - i, 1)
+    return { value: ymOf(d), label: `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`, current: i === 0 }
+})
+
+// year and month of an effective date ('2026-09-01T00:00:00.000Z' or a Date), read from the text so no time zone can shift the month
+const effYearMonth = (value) => {
+    const text = value instanceof Date ? value.toISOString() : String(value || '')
+    const m = /^(\d{4})-(\d{2})/.exec(text)
+    return m ? { y: Number(m[1]), m: Number(m[2]) } : null
+}
+
+const priceFmt = (v) => (v === null || v === undefined || v === '' ? '' : Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+
+// Shell of the upload dialog (same as the Vendor Master dialogs)
+const FormDialog = ({ open, title, onClose, children, actions, width = 460 }) => (
+    <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth={false}
+        PaperProps={{ sx: { width, maxWidth: '94vw', borderRadius: '10px' } }}
+    >
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, borderBottom: '1px solid #e8eaee', backgroundColor: '#f3f7ff' }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#1a2233' }}>{title}</Typography>
+            <IconButton size="small" onClick={onClose}>
+                <CloseIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+        </Box>
+        <Box sx={{ p: 2, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px 12px' }}>{children}</Box>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, px: 2, py: 1.25, borderTop: '1px solid #e8eaee' }}>{actions}</Box>
+    </Dialog>
+)
 
 const CC_IndirectMaterialPrice = () => {
-    const [searchText, setSearchText] = useState("");
-    const [rows, setRows] = useState([]);
-    const [originalRows, setOriginalRows] = useState([]);
-    const [openUploadModal, setOpenUploadModal] = useState(false);
+    const [searchText, setSearchText] = useState('')
+    const [originalRows, setOriginalRows] = useState([])
+    const [openUploadModal, setOpenUploadModal] = useState(false)
     const [refreshData, setRefreshData] = useState(false)
-    const { user } = useContext(AuthContext);
-    const currentUserPlantCode = user.PlantCode
     const [plants, setPlants] = useState([])
     const [loading, setLoading] = useState(false)
     const [matTypes, setMatTypes] = useState([])
 
-
-    const handleSearch = () => {
-        const text = searchText.trim().toLowerCase();
-
-        if (!text) {
-            setRows(originalRows);
-        } else {
-            const filteredRows = originalRows.filter((row) =>
-                ['plant', 'part_no', 'eff_date'].some((key) => {
-                    const value = row[key];
-                    return value && String(value).toLowerCase().includes(text);
-                })
-            );
-            setRows(filteredRows);
-        }
-    };
-
-    const validationschema = yup.object({
-        plant: yup.string().required('Required'),
-        // fin_year: yup.string().required('Required'),
-        // startDate: yup.string().required('Required'),
-        // endDate: yup.string().required('Required'),
-        matType: yup.array().min(1, 'Required'),
-    })
-
-    const formik = useFormik({
-        initialValues: {
-            plant: currentUserPlantCode,
-            matType: [],
-            type: "SUBMIT"
-        },
-        validationSchema: validationschema,
-        enableReinitialize: true,
-        onSubmit: async (values) => {
-            console.log(values)
-            const plant = values.plant
-
-            if (loading) return
-            setLoading(true)
-
-            try {
-                const response = await getTrnIndirectMaterialPrice({
-                    plant,
-                    matType: values.matType?.join(",")
-                })
-                setOriginalRows(response || [])
-                setRows(response || [])
-            } catch (error) {
-                toast.error(error?.response?.data?.message || "Something went wrong")
-                console.log(error)
-            } finally {
-                setLoading(false)
-            }
-        }
-    })
+    // Plant: the dropdown holds the choice (starts on the user's own plant), the Search button applies it and reloads the list
+    const [plantSelect, setPlantSelect] = useState('')
+    const [plantApplied, setPlantApplied] = useState('')
+    const plantDefaulted = useRef(false)
+    // Month / Year: the screen opens on the current year with every month ("All"); a month or another year can be chosen
+    const [fMonth, setFMonth] = useState('All')
+    const [fYear, setFYear] = useState(String(new Date().getFullYear()))
+    // Material Type: every type is loaded, the user can pick one or more to filter (none picked = all types)
+    const [fTypes, setFTypes] = useState([])
+    // Sync from Sales: the prices of the plant on screen from the sales data of the current month
+    const [openSync, setOpenSync] = useState(false)
+    const [syncing, setSyncing] = useState(false)
+    const [syncResult, setSyncResult] = useState(null)
+    const [syncMonth, setSyncMonth] = useState(ymOf(new Date())) // the month to sync: the current one unless an earlier month is chosen
 
     useEffect(() => {
         const fetchData = async () => {
-            const resposne = await getMyPlants() // only the plants this user may use (own plant + Data Access)
-            setPlants(Array.isArray(resposne) ? resposne : [])
+            try {
+                const resposne = await getMyPlants() // only the plants this user may use (own plant + Data Access)
+                setPlants(Array.isArray(resposne) ? resposne : [])
 
-            const response2 = await getMaterialType(MaterialGroupEnumTypes.all)
-            setMatTypes(response2.data)
+                const response2 = await getMaterialType(MaterialGroupEnumTypes.all)
+                setMatTypes(Array.isArray(response2.data) ? response2.data : [])
+            } catch (error) {
+                console.log(error)
+            }
         }
         fetchData()
     }, [])
 
+    // the user's own plant (Is_Default, else the first one) is chosen once, as soon as the plant list is loaded
+    useEffect(() => {
+        if (plantDefaulted.current || plants.length === 0) return
+        plantDefaulted.current = true
+        const own = plants.find((p) => Number(p.Is_Default) === 1) || plants[0]
+        setPlantSelect(myPlantLabel(own))
+        setPlantApplied(String(own.Plant_Code))
+    }, [plants])
+
+    const typeList = useMemo(() => matTypes.map((t) => t.Mat_Type).filter(Boolean), [matTypes])
+
+    // every material type of the plant is loaded (the filters narrow the list afterwards). The API takes the types as one text of at most
+    // 50 characters, so the types are asked in batches that fit (today all of them fit in one call).
+    const typeBatches = useMemo(() => {
+        const batches = []
+        let current = ''
+        typeList.forEach((type) => {
+            if (current && (current + ',' + type).length > 50) { batches.push(current); current = type }
+            else current = current ? current + ',' + type : type
+        })
+        if (current) batches.push(current)
+        return batches
+    }, [typeList])
+
+    const loadPrices = async (plant) => {
+        if (!plant || typeBatches.length === 0) return
+        setLoading(true)
+        try {
+            const responses = await Promise.all(typeBatches.map((matType) => getTrnIndirectMaterialPrice({ plant, matType })))
+            setOriginalRows(responses.flatMap((response) => (Array.isArray(response) ? response : [])))
+        } catch (error) {
+            toast.error(error?.response?.data?.message || "Something went wrong")
+            console.log(error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // loads by itself when the plant and the material types are ready, and again after an upload
+    useEffect(() => {
+        loadPrices(plantApplied)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [plantApplied, typeList, refreshData])
+
+    const plantFilterOptions = plants.map(myPlantLabel)
+    const syncPlants = plants.map((p) => String(p.Plant_Code)) // every plant the user may use
+    const syncMonths = syncMonthOptions()
+    const syncMonthLabel = (syncMonths.find((m) => m.value === syncMonth) || syncMonths[0]).label
+    const syncIsCurrent = syncMonth === ymOf(new Date())
+
+    // Excel of the sync result: the skipped materials (all of them, not only the 500 shown) and a summary per plant
+    const downloadSyncExcel = () => {
+        if (!syncResult) return
+        const dmy = (v) => (v ? format(new Date(v), 'dd-MM-yyyy') : '')
+        const head = (ws, cols) => cols.forEach((_, c) => {
+            const cell = ws[XLSX.utils.encode_cell({ c, r: 0 })]
+            if (cell) cell.s = { font: { bold: true, color: { rgb: '000000' } }, fill: { fgColor: { rgb: 'FFFF00' } }, alignment: { horizontal: 'center' } }
+        })
+        const addSheet = (wb, name, rows, cols, widths) => {
+            const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{}], { header: cols })
+            ws['!cols'] = widths.map((w) => ({ wch: w }))
+            head(ws, cols)
+            XLSX.utils.book_append_sheet(wb, ws, name)
+        }
+        const wb = XLSX.utils.book_new()
+        addSheet(wb, 'Skipped - no usable price', (syncResult.skipped || []).map((s) => ({ Plant: s.plant, Part_No: s.part_no, Description: s.description || '', Sales_Date: dmy(s.sales_date), Qty: s.qty, Value_INR: s.value_inr })),
+            ['Plant', 'Part_No', 'Description', 'Sales_Date', 'Qty', 'Value_INR'], [8, 20, 36, 12, 10, 14])
+        const line = (label, s) => ({ Plant: label, Materials: s.materials, With_Sales: s.with_sales, No_Sales: s.no_sales, Prices_Saved: s.prices_saved, Updated: s.updated, Added: s.inserted, Skipped_No_Price: s.skipped_no_value })
+        addSheet(wb, 'Summary', [...(syncResult.summaries || []).map((s) => line(s.plant, s)), ...(syncResult.total ? [line('TOTAL', syncResult.total)] : [])],
+            ['Plant', 'Materials', 'With_Sales', 'No_Sales', 'Prices_Saved', 'Updated', 'Added', 'Skipped_No_Price'], [10, 12, 12, 12, 14, 10, 10, 18])
+        XLSX.writeFile(wb, `Material_Price_Sync_${syncMonth}.xlsx`)
+    }
+
+    const closeSync = () => { if (syncing) return; setOpenSync(false); setSyncResult(null) }
+    const handleSync = async () => {
+        if (syncing || syncPlants.length === 0) return
+        setSyncing(true)
+        try {
+            const data = await SyncMaterialPriceFromSales({ plants: syncPlants, userId: localStorage.getItem('EmpId'), month: syncMonth })
+            setSyncResult(data)
+            loadPrices(plantApplied) // the list on screen shows the new prices
+        } catch (error) {
+            toast.error(error?.response?.data?.message || error?.message || 'Something went wrong')
+            console.log(error)
+        } finally {
+            setSyncing(false)
+        }
+    }
+    const handleSearch = () => {
+        const chosen = plants.find((p) => myPlantLabel(p) === plantSelect)
+        const code = chosen ? String(chosen.Plant_Code) : plantApplied
+        if (code === plantApplied) loadPrices(code)
+        else setPlantApplied(code)
+    }
+
+    const yearOptions = useMemo(() => {
+        const years = new Set([new Date().getFullYear()])
+        originalRows.forEach((r) => { const ym = effYearMonth(r.eff_date); if (ym) years.add(ym.y) })
+        return [...years].sort((a, b) => b - a).map(String)
+    }, [originalRows])
+
+    // Month / Year / Material Type filters and the search box, applied live to the loaded prices
+    const visibleRows = useMemo(() => {
+        const text = searchText.trim().toLowerCase()
+        const monthNo = fMonth === 'All' ? 0 : MONTH_NAMES.indexOf(fMonth) + 1
+        return originalRows.filter((row) => {
+            const ym = effYearMonth(row.eff_date)
+            if (fYear !== 'All' && (!ym || String(ym.y) !== fYear)) return false
+            if (monthNo && (!ym || ym.m !== monthNo)) return false
+            if (fTypes.length && !fTypes.includes(row.mat_type)) return false
+            if (!text) return true
+            return ['plant', 'part_no', 'description', 'mat_type', 'eff_date'].some((key) => {
+                const value = row[key]
+                return value && String(value).toLowerCase().includes(text)
+            })
+        })
+    }, [originalRows, searchText, fMonth, fYear, fTypes])
+
     const columns = [
         {
-            field: "idm_price_id", headerName: "SI No", width: 80,
+            field: "idm_price_id", headerName: "SI No", width: 70, sortable: false,
             renderCell: (params) => params.api.getRowIndexRelativeToVisibleRows(params.id) + 1
         },
-        { field: "plant", headerName: "Plant", width: 100 },
-        { field: "part_no", headerName: "Part No", width: 150 },
-        { field: "description", headerName: "Description", flex: 1 },
-        { field: "mat_type", headerName: "Mat Type", width: 130 },
-        { field: "price", headerName: "Price", width: 120 },
-        { field: "eff_date", headerName: "Eff Date", width: 150, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
-        // {
-        //     field: "action", headerName: "Action", width: 160,
-        //     renderCell: (params) => (
-        //         <IconButton
-        //             color="primary"
-        //             // onClick={() => handleEdit(params.row)}
-        //             title="Edit"
-        //         >
-        //             <EditIcon />
-        //         </IconButton>
-        //     ),
-        // },
+        { field: "plant", headerName: "Plant", flex: 0.5, minWidth: 70 },
+        { field: "part_no", headerName: "Part No", flex: 1, minWidth: 130 },
+        { field: "description", headerName: "Description", flex: 2, minWidth: 180 },
+        { field: "mat_type", headerName: "Mat Type", flex: 0.6, minWidth: 90 },
+        { field: "price", headerName: "Price", flex: 0.7, minWidth: 100, type: "number", valueFormatter: (value) => priceFmt(value) },
+        { field: "eff_date", headerName: "Eff Date", flex: 0.8, minWidth: 110, renderCell: (params) => (<>{params.value ? format(params.value, "dd-MM-yyyy") : ""}</>) },
     ];
 
     const CustomToolbar = () => (
@@ -133,211 +244,271 @@ const CC_IndirectMaterialPrice = () => {
     return (
         <div
             style={{
-                padding: 20,
+                padding: "20px 20px",
                 backgroundColor: "#F5F5F5",
                 marginTop: "50px",
                 display: "flex",
                 flexDirection: "column",
-                height: "calc(100vh - 90px)",
+                height: "calc(100vh - 50px)",
             }}
         >
+            <Typography sx={{ fontSize: 17, fontWeight: 700, color: "#1a2233", letterSpacing: 0.1, lineHeight: 1.3, mb: 1.5 }}>
+                Material Price
+            </Typography>
+
+            {/* Search, filters and actions */}
             <div
                 style={{
-                    marginBottom: 20,
+                    backgroundColor: "#fff",
+                    borderRadius: 8,
+                    border: "1px solid #e8eaee",
+                    boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
+                    padding: "7px 10px",
+                    marginBottom: 6,
                     display: "flex",
-                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: 8,
                     alignItems: "center",
                 }}
             >
-                <SectionHeading>
-                    Material Price
-                </SectionHeading>
-            </div>
-
-            <div className='flex justify-between items-center mb-3 gap-5'>
-                <div className='flex justify-start items-start gap-3'>
-                    <TextField
-                        select
-                        size="small"
-                        label="Plant"
-                        name="plant"
-                        value={formik.values.plant}
-                        onChange={formik.handleChange}
-                        fullWidth
-                        sx={{ minWidth: 150, maxWidth: 150 }}
-                        InputLabelProps={{
-                            sx: {
-                                fontSize: "12px",
-                            },
-                        }}
-                        InputProps={{
-                            sx: {
-                                fontSize: "13px",
-                            },
-                        }}
-                        error={formik.touched.plant && Boolean(formik.errors.plant)}
-                        helperText={formik.touched.plant && formik.errors.plant}
-                    >
-                        {plants.map((p) => (
-                            <MenuItem sx={{ fontSize: "small" }} key={p.Plant_ID} value={p.Plant_Code}>
-                                {myPlantLabel(p)}
-                            </MenuItem>
-                        ))}
-                    </TextField>
-
-                    <TextField
-                        select
-                        slotProps={{
-                            select: {
-                                multiple: true,
-                                renderValue: (selected) => selected?.join(', '),
-                            },
-                            inputLabel: {
-                                sx: { fontSize: "12px" },
-                            },
-                            input: {
-                                sx: { fontSize: "13px" },
-                            }
-                        }}
-                        size="small"
-                        label="Mat Type"
-                        name="matType"
-                        value={formik.values.matType}
-                        onChange={formik.handleChange}
-                        fullWidth
-                        sx={{ minWidth: 150, maxWidth: 150 }}
-                        error={formik.touched.matType && Boolean(formik.errors.matType)}
-                        helperText={formik.touched.matType && formik.errors.matType}
-                    >
-                        {matTypes.map((p) => (
-                            <MenuItem sx={{ fontSize: "small" }} key={p.Mat_Id} value={p.Mat_Type}>
-                                <Checkbox
-                                    checked={formik.values.matType.indexOf(p.Mat_Type) > -1}
-                                    size="small"
-                                />
-                                <ListItemText primary={`${p.Mat_Type}`} primaryTypographyProps={{ fontSize: "small" }} />
-                            </MenuItem>
-                        ))}
-                    </TextField>
-
-                    <Button variant='contained'
-                        onClick={(e) => {
-                            formik.setFieldValue('type', 'SUBMIT')
-                            formik.handleSubmit(e)
-                        }}
-                        fullWidth
-                        sx={{
-                            maxWidth: 150,
-                        }}
-                    >
-                        {loading ? "Loading..." : "Submit"}
-                    </Button>
-                </div>
-
-                {/* Search and Icons Section */}
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: 20
-                    }}
+                <FilterSelect label="Plant" value={plantSelect} options={plantFilterOptions} onChange={setPlantSelect} minWidth={190} />
+                <Button
+                    onClick={handleSearch}
+                    disabled={loading}
+                    variant="contained"
+                    disableElevation
+                    startIcon={loading ? <CircularProgress size={12} color="inherit" /> : <SearchIcon sx={{ fontSize: 16 }} />}
+                    sx={primaryButtonSx}
                 >
-                    {/* Search Box - requester */}
-                    <div style={{ display: "flex", gap: 10 }}>
-                        <TextField
-                            size="small"
-                            variant="outlined"
-                            placeholder="Type here..."
-                            value={searchText}
-                            fullWidth
-                            onChange={(e) => setSearchText(e.target.value)}
-                            onKeyUp={handleSearch}
-                        // style={{ minWidth: 300 }}
-                        />
-                        <Button
-                            onClick={handleSearch}
-                            style={{
-                                borderRadius: "25px",
-                                border: "2px solid skyblue",
-                                color: "skyblue",
-                                fontWeight: "bold",
-                                textTransform: "none",
-                            }}
-                        >
-                            <SearchIcon style={{ marginRight: "5px" }} />
-                            Search
-                        </Button>
-                    </div>
-                    <div style={{ display: "flex" }}>
-                        <ExcelUploadModal open={openUploadModal}
-                            onClose={() => {
-                                setOpenUploadModal(false)
-                            }}
-                            onOpen={() => {
-                                setOpenUploadModal(true)
-                            }}
-                            templateUrl={""}
-                            setRefreshData={setRefreshData}
-                        />
-                    </div>
+                    {loading ? "Loading..." : "Search"}
+                </Button>
+                <FilterSelect label="Month" value={fMonth} options={MONTH_NAMES} onChange={setFMonth} minWidth={130} />
+                <FilterSelect label="Year" value={fYear} options={yearOptions} onChange={setFYear} minWidth={95} isSearchable={false} />
+                <div style={{ width: 190, flexShrink: 0 }}>
+                    <FilterMultiSelect
+                        label="Material Type"
+                        value={fTypes}
+                        options={typeList.map((t) => ({ value: t, label: t }))}
+                        onChange={setFTypes}
+                        placeholder="All types"
+                        maxChips={2}
+                    />
                 </div>
+                <TextField
+                    size="small"
+                    placeholder="Search plant, part, description, type"
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    InputProps={{ startAdornment: <SearchIcon sx={{ fontSize: 16, color: "#8a93a3", mr: 0.5 }} /> }}
+                    sx={compactFieldSx(240)}
+                />
 
+                <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: "#6b7280", whiteSpace: "nowrap" }}>
+                    {visibleRows.length === originalRows.length ? `${originalRows.length} prices` : `${visibleRows.length} of ${originalRows.length} prices`}
+                </span>
+                <Button
+                    onClick={() => { setSyncResult(null); setSyncMonth(ymOf(new Date())); setOpenSync(true) }}
+                    disabled={syncPlants.length === 0 || loading}
+                    variant="outlined"
+                    disableElevation
+                    startIcon={<SyncIcon sx={{ fontSize: 16 }} />}
+                    sx={outlineButtonSx}
+                    title="Update the prices of all your plants from the sales data of a month (the current month, or an earlier one)"
+                >
+                    Sync from Sales
+                </Button>
+                <Button
+                    onClick={() => setOpenUploadModal(true)}
+                    variant="outlined"
+                    disableElevation
+                    startIcon={<CloudUploadIcon sx={{ fontSize: 16 }} />}
+                    sx={outlineButtonSx}
+                >
+                    Upload
+                </Button>
+                <UniqueGroupingInfo
+                    sections={[{ fields: ["Plant", "Part Number", "Month of the Eff Date"] }]}
+                    intro="One price per combination of:"
+                    notes={[
+                        <><b>Bulk upload:</b> the same combination is <b>updated</b>, any other is <b>added</b>. The part must be an active material of the plant in the Material Master.</>,
+                        "Month and Year show the prices whose effective date falls in that month; All shows every month. A screen that needs the price of a month takes the latest price effective on or before the end of that month.",
+                    ]}
+                />
             </div>
-
 
             {/* DataGrid */}
             <div
                 style={{
-                    flexGrow: 1, // Ensures it grows to fill the remaining space
+                    flexGrow: 1,
                     backgroundColor: "#fff",
                     borderRadius: 8,
-                    boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-                    height: "calc(5 * 48px)",
+                    border: "1px solid #e8eaee",
+                    boxShadow: "0 1px 3px rgba(16,24,40,0.05)",
+                    minHeight: 0,
+                    overflow: "hidden",
                 }}
             >
                 <DataGrid
-                    rows={rows}
+                    rows={visibleRows}
                     columns={columns}
-                    pageSize={5} // Set the number of rows per page to 8
-                    rowsPerPageOptions={[5]}
-                    getRowId={(row) => row.idm_price_id} // Specify a custom id field
-                    disableSelectionOnClick
+                    loading={loading}
+                    getRowId={(row) => row.idm_price_id}
+                    disableRowSelectionOnClick
+                    columnHeaderHeight={36}
+                    rowHeight={38}
+                    initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+                    pageSizeOptions={[25, 50, 100]}
                     slots={{ toolbar: CustomToolbar }}
-                    columnHeaderHeight={35}
-                    rowHeight={35}
-                    // getRowHeight={(p) => "auto"}
-                    sx={{
-                        // Header Style
-                        "& .MuiDataGrid-columnHeader": {
-                            backgroundColor: '#bdbdbd', //'#696969', 	'#708090',  //"#2e59d9",
-                            color: "black",
-                            fontWeight: "bold",
-                        },
-                        "& .MuiDataGrid-columnHeaderTitle": {
-                            fontSize: "13px",
-                            fontWeight: "bold",
-                        },
-                        "& .MuiDataGrid-row": {
-                            backgroundColor: "#f5f5f5", // Default row background
-                            "&:hover": {
-                                backgroundColor: "#f5f5f5",
-                            },
-                        },
-                        // ✅ Remove Selected Row Background
-                        "& .MuiDataGrid-row.Mui-selected": {
-                            backgroundColor: "inherit", // No background on selection
-                        },
-
-                        "& .MuiDataGrid-cell": {
-                            color: "#333",
-                            fontSize: "12px",
-                        },
-                    }}
+                    localeText={{ noRowsLabel: "No prices found for the selected filters." }}
+                    sx={compactGridSx}
                 />
             </div>
 
+            <ExcelUploadModal
+                open={openUploadModal}
+                onClose={() => setOpenUploadModal(false)}
+                setRefreshData={setRefreshData}
+            />
 
+            {/* Sync from Sales: all the plants at once, for the chosen month */}
+            <FormDialog
+                open={openSync}
+                title="Sync prices from Sales"
+                onClose={closeSync}
+                width={syncResult ? 820 : 460}
+                actions={
+                    syncResult ? (
+                        <>
+                            {syncResult.skipped && syncResult.skipped.length > 0 && (
+                                <Button
+                                    variant="contained"
+                                    disableElevation
+                                    onClick={downloadSyncExcel}
+                                    startIcon={<FaFileExcel size={13} />}
+                                    sx={successButtonSx}
+                                    title="Download the skipped materials and the summary"
+                                >
+                                    Download Excel
+                                </Button>
+                            )}
+                            <Button variant="contained" disableElevation onClick={closeSync} sx={{ ...primaryButtonSx, minWidth: 70 }}>Close</Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button variant="outlined" onClick={closeSync} disabled={syncing} sx={outlineButtonSx}>Cancel</Button>
+                            <Button variant="contained" disableElevation onClick={handleSync} disabled={syncing || syncPlants.length === 0} sx={{ ...primaryButtonSx, minWidth: 90 }}>
+                                {syncing ? 'Syncing all plants...' : 'Sync now'}
+                            </Button>
+                        </>
+                    )
+                }
+            >
+                <Box sx={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {!syncResult && (
+                        <>
+                            <Typography sx={{ fontSize: 12, color: '#1a2233' }}>
+                                Plants: <b>all {syncPlants.length} plants you can use</b>
+                                <span style={{ color: '#6b7280' }}> ({syncPlants.join(', ')})</span>
+                            </Typography>
+                            <TextField
+                                select
+                                size="small"
+                                label="Month"
+                                value={syncMonth}
+                                onChange={(e) => setSyncMonth(e.target.value)}
+                                disabled={syncing}
+                                sx={compactFieldSx(220, 12)}
+                                SelectProps={{ MenuProps: compactMenuProps(12) }}
+                            >
+                                {syncMonths.map((m) => (
+                                    <MenuItem key={m.value} value={m.value} sx={{ fontSize: 12 }}>{m.label}{m.current ? ' (current month)' : ''}</MenuItem>
+                                ))}
+                            </TextField>
+                            <span style={{ fontSize: 11, lineHeight: 1.5, color: '#6b7280' }}>
+                                For each active material of the plant in the Material Master, the latest sales record of the chosen month is used:
+                                Price = Sale Value in INR ÷ Sales Qty. A price already saved for the material and month is updated, otherwise a new price
+                                is added. A material with no sales record that month is left as it is, and a price of 0 or below is skipped (its old price stays).
+                                {!syncIsCurrent && ' An earlier month only changes the prices of that month; the other months are not touched.'}
+                            </span>
+                        </>
+                    )}
+                    {syncResult && (
+                        <>
+                            <Typography sx={{ fontSize: 12, color: '#1a2233' }}>
+                                Month <b>{syncMonthLabel}</b> &nbsp;·&nbsp; {syncResult.summaries ? syncResult.summaries.length : 0} plants checked
+                            </Typography>
+                            {syncResult.failed && syncResult.failed.length > 0 && (
+                                <Typography sx={{ fontSize: 11.5, color: '#b42323' }}>
+                                    Not synced: {syncResult.failed.map((f) => `plant ${f.plant} (${f.message})`).join('; ')}. The other plants were saved.
+                                </Typography>
+                            )}
+                            {syncResult.total && syncResult.total.with_sales === 0 ? (
+                                <Typography sx={{ fontSize: 12, color: '#946200' }}>No sales found for the materials of your plants in {syncMonthLabel}, so no price was changed.</Typography>
+                            ) : (
+                                <Box sx={{ border: '1px solid #e8eaee', borderRadius: '8px', overflow: 'hidden' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                                        <thead>
+                                            <tr style={{ backgroundColor: '#d0dcf5' }}>
+                                                {['Plant', 'Materials', 'With sales', 'No sales', 'Prices saved', 'Updated', 'Added', 'Skipped: no price'].map((h, i) => (
+                                                    <th key={h} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '4px 8px', fontSize: 10.5 }}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {(syncResult.summaries || []).map((s) => (
+                                                <tr key={s.plant} style={{ borderTop: '1px solid #eef0f3' }}>
+                                                    <td style={{ padding: '3px 8px', fontWeight: 600 }}>{s.plant}</td>
+                                                    {[s.materials, s.with_sales, s.no_sales, s.prices_saved, s.updated, s.inserted, s.skipped_no_value].map((v, i) => (
+                                                        <td key={i} style={{ padding: '3px 8px', textAlign: 'right', color: i === 3 ? '#1b7a43' : i === 6 && v > 0 ? '#946200' : '#1a2233' }}>{v}</td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                            {syncResult.total && (
+                                                <tr style={{ borderTop: '2px solid #b8c7ec', backgroundColor: '#eaf0fc', fontWeight: 700 }}>
+                                                    <td style={{ padding: '4px 8px' }}>TOTAL</td>
+                                                    {[syncResult.total.materials, syncResult.total.with_sales, syncResult.total.no_sales, syncResult.total.prices_saved, syncResult.total.updated, syncResult.total.inserted, syncResult.total.skipped_no_value].map((v, i) => (
+                                                        <td key={i} style={{ padding: '4px 8px', textAlign: 'right' }}>{v}</td>
+                                                    ))}
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </Box>
+                            )}
+                            {syncResult.skipped && syncResult.skipped.length > 0 && (
+                                <>
+                                    <Typography sx={{ fontSize: 11, color: '#6b7280' }}>
+                                        Skipped materials, the latest sales record has no usable price (INR value or quantity is 0 / empty){syncResult.skipped.length > 500 ? ` - the first 500 of ${syncResult.skipped.length}` : ` - ${syncResult.skipped.length}`}:
+                                    </Typography>
+                                    <Box sx={{ maxHeight: 220, overflowY: 'auto', border: '1px solid #e8eaee', borderRadius: '8px' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                                            <thead>
+                                                <tr style={{ backgroundColor: '#d0dcf5', position: 'sticky', top: 0 }}>
+                                                    {['Plant', 'Part No', 'Description', 'Sales Date', 'Qty', 'Value INR'].map((h) => (
+                                                        <th key={h} style={{ textAlign: 'left', padding: '4px 8px', fontSize: 10.5 }}>{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {syncResult.skipped.slice(0, 500).map((s, i) => (
+                                                    <tr key={i} style={{ borderTop: '1px solid #eef0f3' }}>
+                                                        <td style={{ padding: '3px 8px' }}>{s.plant}</td>
+                                                        <td style={{ padding: '3px 8px', fontWeight: 600 }}>{s.part_no}</td>
+                                                        <td style={{ padding: '3px 8px', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={s.description || ''}>{s.description || ''}</td>
+                                                        <td style={{ padding: '3px 8px' }}>{s.sales_date ? format(new Date(s.sales_date), 'dd-MM-yyyy') : ''}</td>
+                                                        <td style={{ padding: '3px 8px' }}>{s.qty}</td>
+                                                        <td style={{ padding: '3px 8px' }}>{s.value_inr}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </Box>
+                                </>
+                            )}
+                        </>
+                    )}
+                </Box>
+            </FormDialog>
         </div>
     )
 }
@@ -368,14 +539,10 @@ const ExcelUploadModal = ({
 
     async function downloadProductionPlanTemplate() {
         // 1️⃣ Fetch dropdown data
-        const [plant, matTypeList] = await Promise.all([
-            getMyPlants(), // only the plants this user may use (own plant + Data Access)
-            getMaterialType(MaterialGroupEnumTypes.all)
-        ]);
+        // The material type is not asked: the part is found in the Material Master by plant + part number
+        const plant = await getMyPlants(); // only the plants this user may use (own plant + Data Access)
 
         const plantCodes = (Array.isArray(plant) ? plant : []).map((e) => e.Plant_Code);
-
-        const matTypes = matTypeList.data.map((e) => e.Mat_Type);
 
         // 2️⃣ Create workbook & worksheet
         const workbook = new ExcelJS.Workbook();
@@ -383,7 +550,6 @@ const ExcelUploadModal = ({
 
         const headers = [
             "Plant",
-            "Material_Type",
             "Part_Number",
             "Price",
             "Eff_Date_(dd-MM-YYYY)",
@@ -412,12 +578,6 @@ const ExcelUploadModal = ({
             type: "list",
             allowBlank: false,
             formulae: [`"${plantCodes.join(",")}"`],
-        });
-
-        worksheet.dataValidations.add("B2:B1000", {
-            type: "list",
-            allowBlank: false,
-            formulae: [`"${matTypes.join(",")}"`],
         });
 
         // 5️⃣ Date formatting
@@ -490,140 +650,46 @@ const ExcelUploadModal = ({
     }
 
     return (
-        <>
-            <IconButton
-                component="span"
-                onClick={() => {
-                    if (onOpen) onOpen()
-                }}
-                style={{
-                    borderRadius: "50%",
-                    backgroundColor: "#FF6699",
-                    color: "white",
-                    width: "40px",
-                    height: "40px",
-                }}
-            >
-                <CloudUploadIcon />
-            </IconButton>
-
-            <Modal open={open} onClose={() => { }}>
-                <Box
-                    sx={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "50%",
-                        transform: "translate(-50%, -50%)",
-                        textAlign: "center",
-                        width: uploadResponse ? "50%" : "30%",
-                        bgcolor: "background.paper",
-                        borderRadius: 2,
-                        boxShadow: 24,
-                        p: 4,
-
-                        maxHeight: "80vh",
-                        overflowY: "auto",
-
-                        outline: "none"
-                    }}
-                >
-                    {/* Title */}
-                    <Typography
-                        variant="h6"
-                        sx={{
-                            mb: 2,
-                            color: "#2e59d9",
-                            textDecoration: "underline",
-                            textDecorationColor: "#88c57a",
-                            textDecorationThickness: "3px",
-                        }}
-                    >
-                        Upload Excel File
-                    </Typography>
-
-                    {/* Download Template */}
-                    <Button
-                        variant="contained"
-                        sx={{
-                            mb: 2,
-                            bgcolor: deepPurple[500],
-                            "&:hover": { bgcolor: deepPurple[700] },
-                        }}
-                        onClick={downloadProductionPlanTemplate}
-                    // onClick={createStyledDropdownExcel}
-                    >
-                        <FaDownload /> &nbsp; {loadingTemplate ? "Loading..." : "Download Template"}
+        <FormDialog
+            open={open}
+            title="Material Price Excel Upload"
+            onClose={handleClose}
+            width={uploadResponse ? 860 : 460}
+            actions={
+                <>
+                    <Button variant="outlined" onClick={handleClose} sx={outlineButtonSx}>Close</Button>
+                    <Button variant="contained" disableElevation onClick={handleUploadData} disabled={isUploading} sx={{ ...primaryButtonSx, minWidth: 70 }}>
+                        {isUploading ? "Uploading..." : "Upload"}
                     </Button>
-
-                    {/* Hidden File Input */}
-                    <input
-                        type="file"
-                        accept=".xlsx,.xls"
-                        id="excel-upload"
-                        hidden
-                        onChange={handleFileChange}
-                    />
-
-                    {/* Custom File Upload UI */}
-                    <label htmlFor="excel-upload">
-                        <Box
-                            sx={{
-                                border: "2px dashed #1976d2",
-                                borderRadius: "8px",
-                                p: 2,
-                                cursor: "pointer",
-                                mb: 1,
-                                "&:hover": {
-                                    backgroundColor: "#f4f6fb",
-                                },
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                gap: 1
-                            }}
-                        >
-                            <FaUpload />
-                            <Typography variant="body2" >
-                                {uploadedFile?.name || "Click to choose Excel file"}
-                            </Typography>
-                        </Box>
-                    </label>
-
-                    {/* Action Buttons */}
-                    <Box
-                        sx={{
-                            display: "flex",
-                            justifyContent: "center",
-                            gap: 2,
-                            my: 3,
-                        }}
-                    >
-                        <Button
-                            variant="contained"
-                            color="error"
-                            onClick={handleClose}
-                            sx={{ width: "30%" }}
-                        >
-                            Close
-                        </Button>
-
-                        <Button
-                            variant="contained"
-                            onClick={handleUploadData}
-                            disabled={isUploading}
-                            sx={{ width: "30%" }}
-                        >
-                            {isUploading ? "Uploading..." : "Upload"}
-                        </Button>
-                    </Box>
-
-                    {/* Upload Status */}
-                    {uploadResponse && <ValidationResult response={uploadResponse} />}
-
-
+                </>
+            }
+        >
+            <Box sx={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: 1.25 }}>
+                <Box>
+                    <Button variant="outlined" onClick={downloadProductionPlanTemplate} startIcon={<FaDownload size={12} />} sx={outlineButtonSx}>
+                        {loadingTemplate ? "Loading..." : "Download Template"}
+                    </Button>
                 </Box>
-            </Modal>
-        </>
+                <input
+                    type="file"
+                    accept=".xlsx, .xls"
+                    onChange={handleFileChange}
+                    style={{
+                        fontSize: 11,
+                        padding: "6px 8px",
+                        backgroundColor: "#fafbfc",
+                        border: "1px dashed #dde1e7",
+                        borderRadius: 6,
+                        cursor: "pointer",
+                    }}
+                />
+                <span style={{ fontSize: 11, lineHeight: 1.5, color: "#6b7280" }}>
+                    Columns: Plant, Part_Number, Price and Eff_Date_(dd-MM-YYYY). A part that already has a price for that month is updated; a new one is added.
+                    Rows with errors are listed below.
+                </span>
+            </Box>
+            {uploadResponse && <Box sx={{ gridColumn: "span 2" }}><ValidationResult response={uploadResponse} /></Box>}
+        </FormDialog>
     );
 };
 

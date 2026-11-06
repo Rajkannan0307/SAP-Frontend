@@ -82,6 +82,12 @@ export const getTrnIndirectMaterialPrice = async (body) => {
     return response.data;
 };
 
+// Material Price "Sync from Sales": the prices of one plant from the sales data of the current month (body: { plant, userId })
+export const SyncMaterialPriceFromSales = async (body) => {
+    const response = await axios.post(`${api}/IDMaterialRouter/SyncPriceFromSales`, body);
+    return response.data;
+};
+
 export const AddTrnIndirectMaterialPrice_BULK = async (body) => {
     const response = await axios.post(`${api}/IDMaterialRouter/AddTrnIDMPrice_BULK`, body, {
         headers: {

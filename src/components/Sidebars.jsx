@@ -503,7 +503,7 @@ const Sidebar = ({ setSidebarOpen }) => {
             "IndirectCategory",
             "PMPD_FixedManpower",
             "Indirect_Material",
-            "MaterialVendorMapping",
+            "MaterialVendorMapping",          
             "MaterialCategory",
             "MaterialRemarks",
             "WorkingDays",
