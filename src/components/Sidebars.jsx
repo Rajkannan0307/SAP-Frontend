@@ -64,7 +64,7 @@ import { FaBoxOpen } from "react-icons/fa";
 
 import { MdViewInAr } from "react-icons/md";
 import { BsBoxSeam } from "react-icons/bs";
-import { FaRupeeSign } from "react-icons/fa";
+import { FaRupeeSign, FaTruck } from "react-icons/fa";
 import { MdInventory, MdHandshake } from "react-icons/md";
 import { MdInventory2 } from "react-icons/md";
 import { MdPrecisionManufacturing } from "react-icons/md";
@@ -1296,6 +1296,28 @@ const Sidebar = ({ setSidebarOpen }) => {
               ),
               code: "CC_RejectionActual",
             },
+            {
+              name: "Outward Freight",
+              path: "/home/CC_OutwardFreight",
+              icon: (
+                <FaTruck
+                  style={{ color: "#B7BDF7" }}
+                  className="text-[18px]"
+                />
+              ),
+              code: "CC_OutwardFreight",
+            },
+            {
+              name: "Inward Freight",
+              path: "/home/CC_InwardFreight",
+              icon: (
+                <FaTruck
+                  style={{ color: "#B7BDF7" }}
+                  className="text-[18px]"
+                />
+              ),
+              code: "CC_InwardFreight",
+            },
           ]}
           codeList={[
             "CC_DCM_Output",
@@ -1310,6 +1332,8 @@ const Sidebar = ({ setSidebarOpen }) => {
             "CC_ReturnablePackage",
             "CC_MstRejection",
             "CC_RejectionActual",
+            "CC_OutwardFreight",
+            "CC_InwardFreight",
           ]}
         />
       </div>
