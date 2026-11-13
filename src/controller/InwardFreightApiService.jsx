@@ -9,7 +9,7 @@ export const getFreightDetails = async () => {
   return response.data;
 };
 
-// active materials and active vendors of ONE plant (Part No and Vendor Code dropdowns)
+// active materials of ONE plant (Part No dropdown) and the active vendors of that plant (Vendor Code dropdown)
 export const getFreightParts = async (plant_id) => {
   const response = await axios.get(`${base}/Get_Parts`, { params: { plant_id } });
   return response.data;

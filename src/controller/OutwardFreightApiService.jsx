@@ -9,14 +9,14 @@ export const getFreightDetails = async () => {
   return response.data;
 };
 
-// active materials of ONE plant (Part No dropdown) and active customers (Customer Code dropdown)
+// active materials of ONE plant (Part No dropdown) and the active customers of that plant's company (Customer Code dropdown)
 export const getFreightParts = async (plant_id) => {
   const response = await axios.get(`${base}/Get_Parts`, { params: { plant_id } });
   return response.data;
 };
 
-export const getFreightCustomers = async () => {
-  const response = await axios.get(`${base}/Get_Customers`);
+export const getFreightCustomers = async (plant_id) => {
+  const response = await axios.get(`${base}/Get_Customers`, { params: { plant_id } });
   return response.data;
 };
 

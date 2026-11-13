@@ -360,6 +360,11 @@ const InwardFreight = () => {
       alert(error);
       return;
     }
+    const duplicateMessage = findDuplicate(PlantId, Part.Material_ID, Vendor.Vendor_ID, EffectiveDate);
+    if (duplicateMessage) {
+      alert(duplicateMessage);
+      return;
+    }
     setSaving(true);
     try {
       const response = await addFreight({
@@ -387,20 +392,64 @@ const InwardFreight = () => {
     }
   };
 
-  // ---------- Edit (Plant, Part No, Vendor Code and Effective Date identify the row and cannot be changed) ----------
-  const handleRowClick = (params) => {
-    setEditRow(params.row);
-    setTransportMode(params.row.transport_mode ?? "");
-    setFrtInward(params.row.frt_inward ?? "");
-    setActiveStatus(Boolean(params.row.active_status));
+  // the same Plant + Part No + Vendor Code + Effective Date month and year in ANOTHER row (the backend checks it again)
+  const findDuplicate = (plantId, materialId, vendorId, date, excludeId = null) => {
+    const ym = String(date).slice(0, 7);
+    const hit = (data || []).find(
+      (r) =>
+        r.inward_freight_id !== excludeId &&
+        Number(r.plant_id) === Number(plantId) &&
+        Number(r.material_id) === Number(materialId) &&
+        Number(r.vendor_id) === Number(vendorId) &&
+        isoDate(r.effective_date).slice(0, 7) === ym
+    );
+    return hit
+      ? `This Plant + Part No + Vendor Code already has a row for this Effective Date month and year (${fmtDate(hit.effective_date)}${hit.active_status ? "" : ", Inactive"}).`
+      : "";
+  };
+
+  // ---------- Edit (every field can be changed; the backend applies the same checks as Add) ----------
+  const handleRowClick = async (params) => {
+    const row = params.row;
+    setEditRow(row);
+    setPlantId(row.plant_id);
+    setTransportMode(row.transport_mode ?? "");
+    setFrtInward(row.frt_inward ?? "");
+    setEffectiveDate(isoDate(row.effective_date));
+    setActiveStatus(Boolean(row.active_status));
+    // the row's own Part No / Vendor Code show at once; the lists of its plant load behind them
+    setPart({ Material_ID: row.material_id, Material_Code: row.part_no, Description: row.Part_Description });
+    setVendor({ Vendor_ID: row.vendor_id, Vendor_Code: row.vendor_code, Vendor_Name: row.Vendor_Name });
+    setPartTable([]);
+    setVendorTable([]);
     setOpenEditModal(true);
+    try {
+      const [parts, vendors] = await Promise.all([getFreightParts(row.plant_id), getFreightVendors(row.plant_id)]);
+      setPartTable(parts);
+      setVendorTable(vendors);
+    } catch (error) {
+      console.error("Error loading parts / vendors:", error);
+    }
   };
 
   const handleUpdate = async () => {
     if (saving) return;
+    if (!PlantId || !Part || !Vendor || !TransportMode || FrtInward === "" || !EffectiveDate) {
+      alert("Please fill in all required fields");
+      return;
+    }
+    if (!EditRow.active_status && !ActiveStatus) {
+      alert("Inactive row cannot be modified. Switch it to Active to edit it.");
+      return;
+    }
     const error = getFreightError(TransportMode, FrtInward);
     if (error) {
       alert(error);
+      return;
+    }
+    const duplicateMessage = findDuplicate(PlantId, Part.Material_ID, Vendor.Vendor_ID, EffectiveDate, EditRow.inward_freight_id);
+    if (duplicateMessage) {
+      alert(duplicateMessage);
       return;
     }
     setSaving(true);
@@ -408,8 +457,12 @@ const InwardFreight = () => {
       const response = await updateFreight({
         UserID,
         Inward_Freight_ID: EditRow.inward_freight_id,
+        Plant_ID: PlantId,
+        Material_ID: Part.Material_ID,
+        Vendor_ID: Vendor.Vendor_ID,
         Transport_Mode: TransportMode,
         Frt_Inward: FrtInward,
+        Effective_Date: EffectiveDate,
         Active_Status: ActiveStatus,
       });
       if (response.data.success) {
@@ -512,44 +565,46 @@ const InwardFreight = () => {
     );
   };
 
-  // log of the upload: new / updated / error rows (errors carry the Excel row number and the reason)
-  const downloadUploadLog = (newRecord, updateRecord, errRecord) => {
-    const wb = XLSX.utils.book_new();
-    const okColumns = ["Row No", "Plant", "Part No", "Transport Mode", "Vendor Code", "Frt Inward", "Effective Date", "Active Status", "Status"];
-    const errColumns = ["Row No", "Plant", "Part No", "Transport Mode", "Vendor Code", "Frt Inward", "Effective Date", "Active Status", "Error"];
-
-    const toOk = (item) => ({
+  // log of the upload: ONE sheet with every row of the file, in file order; the Status says what happened to the row:
+  //   Added / Updated = saved | Valid - not uploaded = passed the checks, but the file has an error so nothing was saved | Failed = wrong row (see Error)
+  const downloadUploadLog = (newRecord, updateRecord, errRecord, validRecord = []) => {
+    const columns = ["Row No", "Plant", "Part No", "Transport Mode", "Vendor Code", "Frt Inward", "Effective Date", "Active Status", "Status", "Error"];
+    const okRow = (item, status) => ({
       "Row No": item.Row_No, "Plant": item.Plant, "Part No": item.Part_No, "Transport Mode": item.Transport_Mode,
       "Vendor Code": item.Vendor_Code, "Frt Inward": item.Frt_Inward, "Effective Date": fmtDate(item.Effective_Date),
-      "Active Status": item.active_status ? "Active" : "Inactive", "Status": item.Status,
+      "Active Status": item.active_status ? "Active" : "Inactive", "Status": status, "Error": "",
     });
-    const toErr = (item) => ({
+    const failedRow = (item) => ({
       "Row No": item.Row_No, "Plant": item.Plant, "Part No": item.Part_No, "Transport Mode": item.Transport_Mode,
       "Vendor Code": item.Vendor_Code, "Frt Inward": item.Frt_Inward, "Effective Date": fmtDate(item.Effective_Date) || item.Effective_Date,
-      "Active Status": item.Active_Status, "Error": String(item.Row_Error ?? "").split(" | ").join("\n"),
+      "Active Status": item.Active_Status, "Status": "Failed", "Error": String(item.Row_Error ?? "").split(" | ").join("\n"),
     });
+    const logRows = [
+      ...newRecord.map((i) => okRow(i, "Added")),
+      ...updateRecord.map((i) => okRow(i, "Updated")),
+      ...validRecord.map((i) => okRow(i, "Valid - not uploaded (file has errors)")),
+      ...errRecord.map(failedRow),
+    ].sort((a, b) => a["Row No"] - b["Row No"]);
 
-    const addSheet = (sheetRows, columns, name, isError = false) => {
-      const sheetData = sheetRows.length ? sheetRows : [{}];
-      const ws = XLSX.utils.json_to_sheet(sheetData, { header: columns });
-      columns.forEach((_, index) => {
-        const cell = ws[XLSX.utils.encode_cell({ c: index, r: 0 })];
-        if (cell) cell.s = { font: { bold: true, color: { rgb: "000000" } }, fill: { fgColor: { rgb: "FFFF00" } }, alignment: { horizontal: "center" } };
-      });
-      if (isError) {
-        const errIdx = columns.indexOf("Error");
-        for (let r = 1; r <= sheetRows.length; r++) {
-          const cell = ws[XLSX.utils.encode_cell({ c: errIdx, r })];
-          if (cell) cell.s = { font: { color: { rgb: "FF0000" } } };
-        }
-      }
-      ws["!cols"] = columns.map((c) => ({ wch: c === "Error" ? 60 : 16 }));
-      XLSX.utils.book_append_sheet(wb, ws, name);
-    };
-
-    addSheet(newRecord.map(toOk), okColumns, "New Records");
-    addSheet(updateRecord.map(toOk), okColumns, "Updated Records");
-    addSheet(errRecord.map(toErr), errColumns, "Error Records", true);
+    const ws = XLSX.utils.json_to_sheet(logRows.length ? logRows : [{}], { header: columns });
+    columns.forEach((_, index) => {
+      const cell = ws[XLSX.utils.encode_cell({ c: index, r: 0 })];
+      if (cell) cell.s = { font: { bold: true, color: { rgb: "000000" } }, fill: { fgColor: { rgb: "FFFF00" } }, alignment: { horizontal: "center" } };
+    });
+    const statusIdx = columns.indexOf("Status");
+    const errorIdx = columns.indexOf("Error");
+    logRows.forEach((row, i) => {
+      const statusCell = ws[XLSX.utils.encode_cell({ c: statusIdx, r: i + 1 })];
+      const failed = row.Status === "Failed";
+      const notUploaded = row.Status.startsWith("Valid");
+      if (statusCell) statusCell.s = { font: { bold: true, color: { rgb: failed ? "B42323" : notUploaded ? "B26A00" : "1B7A43" } } };
+      const errorCell = ws[XLSX.utils.encode_cell({ c: errorIdx, r: i + 1 })];
+      if (errorCell && failed) errorCell.s = { font: { color: { rgb: "FF0000" } }, alignment: { wrapText: true, vertical: "top" } };
+    });
+    ws["!cols"] = columns.map((c) => ({ wch: c === "Error" ? 70 : c === "Status" ? 34 : 16 }));
+    ws["!autofilter"] = { ref: `A1:${XLSX.utils.encode_col(columns.length - 1)}${logRows.length + 1}` };
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Upload Log");
     XLSX.writeFile(wb, "Inward Freight Upload Log.xlsx");
   };
 
@@ -572,9 +627,9 @@ const InwardFreight = () => {
       formData.append("User_Add", uploadedFile);
       formData.append("UserID", UserID);
       const response = await uploadFreight(formData);
-      const { NewRecord = [], UpdatedData = [], ErrorRecords = [] } = response.data;
+      const { NewRecord = [], UpdatedData = [], ErrorRecords = [], ValidRows = [] } = response.data;
       // no alert: the message and the result stay in the dialog; the log is NOT downloaded automatically, the user can download it
-      setUploadLog({ newRecord: NewRecord, updateRecord: UpdatedData, errRecord: ErrorRecords, message: response.data.message, total: response.data.TotalRows ?? 0 });
+      setUploadLog({ newRecord: NewRecord, updateRecord: UpdatedData, errRecord: ErrorRecords, validRecord: ValidRows, message: response.data.message, total: response.data.TotalRows ?? 0 });
       getData();
       if (ErrorRecords.length > 0) {
         // nothing was saved: the wrong rows stay on the screen, in the same grid as the other upload screens
@@ -611,6 +666,63 @@ const InwardFreight = () => {
     ListboxProps: { style: { fontSize: 12 } },
     filterOptions: optionFilter,
   };
+
+  // the fields of the Add AND the Edit dialog (every field can be edited)
+  const formFields = (
+    <>
+      <Box sx={{ gridColumn: "span 2" }}>
+        <SelectField
+          label="Plant"
+          value={PlantId}
+          onChange={(e) => {
+            setPlantId(e.target.value);
+            loadParts(e.target.value); // Part No and Vendor Code belong to the plant: they must be chosen again
+          }}
+          options={plantOptions}
+        />
+      </Box>
+      <Box sx={{ gridColumn: "span 2" }}>
+        <Autocomplete
+          {...pickerProps}
+          disabled={!PlantId}
+          options={PartTable}
+          value={Part}
+          onChange={(e, newVal) => setPart(newVal)}
+          getOptionLabel={(m) => (m ? `${m.Material_Code} - ${m.Description || ""}` : "")}
+          isOptionEqualToValue={(o, v) => o.Material_ID === v.Material_ID}
+          noOptionsText={PlantId ? "No active materials found" : "Select a plant first"}
+          renderInput={(params) => <TextField {...params} label="Part No" placeholder={PlantId ? "Search by code or description" : "Select a plant first"} />}
+        />
+      </Box>
+      <Box sx={{ gridColumn: "span 2" }}>
+        <Autocomplete
+          {...pickerProps}
+          disabled={!PlantId}
+          options={VendorTable}
+          value={Vendor}
+          onChange={(e, newVal) => setVendor(newVal)}
+          getOptionLabel={(c) => (c ? `${c.Vendor_Code} - ${c.Vendor_Name || ""}` : "")}
+          isOptionEqualToValue={(o, v) => o.Vendor_ID === v.Vendor_ID}
+          noOptionsText={PlantId ? "No active vendors found" : "Select a plant first"}
+          renderInput={(params) => <TextField {...params} label="Vendor Code" placeholder={PlantId ? "Search by code or name" : "Select a plant first"} />}
+        />
+      </Box>
+      <SelectField label="Transport Mode" value={TransportMode} onChange={(e) => setTransportMode(e.target.value)} options={modeOptions} />
+      <NumberInput label="Frt Inward" value={FrtInward} onChange={(e) => setFrtInward(e.target.value)} />
+      <TextField
+        size="small"
+        type="date"
+        label="Effective Date"
+        value={EffectiveDate}
+        onChange={(e) => setEffectiveDate(e.target.value)}
+        sx={DIALOG_FIELD_SX}
+        InputLabelProps={{ shrink: true }}
+      />
+      <Box sx={{ display: "flex", alignItems: "center" }}>
+        <ActiveSwitch checked={!!ActiveStatus} onChange={(e) => setActiveStatus(e.target.checked)} />
+      </Box>
+    </>
+  );
 
   return (
     <div
@@ -758,57 +870,7 @@ const InwardFreight = () => {
           </>
         }
       >
-        <Box sx={{ gridColumn: "span 2" }}>
-          <SelectField
-            label="Plant"
-            value={PlantId}
-            onChange={(e) => {
-              setPlantId(e.target.value);
-              loadParts(e.target.value);
-            }}
-            options={plantOptions}
-          />
-        </Box>
-        <Box sx={{ gridColumn: "span 2" }}>
-          <Autocomplete
-            {...pickerProps}
-            disabled={!PlantId}
-            options={PartTable}
-            value={Part}
-            onChange={(e, newVal) => setPart(newVal)}
-            getOptionLabel={(m) => (m ? `${m.Material_Code} - ${m.Description || ""}` : "")}
-            isOptionEqualToValue={(o, v) => o.Material_ID === v.Material_ID}
-            noOptionsText={PlantId ? "No active materials found" : "Select a plant first"}
-            renderInput={(params) => <TextField {...params} label="Part No" placeholder={PlantId ? "Search by code or description" : "Select a plant first"} />}
-          />
-        </Box>
-        <Box sx={{ gridColumn: "span 2" }}>
-          <Autocomplete
-            {...pickerProps}
-            disabled={!PlantId}
-            options={VendorTable}
-            value={Vendor}
-            onChange={(e, newVal) => setVendor(newVal)}
-            getOptionLabel={(c) => (c ? `${c.Vendor_Code} - ${c.Vendor_Name || ""}` : "")}
-            isOptionEqualToValue={(o, v) => o.Vendor_ID === v.Vendor_ID}
-            noOptionsText={PlantId ? "No active vendors found" : "Select a plant first"}
-            renderInput={(params) => <TextField {...params} label="Vendor Code" placeholder={PlantId ? "Search by code or name" : "Select a plant first"} />}
-          />
-        </Box>
-        <SelectField label="Transport Mode" value={TransportMode} onChange={(e) => setTransportMode(e.target.value)} options={modeOptions} />
-        <NumberInput label="Frt Inward" value={FrtInward} onChange={(e) => setFrtInward(e.target.value)} />
-        <TextField
-          size="small"
-          type="date"
-          label="Effective Date"
-          value={EffectiveDate}
-          onChange={(e) => setEffectiveDate(e.target.value)}
-          sx={DIALOG_FIELD_SX}
-          InputLabelProps={{ shrink: true }}
-        />
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <ActiveSwitch checked={!!ActiveStatus} onChange={(e) => setActiveStatus(e.target.checked)} />
-        </Box>
+        {formFields}
       </FormDialog>
 
       {/* Edit */}
@@ -825,21 +887,7 @@ const InwardFreight = () => {
           </>
         }
       >
-        <Box sx={{ gridColumn: "span 2" }}>
-          <TextInput label="Plant" value={EditRow?.Plant_Code ?? ""} readOnly />
-        </Box>
-        <Box sx={{ gridColumn: "span 2" }}>
-          <TextInput label="Part No" value={EditRow ? `${EditRow.part_no} - ${EditRow.Part_Description || ""}` : ""} readOnly />
-        </Box>
-        <Box sx={{ gridColumn: "span 2" }}>
-          <TextInput label="Vendor Code" value={EditRow ? `${EditRow.vendor_code} - ${EditRow.Vendor_Name || ""}` : ""} readOnly />
-        </Box>
-        <TextInput label="Effective Date" value={fmtDate(EditRow?.effective_date)} readOnly />
-        <SelectField label="Transport Mode" value={TransportMode} onChange={(e) => setTransportMode(e.target.value)} options={modeOptions} />
-        <NumberInput label="Frt Inward" value={FrtInward} onChange={(e) => setFrtInward(e.target.value)} />
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <ActiveSwitch checked={!!ActiveStatus} onChange={(e) => setActiveStatus(e.target.checked)} />
-        </Box>
+        {formFields}
       </FormDialog>
 
       {/* Upload */}
@@ -852,9 +900,12 @@ const InwardFreight = () => {
         actions={
           <>
             <Button variant="outlined" onClick={handleCloseUploadModal} sx={outlineButtonSx}>Close</Button>
-            <Button variant="contained" disableElevation onClick={handleUploadData} disabled={isUploading} sx={{ ...primaryButtonSx, minWidth: 70 }}>
-              {isUploading ? "Uploading..." : "Upload"}
-            </Button>
+            {/* after a successful upload only Close is left (choosing another file brings Upload back) */}
+            {!(uploadLog && uploadLog.errRecord.length === 0) && (
+              <Button variant="contained" disableElevation onClick={handleUploadData} disabled={isUploading} sx={{ ...primaryButtonSx, minWidth: 70 }}>
+                {isUploading ? "Uploading..." : "Upload"}
+              </Button>
+            )}
           </>
         }
       >
@@ -889,7 +940,7 @@ const InwardFreight = () => {
             </span>
             <Button
               variant="outlined"
-              onClick={() => downloadUploadLog(uploadLog.newRecord, uploadLog.updateRecord, uploadLog.errRecord)}
+              onClick={() => downloadUploadLog(uploadLog.newRecord, uploadLog.updateRecord, uploadLog.errRecord, uploadLog.validRecord)}
               startIcon={<FaDownload size={12} />}
               sx={outlineButtonSx}
             >
