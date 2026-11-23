@@ -64,7 +64,7 @@ import { FaBoxOpen } from "react-icons/fa";
 
 import { MdViewInAr } from "react-icons/md";
 import { BsBoxSeam } from "react-icons/bs";
-import { FaRupeeSign, FaTruck } from "react-icons/fa";
+import { FaRupeeSign, FaTruck, FaPlane } from "react-icons/fa";
 import { MdInventory, MdHandshake } from "react-icons/md";
 import { MdInventory2 } from "react-icons/md";
 import { MdPrecisionManufacturing } from "react-icons/md";
@@ -1335,6 +1335,65 @@ const Sidebar = ({ setSidebarOpen }) => {
             "CC_OutwardFreight",
             "CC_InwardFreight",
           ]}
+        />
+        {/* Premium Freight Section (data in the SFMS Postgres database, shared with the SFMS mobile app) */}
+        <SidebarSection
+          open={open}
+          isOpen={activeSection === "PremiumFreight"}
+          toggleSection={() => toggleSection("PremiumFreight")}
+          icon={
+            <FaPlane style={{ color: "#FFA500" }} className="text-[27px]" />
+          }
+          Permissions={Permissions}
+          currentPath={location.pathname}
+          label="Premium Freight"
+          links={[
+            {
+              name: "Approval Limit",
+              path: "/home/PF_ApprovalLimit",
+              icon: (
+                <FaRupeeSign
+                  style={{ color: "#B7BDF7" }}
+                  className="text-[18px]"
+                />
+              ),
+              code: "PF_ApprovalLimit",
+            },
+            {
+              name: "Premium Freight Request",
+              path: "/home/PF_Request",
+              icon: (
+                <FaPlane
+                  style={{ color: "#B7BDF7" }}
+                  className="text-[18px]"
+                />
+              ),
+              code: "PF_Request",
+            },
+            {
+              name: "Freight Request Report",
+              path: "/home/PF_Report",
+              icon: (
+                <FaChartBar
+                  style={{ color: "#B7BDF7" }}
+                  className="text-[18px]"
+                />
+              ),
+              code: "PF_Report",
+            },
+            {
+              name: "PF Category Master",
+              path: "/home/PF_ReasonMaster",
+              icon: (
+                <FaRupeeSign
+                  style={{ color: "#B7BDF7" }}
+                  className="text-[18px]"
+                />
+              ),
+              code: "PF_ReasonMaster",
+            },
+          ]}
+          codeList={["PF_ApprovalLimit", "PF_Request", "PF_Report", "PF_ReasonMaster"]}
         />
       </div>
     </div>

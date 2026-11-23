@@ -118,6 +118,10 @@ import CC_ActualConsumptionPlan from "./ContributionalChart/ActualConsumption";
 import CC_IndirectMaterialPrice from "./ContributionalChart/IndirectMaterialPrice";
 import CC_OutwardFreight from "./ContributionalChart/OutwardFreight";
 import CC_InwardFreight from "./ContributionalChart/InwardFreight";
+import PF_ApprovalLimit from "./PremiumFreight/ApprovalLimit";
+import PF_Request from "./PremiumFreight/Request";
+import PF_Report from "./PremiumFreight/Report";
+import PF_ReasonMaster from "./PremiumFreight/ReasonMaster";
 import CC_DCM_Output from "./ContributionalChart/DCM_Output";
 import CC_PowerUnit from "./Masters/PowerUnit";
 import CC_DailyPowerConsumption from "./ContributionalChart/DailyPowerConsumption";
@@ -263,6 +267,10 @@ const App = () => {
             <Route path="CC_IndirectMaterialPrice" element={<ProtectedRoute screenCode="CC_MaterialPrice"><CC_IndirectMaterialPrice /></ProtectedRoute>} />
             <Route path="CC_OutwardFreight" element={<ProtectedRoute screenCode="CC_OutwardFreight"><CC_OutwardFreight /></ProtectedRoute>} />
             <Route path="CC_InwardFreight" element={<ProtectedRoute screenCode="CC_InwardFreight"><CC_InwardFreight /></ProtectedRoute>} />
+            <Route path="PF_ApprovalLimit" element={<ProtectedRoute screenCode="PF_ApprovalLimit"><PF_ApprovalLimit /></ProtectedRoute>} />
+            <Route path="PF_Request" element={<ProtectedRoute screenCode="PF_Request"><PF_Request /></ProtectedRoute>} />
+            <Route path="PF_Report" element={<ProtectedRoute screenCode="PF_Report"><PF_Report /></ProtectedRoute>} />
+            <Route path="PF_ReasonMaster" element={<ProtectedRoute screenCode="PF_ReasonMaster"><PF_ReasonMaster /></ProtectedRoute>} />
             <Route path="CC_DCM_Output" element={<ProtectedRoute screenCode="CC_DCM_Output"><CC_DCM_Output /></ProtectedRoute>} />
 
             <Route path="CC_Power_Unit" element={<ProtectedRoute screenCode="PowerUnit"><CC_PowerUnit /></ProtectedRoute>} />
