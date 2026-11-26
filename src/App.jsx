@@ -107,6 +107,7 @@ import SubcontractDailyPlan from "./MFG_Availability/SubcontractDailyPlan";
 import SchedulerJobs from "./Scheduler/SchedulerJobs";
 import ColumnMappingStudio from "./Scheduler/ColumnMappingStudio";
 import SchedulerRunHistory from "./Scheduler/RunHistory";
+import ScheduledMails from "./Scheduler/ScheduledMails";
 import PMDP_PlanVsActual from "./PMPD/PMPD_PlanVsActual";
 import PMDP_PlanVsActual_Indirect from './PMPD/PMPD_PlanVsActual_Indirect'
 import PMPD_FixedManpower from "./Masters/PMPD_FixedManpower";
@@ -253,6 +254,7 @@ const App = () => {
             <Route path="SchedulerJobs" element={<ProtectedRoute screenCode="SchedulerJobs"><SchedulerJobs /></ProtectedRoute>} />
             <Route path="SchedulerColumnMapping" element={<ProtectedRoute screenCode="SchedulerColumnMapping"><ColumnMappingStudio /></ProtectedRoute>} />
             <Route path="SchedulerRunHistory" element={<ProtectedRoute screenCode="SchedulerRunHistory"><SchedulerRunHistory /></ProtectedRoute>} />
+            <Route path="ScheduledMails" element={<ProtectedRoute screenCode="ScheduledMails"><ScheduledMails /></ProtectedRoute>} />
             <Route path="PMDP_PlanVsActual" element={<ProtectedRoute screenCode="PMDP_PlanVsActual"><PMDP_PlanVsActual /></ProtectedRoute>} />
             <Route path="PMDP_PlanVsActual_Indirect" element={<ProtectedRoute screenCode="PMDP_PlanVsActual_Indirect"><PMDP_PlanVsActual_Indirect /></ProtectedRoute>} />
             <Route path="Inhouse_capacity" element={<ProtectedRoute screenCode="Inhouse_capacity"><InhouseCapacity /></ProtectedRoute>} />

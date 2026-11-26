@@ -60,6 +60,7 @@ import ConstructionIcon from "@mui/icons-material/Construction";
 import { GiFactory } from "react-icons/gi";
 import { FaCogs } from "react-icons/fa";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import { FaBoxOpen } from "react-icons/fa";
 
 import { MdViewInAr } from "react-icons/md";
@@ -736,8 +737,19 @@ const Sidebar = ({ setSidebarOpen }) => {
               ),
               code: "SchedulerRunHistory",
             },
+            {
+              name: "Scheduled Mails",
+              path: "/home/ScheduledMails",
+              icon: (
+                <MailOutlineIcon
+                  style={{ color: "#5b8def" }}
+                  className="text-[20px]"
+                />
+              ),
+              code: "ScheduledMails",
+            },
           ]}
-          codeList={["SchedulerJobs", "SchedulerColumnMapping", "SchedulerRunHistory"]}
+          codeList={["SchedulerJobs", "SchedulerColumnMapping", "SchedulerRunHistory", "ScheduledMails"]}
         />
         {/* Approval Section */}
         <SidebarSection
